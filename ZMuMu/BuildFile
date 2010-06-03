@@ -1,0 +1,7 @@
+# -*- Makefile -*-
+# $Id: BuildFile,v 1.1 2010/04/16 21:05:51 ikrav Exp $
+<use name=root>
+#<flags CXXFLAGS="-g">
+<export>
+  <lib name=ZMuMu>
+</export>
