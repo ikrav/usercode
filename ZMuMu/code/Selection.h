@@ -20,14 +20,26 @@ enum MuType
     mStandAlone = 4
   };
 
-enum MuMuType
-  {
-    MuMu2HLT              = 1,
-    MuMu1HLT              = 2,
-    MuTk                  = 3,
-    MuSa                  = 4,
-    MuMu1HLT1NonIsolated  = 5
-  };
+enum CategoriesList {
+  NotValidCategory = -1,
+  ZGolden1or2HLT   = 0,
+  ZGolden2HLT      = 1,
+  ZGolden1HLT      = 2,
+  ZMuTrk           = 3,
+  ZMuTrkMu         = 4,
+  ZMuSta           = 5,
+  ZMuMuNonIso      = 6,
+  ZSameCharge      = 7
+};
+
+/* enum MuMuType */
+/*   { */
+/*     MuMu2HLT              = 1, */
+/*     MuMu1HLT              = 2, */
+/*     MuTk                  = 3, */
+/*     MuSa                  = 4, */
+/*     MuMu1HLT1NonIsolated  = 5 */
+/*   }; */
 
 class Selection {
   

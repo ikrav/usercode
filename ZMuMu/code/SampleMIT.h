@@ -27,7 +27,6 @@ class SampleMIT : public SampleBase {
   // Methods specific to an ntuple implementation
   int getNEvents();       // return number of MC events
   int getNCandidates();   // return number of candidates
-/*   int setup();       // set up ntuple access */
   void getCandidate(int icand); // run GetEntry on relevant trees
   // Access variables of an ntuple entry
   int triggerBits(int icand);

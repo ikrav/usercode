@@ -306,7 +306,7 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format)
     return;    
   
   int nHist1D=0, nHist2D=0, nGraph=0;
-  for(uint i=0; i<fItems.size(); i++) {
+  for(UInt_t i=0; i<fItems.size(); i++) {
     if(fItems[i].hist1D != 0) nHist1D++;
     if(fItems[i].hist2D != 0) nHist2D++;
     if(fItems[i].graph  != 0) nGraph++;
@@ -321,7 +321,7 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format)
   //   Default is scatter plot
   //  
   if(nHist2D>0) {
-    for(uint i=0; i<fItems.size(); i++) {
+    for(UInt_t i=0; i<fItems.size(); i++) {
       if(fItems[i].hist2D==0) continue;
       
       fItems[i].hist2D->Draw(fItems[i].drawopt);
@@ -329,7 +329,7 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format)
       fItems[i].hist2D->GetXaxis()->SetTitle(fXTitle);
       fItems[i].hist2D->GetYaxis()->SetTitle(fYTitle);
     
-      for(uint j=0; j<fTextBoxes.size(); j++)
+      for(UInt_t j=0; j<fTextBoxes.size(); j++)
         fTextBoxes[j]->Draw();
                   
       if(doSave) {
@@ -358,9 +358,9 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format)
   if(nHist1D>0) {   
     
     double ymax=0;
-    uint ifirst=0;
+    UInt_t ifirst=0;
     
-    for(uint i=0; i<fItems.size(); i++) {
+    for(UInt_t i=0; i<fItems.size(); i++) {
       if(fItems[i].hist1D==0) continue;
       if(fStack && fStack->GetHists()->Contains(fItems[i].hist1D)) continue;
       
@@ -423,7 +423,7 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format)
       } 
     }
         
-    for(uint i=0; i<vHists.size(); i++) {
+    for(UInt_t i=0; i<vHists.size(); i++) {
       TH1F *h = vHists[i];              
       h->SetLineWidth(2);
       char opt[100];
@@ -438,7 +438,7 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format)
   std::vector<TGraph*> vGraphs;
   std::vector<TString> vGraphOpts;
   if(nGraph>0) {    
-    for(uint i=0; i<fItems.size(); i++) {
+    for(UInt_t i=0; i<fItems.size(); i++) {
       if(fItems[i].graph==0) continue;
     
       TString grName = fName;
@@ -464,7 +464,7 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format)
       vGraphs[0]->GetYaxis()->SetTitle(fYTitle);
     }
     
-    for(uint i=0; i<vGraphs.size(); i++) {
+    for(UInt_t i=0; i<vGraphs.size(); i++) {
       TGraph *gr = vGraphs[i];
       char opt[100];
       (i==0 && nHist1D==0) ? sprintf(opt,"AP%s",vGraphOpts[i].Data()) : sprintf(opt,"P%s",vGraphOpts[i].Data());
@@ -489,7 +489,7 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format)
     char buffer[20];
     stat = new TLatex[3*vHists.size()];
     sval = new TLatex[3*vHists.size()];
-    for(uint i=0; i<vHists.size(); i++) {
+    for(UInt_t i=0; i<vHists.size(); i++) {
       int x = fShowStats;
       
       // number of entries
@@ -538,19 +538,19 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format)
   //
   // Draw functions
   //
-  for(uint i=0; i<fFcns.size(); i++)
+  for(UInt_t i=0; i<fFcns.size(); i++)
     (i==0 && vHists.size()==0 && vGraphs.size()==0) ? fFcns[i]->Draw() : fFcns[i]->Draw("sameC");
   
   //
   // Draw lines
   //
-  for(uint i=0; i<fLines.size(); i++)
+  for(UInt_t i=0; i<fLines.size(); i++)
     fLines[i]->Draw();
   
   //
   // Draw textboxes
   //
-  for(uint i=0; i<fTextBoxes.size(); i++)
+  for(UInt_t i=0; i<fTextBoxes.size(); i++)
     fTextBoxes[i]->Draw();    
   
   //
@@ -581,7 +581,7 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format)
     
     delete [] stat;
     delete [] sval;
-//    for(uint i=0; i<vHists.size(); i++)
+//    for(UInt_t i=0; i<vHists.size(); i++)
 //      delete vHists[i];
   }
 }

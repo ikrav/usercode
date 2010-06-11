@@ -62,7 +62,7 @@ int Selection::findCategory(int mu1type, int mu2type,
 			    int mu1q, int mu2q)
 {
 
-  int category = -1;
+  int category = NotValidCategory;
   // The categories are mutually exclusive
   if(
      (mu1type & mGlobal)      && (mu2type & mGlobal)      &&
@@ -71,7 +71,7 @@ int Selection::findCategory(int mu1type, int mu2type,
      mu1q*mu2q < 0 ) 
     {
       // Two isolated global muons, both HLT-matched, opposite sign
-      category = 1;
+      category = ZGolden2HLT;
     }else if (
 	      (mu1type & mGlobal)        && (mu2type & mGlobal)        &&
 	      mu1iso < _trackIso         && mu2iso < _trackIso         &&
@@ -80,12 +80,26 @@ int Selection::findCategory(int mu1type, int mu2type,
     {
       // Two isolated global muons, only one HLT matched, opposite sign
       // Note: already the 2-hlt already failed above
-      category = 2;
+      category = ZGolden1HLT;
     }else if (
 	 ( ( (mu1type & mGlobal) && (mu1HLTmatch & _trigger) 
-	     && (mu2type == mTracker || mu2type == mNoMuon) ) ||
+	     && (mu2type == mNoMuon) ) ||
 	   ( (mu2type & mGlobal) && (mu2HLTmatch & _trigger) 
-	     && (mu1type == mTracker || mu1type == mNoMuon) ) ) &&
+	     && (mu1type == mNoMuon) ) ) &&
+	 mu1iso < _trackIso && mu2iso < _trackIso &&
+	 mu1q*mu2q < 0 )
+    {
+      // One Global and one track. Both isolated. Global muon HLT matched.
+      // Opposite sign.
+      // Note: using == or & for checking muon type is intentional. Global muons
+      //  are normally both Tracker and StandAlone.
+      // Note: muon type NoMuon means it is a general track (as opposed to tracker muon).
+      category = ZMuTrk;
+    }else if (
+	 ( ( (mu1type & mGlobal) && (mu1HLTmatch & _trigger) 
+	     && (mu2type == mTracker) ) ||
+	   ( (mu2type & mGlobal) && (mu2HLTmatch & _trigger) 
+	     && (mu1type == mTracker) ) ) &&
 	 mu1iso < _trackIso && mu2iso < _trackIso &&
 	 mu1q*mu2q < 0 )
     {
@@ -93,8 +107,7 @@ int Selection::findCategory(int mu1type, int mu2type,
       // Opposite sign.
       // Note: using == or & for checking muon type is intentional. Global muons
       //  are normally both Tracker and StandAlone.
-      // Note: muon type zero means it is a general track (as opposed to tracker muon).
-      category = 3;
+      category = ZMuTrkMu;
     }else if (
 	      ( ( (mu1type & mGlobal) && (mu1HLTmatch & _trigger)
 	     && (mu2type == mStandAlone) ) ||
@@ -107,7 +120,7 @@ int Selection::findCategory(int mu1type, int mu2type,
       // Opposite sign.
       // Note: using == or & for checking muon type is intentional. Global muons
       //  are normally both Tracker and StandAlone.
-      category = 4;
+      category = ZMuSta;
     }else if (
 	      (mu1type & mGlobal)        && (mu2type & mGlobal)        &&
 	      (mu1iso > _trackIso || mu2iso > _trackIso )              &&
@@ -115,7 +128,7 @@ int Selection::findCategory(int mu1type, int mu2type,
 	      mu1q*mu2q < 0 ) 
     {
       // Two global muons. At least one HLT matched. At least one non-isolated.
-      category = 5;
+      category = ZMuMuNonIso;
     }else if (
 	      (mu1type & mGlobal)        && (mu2type & mGlobal)        &&
 	      mu1iso < _trackIso         && mu2iso < _trackIso         &&
@@ -123,7 +136,7 @@ int Selection::findCategory(int mu1type, int mu2type,
 	      mu1q*mu2q > 0 ) 
     {
       // Two isolated global muons, at least one HLT matched, SAME sign
-      category = 6;
+      category = ZSameCharge;
     }
 
   return category;

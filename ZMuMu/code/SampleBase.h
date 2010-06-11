@@ -4,32 +4,16 @@
 #include "TROOT.h"
 #include "TFile.h"
 
-enum CategoriesList {
-  NotValidCategory = -1,
-  ZGolden1or2HLT   = 0,
-  ZGolden2HLT      = 1,
-  ZGolden1HLT      = 2,
-  ZMuTrk           = 3,
-  ZMuTrkMu         = 4,
-  ZMuSta           = 5,
-  ZMuMuNonIso      = 6,
-  ZSameCharge      = 7
-};
-
 class SampleBase {
 
  public:
   SampleBase();
   ~SampleBase(){}; 
-/*   SampleBase(TString filename); */
-  
 
   inline void setCrossSection(double xsec){_xsec = xsec;}
   inline void setLabel       (TString label){_label = label;} 
   inline void setColor       (int color){_color = color;} 
   inline void setWeight      (double weight){_weight = weight;} 
-/*   inline void setInitialized (bool a){_isInitialized = a;} */
-/*   inline void setSetup       (bool a){_isSetup = a;} */
   inline void setCategory    (int cat){_category = cat;};
   inline void setInputSourceSetup(bool a){_isInputSourceSetup = a;};
   inline void setNtupleAccessSetup(bool a){_isNtupleAccessSetup = a;};
@@ -38,8 +22,6 @@ class SampleBase {
   inline TString getLabel       (){return _label;} 
   inline int     getColor       (){return _color;} 
   inline double  getWeight      (){return _weight;} 
-/*   inline bool    isInitialized  (){return _isInitialized;} */
-/*   inline bool    isSetup        (){return _isSetup;} */
   inline bool    isInputSourceSetup  (){return _isInputSourceSetup;}
   inline bool    isNtupleAccessSetup (){return _isNtupleAccessSetup;}
   inline int     getCategory    (){return _category;};
@@ -65,7 +47,6 @@ class SampleBase {
   // Methods specific to an ntuple implementation
   virtual int getNEvents() = 0; // return number of MC events
   virtual int getNCandidates() = 0; // return number of candidates
-/*   virtual int setup() = 0;       // set up ntuple access */
   virtual void getCandidate(int icand) = 0; // run GetEntry on relevant trees  
 
   bool isCandidateReady(int icand);

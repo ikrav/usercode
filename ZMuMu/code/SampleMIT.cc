@@ -83,11 +83,6 @@ int SampleMIT::getNCandidates(){
   if( ! inputAccessRefresh() )
     return -1;
 
-//   if(_infile &&_infile->IsOpen()){
-//     _infile->cd();
-//   }else
-//     return -1;
-
   if( ! isNtupleAccessSetup() ){
     cout << "SampleMIT::getNCandidates: error: ntuple is not set up" << endl;
     return -1;
@@ -130,11 +125,6 @@ void SampleMIT::getCandidate(int icand){
 
   if( ! inputAccessRefresh() )
     return;
-
-//   if(_infile &&_infile->IsOpen())
-//     _infile->cd();
-//   else
-//     return;
 
   if( ! isNtupleAccessSetup() )
     return;
