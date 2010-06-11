@@ -103,9 +103,9 @@ bool SampleMIT::setNtupleAccess(){
     return result;
   }
 
-//   if( ! isInitialized() ){
-//     return result;
-//   }
+  if( ! inputAccessRefresh() ){
+    return result;
+  }
 
   _eventInfoTree = (TTree*)_infile->FindObjectAny("EventInfo");
   _dimuonTree    = (TTree*)_infile->FindObjectAny("Dimuon");
