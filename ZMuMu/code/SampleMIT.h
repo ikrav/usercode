@@ -13,15 +13,21 @@ class SampleMIT : public SampleBase {
 
  public:
   
-  SampleMIT(TString filename);
+  SampleMIT();
   SampleMIT(TString filename, double xsec, TString label, int color);
+  ~SampleMIT();
 
-  void initializeFile(TString filename);
+  // Find data file
+  bool setInputSource();
+  // Set up ntuple branches
+  bool setNtupleAccess();
+  // cd into the file before each access
+  bool inputAccessRefresh();
 
   // Methods specific to an ntuple implementation
   int getNEvents();       // return number of MC events
   int getNCandidates();   // return number of candidates
-  int setup();       // set up ntuple access
+/*   int setup();       // set up ntuple access */
   void getCandidate(int icand); // run GetEntry on relevant trees
   // Access variables of an ntuple entry
   int triggerBits(int icand);
@@ -46,6 +52,11 @@ class SampleMIT : public SampleBase {
 
  protected:
 
+  // Input file
+  TString  _filename;    // filename where ntuple is stored
+  TFile   *_infile;      // file with the ntuples
+
+  // Trees in MIT ntuples
   TTree *_eventInfoTree;
   TTree *_dimuonTree;
 

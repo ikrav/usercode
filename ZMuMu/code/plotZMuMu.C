@@ -41,7 +41,7 @@ void plotZMuMu(Int_t category=0){
   vector<SampleMIT*> samples;
   
   // Data. Leave blank if we do not have any.
-  SampleMIT *sampleData = new SampleMIT("");
+  SampleMIT *sampleData = new SampleMIT();
   samples.push_back(sampleData);
   
   TString mcLocation = "/server/03a/schorlem/ntuples3/";
@@ -87,9 +87,9 @@ void plotZMuMu(Int_t category=0){
 
   // Ntuple initialization and some constants
   cout << "Initialize ntuples" << endl;
-  for(int isample = 0; isample < samples.size(); isample++){
-    if (isample == 0 && !samples[isample]->isInitialized() )continue;
-    samples[isample]->setup();
+  for(UInt_t isample = 0; isample < samples.size(); isample++){
+    if (isample == 0 && !samples[isample]->isInputSourceSetup() )continue;
+    samples[isample]->setNtupleAccess();
     if(samples[isample]->getNEvents() != 0)
       samples[isample]->setWeight(lumi*samples[isample]->getCrossSection()/
  				 (double)samples[isample]->getNEvents());
@@ -130,7 +130,7 @@ void plotZMuMu(Int_t category=0){
 
 
   // flag for if there is a data sample to process
-  Bool_t hasData = samples[0]->isInitialized();
+  Bool_t hasData = samples[0]->isInputSourceSetup();
   
   // loop over samples
   for(UInt_t isample=0; isample<samples.size(); isample++) {  

@@ -8,50 +8,70 @@ using namespace std;
 
 ClassImp(SampleMIT);
   
-SampleMIT::SampleMIT(TString filename):
-  SampleBase(filename),
+SampleMIT::SampleMIT():
+  SampleBase(),
+  _filename (""),
+  _infile (0),
   _eventInfoTree (0),
   _dimuonTree (0)
 {
-  initializeFile(filename);
 }
 
 SampleMIT::SampleMIT(TString filename, double xsec, TString label, int color):
-  SampleBase(filename),
+  SampleBase(),
+  _filename (filename),
+  _infile (0),
   _eventInfoTree (0),
   _dimuonTree (0)
 {
-  initializeFile(filename);
   _xsec = xsec;
   _label = label;
   _color = color;
+  // Open the data file
+  setInputSource();
 }
 
-void SampleMIT::initializeFile(TString filename){
-  if(!filename.IsNull())
-    _infile = new TFile(filename);
+SampleMIT::~SampleMIT(){};
+
+bool SampleMIT::setInputSource(){
+
+  bool result = false;
+  if( ! _filename.IsNull() )
+    _infile = new TFile(_filename);
   
-  if(!filename.IsNull() &&_infile->IsOpen())
-    setInitialized(true);
-  else{
-    setInitialized(false);
-    if(filename.IsNull())
+  if(! _filename.IsNull() &&_infile->IsOpen()) {
+    setInputSourceSetup(true);
+    result = true;
+  }else{
+    setInputSourceSetup(false);
+    if( _filename.IsNull() )
       cout << "SampleMIT: Initialized object with empty file as requested" << endl;
     else
-      cout << "Failed to open file " << filename << endl;
+      cout << "Failed to open file " << _filename << endl;
   }
 
-  return;
+  return result;
+}
+
+
+bool SampleMIT::inputAccessRefresh(){
+
+  if(_infile &&_infile->IsOpen()){
+    _infile->cd();
+  } else
+    return false;
+
+  return true;
 }
 
 int SampleMIT::getNEvents(){
 
-  if(_infile &&_infile->IsOpen()){
-    _infile->cd();
-  }else
+  if( ! inputAccessRefresh() ) {
+    cout << "SampleMIT::getNEvents: error: data file could not be accessed" << endl;
     return -1;
+  }
 
-  if( ! isSetup() ){
+  if( ! isNtupleAccessSetup() ){
     cout << "SampleMIT::getNEvents: error: ntuple is not set up" << endl;
     return -1;
   }
@@ -60,58 +80,63 @@ int SampleMIT::getNEvents(){
 
 int SampleMIT::getNCandidates(){
 
-  if(_infile &&_infile->IsOpen()){
-    _infile->cd();
-  }else
+  if( ! inputAccessRefresh() )
     return -1;
 
-  if( ! isSetup() ){
+//   if(_infile &&_infile->IsOpen()){
+//     _infile->cd();
+//   }else
+//     return -1;
+
+  if( ! isNtupleAccessSetup() ){
     cout << "SampleMIT::getNCandidates: error: ntuple is not set up" << endl;
     return -1;
   }
   return _dimuonTree->GetEntries();
 }
 
-int SampleMIT::setup(){
+bool SampleMIT::setNtupleAccess(){
 
-  int status = 0;
-  if(_infile && _infile->IsOpen())
-    _infile->cd();
-  else 
-    return status;
-
-  if( ! isInitialized() ){
-    cout << "SampleMIT::setup: error: can not set up, not initialized" << endl;
-    return status;
+  bool result = false;
+  if( ! isInputSourceSetup() ) {
+    cout << "SampleMIT::setNtupleAccess: error: can not set up, data file not initialized" << endl;
+    return result;
   }
+
+//   if( ! isInitialized() ){
+//     return result;
+//   }
 
   _eventInfoTree = (TTree*)_infile->FindObjectAny("EventInfo");
   _dimuonTree    = (TTree*)_infile->FindObjectAny("Dimuon");
   
   if( _eventInfoTree != 0 && _dimuonTree != 0 ){
-    setSetup(true);
+    setNtupleAccessSetup(true);
   }else{
-    setSetup(false);
+    setNtupleAccessSetup(false);
     cout << "SampleMIT::setup: error: can not find ntuples in the file" << endl;
-    return status;
+    return result;
   }
 
   // Set branch address to structures that will store the info  
   _eventInfoTree  ->SetBranchAddress("EventInfo",&_eventInfo);
   _dimuonTree     ->SetBranchAddress("Dimuon",   &_dimuon);
 
-  status=1;
-  return status;
+  result = true;
+  return result;
 }
 
 void SampleMIT::getCandidate(int icand){
 
-  if(_infile &&_infile->IsOpen())
-    _infile->cd();
-  else
+  if( ! inputAccessRefresh() )
     return;
 
-  if( ! isSetup() )
+//   if(_infile &&_infile->IsOpen())
+//     _infile->cd();
+//   else
+//     return;
+
+  if( ! isNtupleAccessSetup() )
     return;
 
   if(_currentCandidate == icand)

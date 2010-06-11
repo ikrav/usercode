@@ -8,22 +8,25 @@ using namespace std;
 
 ClassImp(SampleBase);
   
-SampleBase::SampleBase(TString filename):
-  _filename(filename),
-  _infile (0),
+SampleBase::SampleBase():
+//   _filename(filename),
+//   _infile (0),
   _xsec (0),
   _label ("undefined"),
   _color (1),
   _weight (1.0),
   _currentCandidate (-1),
-  _isInitialized (false),
-  _isSetup (false)
+//   _isInitialized (false),
+//   _isSetup (false),
+  _category (NotValidCategory),
+  _isInputSourceSetup(false),
+  _isNtupleAccessSetup(false)
 {}
 
 bool SampleBase::isCandidateReady(int icand){
 
-  if(_infile &&_infile->IsOpen())
-    _infile->cd();
+  if( isNtupleAccessSetup() )
+    inputAccessRefresh();
   else
     return false;
 
