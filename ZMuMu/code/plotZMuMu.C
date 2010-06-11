@@ -33,7 +33,7 @@ void plotZMuMu(Int_t category=0){
   // Settings 
   //==============================================================================================================
 
-  double lumi = 10.0; // luminosity normalization [pb^-1]
+  double lumi = 0.3; // luminosity normalization [pb^-1]
 
   //---------------------------------------------------------
   // Define all samples
@@ -44,7 +44,10 @@ void plotZMuMu(Int_t category=0){
   SampleMIT *sampleData = new SampleMIT();
   samples.push_back(sampleData);
   
-  TString mcLocation = "/server/03a/schorlem/ntuples3/";
+  // on dtmit02
+  //TString mcLocation = "/server/03a/schorlem/ntuples3/";
+  // on ilya's laptop
+  TString mcLocation = "/Scratch/ntuples/ZMuMu/allmc_summer09_MIT/";
   cout << "Create sample objects" << endl;
   // Signal Monte Carlo
   SampleMIT *sampleMCZmm = new SampleMIT(mcLocation+TString("s09-zmm-7-mc3_ntuple.root"),
@@ -162,7 +165,8 @@ void plotZMuMu(Int_t category=0){
 						  s->mu2hltMatchBits(ientry),
 						  s->mu1charge(ientry),
 						  s->mu2charge(ientry) );
-      if( category == 0 && !(foundCategory == 1 || foundCategory == 2) ) 
+      if( category == ZGolden1or2HLT && 
+	  !(foundCategory == ZGolden2HLT || foundCategory == ZGolden1HLT) ) 
 	continue;
       else if ( category != 0 && ! (category == foundCategory) )
 	continue;	   
@@ -254,13 +258,14 @@ void plotZMuMu(Int_t category=0){
   if(hasData) 
     cout << "       Data files: " << samples[0]->getLabel() << endl;
   
-  if(category==0)      { cout << " *** Category: mu-mu-1.or.2HLT" << endl; }
-  else if(category==1) { cout << " *** Category: mu-mu-2HLT" << endl; }
-  else if(category==2) { cout << " *** Category: mu-mu-1HLT" << endl; }
-  else if(category==3) { cout << " *** Category: mu-tk" << endl; }
-  else if(category==4) { cout << " *** Category: mu-sa" << endl; }
-  else if(category==5) { cout << " *** Category: mu-mu-noIso" << endl; }
-  else if(category==6) { cout << " *** Category: mu-mu-same-sign" << endl; }
+  if     (category==ZGolden1or2HLT ) { cout << " *** Category: mu-mu-1.or.2HLT" << endl; }
+  else if(category==ZGolden2HLT    ) { cout << " *** Category: mu-mu-2HLT" << endl; }
+  else if(category==ZGolden1HLT    ) { cout << " *** Category: mu-mu-1HLT" << endl; }
+  else if(category==ZMuTrk         ) { cout << " *** Category: mu-tk" << endl; }
+  else if(category==ZMuTrkMu       ) { cout << " *** Category: mu-tkmu" << endl; }
+  else if(category==ZMuSta         ) { cout << " *** Category: mu-sa" << endl; }
+  else if(category==ZMuMuNonIso    ) { cout << " *** Category: mu-mu-noIso" << endl; }
+  else if(category==ZSameCharge    ) { cout << " *** Category: mu-mu-same-sign" << endl; }
   
   cout << setw(20) << "Total events =";
   cout << setw(8) << setprecision(2) << fixed << hZMassv[0]->Integral() << endl;
