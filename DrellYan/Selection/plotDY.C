@@ -175,7 +175,7 @@ void plotDY(const TString conf)
   vector<TH1F*> hCaloMexv, hCaloMeyv, hCaloMetv, hCaloSumEtv, hCaloMetPhiv;
   vector<TH1F*> hTCMexv, hTCMeyv, hTCMetv, hTCSumEtv, hTCMetPhiv;
   vector<TH1F*> hPFMexv, hPFMeyv, hPFMetv, hPFSumEtv, hPFMetPhiv;
-  
+
 //   vector<TH1F*> hNCaloJetsv, hCaloJetEtv, hCaloJetEtav, hCaloJetPhiv; 
 //   vector<TH1F*> hNTrackJetsv, hTrackJetEtv, hTrackJetEtav, hTrackJetPhiv; 
   vector<TH1F*> hNPFJetsv, hPFJetEtv, hPFJetEtav, hPFJetPhiv;
@@ -245,7 +245,8 @@ void plotDY(const TString conf)
     sprintf(hname,"hPFJetPhi_%i",isam);    hPFJetPhiv.push_back(new TH1F(hname,"",20,-3.2,3.2));    hPFJetPhiv[isam]->Sumw2();
     
     sprintf(hname,"hNPV_%i",isam);           hNPVv.push_back(new TH1F(hname,"",15,-0.5,14.5));            hNPVv[isam]->Sumw2();
-    sprintf(hname,"hNGoodPV_%i",isam);       hNGoodPVv.push_back(new TH1F(hname,"",15,-0.5,14.5));        hNGoodPVv[isam]->Sumw2();
+//     sprintf(hname,"hNGoodPV_%i",isam);       hNGoodPVv.push_back(new TH1F(hname,"",15,-0.5,14.5));        hNGoodPVv[isam]->Sumw2();
+    sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());       hNGoodPVv.push_back(new TH1F(hname,"",15,-0.5,14.5));        hNGoodPVv[isam]->Sumw2();
     sprintf(hname,"hGoodPVNTracks_%i",isam); hGoodPVNTracksv.push_back(new TH1F(hname,"",50,-0.5,149.5)); hGoodPVNTracksv[isam]->Sumw2();
     sprintf(hname,"hGoodPVChi2_%i",isam);    hGoodPVChi2v.push_back(new TH1F(hname,"",50,0,300));         hGoodPVChi2v[isam]->Sumw2();
     sprintf(hname,"hGoodPVNdof_%i",isam);    hGoodPVNdofv.push_back(new TH1F(hname,"",50,-0.5,299.5));    hGoodPVNdofv[isam]->Sumw2();
@@ -627,6 +628,15 @@ void plotDY(const TString conf)
   delete pvArr;
   evtfile.close();
 
+
+  // Write useful histograms
+  TString outNamePV = outputDir + TString("/npv.root");
+  TFile *outFilePV = new TFile(outNamePV,"RECREATE");
+  outFilePV->cd();
+  for(UInt_t isam=0; isam<samplev.size(); isam++) {
+    hNGoodPVv[isam]->Write();
+  }
+  outFilePV->Close();
 
   //--------------------------------------------------------------------------------------------------------------
   // Make plots
