@@ -777,7 +777,7 @@ double findEnergyScaleCorrection(double eta){
 
 double getMCSigmaSmear(double eta){
 
-  double smear = 1.0;
+  double smear = 0.0;
 
   // Energy scale corrections from Duncan Ralph derived July 2011
   // based on 204 pb-1 May ReReco and ~650 pb-1 of prompt reco

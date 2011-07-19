@@ -172,31 +172,33 @@ namespace DYTools {
   enum { UNDEF, REL38X, REL39X};
   enum { DATA, F10MC, W11MC};
 
-  UInt_t triggerBits(int sample, int runNum){
+  // The commented out code below is not valid on 2011 data since
+  // bit constants have changed in EWKAnaDefs.hh
+//   UInt_t triggerBits(int sample, int runNum){
     
-    // Just "a" trigger
-    UInt_t trigger = kHLT_Ele17_SW_L1R; 
+//     // Just "a" trigger
+//     UInt_t trigger = kHLT_Ele17_SW_L1R; 
 
-    if( sample == DATA) {
-      // Triggers as in WW analysis
-      // Actually there are no runs below 136K that we presently use
-      if((runNum >= 132440) && (runNum <= 137028)) trigger = kHLT_Photon10_L1R;
-      //
-      if((runNum >= 136033) && (runNum <= 139980)) trigger = kHLT_Ele10_LW_L1R;
-      if((runNum >= 140058) && (runNum <= 141882)) trigger = kHLT_Ele15_SW_L1R;
-      if((runNum >= 141956) && (runNum <= 144114)) trigger = kHLT_Ele15_SW_CaloEleId_L1R; 
-      if((runNum >= 146428) && (runNum <= 147116)) trigger = kHLT_Ele17_SW_CaloEleId_L1R;
-      if((runNum >= 147196) && (runNum <= 148058)) trigger = kHLT_Ele17_SW_TightEleId_L1R;
-      if((runNum >= 148819) && (runNum <= 149442)) trigger = kHLT_Ele17_SW_TighterEleIdIsol_L1R;
-    } else if( sample == F10MC ) {
-      trigger = kHLT_Ele17_SW_CaloEleId_L1R;
-    } else if( sample == W11MC ) {
-      trigger = kHLT_Ele17_SW_CaloEleId_L1R;
-    }else
-      std::cout << "DYTools:: Unknown sample" << std::endl;
+//     if( sample == DATA) {
+//       // Triggers as in WW analysis
+//       // Actually there are no runs below 136K that we presently use
+//       if((runNum >= 132440) && (runNum <= 137028)) trigger = kHLT_Photon10_L1R;
+//       //
+//       if((runNum >= 136033) && (runNum <= 139980)) trigger = kHLT_Ele10_LW_L1R;
+//       if((runNum >= 140058) && (runNum <= 141882)) trigger = kHLT_Ele15_SW_L1R;
+//       if((runNum >= 141956) && (runNum <= 144114)) trigger = kHLT_Ele15_SW_CaloEleId_L1R; 
+//       if((runNum >= 146428) && (runNum <= 147116)) trigger = kHLT_Ele17_SW_CaloEleId_L1R;
+//       if((runNum >= 147196) && (runNum <= 148058)) trigger = kHLT_Ele17_SW_TightEleId_L1R;
+//       if((runNum >= 148819) && (runNum <= 149442)) trigger = kHLT_Ele17_SW_TighterEleIdIsol_L1R;
+//     } else if( sample == F10MC ) {
+//       trigger = kHLT_Ele17_SW_CaloEleId_L1R;
+//     } else if( sample == W11MC ) {
+//       trigger = kHLT_Ele17_SW_CaloEleId_L1R;
+//     }else
+//       std::cout << "DYTools:: Unknown sample" << std::endl;
    
-    return trigger;
-  }
+//     return trigger;
+//   }
 
   //
   // Repackage TDielectron->TElectron
@@ -209,17 +211,19 @@ namespace DYTools {
       ele-> pt                  = dielectron-> pt_1                 ;
       ele-> eta                 = dielectron-> eta_1                ;
       ele-> phi                 = dielectron-> phi_1                ;        
-      // Ignore transverse mass of (electron+MET) object
-      ele-> caloMt              = 0             ;
-      ele-> tcMt                = 0             ;
-      ele-> pfMt                = 0             ;  
-      
+
       ele-> trkIso03            = dielectron-> trkIso03_1           ;            
       ele-> emIso03             = dielectron-> emIso03_1            ;             
       ele-> hadIso03            = dielectron-> hadIso03_1           ;            
+
+      ele->pfIso03              = dielectron-> pfIso03_1 ;          
+      ele->pfIso04              = dielectron-> pfIso04_1 ;          
+      ele->pfPx                 = dielectron->pfPx_1 ;
+      ele->pfPy                 = dielectron->pfPy_1 ;
+
       ele-> d0                  = dielectron-> d0_1                 ;
-      ele-> d0Err               = dielectron-> d0Err_1              ;
       ele-> dz                  = dielectron-> dz_1                 ;       
+
       ele-> scEt                = dielectron-> scEt_1               ;
       ele-> scEta               = dielectron-> scEta_1              ;
       ele-> scPhi               = dielectron-> scPhi_1              ;  
@@ -230,30 +234,31 @@ namespace DYTools {
       ele-> nExpHitsInner       = dielectron-> nExpHitsInner_1      ;       
       ele-> partnerDeltaCot     = dielectron-> partnerDeltaCot_1    ;     
       ele-> partnerDist         = dielectron-> partnerDist_1        ;         
-      ele-> partnerRadius       = dielectron-> partnerRadius_1      ;       
-      ele-> idLL                = dielectron-> idLL_1               ;                
+      ele->ellhID               = dielectron->ellhID_1 ;
+
       ele-> q                   = dielectron-> q_1                  ;                 
-      ele-> idCat               = dielectron-> idCat_1              ;              
       ele-> hltMatchBits        = dielectron-> hltMatchBits_1       ;       
       ele-> isConv              = dielectron-> isConv_1             ;             
       ele-> isEcalDriven        = dielectron-> isEcalDriven_1       ;       
       ele->  scID               = -1                                ;               
-      ele->  isUsed             = true;       
+      ele->  trkID              = -1 ;
     }else{
       ele-> pt                  = dielectron-> pt_2                 ;
       ele-> eta                 = dielectron-> eta_2                ;
       ele-> phi                 = dielectron-> phi_2                ;        
-      // Ignore transverse mass of (electron+MET) object
-      ele-> caloMt              = 0             ;
-      ele-> tcMt                = 0             ;
-      ele-> pfMt                = 0             ;  
       
       ele-> trkIso03            = dielectron-> trkIso03_2           ;            
       ele-> emIso03             = dielectron-> emIso03_2            ;             
       ele-> hadIso03            = dielectron-> hadIso03_2           ;            
+
+      ele->pfIso03              = dielectron-> pfIso03_2 ;          
+      ele->pfIso04              = dielectron-> pfIso04_2 ;          
+      ele->pfPx                 = dielectron->pfPx_2 ;
+      ele->pfPy                 = dielectron->pfPy_2 ;
+
       ele-> d0                  = dielectron-> d0_2                 ;
-      ele-> d0Err               = dielectron-> d0Err_2              ;
       ele-> dz                  = dielectron-> dz_2                 ;       
+
       ele-> scEt                = dielectron-> scEt_2               ;
       ele-> scEta               = dielectron-> scEta_2              ;
       ele-> scPhi               = dielectron-> scPhi_2              ;  
@@ -264,15 +269,14 @@ namespace DYTools {
       ele-> nExpHitsInner       = dielectron-> nExpHitsInner_2      ;       
       ele-> partnerDeltaCot     = dielectron-> partnerDeltaCot_2    ;     
       ele-> partnerDist         = dielectron-> partnerDist_2        ;         
-      ele-> partnerRadius       = dielectron-> partnerRadius_2      ;       
-      ele-> idLL                = dielectron-> idLL_2               ;                
+      ele->ellhID               = dielectron->ellhID_2 ;
+
       ele-> q                   = dielectron-> q_2                  ;                 
-      ele-> idCat               = dielectron-> idCat_2              ;              
       ele-> hltMatchBits        = dielectron-> hltMatchBits_2       ;       
       ele-> isConv              = dielectron-> isConv_2             ;             
       ele-> isEcalDriven        = dielectron-> isEcalDriven_2       ;       
       ele->  scID               = -1                                ;               
-      ele->  isUsed             = true;       
+      ele->  trkID              = -1 ;
     }      
     
     return ele;
