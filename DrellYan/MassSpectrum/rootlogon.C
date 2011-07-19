@@ -9,6 +9,7 @@
   gROOT->ProcessLine(".L ../Include/DYTools.hh");
   gROOT->ProcessLine(".L ../Include/TDielectron.hh+");
   gROOT->ProcessLine(".L ../Include/TElectron.hh+");
+  gROOT->ProcessLine(".L ../Include/TMuon.hh+");
   gROOT->ProcessLine(".L ../Include/TEventInfo.hh+");
   gROOT->ProcessLine(".L ../Include/TGenInfo.hh+");
   gROOT->ProcessLine(".L ../Include/TPhoton.hh+");
