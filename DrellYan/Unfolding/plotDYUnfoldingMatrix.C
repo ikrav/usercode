@@ -40,8 +40,10 @@
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
-void BayesEfficiency(double passed, double total,
-                     double& eff, double& errlow, double& errhigh);
+// void BayesEfficiency(double passed, double total,
+//                      double& eff, double& errlow, double& errhigh);
+void EfficiencyDivide(double passed, double total,
+		  double& eff, double& errlow, double& errhigh);
 void SimpleDivide(double passed, double total,
 		  double& eff, double& errlow, double& errhigh);
 
@@ -342,8 +344,12 @@ void plotDYUnfoldingMatrix(const TString input)
       // Note: the event counts supposedly are dominated with events with weight "1"
       // coming from the primary MC sample, so the error is assumed Poissonian in
       // the call for efficiency-calculating function below.
-      if( nEventsInFsrMassBin != 0 )
-	BayesEfficiency( DetMigration(ifsr,ireco), nEventsInFsrMassBin, tCentral, tErrNeg, tErrPos);
+      if( nEventsInFsrMassBin != 0 ){
+	EfficiencyDivide(DetMigration(ifsr,ireco), nEventsInFsrMassBin, tCentral, tErrNeg, tErrPos);
+      // BayesEfficiency does not seem to be working in newer ROOT versions, 
+      // so it is replaced by simler method
+//         BayesEfficiency( DetMigration(ifsr,ireco), nEventsInFsrMassBin, tCentral, tErrNeg, tErrPos);
+      }
       DetResponse      (ifsr,ireco) = tCentral;
       DetResponseErrPos(ifsr,ireco) = tErrPos;
       DetResponseErrNeg(ifsr,ireco) = tErrNeg;
@@ -537,56 +543,84 @@ void plotDYUnfoldingMatrix(const TString input)
 
 //=== FUNCTION DEFINITIONS ======================================================================================
 
-//--------------------------------------------------------------------------------------------------
-void BayesEfficiency(double passed, double total,
-                     double& eff, double& errlow, double& errhigh){
+// //--------------------------------------------------------------------------------------------------
+// void BayesEfficiency(double passed, double total,
+//                      double& eff, double& errlow, double& errhigh){
 
-  // WARNING: this way of calculation of bayesian efficiency errors
-  // is not correct in the case if "passed" and "total" are not plain event
-  // counts, but weighted event counts. Still, hopefully it is not too badly off.
+//   // WARNING: this way of calculation of bayesian efficiency errors
+//   // is not correct in the case if "passed" and "total" are not plain event
+//   // counts, but weighted event counts. Still, hopefully it is not too badly off.
 
-  // This function finds Bayesian efficiency using methods from ROOT.
-  // There is a trick since the actualy Efficiency function in ROOT
-  // is not declared public.
+//   // WARNING: in newer ROOT versions this does not quite work for some reason
 
+//   // This function finds Bayesian efficiency using methods from ROOT.
+//   // There is a trick since the actualy Efficiency function in ROOT
+//   // is not declared public.
+
+//   if(total == 0) {
+//     printf("NOT GOOD! can't calculate efficiency with zero denominator\n");
+//     eff=0;
+//     errlow=0;
+//     errhigh=0;
+//     return;
+//   }
+
+//   // We simply define two 1-bin histograms, put in the total and passed
+//   // counts, and use the available method from root to find 
+//   // TGraphAsymmErrors for the efficiency, also with 1 bin.
+//   TH1F *hTmpTotal = new TH1F("hTmpTotal","",1,0,1);
+//   TH1F *hTmpPassed = new TH1F("hTmpPassed","",1,0,1);
+  
+// //   for(int i=0; i<total; i++)
+//   hTmpTotal->Fill(0.5,total);
+// //   for(int i=0; i<passed; i++)
+//   hTmpPassed->Fill(0.5,passed);
+
+//   TGraphAsymmErrors * hTmpEff = new TGraphAsymmErrors;
+//   if( total >= passed){
+//     // The functions have changed at certain point, for later ROOT
+//     // use plane Divide with option "b"
+//     hTmpEff->BayesDivide(hTmpPassed,hTmpTotal);
+// //     hTmpEff->Divide(hTmpPassed,hTmpTotal,"b");
+  
+//     eff = (hTmpEff->GetY())[0];
+//     errlow = hTmpEff->GetErrorYlow(0);
+//     errhigh = hTmpEff->GetErrorYhigh(0);
+//   }else{
+//     printf("Bayes efficiency warning: passed > total, using plain calculation\n");
+//     SimpleDivide(passed,total,eff,errlow,errhigh);
+//   }
+  
+//   delete hTmpTotal;
+//   delete hTmpPassed;
+//   delete hTmpEff;
+  
+//   return;
+// }
+
+void EfficiencyDivide(double passed, double total, 
+		      double& eff, double& errlow, double& errhigh){
+  
   if(total == 0) {
-    printf("NOT GOOD! can't calculate efficiency with zero denominator\n");
+    printf("NOT GOOD! can't divide with zero denominator\n");
     eff=0;
     errlow=0;
     errhigh=0;
     return;
   }
-
-  // We simply define two 1-bin histograms, put in the total and passed
-  // counts, and use the available method from root to find 
-  // TGraphAsymmErrors for the efficiency, also with 1 bin.
-  TH1F *hTmpTotal = new TH1F("hTmpTotal","",1,0,1);
-  TH1F *hTmpPassed = new TH1F("hTmpPassed","",1,0,1);
   
-//   for(int i=0; i<total; i++)
-  hTmpTotal->Fill(0.5,total);
-//   for(int i=0; i<passed; i++)
-  hTmpPassed->Fill(0.5,passed);
-
-  TGraphAsymmErrors * hTmpEff = new TGraphAsymmErrors;
-  if( total >= passed){
-    // The functions have changed at certain point, for later ROOT
-    // use plane Divide with option "b"
-//     hTmpEff->BayesDivide(hTmpPassed,hTmpTotal);
-    hTmpEff->Divide(hTmpPassed,hTmpTotal,"b");
-  
-    eff = (hTmpEff->GetY())[0];
-    errlow = hTmpEff->GetErrorYlow(0);
-    errhigh = hTmpEff->GetErrorYhigh(0);
+  eff = passed/total;
+  if(passed<total){
+    if(passed != 0)
+      errlow = sqrt(eff*(1-eff)/total);
+    else
+      errlow = 0;
+    errhigh = errlow;
   }else{
     printf("Bayes efficiency warning: passed > total, using plain calculation\n");
     SimpleDivide(passed,total,eff,errlow,errhigh);
   }
-  
-  delete hTmpTotal;
-  delete hTmpPassed;
-  delete hTmpEff;
-  
+
   return;
 }
 
