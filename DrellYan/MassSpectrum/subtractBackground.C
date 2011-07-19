@@ -29,7 +29,7 @@ void subtractBackground(const TString conf){
   ifs.close();
   inputDir.ReplaceAll("selected_events","yields");
 
-  TFile file(inputDir+TString("/massHist_20110717_122533.root"));
+  TFile file(inputDir+TString("/massHist.root"));
 
   TH1F *data  = (TH1F*) file.Get("data"); 
   TH1F *zee   = (TH1F*) file.Get("zee");   bool zeeMc = true;
@@ -67,12 +67,12 @@ void subtractBackground(const TString conf){
 
   // Read data driven background estimates
   bool useTrue2eBgDataDriven = true;
-  TFile fTrueDataDriven(inputDir+TString("/DY_bg_true_data-driven_tmp20110716.root"));
+  TFile fTrueDataDriven(inputDir+TString("/DY_bg_true_data-driven_tmp20110719.root"));
   TVectorD true2eBackgroundFromData          = *(TVectorD*)fTrueDataDriven.Get("true2eBackgroundFromData");
   TVectorD true2eBackgroundFromDataError     = *(TVectorD*)fTrueDataDriven.Get("true2eBackgroundFromDataError");
   TVectorD true2eBackgroundFromDataErrorSyst = *(TVectorD*)fTrueDataDriven.Get("true2eBackgroundFromDataErrorSyst");
   bool useFakeBgDataDriven = true;
-  TFile fFakeDataDriven(inputDir+TString("/DY_bg_fake_data-driven_tmp20110716.root"));
+  TFile fFakeDataDriven(inputDir+TString("/DY_bg_fake_data-driven_tmp20110719.root"));
   TVectorD fakeEleBackgroundFromData          = *(TVectorD*)fFakeDataDriven.Get("fakeEleBackgroundFromData");
   TVectorD fakeEleBackgroundFromDataError     = *(TVectorD*)fFakeDataDriven.Get("fakeEleBackgroundFromDataError");
   TVectorD fakeEleBackgroundFromDataErrorSyst = *(TVectorD*)fFakeDataDriven.Get("fakeEleBackgroundFromDataErrorSyst");
@@ -250,5 +250,40 @@ void subtractBackground(const TString conf){
     printf("    %8.1f+-%5.1f+-%5.1f ", signalYields[i], signalYieldsError[i], signalYieldsErrorSyst[i]);
     printf("\n");
   }
+
+  // Table 2: combined true2e and WZ/ZZ backgrounds only
+  printf("\n  only true2e-bg + ww-wz\n");
+  printf("mass range      true2e, includingwz/zz\n");
+  for(int i=0; i<nMassBins; i++){
+    printf("%5.1f-%5.1f GeV: ", binLimits[i], binLimits[i+1]);
+    double val = true2eBackground[i] + wzzz[i];
+    double err = sqrt(true2eBackgroundError[i]*true2eBackgroundError[i]
+		      + wzzzError[i]*wzzzError[i]);
+    double sys = sqrt(true2eBackgroundErrorSyst[i]*true2eBackgroundErrorSyst[i]
+		      + wzzzErrorSyst[i]*wzzzErrorSyst[i]);
+    printf(" %5.1f+-%4.1f+-%4.1f ", val,err, sys);
+    printf("\n");
+  }
+
+  // Table 3: Systematic error on signal yields assuming that it includes
+  // only the syst. error on the background.
+  printf("\n  Systematics, %% relative to background subtracted yields\n");
+  printf("mass range            subtr-signal    total-bg      syst-from-bg-frac      syst-from-bg-percent\n");
+  for(int i=0; i<nMassBins; i++){
+    printf("%5.1f-%5.1f GeV: ", binLimits[i], binLimits[i+1]);
+    printf("    %8.1f+-%5.1f+-%4.1f ", signalYields[i], signalYieldsError[i],signalYieldsErrorSyst[i]);
+    printf("    %5.1f+-%4.1f+-%4.1f ", totalBackground[i], totalBackgroundError[i], totalBackgroundErrorSyst[i]);
+    printf("    %6.4f ", totalBackgroundErrorSyst[i]/signalYields[i]);
+    printf("    %6.1f ", totalBackgroundErrorSyst[i]*100.0/signalYields[i]);
+    printf("\n");
+  }
+
+  // Save sideband-subtracted signal yields
+  TFile fileOut(inputDir+TString("/yields_bg-subtracted.root"),"recreate");
+  signalYields         .Write("YieldsSignal");
+  signalYieldsError    .Write("YieldsSignalErr");
+  signalYieldsErrorSyst.Write("YieldsSignalSystErr");
+  binLimits            .Write("BinLimitsForYields");
+  fileOut.Close();
 
 }

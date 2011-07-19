@@ -725,8 +725,8 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
   TString outputDirYields(outputDir.Data());
   outputDirYields.ReplaceAll("selected_events","yields");
   gSystem->mkdir(outputDirYields,kTRUE);
-  TString fNameOutYields(outputDirYields+TString("/yields_"));
-  fNameOutYields += TString::Format("%d_%d",stamp.GetDate(),stamp.GetTime());
+  TString fNameOutYields(outputDirYields+TString("/yields"));
+//   fNameOutYields += TString::Format("%d_%d",stamp.GetDate(),stamp.GetTime());
   fNameOutYields += ".root";
   TFile fYields( fNameOutYields, "recreate" );
   YieldsSignal      .Write("YieldsSignal");
@@ -735,8 +735,8 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
   fYields.Close();
 
   // Save mass histograms into a separate file
-  TString fNameOutHists(outputDirYields+"/massHist_");
-  fNameOutHists += TString::Format("%d_%d",stamp.GetDate(),stamp.GetTime());
+  TString fNameOutHists(outputDirYields+"/massHist");
+//   fNameOutHists += TString::Format("%d_%d",stamp.GetDate(),stamp.GetTime());
   fNameOutHists += ".root";
   TFile fMassHists(fNameOutHists,"recreate");
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
