@@ -722,9 +722,11 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
   
   // Save yields information into a root file
   TDatime stamp;
-  TString fNameOutYields("../root_files/yields/yields_");
+  TString outputDirYields(outputDir.Data());
+  outputDirYields.ReplaceAll("selected_events","yields");
+  gSystem->mkdir(outputDirYields,kTRUE);
+  TString fNameOutYields(outputDirYields+TString("/yields_"));
   fNameOutYields += TString::Format("%d_%d",stamp.GetDate(),stamp.GetTime());
-//   fNameOutYields += outputDir;
   fNameOutYields += ".root";
   TFile fYields( fNameOutYields, "recreate" );
   YieldsSignal      .Write("YieldsSignal");
@@ -733,9 +735,8 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
   fYields.Close();
 
   // Save mass histograms into a separate file
-  TString fNameOutHists("../root_files/yields/massHist_");
+  TString fNameOutHists(outputDirYields+"/massHist_");
   fNameOutHists += TString::Format("%d_%d",stamp.GetDate(),stamp.GetTime());
-//   fNameOutHists += outputDir;
   fNameOutHists += ".root";
   TFile fMassHists(fNameOutHists,"recreate");
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
