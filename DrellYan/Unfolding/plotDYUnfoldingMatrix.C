@@ -40,8 +40,10 @@
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
-void BayesEfficiency(double passed, double total, double conflevel,
+void BayesEfficiency(double passed, double total,
                      double& eff, double& errlow, double& errhigh);
+void SimpleDivide(double passed, double total,
+		  double& eff, double& errlow, double& errhigh);
 
 void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TErrNeg,
 				   TMatrixD &TinvErr);
@@ -313,7 +315,10 @@ void plotDYUnfoldingMatrix(const TString input)
   double tCentral, tErrNeg, tErrPos;
   for(int i=0; i<DYTools::nMassBins; i++){
     if ( DetCorrFactorDenominator(i) != 0 ){
-      BayesEfficiency( DetCorrFactorNumerator(i), DetCorrFactorDenominator(i), 0.683, tCentral, tErrNeg, tErrPos);
+      // This method does not take into account correlation between numerator
+      // and denominator in calculation of errors. This is a flaw to be corrected
+      // in the future.
+      SimpleDivide( DetCorrFactorNumerator(i), DetCorrFactorDenominator(i), tCentral, tErrNeg, tErrPos);
       DetCorrFactor(i) = tCentral;
       DetCorrFactorErrPos(i) = tErrPos;
       DetCorrFactorErrNeg(i) = tErrNeg;
@@ -338,7 +343,7 @@ void plotDYUnfoldingMatrix(const TString input)
       // coming from the primary MC sample, so the error is assumed Poissonian in
       // the call for efficiency-calculating function below.
       if( nEventsInFsrMassBin != 0 )
-	BayesEfficiency( DetMigration(ifsr,ireco), nEventsInFsrMassBin, 0.683, tCentral, tErrNeg, tErrPos);
+	BayesEfficiency( DetMigration(ifsr,ireco), nEventsInFsrMassBin, tCentral, tErrNeg, tErrPos);
       DetResponse      (ifsr,ireco) = tCentral;
       DetResponseErrPos(ifsr,ireco) = tErrPos;
       DetResponseErrNeg(ifsr,ireco) = tErrNeg;
@@ -533,12 +538,16 @@ void plotDYUnfoldingMatrix(const TString input)
 //=== FUNCTION DEFINITIONS ======================================================================================
 
 //--------------------------------------------------------------------------------------------------
-void BayesEfficiency(double passed, double total, double conflevel,
+void BayesEfficiency(double passed, double total,
                      double& eff, double& errlow, double& errhigh){
+
+  // WARNING: this way of calculation of bayesian efficiency errors
+  // is not correct in the case if "passed" and "total" are not plain event
+  // counts, but weighted event counts. Still, hopefully it is not too badly off.
+
   // This function finds Bayesian efficiency using methods from ROOT.
   // There is a trick since the actualy Efficiency function in ROOT
   // is not declared public.
-  //   The recommended value for conflevel input is 0.683
 
   if(total == 0) {
     printf("NOT GOOD! can't calculate efficiency with zero denominator\n");
@@ -561,16 +570,17 @@ void BayesEfficiency(double passed, double total, double conflevel,
 
   TGraphAsymmErrors * hTmpEff = new TGraphAsymmErrors;
   if( total >= passed){
-    hTmpEff->BayesDivide(hTmpPassed,hTmpTotal);
+    // The functions have changed at certain point, for later ROOT
+    // use plane Divide with option "b"
+//     hTmpEff->BayesDivide(hTmpPassed,hTmpTotal);
+    hTmpEff->Divide(hTmpPassed,hTmpTotal,"b");
   
     eff = (hTmpEff->GetY())[0];
     errlow = hTmpEff->GetErrorYlow(0);
     errhigh = hTmpEff->GetErrorYhigh(0);
   }else{
     printf("Bayes efficiency warning: passed > total, using plain calculation\n");
-    eff = passed/total;
-    errlow = eff*sqrt( 1/passed + 1/total );
-    errhigh = errlow;
+    SimpleDivide(passed,total,eff,errlow,errhigh);
   }
   
   delete hTmpTotal;
@@ -579,6 +589,28 @@ void BayesEfficiency(double passed, double total, double conflevel,
   
   return;
 }
+
+void SimpleDivide(double passed, double total, 
+                     double& eff, double& errlow, double& errhigh){
+
+  if(total == 0) {
+    printf("NOT GOOD! can't divide with zero denominator\n");
+    eff=0;
+    errlow=0;
+    errhigh=0;
+    return;
+  }
+
+  eff = passed/total;
+  if(passed != 0)
+    errlow = eff*sqrt( 1/passed + 1/total );
+  else
+    errlow = 0;
+  errhigh = errlow;
+  return;
+}
+
+
 
 void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TErrNeg,
 				   TMatrixD &TinvErr){
