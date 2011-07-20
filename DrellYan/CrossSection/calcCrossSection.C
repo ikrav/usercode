@@ -2,30 +2,33 @@
 #include "TFile.h"
 #include "TString.h"
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
 
 #include "../Include/DYTools.hh"
 
-// using namespace DYTools;
+// This global constants will be filled from 
+// the configuration file. This is not great C++...
+TString tagDirYields = "";
+TString tagDirConstants = "";
+Double_t lumi = 0;
 
-// All files with data yields and constants
-// Note: this is the latest scaling prescribed for integrated luminosity
-const double lumi = 36.14 * 0.993;
+const TString fileDataYields        ("yields_bg-subtracted.root");
 
-const TString fileDataYields        ("yields_DY_n04_v2_20110501.root");
+const TString fileMcReferenceYields ("yields_MC_unfolding_reference.root");
 
-const TString fileMcReferenceYields ("yields_MC_reference_Et20-10_WP80_extSmear_v2.root");
+const TString fileUnfoldingConstants("unfolding_constants.root");
 
-const TString fileUnfoldingConstants("unfolding_constants_Et20-10_WP80_extSmear_v2.root");
+const TString fileEfficiencyConstants("event_efficiency_constants.root");
 
-const TString fileEfficiencyConstants("efficiency_constants_v2_20110204.root");
+const TString fileScaleFactorConstants("scale_factors.root");
 
-const TString fileScaleFactorConstants("scale_factors_20110419.root");
+const TString fileAcceptanceConstants("acceptance_constants.root");
 
-const TString fileAcceptanceConstants("acc_postFsr_20110508.root");
+const TString fileFsrCorrectionConstants("fsr_constants.root");
 
-const TString fileFsrCorrectionConstants("correction_fsr_20110508.root");
-
-const TString fileFsrCorrectionSansAccConstants("correction_fsr_sans_acc_20110508.root");
+const TString fileFsrCorrectionSansAccConstants("fsr_constants_sans_acc.root");
 
 // Forward declarations
 void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2);
@@ -67,7 +70,12 @@ void printAllCorrections();
 void printRelativeSystErrors();
 
 // The arrays below contain the estimate of relative systematic
-// error in percent obtained elsewhere.
+// error in percent obtained elsewhere. The calculation of these
+// errors is done outside of the main scripts that calculate
+// the unfolding constants and energy scale corrections. We want
+// to change this in the future from hardwired text constants here
+// to reading ROOT files.
+// These values are from 2010 data at present.
 const double unfoldingSystematicsPercent[13] = {
   5.44,
   1.36,
@@ -114,7 +122,28 @@ TVectorD systOthers(DYTools::nMassBins);
 // Main function
 // ---------------------------------------------------------------
 
-void calcCrossSection(){
+void calcCrossSection(const TString conf){
+
+  // Read from configuration file only the location of the root files
+  ifstream ifs;
+  ifs.open(conf.Data());
+  assert(ifs.is_open());
+  string line;
+  int state = 0;
+  while(getline(ifs,line)) {
+    if(line[0]=='#') continue;
+    if(state==0){
+      stringstream ss1(line); ss1 >> lumi;
+      state++;
+    }else if(state==1){
+      tagDirYields = TString(line);
+      state++;
+    }else if(state==2){
+      tagDirConstants = TString(line);
+      break;
+    }
+  }
+  ifs.close();
 
   TVectorD signalYields(nMassBins);
   TVectorD signalYieldsStatErr(nMassBins);
@@ -241,7 +270,7 @@ void calcCrossSection(){
 void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2){
 
   printf("Load data yields\n"); fflush(stdout);
-  TFile fileYields   (fileDataYields);
+  TFile fileYields   (TString("../root_files/yields/")+tagDirYields+TString("/")+fileDataYields);
   TVectorD YieldsSignal       = *(TVectorD *)fileYields.FindObjectAny("YieldsSignal");
   TVectorD YieldsSignalErr    = *(TVectorD *)fileYields.FindObjectAny("YieldsSignalErr");
   TVectorD YieldsSignalSystErr= *(TVectorD *)fileYields.FindObjectAny("YieldsSignalSystErr");
@@ -269,8 +298,6 @@ void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2){
     double escaleError = (escaleSystematicsPercent[i]/100.0)*v[i];
     vErr2[i] = sqrt(YieldsSignalSystErr[i] * YieldsSignalSystErr[i]
 		    + escaleError*escaleError);
-    printf("DEBUG: signal: %f    stat: +- %f   syst1:  +- %f  systEscale: +- %f   systTotal: +- %f\n",
-	   v[i], vErr1[i], YieldsSignalSystErr[i], escaleError, vErr2[i]);
     systBackgrBeforeUnfolding[i] = YieldsSignalSystErr[i];
     systEscaleBeforeUnfolding[i] = escaleError;
   } 
@@ -289,14 +316,14 @@ void  unfold(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   // Read unfolding constants
   printf("unfold: Load constants\n"); fflush(stdout);
     
-  TFile fileConstants(fileUnfoldingConstants);
+  TFile fileConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileUnfoldingConstants);
   TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
   TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
   TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
   TVectorD BinLimitsArray          = *(TVectorD *)fileConstants.FindObjectAny("BinLimitsArray");
 
   printf("Load MC reference yields\n"); fflush(stdout);
-  TFile fileMcRef(fileMcReferenceYields);
+  TFile fileMcRef(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileMcReferenceYields);
   TVectorD yieldsMcFsrOfRec        = *(TVectorD *)fileMcRef.FindObjectAny("yieldsMcFsrOfRec");
   TVectorD yieldsMcRec             = *(TVectorD *)fileMcRef.FindObjectAny("yieldsMcRec");
 
@@ -335,9 +362,6 @@ void  unfold(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   for(int i=0; i<nBins; i++){
     for(int j=0; j<nBins; j++){
       vout[i] += DetInvertedResponse(j,i) * vin[j];
-      if( i == 8 )printf("DEBUG-bin8: j= %d      %f     %f  product %f         signal %f  %f  product %f\n", 
-			 j, DetInvertedResponse(j,i), vinSystErr[j], DetInvertedResponse(j,i)*vinSystErr[j],
-			 DetInvertedResponse(j,i), vin[j], DetInvertedResponse(j,i) * vin[j]);
       voutStatErr                [i] += pow( DetInvertedResponse   (j,i) * vinStatErr[j], 2);
 
       systErrorPreviousPropagated[i] += pow( DetInvertedResponse   (j,i) * vinSystErr[j], 2);
@@ -370,10 +394,6 @@ void  unfold(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
     //         when the unfolding matrix is extracted
     voutSystErr[i] = sqrt(systErrorPreviousPropagated[i]*systErrorPreviousPropagated[i] 
 			  + systErrorAdditional[i]*systErrorAdditional[i]);
-    printf("DEBUG: signal %f    stat +- %f   syst1 +- %f   syst2 +- %f   syst3 +- %f   systTot +- %f\n",
-	   vout[i],  voutStatErr[i], systErrorPreviousPropagated[i], 
-	   sqrt(systErrorAdditional[i]*systErrorAdditional[i] - unfoldingSystematics*unfoldingSystematics), 
-	   unfoldingSystematics, voutSystErr[i]);
   }
   
   // Report results
@@ -387,7 +407,7 @@ void  unfold(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   printf("\nUNFOLD: Results for the data, yields:\n");
   printf("                   yields observed        after unfolding                     syst-err-unfolding,%%\n");
   for(int i=0; i<nBins; i++){
-    printf("%4.0f-%4.0f   %7.1f +- %5.1f +- %4.1f       %7.1f +- %6.1f +- %5.1f       %6.1f\n",
+    printf("%4.0f-%4.0f   %8.1f +- %6.1f +- %5.1f       %8.1f +- %7.1f +- %6.1f       %7.1f\n",
 	   BinLimitsArray[i],BinLimitsArray[i+1],
 	   vin[i], vinStatErr[i], vinSystErr[i],
 	   vout[i], voutStatErr[i], voutSystErr[i],
@@ -406,11 +426,11 @@ void  efficiencyCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   // Read efficiency constants
   printf("Efficiency: Load constants\n"); fflush(stdout);
     
-  TFile fileConstants(fileEfficiencyConstants);
+  TFile fileConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileEfficiencyConstants);
   TVectorD efficiencyArray    = *(TVectorD *)fileConstants.FindObjectAny("efficiencyArray");
   TVectorD efficiencyErrArray = *(TVectorD *)fileConstants.FindObjectAny("efficiencyErrArray");
 
-  TFile fileScaleConstants(fileScaleFactorConstants);
+  TFile fileScaleConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileScaleFactorConstants);
   TVectorD rhoDataMc    = *(TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorArray");
   TVectorD rhoDataMcErr = *(TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorErrArray");
 
@@ -442,14 +462,12 @@ void  efficiencyCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
     systEfficiency[i] = systErrorAdditional[i]/vout[i];
     voutSystErr[i] = sqrt(systErrorPropagated[i]*systErrorPropagated[i]
 			  + systErrorAdditional[i]*systErrorAdditional[i]);
-    printf("DEBUG:  %f +- %f  syst1 %f   syst2 %f   systTotal %f\n", vout[i], voutStatErr[i], systErrorPropagated[i], 
-	   systErrorAdditional[i], voutSystErr[i]);
   }
 
   printf("\nEfficiency: Results for the data, yields:\n");
   printf("                after unfolding          eff. factors,%%    rho(data/mc)        efficiency-corrected       syst-err-eff, %%\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %7.1f +- %5.1f +- %4.1f   %5.1f +- %5.1f  %5.3f +- %5.3f   %7.1f +- %6.1f +- %5.1f            %6.1f\n",
+    printf("%4.0f-%4.0f   %8.1f +- %6.1f +- %5.1f   %5.1f +- %5.1f  %5.3f +- %5.3f   %8.1f +- %7.1f +- %6.1f            %6.1f\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vin[i], vinStatErr[i], vinSystErr[i],
 	   efficiencyArray[i]*100, efficiencyErrArray[i]*100, rhoDataMc[i], rhoDataMcErr[i],
@@ -468,7 +486,7 @@ void  acceptanceCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   // Read efficiency constants
   printf("Acceptance: Load constants\n"); fflush(stdout);
     
-  TFile fileConstants(fileAcceptanceConstants);
+  TFile fileConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileAcceptanceConstants);
   TVectorD acceptanceArray    = *(TVectorD *)fileConstants.FindObjectAny("acceptanceArray");
   TVectorD acceptanceErrArray = *(TVectorD *)fileConstants.FindObjectAny("acceptanceErrArray");
 
@@ -498,7 +516,7 @@ void  acceptanceCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   printf("\nAcceptance: Results for the data, yields:\n");
   printf("                eff-corrected             acc. factors,%%      acceptance-corrected      syst-err-acc, %%\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %7.1f +- %5.1f +- %5.1f   %7.3f +- %6.3f  %8.1f +- %7.1f +- %5.1f      %6.2f\n",
+    printf("%4.0f-%4.0f   %8.1f +- %7.1f +- %6.1f   %8.3f +- %7.3f  %9.1f +- %8.1f +- %6.1f      %6.2f\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vin[i], vinStatErr[i], vinSystErr[i],
 	   acceptanceArray[i]*100, acceptanceErrArray[i]*100, 
@@ -516,7 +534,7 @@ void  fsrCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   // Read efficiency constants
   printf("FsrCorrection: Load constants\n"); fflush(stdout);
     
-  TFile fileConstants(fileFsrCorrectionConstants);
+  TFile fileConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileFsrCorrectionConstants);
   TVectorD fsrCorrectionArray    = *(TVectorD *)fileConstants.FindObjectAny("fsrCorrectionArray");
   TVectorD fsrCorrectionErrArray = *(TVectorD *)fileConstants.FindObjectAny("fsrCorrectionErrArray");
 
@@ -544,7 +562,7 @@ void  fsrCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   printf("\nFsrCorrection: Results for the data, yields:\n");
   printf("                acc-corrected             fsr. factors         fsr-corrected                  sys-err-fsr\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %8.1f +- %7.1f +- %5.1f   %5.3f +- %5.3f  %8.1f +- %7.1f +- %5.1f      %6.2f\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %5.3f +- %5.3f  %8.1f +- %7.1f +- %5.1f      %6.2f\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vin[i], vinStatErr[i], vinSystErr[i],
 	   fsrCorrectionArray[i], fsrCorrectionErrArray[i], 
@@ -562,7 +580,7 @@ void  fsrCorrectionSansAcceptance(TVectorD &vin, TVectorD &vinStatErr, TVectorD 
   // Read efficiency constants
   printf("FsrCorrection: Load constants\n"); fflush(stdout);
   
-  TFile fileConstants(fileFsrCorrectionSansAccConstants);
+  TFile fileConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileFsrCorrectionSansAccConstants);
   TVectorD fsrCorrectionArray    = *(TVectorD *)fileConstants.FindObjectAny("fsrCorrectionArray");
   TVectorD fsrCorrectionErrArray = *(TVectorD *)fileConstants.FindObjectAny("fsrCorrectionErrArray");
   
@@ -591,7 +609,7 @@ void  fsrCorrectionSansAcceptance(TVectorD &vin, TVectorD &vinStatErr, TVectorD 
   printf("\nFsrCorrectionSansAcceptance: Results for the data, yields:\n");
   printf("                acc-corrected             fsr. factors         fsr-corrected                  sys-err-fsr\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %8.1f +- %7.1f +- %5.1f   %5.3f +- %5.3f  %8.1f +- %7.1f +- %5.1f      %6.2f\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %5.3f +- %5.3f  %9.1f +- %8.1f +- %6.1f      %6.2f\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vin[i], vinStatErr[i], vinSystErr[i],
 	   fsrCorrectionArray[i], fsrCorrectionErrArray[i], 
@@ -643,7 +661,7 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   printf("\nPre FSR cross sections: :\n");
   printf("                    absolute                   normalized +- stat +- sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %8.1f +- %7.1f +- %5.1f   %8.4f +- %7.4f +- %7.4f  ( %7.4f )\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %9.4f +- %8.4f +- %8.4f  ( %8.4f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -651,7 +669,7 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   }
   printf("\nPre FSR cross-section in the Z peak from %3f to %3f:\n",
 	 massBinLimits[low], massBinLimits[high]);
-  printf("           %8.1f +- %7.1f +- %5.1f \n",
+  printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
 
@@ -698,7 +716,7 @@ void  crossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr
   printf("\nPre FSR DET shape: :\n");
   printf("                    absolute                   normalized +-stat +-sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %8.1f +- %7.1f +- %5.1f   %8.4f +- %7.4f +- %7.4f  ( %7.4f )\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %9.4f +- %8.4f +- %8.4f  ( %8.4f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -749,7 +767,7 @@ void  postFsrCrossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   printf("\nPost FSR cross sections: :\n");
   printf("                    absolute                   normalized +-stat +-sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %8.1f +- %7.1f +- %5.1f   %8.4f +- %7.4f +- %7.4f  ( %7.4f )\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %9.4f +- %8.4f +- %8.4f  ( %8.4f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -757,7 +775,7 @@ void  postFsrCrossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   }
   printf("\nPostFsr cross-section in the Z peak from %3f to %3f:\n",
 	 massBinLimits[low], massBinLimits[high]);
-  printf("           %8.1f +- %7.1f +- %5.1f \n",
+  printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
 
@@ -791,7 +809,6 @@ void  postFsrCrossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vin
   xsecReferenceSystErr = sqrt(xsecReferenceSystErr);
 
   // Find normalized cross-section
-//   printf("DEBUG: print errors\n");
   for(int i=0; i<nMassBins; i++) {
     voutNorm[i] = vout[i] / xsecReference;
     voutNormStatErr[i] = voutNorm[i] 
@@ -800,15 +817,12 @@ void  postFsrCrossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vin
     voutNormSystErr[i] = voutNorm[i] 
       * sqrt( xsecReferenceSystErr*xsecReferenceSystErr / xsecReference/xsecReference
 	      + voutSystErr[i]*voutSystErr[i] / vout[i]/vout[i]);
-//     printf("DEBUG:  %f   %f   %f\n", 
-// 	   xsecReferenceSystErr/xsecReference*100, 
-// 	   voutSystErr[i]/vout[i]*100, voutNormSystErr[i]/voutNorm[i]*100);
   }
 
   printf("\nPost FSR DET shape: :\n");
   printf("                    absolute                   normalized +-stat +-sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %8.1f +- %7.1f +- %5.1f   %8.4f +- %7.4f +- %7.4f  ( %7.4f )\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %9.4f +- %8.4f +- %8.4f  ( %8.4f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -829,11 +843,11 @@ void printTableForNotes(TVectorD obs, TVectorD obsErr,
   printf("               obs-bg    unfolded    eff-corrected    acc-corrected   fsr-corrected\n");
   for(int i=0; i<nMassBins; i++){
     printf("%4.0f-%4.0f &", massBinLimits[i],massBinLimits[i+1]);
-    printf("  $%7.1f \\pm %5.1f$ &", obs[i] , obsErr[i]);
-    printf("  $%7.1f \\pm %5.1f$ &", unf[i] , unfErr[i]);
-    printf("  $%7.1f \\pm %5.1f$ &", ecor[i], ecorErr[i]);
-    printf("  $%8.1f \\pm %7.1f$ &", acor[i], acorErr[i]);
-    printf("  $%8.1f \\pm %7.1f$ \\\\", fcor[i], fcorErr[i]);
+    printf("  $%8.1f \\pm %6.1f$ &", obs[i] , obsErr[i]);
+    printf("  $%8.1f \\pm %6.1f$ &", unf[i] , unfErr[i]);
+    printf("  $%8.1f \\pm %6.1f$ &", ecor[i], ecorErr[i]);
+    printf("  $%9.1f \\pm %8.1f$ &", acor[i], acorErr[i]);
+    printf("  $%9.1f \\pm %8.1f$ \\\\", fcor[i], fcorErr[i]);
     printf("\n");
   }
 
@@ -843,23 +857,23 @@ void printTableForNotes(TVectorD obs, TVectorD obsErr,
 
 void printAllCorrections(){
 
-  TFile fileConstantsEff(fileEfficiencyConstants);
+  TFile fileConstantsEff(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileEfficiencyConstants);
   TVectorD efficiencyArray    = *(TVectorD *)fileConstantsEff.FindObjectAny("efficiencyArray");
   TVectorD efficiencyErrArray = *(TVectorD *)fileConstantsEff.FindObjectAny("efficiencyErrArray");
 
-  TFile fileScaleConstants(fileScaleFactorConstants);
+  TFile fileScaleConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileScaleFactorConstants);
   TVectorD rhoDataMc    = *(TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorArray");
   TVectorD rhoDataMcErr = *(TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorErrArray");
 
-  TFile fileConstantsAcc(fileAcceptanceConstants);
+  TFile fileConstantsAcc(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileAcceptanceConstants);
   TVectorD acceptanceArray    = *(TVectorD *)fileConstantsAcc.FindObjectAny("acceptanceArray");
   TVectorD acceptanceErrArray = *(TVectorD *)fileConstantsAcc.FindObjectAny("acceptanceErrArray");
 
-  TFile fileConstantsFsr(fileFsrCorrectionConstants);
+  TFile fileConstantsFsr(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileFsrCorrectionConstants);
   TVectorD fsrCorrectionArray    = *(TVectorD *)fileConstantsFsr.FindObjectAny("fsrCorrectionArray");
   TVectorD fsrCorrectionErrArray = *(TVectorD *)fileConstantsFsr.FindObjectAny("fsrCorrectionErrArray");
 
-  TFile fileConstantsFsrSansAcc(fileFsrCorrectionSansAccConstants);
+  TFile fileConstantsFsrSansAcc(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileFsrCorrectionSansAccConstants);
   TVectorD fsrCorrectionSansAccArray    = *(TVectorD *)fileConstantsFsrSansAcc.FindObjectAny("fsrCorrectionArray");
   TVectorD fsrCorrectionSansAccErrArray = *(TVectorD *)fileConstantsFsrSansAcc.FindObjectAny("fsrCorrectionErrArray");
   
@@ -921,3 +935,4 @@ void printRelativeSystErrors(){
     printf("\n");
   }
 }
+
