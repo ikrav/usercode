@@ -1725,18 +1725,30 @@ double findEnergyScaleCorrection(double eta){
 
   // Energy scale corrections from Duncan Ralph derived July 2011
   // based on 204 pb-1 May ReReco and ~650 pb-1 of prompt reco
-  // as well as 41X powheg MC  
-  const int nEtaBins = 10;
-  double corrEtaBinLimits[nEtaBins+1] = 
-    {-2.50001, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.50001};
-  double corrValues[nEtaBins] = 
-    {0.9890, 1.0250, 0.9932, 1.0029, 0.9986, 1.0027, 1.0036, 0.9887, 1.0209, 0.9812};
-  double corrErrors[nEtaBins] = 
-    {0.0006, 0.0007, 0.0003, 0.0003, 0.0007, 0.0000, 0.0002, 0.0012, 0.0002, 0.0028};
+  // as well as 41X powheg MC
+//   const int nEtaBins = 10;
+//   double corrEtaBinLimits[nEtaBins+1] = 
+//     {-2.50001, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.50001};
+//   double corrValues[nEtaBins] = 
+//     {0.9890, 1.0250, 0.9932, 1.0029, 0.9986, 1.0027, 1.0036, 0.9887, 1.0209, 0.9812};
+//   double corrErrors[nEtaBins] = 
+//     {0.0006, 0.0007, 0.0003, 0.0003, 0.0007, 0.0000, 0.0002, 0.0012, 0.0002, 0.0028};
 
-  double feta = fabs(eta);
+  // Energy scale corrections from Andrius drived July 2011
+  // on 204 pb-1 May 10 ReReco and 800 pb-1 PromptReco, matched
+  // against Summer11 powheg MC
+  // Note that Andrius has 6 eta bins in absolute  eta, so value "i"
+  // below is equal to value "N-i"
+  const int nEtaBins = 12;
+  double corrEtaBinLimits[nEtaBins+1] = 
+    {-2.50001, -2.0, -1.5, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.5, 2.0, 2.50001};
+  double corrValues[nEtaBins] = 
+    {1.04642, 1.00187, 1.01556, 1.00500, 1.00093, 1.00149, 1.00149, 1.00093, 1.00500, 1.01556, 1.00187, 1.04642};
+  double corrErrors[nEtaBins] = 
+    {4.28928e-04,3.39718e-04,4.89342e-04,5.80480e-05,1.21192e-05,1.27489e-04,1.27489e-04,1.21192e-05,5.80480e-05,4.89342e-04,3.39718e-04,4.28928e-04};
+
   for(int i=0; i<nEtaBins; i++){
-    if(feta >= corrEtaBinLimits[i] && feta < corrEtaBinLimits[i+1] ){
+    if(eta >= corrEtaBinLimits[i] && eta < corrEtaBinLimits[i+1] ){
       corr = corrValues[i];
       break;
     }
