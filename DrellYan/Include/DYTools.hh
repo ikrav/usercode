@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include <TEfficiency.h>
+
 #include "EWKAnaDefs.hh"
 #include "TElectron.hh"
 #include "TDielectron.hh"
@@ -170,7 +172,7 @@ namespace DYTools {
   // Triggers vs run numbers
   //
   enum { UNDEF, REL38X, REL39X};
-  enum { DATA, F10MC, W11MC};
+  enum { DATA, MC};
 
   // The commented out code below is not valid on 2011 data since
   // bit constants have changed in EWKAnaDefs.hh
@@ -228,6 +230,9 @@ namespace DYTools {
       ele-> scEta               = dielectron-> scEta_1              ;
       ele-> scPhi               = dielectron-> scPhi_1              ;  
       ele-> HoverE              = dielectron-> HoverE_1             ;              
+      ele-> EoverP              = dielectron-> EoverP_1             ;              
+      ele-> fBrem               = dielectron-> fBrem_1             ;              
+
       ele-> deltaEtaIn          = dielectron-> deltaEtaIn_1         ;          
       ele-> deltaPhiIn          = dielectron-> deltaPhiIn_1         ;          
       ele-> sigiEtaiEta         = dielectron-> sigiEtaiEta_1        ;         
@@ -263,6 +268,9 @@ namespace DYTools {
       ele-> scEta               = dielectron-> scEta_2              ;
       ele-> scPhi               = dielectron-> scPhi_2              ;  
       ele-> HoverE              = dielectron-> HoverE_2             ;              
+      ele-> EoverP              = dielectron-> EoverP_2             ;              
+      ele-> fBrem               = dielectron-> fBrem_2             ;              
+
       ele-> deltaEtaIn          = dielectron-> deltaEtaIn_2         ;          
       ele-> deltaPhiIn          = dielectron-> deltaPhiIn_2         ;          
       ele-> sigiEtaiEta         = dielectron-> sigiEtaiEta_2        ;         
@@ -301,7 +309,58 @@ namespace DYTools {
       result = true;
     return result;
   }
-  
+
+  //
+  // Several functions to calculate efficiency or ratio
+  //
+  enum {EFF_POISSON, EFF_BINOMIAL, EFF_CLOPPER_PEARSON};
+  void calcEfficiency(double nPass, double nTotal, int method, 
+		      double &eff, double &effErrLow, double &effErrHigh)
+  {
+
+    eff        = 0;
+    effErrLow  = 0;
+    effErrHigh = 0;
+
+    if(nTotal == 0) return;
+      
+    // The efficiency is always just the ratio, it is in the error
+    // calculation that the methods differ
+    eff = nPass/nTotal;
+
+    if( nPass > nTotal && method != EFF_POISSON){
+      printf("calcEfficiency::WARNING requested efficiency calculation for nPass > nTotal,\n");
+      printf("     switching to EFF_SIMPLE_DIVIDE method\n");
+      method = EFF_POISSON;
+    }
+
+    if(method == EFF_POISSON){
+      // Numerator and denominator are assumed uncorrelated
+      if( nPass != 0 )
+	effErrLow =  eff*sqrt( 1/nPass + 1/nTotal );
+      else
+	effErrLow = 0;
+      effErrHigh = effErrLow;
+    } else if (method == EFF_BINOMIAL){
+      // Numerator is a subset of denominator
+      effErrLow = sqrt(eff*(1-eff)/nTotal);
+      effErrHigh = effErrLow;
+    } else if (method == EFF_CLOPPER_PEARSON) {
+      // Use Clopper-Pearson method implemented in ROOT to get +-1 sigma
+      // asymmertic errors.
+      // a) Clopper-Pearson method requires integer pass/total.
+      // b) C++ does not have a built-in rounding function
+      int nPassInt = (nPass-floor(nPass)<0.5)?floor(nPass):ceil(nPass);
+      int nTotalInt = (nTotal-floor(nTotal)<0.5)?floor(nTotal):ceil(nTotal);
+      effErrLow  = eff - TEfficiency::ClopperPearson(nTotalInt, nPassInt, 0.68269, kFALSE);
+      effErrHigh = TEfficiency::ClopperPearson(nTotalInt, nPassInt, 0.68269, kTRUE) - eff;
+    } else{
+      printf("CalcEfficiency::ERROR: unknown method requested\n");
+    }
+
+    return;
+  }
+
 }
 
 #endif
