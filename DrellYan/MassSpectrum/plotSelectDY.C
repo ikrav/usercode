@@ -207,7 +207,7 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
     // Prepare weights for pile-up reweighting for MC
     TH1F *hPVThis = (TH1F*) pvfile->Get(TString("hNGoodPV_")+snamev[isam]); assert(hPVThis);
     // Normalize or not? Not clear
-//     hPVThis->Scale( hPVData->GetSumOfWeights()/hPVThis->GetSumOfWeights());
+    hPVThis->Scale( hPVData->GetSumOfWeights()/hPVThis->GetSumOfWeights());
     TH1F *puWeights = (TH1F*)hPVData->Clone("puWeights");
     puWeights->Divide(hPVThis);
     for(int i=1; i<=puWeights->GetNbinsX(); i++)
