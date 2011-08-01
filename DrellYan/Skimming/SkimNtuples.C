@@ -44,7 +44,7 @@ void SkimNtuples(const TString input = "skim.input")
   ifs.open(input.Data()); 
   assert(ifs.is_open());
   string line;
-  // First line should be DATA or MC
+  // First line should be DATA or SIGNALMC or BGMC
   getline(ifs,line); 
   sample = line;
   // Second line is the OUTPUT skim file name
@@ -54,13 +54,13 @@ void SkimNtuples(const TString input = "skim.input")
   while(getline(ifs,line)) { infilenames.push_back(line); }
   ifs.close();
   
-  bool isData = true;
-  if( sample == "DATA" )
-    isData = true;
-  else if( sample == "MC" )
-    isData = false;
+  bool isGenPresent = true;
+  if( sample == "DATA" || sample == "BGMC")
+    isGenPresent = false;
+  else if( sample == "SIGNALMC" )
+    isGenPresent = true;
   else{
-    printf("Unknown sample type: use DATA or MC only in the input configuration file.\n");
+    printf("Unknown sample type: use DATA or SIGNALMC or BGMC only in the input configuration file.\n");
     return;
   }
 
@@ -96,7 +96,7 @@ void SkimNtuples(const TString input = "skim.input")
   // 
   TTree *outEventTree = new TTree("Events","Events"); 
   outEventTree->Branch("Info",       &info);
-  if( !isData )
+  if( isGenPresent )
     outEventTree->Branch("Gen",       &gen);
   outEventTree->Branch("Electron",   &electronArr);
   outEventTree->Branch("Dielectron", &dielectronArr);
@@ -115,10 +115,14 @@ void SkimNtuples(const TString input = "skim.input")
     
     // Set branch address to structures that will store the info  
     eventTree->SetBranchAddress("Info",       &info);          TBranch *infoBr       = eventTree->GetBranch("Info");
-    eventTree->SetBranchAddress("Gen" ,       &gen);           TBranch *genBr        = eventTree->GetBranch("Gen");
-    if( !isData && !genBr ){
-      printf("MC info is not found in MC file\n");
-      assert(0);
+    TBranch *genBr = 0;
+    if(isGenPresent){
+      eventTree->SetBranchAddress("Gen" ,       &gen);
+      genBr        = eventTree->GetBranch("Gen");
+      if( !genBr ){
+	printf("MC info is not found in signal MC file\n");
+	assert(0);
+      }
     }
     eventTree->SetBranchAddress("Electron",   &electronArr);   TBranch *electronBr   = eventTree->GetBranch("Electron");
     eventTree->SetBranchAddress("Dielectron", &dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
@@ -127,10 +131,10 @@ void SkimNtuples(const TString input = "skim.input")
     eventTree->SetBranchAddress("Photon",     &photonArr);     TBranch *photonBr     = eventTree->GetBranch("Photon");
     eventTree->SetBranchAddress("PV",         &pvArr);         TBranch *pvBr         = eventTree->GetBranch("PV");
     
-//     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) { 
-    for(UInt_t ientry=0; ientry< 100000; ientry++) { // For testing
+    for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) { 
+//     for(UInt_t ientry=0; ientry< 100000; ientry++) { // For testing
       infoBr->GetEntry(ientry);
-      if( !isData)
+      if( isGenPresent)
 	genBr->GetEntry(ientry);
 
       electronArr->Clear();   
