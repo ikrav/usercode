@@ -63,6 +63,8 @@ void SkimNtuples(const TString input = "skim.input")
     printf("Unknown sample type: use DATA or SIGNALMC or BGMC only in the input configuration file.\n");
     return;
   }
+  if( isGenPresent)
+    printf("Generator block will be written: signal MC indicated in config file\n");
 
   TTree::SetMaxTreeSize(kMaxLong64);
   
@@ -131,8 +133,8 @@ void SkimNtuples(const TString input = "skim.input")
     eventTree->SetBranchAddress("Photon",     &photonArr);     TBranch *photonBr     = eventTree->GetBranch("Photon");
     eventTree->SetBranchAddress("PV",         &pvArr);         TBranch *pvBr         = eventTree->GetBranch("PV");
     
-    for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) { 
-//     for(UInt_t ientry=0; ientry< 100000; ientry++) { // For testing
+     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) { 
+//      for(UInt_t ientry=0; ientry< 100000; ientry++) { // For testing
       infoBr->GetEntry(ientry);
       if( isGenPresent)
 	genBr->GetEntry(ientry);
