@@ -176,10 +176,22 @@ void plotDYAcceptance(const TString input)
       // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
       double fewz_weight = 1.0;
       if(useFewzWeights){
-	if(ibinPreFsr != -1 && ibinPreFsr < DYTools::nMassBins)
-	  fewz_weight = weights[ibinPreFsr]->GetBinContent( weights[ibinPreFsr]->GetXaxis()->FindBin( gen->vpt ),
-						      weights[ibinPreFsr]->GetYaxis()->FindBin( gen->vy ) );
-	else
+	if(ibinPreFsr != -1 && ibinPreFsr < DYTools::nMassBins){
+	  int ptBin = weights[ibinPreFsr]->GetXaxis()->FindBin( gen->vpt );
+	  int yBin = weights[ibinPreFsr]->GetYaxis()->FindBin( gen->vy );
+	  // In case if pt or y are outside of the weight maps,
+	  // set them to the closest bin.
+ 	  if(ptBin == weights[ibinPreFsr]->GetNbinsX() + 1)
+ 	    ptBin = weights[ibinPreFsr]->GetNbinsX();
+ 	  if(ptBin == 0)
+ 	    ptBin = 1;
+ 	  if(yBin == weights[ibinPreFsr]->GetNbinsY() + 1)
+ 	    yBin = weights[ibinPreFsr]->GetNbinsY();
+ 	  if(yBin == 0)
+ 	    yBin = 1;
+	  fewz_weight = weights[ibinPreFsr]->GetBinContent( ptBin, yBin);
+						      
+	}else
 	  cout << "Error: binning problem" << endl;
       }
 //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);

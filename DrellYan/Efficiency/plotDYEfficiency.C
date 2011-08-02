@@ -175,8 +175,6 @@ void plotDYEfficiency(const TString input)
       UInt_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
       
-      if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
-
       // The A_FSR starting point: gen level quantities
       // The FSR subscript means we work with post-FSR generator level quantities
       double et1 = gen->pt_1;
@@ -187,9 +185,9 @@ void plotDYEfficiency(const TString input)
       // Apply acceptance requirement
       if( ! ( ( et1 > DYTools::etMinLead  && et2 > DYTools::etMinTrail)
 	      || ( et1 > DYTools::etMinTrail  && et2 > DYTools::etMinLead) )) continue;
-      if((fabs(eta1) > 2.5)      || (fabs(eta2) > 2.5))       continue;
-      if((fabs(eta1) > kGAP_LOW) && (fabs(eta1) < kGAP_HIGH)) continue;
-      if((fabs(eta2) > kGAP_LOW) && (fabs(eta2) < kGAP_HIGH)) continue;
+      if((fabs(eta1) >= 2.5)      || (fabs(eta2) >= 2.5))       continue;
+      if((fabs(eta1) >= kGAP_LOW) && (fabs(eta1) <= kGAP_HIGH)) continue;
+      if((fabs(eta2) >= kGAP_LOW) && (fabs(eta2) <= kGAP_HIGH)) continue;
 
       // These events are in acceptance, use them for efficiency denominator
       Bool_t isBGen1 = (fabs(eta1)<kGAP_LOW);
@@ -205,6 +203,8 @@ void plotDYEfficiency(const TString input)
 	else if((isBGen1 && !isBGen2) || (!isBGen1 && isBGen2)) { nEventsBEv[ibinGen] += scale * gen->weight; }
       }else if(ibinGen >= nEventsv.GetNoElements())
 	cout << "ERROR: binning problem" << endl;
+
+      if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
 
       // loop through dielectrons
       dielectronArr->Clear();
@@ -232,13 +232,13 @@ void plotDYEfficiency(const TString input)
 
 	// Both electrons must match trigger objects. At least one ordering
 	// must match
-	if( ! ( 
-	       (dielectron->hltMatchBits_1 & leadingTriggerObjectBit && 
-		dielectron->hltMatchBits_2 & trailingTriggerObjectBit )
-	       ||
-	       (dielectron->hltMatchBits_1 & trailingTriggerObjectBit && 
-		dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
-	
+ 	if( ! ( 
+ 	       (dielectron->hltMatchBits_1 & leadingTriggerObjectBit && 
+ 		dielectron->hltMatchBits_2 & trailingTriggerObjectBit )
+ 	       ||
+ 	       (dielectron->hltMatchBits_1 & trailingTriggerObjectBit && 
+ 		dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
+
 	// The Smurf electron ID package is the same as used in HWW analysis
 	// and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
 	// with some customization, plus impact parameter cuts dz and dxy
@@ -248,6 +248,12 @@ void plotDYEfficiency(const TString input)
 
 	hZMassv[ifile]->Fill(gen->mass,scale * gen->weight);
 
+	// DEBUG
+// 	if(ibinGen == 12)
+// 	  printf("Gen mass %f  reco mass %f  scEt_1= %f  scEt_2= %f  scEta_1= %f  scEta_2= %f\n",
+// 		 gen->mass, dielectron->mass, dielectron->scEt_1, dielectron->scEt_2,
+// 		 dielectron->scEta_1, dielectron->scEta_2);
+	
 	// Accumulate numerator for efficiency calculations
 	if(ibinGen != -1 && ibinGen < nPassv.GetNoElements()){
 	  nPassv[ibinGen] += scale * gen->weight;
