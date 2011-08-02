@@ -70,3 +70,5 @@ methods (such as e-mu or fake rates methods). The "repackage"
 script introduces these backgrounds, and therefore needs
 the data-driven background values. At the moment, these
 come from RAL, who produce them for us using our ntuples.
+
+6. Calculate acceptance using signal MC.
