@@ -372,17 +372,25 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
 //     }
 //   }
 
-// signal MC is probably the last one in the stack
-//   int iSignalMc = hMassv.size() - 1;
-  //double dataOverMc = hMassv[0]->GetSumOfWeights()/hMassv[iSignalMc]->GetSumOfWeights();
-//   double dataOverMc = 0.94849;
-  double dataOverMc = 1.0;
-  printf("data to MC prediction ratio %f\n",dataOverMc);
-  
-  // Rescale only signal MC
-//   hMassv[iSignalMc]->Scale(dataOverMc);
-//   hMassBinsv[iSignalMc]->Scale(dataOverMc);
-//   printf("MC %s IS RESCALED\n", snamev[iSignalMc].Data());
+// Ideally, we would normalize all MC samples to data luminosity
+// In practice, however, it is not easy because of two reasons:
+//  - the luminosity is known with an error (systematic shift of 6% is
+//       for example suspected in mid-2011)
+//  - data/MC scale factors for efficiency to select events may
+//       move normalization off by another 5%
+// Therefore, we normalize signal MC to the data Z peak. This gives us
+// the scale factor that is applied to all samples. 
+// In the following calculation it is assumed that the first histogram
+// is data and the last is signal MC.  
+  int iSignalMc = hMassv.size() - 1;
+  double massNormMin = 60.0;
+  double massNormMax = 120.0;
+  double dataOverMc = hMassv[0]->Integral(hMassv[0]->FindBin(massNormMin),
+					  hMassv[0]->FindBin(massNormMax)) /
+    hMassv[iSignalMc]->Integral(hMassv[iSignalMc]->FindBin(massNormMin),
+				hMassv[iSignalMc]->FindBin(massNormMax));
+  printf("data to MC extra correction from Z peak normalization: %f\n",dataOverMc);
+
   // Rescale all MC samples. This is not totally proper for fake lepton
   // backgrounds, but ok for backgrounds with true leptons, and those are dominant
   for(UInt_t isam=1; isam<samplev.size(); isam++) {

@@ -33,10 +33,10 @@ void subtractBackground(const TString conf){
 
   TH1F *data  = (TH1F*) file.Get("data"); 
   TH1F *zee   = (TH1F*) file.Get("zee");   bool zeeMc = true;
-  TH1F *ztt   = (TH1F*) file.Get("ztt");   bool zttMc = false;
-  TH1F *qcd   = (TH1F*) file.Get("qcd");   bool qcdMc = false;
-  TH1F *ttbar = (TH1F*) file.Get("ttbar"); bool ttbarMc = false;
-  TH1F *wjets = (TH1F*) file.Get("wjets"); bool wjetsMc = false;
+  TH1F *ztt   = (TH1F*) file.Get("ztt");   bool zttMc = true;
+  TH1F *qcd   = (TH1F*) file.Get("qcd");   bool qcdMc = true;
+  TH1F *ttbar = (TH1F*) file.Get("ttbar"); bool ttbarMc = true;
+  TH1F *wjets = (TH1F*) file.Get("wjets"); bool wjetsMc = true;
   TH1F *ww   = (TH1F*) file.Get("ww");     bool wwMc = false;
   TH1F *wz   = (TH1F*) file.Get("wz");     bool wzMc = false;
   TH1F *zz   = (TH1F*) file.Get("zz");     bool zzMc = false;
