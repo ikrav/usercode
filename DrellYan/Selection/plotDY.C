@@ -48,6 +48,9 @@
 
 // define structure for output ntuple
 #include "../Include/ZeeData.hh"
+
+#include "../Include/ElectronEnergyScale.hh" //energy scale correction
+
 #endif
 
 //=== FUNCTION DECLARATIONS ======================================================================================
@@ -64,8 +67,6 @@ void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron,
                const UInt_t runNum, const UInt_t lumiSec, const UInt_t evtNum, 
 	       const UInt_t triggerObj1, const UInt_t triggerObj2);
 
-// Look-up of energy scale corrections for electrons
-double findEnergyScaleCorrection(double eta);
 
 //=== MAIN MACRO =================================================================================================
 
@@ -197,6 +198,7 @@ void plotDY(const TString conf)
   
   char hname[100];
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
+
     sprintf(hname,"hMass_%i",isam);   hMassv.push_back(new TH1F(hname,"",30,60,120));   hMassv[isam]->Sumw2();
     sprintf(hname,"hMass2_%i",isam);  hMass2v.push_back(new TH1F(hname,"",35,20,160));  hMass2v[isam]->Sumw2();
     sprintf(hname,"hMass3_%i",isam);  hMass3v.push_back(new TH1F(hname,"",50,0,500));   hMass3v[isam]->Sumw2();
@@ -274,8 +276,8 @@ void plotDY(const TString conf)
   
   // Data structures to store info from TTrees
   mithep::TEventInfo *info    = new mithep::TEventInfo();
-//   TClonesArray *caloJetArr    = new TClonesArray("mithep::TJet");
-//   TClonesArray *trackJetArr   = new TClonesArray("mithep::TJet");
+  // TClonesArray *caloJetArr    = new TClonesArray("mithep::TJet");
+  // TClonesArray *trackJetArr   = new TClonesArray("mithep::TJet");
   TClonesArray *pfJetArr      = new TClonesArray("mithep::TJet");
   TClonesArray *dielectronArr = new TClonesArray("mithep::TDielectron");
   TClonesArray *pvArr         = new TClonesArray("mithep::TVertex");
@@ -302,7 +304,7 @@ void plotDY(const TString conf)
     TFile *outFile = new TFile(outName,"RECREATE");
     TTree *outTree = new TTree("Events","Events");
     ZeeData data;
-    outTree->Branch("Events",&data.runNum,
+    outTree->Branch("Events", &data.runNum, 
 "runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F");
     
     //
@@ -316,11 +318,11 @@ void plotDY(const TString conf)
       assert(infile);
     
       Bool_t hasJSON = kFALSE;
-//       mithep::RunLumiRangeMap rlrm;
+      // mithep::RunLumiRangeMap rlrm;
       JsonParser jsonParser;
       if((samp->jsonv.size()>0) && (samp->jsonv[ifile].CompareTo("NONE")!=0)) { 
         hasJSON = kTRUE;
-//         rlrm.AddJSONFile(samp->jsonv[ifile].Data()); 
+	// rlrm.AddJSONFile(samp->jsonv[ifile].Data()); 
         jsonParser.Initialize(samp->jsonv[ifile].Data()); 
       }
       
@@ -330,8 +332,8 @@ void plotDY(const TString conf)
       // Set branch address to structures that will store the info  
       eventTree->SetBranchAddress("Info",       &info);          TBranch *infoBr       = eventTree->GetBranch("Info");
       eventTree->SetBranchAddress("Dielectron", &dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
-//       eventTree->SetBranchAddress("CaloJet",    &caloJetArr);    TBranch *caloJetBr    = eventTree->GetBranch("CaloJet");
-//       eventTree->SetBranchAddress("TrackJet",   &trackJetArr);   TBranch *trackJetBr   = eventTree->GetBranch("TrackJet");
+      // eventTree->SetBranchAddress("CaloJet",    &caloJetArr);    TBranch *caloJetBr    = eventTree->GetBranch("CaloJet");
+      // eventTree->SetBranchAddress("TrackJet",   &trackJetArr);   TBranch *trackJetBr   = eventTree->GetBranch("TrackJet");
       eventTree->SetBranchAddress("PFJet",      &pfJetArr);      TBranch *pfJetBr      = eventTree->GetBranch("PFJet");
       eventTree->SetBranchAddress("PV",         &pvArr);         TBranch *pvBr         = eventTree->GetBranch("PV");
       
@@ -363,8 +365,8 @@ void plotDY(const TString conf)
 	
 	infoBr->GetEntry(ientry);
 		
-//         mithep::RunLumiRangeMap::RunLumiPairType rl(info->runNum, info->lumiSec);      
-//         if(hasJSON && !rlrm.HasRunLumi(rl)) continue;  // not certified run? Skip to next event...
+	// mithep::RunLumiRangeMap::RunLumiPairType rl(info->runNum, info->lumiSec);      
+	// if(hasJSON && !rlrm.HasRunLumi(rl)) continue;  // not certified run? Skip to next event...
         if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
         
 	// For EPS2011 for both data and MC (starting from Summer11 production)
@@ -1719,41 +1721,3 @@ void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron,
     ofs << " NOMAT" << endl;
 }    
 
-double findEnergyScaleCorrection(double eta){
-
-  double corr = 1.0;
-
-  // Energy scale corrections from Duncan Ralph derived July 2011
-  // based on 204 pb-1 May ReReco and ~650 pb-1 of prompt reco
-  // as well as 41X powheg MC
-//   const int nEtaBins = 10;
-//   double corrEtaBinLimits[nEtaBins+1] = 
-//     {-2.50001, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.50001};
-//   double corrValues[nEtaBins] = 
-//     {0.9890, 1.0250, 0.9932, 1.0029, 0.9986, 1.0027, 1.0036, 0.9887, 1.0209, 0.9812};
-//   double corrErrors[nEtaBins] = 
-//     {0.0006, 0.0007, 0.0003, 0.0003, 0.0007, 0.0000, 0.0002, 0.0012, 0.0002, 0.0028};
-
-  // Energy scale corrections from Andrius drived July 2011
-  // on 204 pb-1 May 10 ReReco and 800 pb-1 PromptReco, matched
-  // against Summer11 powheg MC
-  // Note that Andrius has 6 eta bins in absolute  eta, so value "i"
-  // below is equal to value "N-i"
-  const int nEtaBins = 12;
-  double corrEtaBinLimits[nEtaBins+1] = 
-    {-2.50001, -2.0, -1.5, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.5, 2.0, 2.50001};
-  double corrValues[nEtaBins] = 
-    {1.04642, 1.00187, 1.01556, 1.00500, 1.00093, 1.00149, 1.00149, 1.00093, 1.00500, 1.01556, 1.00187, 1.04642};
-  double corrErrors[nEtaBins] = 
-    {4.28928e-04,3.39718e-04,4.89342e-04,5.80480e-05,1.21192e-05,1.27489e-04,1.27489e-04,1.21192e-05,5.80480e-05,4.89342e-04,3.39718e-04,4.28928e-04};
-
-  for(int i=0; i<nEtaBins; i++){
-    if(eta >= corrEtaBinLimits[i] && eta < corrEtaBinLimits[i+1] ){
-      corr = corrValues[i];
-      break;
-    }
-  }
-
-  return corr;
-
-}
