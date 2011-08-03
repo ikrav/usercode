@@ -33,7 +33,7 @@
 #include "../Include/CSample.hh"        // helper class for organizing input ntuple files
 
 // define structures to read in ntuple
-#include "../Include/EWKAnaDefs.hh"
+#include "../Include/HiggsAnaDefs.hh"
 #include "../Include/TEventInfo.hh"
 #include "../Include/TDielectron.hh"
 #include "../Include/TJet.hh"
