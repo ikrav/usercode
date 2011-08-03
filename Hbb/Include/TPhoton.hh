@@ -1,5 +1,5 @@
-#ifndef EWKANA_NTUPLER_TPHOTON_HH
-#define EWKANA_NTUPLER_TPHOTON_HH
+#ifndef MITHTT_NTUPLER_TPHOTON_HH
+#define MITHTT_NTUPLER_TPHOTON_HH
 
 #include <TObject.h>
 
@@ -18,10 +18,10 @@ namespace mithep
       Float_t hadIso04;                       // HCAL-based isolation
       Float_t HoverE;		              // H/E
       Float_t R9;		              // ratio of energies in 3x3 to SC
-      Float_t sigiEtaiEta;                    // eta-width of shower in number of crystals            
+      Float_t sigiEtaiEta;                    // eta-width of shower in number of crystals
+      UInt_t  hltMatchBits;  	              // bits from matching with HLT primitives
       UInt_t  scID;                           // supercluster ID (for matching to electron superclusters)
-      Bool_t  hasPixelSeed;                   // supercluster has pixel seed?     
-      ULong_t hltMatchBits;  	              // bits from matching with HLT primitives 
+      Bool_t  hasPixelSeed;                   // supercluster has pixel seed?
     
     ClassDef(TPhoton,1)
   };  

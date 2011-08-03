@@ -1,5 +1,5 @@
-#ifndef EWKANA_NTUPLER_TELECTRON_HH
-#define EWKANA_NTUPLER_TELECTRON_HH
+#ifndef MITHTT_NTUPLER_TELECTRON_HH
+#define MITHTT_NTUPLER_TELECTRON_HH
 
 #include <TObject.h>
 
@@ -27,15 +27,14 @@ namespace mithep
       Float_t sigiEtaiEta;         // eta-width of shower in number of crystals
       Float_t partnerDeltaCot;     // cot(theta) difference with conversion partner track	
       Float_t partnerDist;         // distance in x-y plane to nearest conversion partner track
-      Float_t ellhID;              // electron likelihood ID ***NOT YET DEFINED***
       Int_t   q;                   // charge
-      UInt_t  nExpHitsInner;       // number of hits expected before first hit      	             
+      UInt_t  nExpHitsInner;       // number of hits expected before first hit
+      UInt_t  hltMatchBits;        // bits for matching with HLT primitives	       
       UInt_t  scID;                // supercluster ID (for matching to photon superclusters)
       UInt_t  trkID;               // tracker track ID (for matching to muons)
-      ULong_t hltMatchBits;        // bits for matching with HLT primitives
       Bool_t  isEcalDriven;        // is ECAL seeded electron?
-      Bool_t  isConv;              // is conversion? (vertexing method)
-          
+      Bool_t  isConv;              // is conversion? (vertexing method)      
+
     ClassDef(TElectron,1)
   };
 }

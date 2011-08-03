@@ -1,5 +1,5 @@
-#ifndef EWKANA_NTUPLER_TMUON_HH
-#define EWKANA_NTUPLER_TMUON_HH
+#ifndef MITHTT_NTUPLER_TMUON_HH
+#define MITHTT_NTUPLER_TMUON_HH
 
 #include <TObject.h>
 
@@ -28,9 +28,9 @@ namespace mithep
       UInt_t  nTkHits;	              // number of inner tracker hits
       UInt_t  nPixHits;	              // number of pixel hits
       UInt_t  nSeg;  	              // number of muon segments
-      UInt_t  nMatch;                 // number of muon chambers matched to segments      
+      UInt_t  nMatch;                 // number of muon chambers matched to segments
+      UInt_t  hltMatchBits;           // bits for matching with HLT primitives 
       UInt_t  trkID;                  // tracker track ID
-      ULong_t hltMatchBits;           // bits for matching with HLT primitives 
 
     ClassDef(TMuon,1)
   };  
