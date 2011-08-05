@@ -54,9 +54,14 @@ Bool_t passWP70(const mithep::TElectron   *electron,   const Bool_t useCombIso=k
 Bool_t passWP60(const mithep::TDielectron *dielectron, const Bool_t useCombIso=kFALSE) { return passWP(dielectron, useCombIso, 5); }
 Bool_t passWP60(const mithep::TElectron   *electron,   const Bool_t useCombIso=kFALSE) { return passWP(electron,   useCombIso, 5); }
 
+// 2011 cuts
 Bool_t passSmurf(const mithep::TDielectron *dielectron);
 Bool_t passSmurf(const mithep::TElectron   *electron);
 
+Bool_t passWP95ID2011(const mithep::TDielectron *dielectron);
+Bool_t passWP95ID2011(const mithep::TElectron   *electron);
+
+// Implementation
 Bool_t passWP(const mithep::TDielectron *dielectron, const Bool_t useCombIso, const Int_t iWP)
 {
   assert(dielectron);
@@ -329,4 +334,59 @@ Bool_t passSmurf(const mithep::TElectron *electron)
   
   return kTRUE;
 }
+
+Bool_t passWP95ID2011(const mithep::TElectron   *electron){
+
+  // barrel/endcap dependent requirments      
+  if(fabs(electron->scEta)<1.479) {
+    // barrel
+    if(electron->sigiEtaiEta	  > 0.01)  return kFALSE;
+    if(fabs(electron->deltaPhiIn) > 0.8 )  return kFALSE;
+    if(fabs(electron->deltaEtaIn) > 0.007) return kFALSE;
+    if(electron->HoverE	          > 0.15) return kFALSE;    
+  } else {
+    // endcap
+    if(electron->sigiEtaiEta	  > 0.03)  return kFALSE;
+    if(fabs(electron->deltaPhiIn) > 0.7)  return kFALSE;
+    if(fabs(electron->deltaEtaIn) > 0.01) return kFALSE;
+    if(electron->HoverE	          > 0.15)  return kFALSE;
+    
+  }
+  return kTRUE;  
+}
+
+Bool_t passWP95ID2011(const mithep::TDielectron *dielectron){
+
+  // barrel/endcap dependent requirments      
+  if(fabs(dielectron->scEta_1)<1.479) {
+    // barrel
+    if(dielectron->sigiEtaiEta_1	> 0.01)  return kFALSE;
+    if(fabs(dielectron->deltaPhiIn_1)   > 0.8 )  return kFALSE;
+    if(fabs(dielectron->deltaEtaIn_1)   > 0.007) return kFALSE;
+    if(dielectron->HoverE_1	        > 0.15)  return kFALSE;
+  } else {
+    // endcap
+    if(dielectron->sigiEtaiEta_1	> 0.03)  return kFALSE;
+    if(fabs(dielectron->deltaPhiIn_1)   > 0.7 )  return kFALSE;
+    if(fabs(dielectron->deltaEtaIn_1)   > 0.01) return kFALSE;
+    if(dielectron->HoverE_1	        > 0.15)  return kFALSE;      
+  }
+  
+  if(fabs(dielectron->scEta_2)<1.479) {
+    // barrel
+    if(dielectron->sigiEtaiEta_2	> 0.01)  return kFALSE;
+    if(fabs(dielectron->deltaPhiIn_2)   > 0.8 )  return kFALSE;
+    if(fabs(dielectron->deltaEtaIn_2)   > 0.007) return kFALSE;
+    if(dielectron->HoverE_2	        > 0.15 ) return kFALSE;        
+  } else {
+    // endcap
+    if(dielectron->sigiEtaiEta_2	> 0.03)  return kFALSE;
+    if(fabs(dielectron->deltaPhiIn_2)   > 0.7 )  return kFALSE;
+    if(fabs(dielectron->deltaEtaIn_2)   > 0.01) return kFALSE;
+    if(dielectron->HoverE_2	        > 0.15)  return kFALSE;      
+  }
+  
+  return kTRUE;
+}
+
 #endif

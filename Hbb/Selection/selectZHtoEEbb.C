@@ -58,9 +58,35 @@ void fillData(ZHtoEEbbData *data, const mithep::TEventInfo *info, TLorentzVector
 	      const mithep::TJet *jet1, const mithep::TJet *jet2, double dijetMass, double dijetPt,
               const UInt_t npv, const UInt_t njets, const Double_t weight);
 
+// Electron cut values
+const double cutEleETMin  = 20.0;
+const double cutEleEtaMax = 2.5;
+const double cutEleIsoMax = 0.1;
+
+// Z cut values
+const double cutZMassMin  = 75.0;
+const double cutZMassMax  = 105.0;
+const double cutZPtMin    = 50.0;
+
+// Jet cut values
+const double cutJetPTMin  = 20.0;
+const double cutJetEtaMax = 2.5;
+const double cutJetTrackCountMin = 2;
+const double cutEMFractionMin = 0.01;
+const double cutHadFractionMin = 0.01;
 const double csv1cut = 0.85;
 const double csv2cut = 0.55;
 
+// Higgs (di-b-jet) cut values)
+// Mass cuts for 115 GeV Higgs
+const double cutHMassMin =  95.0;
+const double cutHMassMax = 125.0;
+const double cutHPtMin    = 50.0;
+
+// Other
+const double cutDRJetLeptonMin = 0.3;
+const double cutDPhiZHMin = 2.95;
+const int cutAdditionalCentralJetsMax = 1;
 
 //=== MAIN MACRO =================================================================================================
 
@@ -170,7 +196,7 @@ void selectZHtoEEbb(const TString conf)
   vector<Double_t> nSelv, nSelVarv;  
   
   UInt_t nProcessedEvents=0;
-  
+
   char hname[100];
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     sprintf(hname,"hZMass_%i",isam);   hZMassv.push_back(new TH1F(hname,"",30,60,120));   hZMassv[isam]->Sumw2();
@@ -233,7 +259,6 @@ void selectZHtoEEbb(const TString conf)
       }
       
       // Get the TTree
-      printf("Get ntuple tree and define branches\n");
       eventTree = (TTree*)infile->Get("Events"); assert(eventTree);
 
       // Set branch address to structures that will store the info  
@@ -248,7 +273,6 @@ void selectZHtoEEbb(const TString conf)
       // <> xsec = 0                             => for data (use all events)
       // <> lumi > 0, xsec > 0, doWeight = true  => use all events and scale to lumi
       // <> lumi > 0, xsec > 0, doWeight = false => compute expected number of events
-      printf("Deal with sample weights\n");
       UInt_t maxEvents = eventTree->GetEntries();
       Double_t weight = 1;
       if(lumi>0) {
@@ -279,17 +303,28 @@ void selectZHtoEEbb(const TString conf)
         if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
         
 	// The double electron trigger bit definitions
-	UInt_t eventTriggerBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL 
-	  | kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL;
-	UInt_t leadingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj
-	  | kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
-	UInt_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj
-	  | kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+	UInt_t eventTriggerBit          = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL;
+	UInt_t leadingTriggerObjectBit  = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj;
+	UInt_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj;
 	if(isam==0) {
 	  nProcessedEvents++;
  	}
 	
         if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
+
+	// Count number of good primary vertices
+	pvArr->Clear();
+	pvBr->GetEntry(ientry);
+	UInt_t nGoodPV=0;
+	for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
+	  const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);                  
+	  if(pv->nTracksFit                        < 1)  continue;
+	  if(pv->ndof                              < 4)  continue;
+	  if(fabs(pv->z)                           > 24) continue;
+	  if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
+	  nGoodPV++;
+	}
+	hNGoodPVv[isam]->Fill(nGoodPV,weight);	    
 
 	electronArr->Clear(); 
 	electronBr->GetEntry(ientry);	
@@ -307,10 +342,10 @@ void selectZHtoEEbb(const TString conf)
 	    // Exclude ECAL gap region and cut out of acceptance electrons
 	    if((fabs(electron1->scEta)>kGAP_LOW) && (fabs(electron1->scEta)<kGAP_HIGH)) continue;
 	    if((fabs(electron2->scEta)>kGAP_LOW) && (fabs(electron2->scEta)<kGAP_HIGH)) continue;
-	    if((fabs(electron1->scEta) > 2.5)       || (fabs(electron2->scEta) > 2.5))       continue;  // outside eta range? Skip to next event...
+	    if((fabs(electron1->scEta) > cutEleEtaMax) || (fabs(electron2->scEta) > cutEleEtaMax))       continue;  // outside eta range? Skip to next event...
 	    //
 	    // ET thresholds for electrons
-	    if( ! (electron1->scEt > 20 && electron2->scEt > 20) ) continue;
+	    if( ! (electron1->scEt > cutEleETMin && electron2->scEt > cutEleETMin) ) continue;
 	    // Both electrons must match trigger objects. At least one ordering
 	    // must match
 	    if( ! ( 
@@ -330,12 +365,18 @@ void selectZHtoEEbb(const TString conf)
 	      // with some customization, plus impact parameter cuts dz and dxy
 	      if(! ( passSmurf(electron1) && passSmurf(electron2)) ) continue;  
 	    }else{
-	      // Use ID cuts as in AN 11-240
-	      // The second argument is for using relative combined isolation
-	      // Note: relative combined isolation cut in this call is a bit
-	      // looser than in 11-240. The values for other cuts haev nto been
-	      // checked.
-	      if( ! ( passWP95(electron1, kTRUE) && passWP95(electron2,kTRUE)) ) continue;
+	      // Use ID cuts as in AN 11-240.
+	      // The note says "WP95", which is interpreted here is 2011 WP95
+	      // ID cuts listed on https://twiki.cern.ch/twiki/bin/view/CMS/VbtfEleID2011
+	      // NOTE: the fBrem cut is not applied, IP cuts are not applied,
+	      // conversion rejection is not applied. Not clear if these
+	      // are applied in 11-240.
+	      if( ! ( passWP95ID2011(electron1) && passWP95ID2011(electron2)) ) continue;
+	      // Cut on relative combined isolation of each electron
+	      // as in 11-240
+	      double iso1 = (electron1->trkIso03 + electron1->emIso03 + electron1->hadIso03)/electron1->pt;
+	      double iso2 = (electron2->trkIso03 + electron2->emIso03 + electron2->hadIso03)/electron2->pt;
+	      if( !( iso1 < cutEleIsoMax && iso2 < cutEleIsoMax ) ) continue;
 	    }
 	    
 	    TLorentzVector lep1Momentum, lep2Momentum;
@@ -344,11 +385,8 @@ void selectZHtoEEbb(const TString conf)
 	    TLorentzVector ZMomentum = lep1Momentum + lep2Momentum;
 
 	    // mass window for Z candidate
-	    if((ZMomentum.M() < 75) || (ZMomentum.M() > 105)) continue;
+	    if((ZMomentum.M() < cutZMassMin) || (ZMomentum.M() > cutZMassMax)) continue;
 	    
-	    
-	    // Pt of the Z candidate
-	    if( !( ZMomentum.Pt() > 100 ) ) continue;
 	    
 	    // Selection of Z candidate is complete. 
 	    //
@@ -361,7 +399,6 @@ void selectZHtoEEbb(const TString conf)
 	    double bestSignificance = -1.0;
 	    const mithep::TJet *bjet1 = 0;
 	    const mithep::TJet *bjet2 = 0;
-	    double dRJetLeptonMin = 0.3;
 	    int totalCentralJets = 0;
 	    pfJetArr->Clear();
 	    pfJetBr->GetEntry(ientry);
@@ -372,71 +409,31 @@ void selectZHtoEEbb(const TString conf)
 		const mithep::TJet *jet2 = (mithep::TJet*)((*pfJetArr)[jjet]);
 		
 		// Cuts on jet kinematics
-		if( !( fabs(jet1->eta) < 2.5 && fabs(jet2->eta) < 2.5) ) continue;
+		if( !( fabs(jet1->eta) < cutJetEtaMax && fabs(jet2->eta) < cutJetEtaMax) ) continue;
 		// 	      printf("DEBUG: pair of central jets found\n");
 		// Jet Pt cuts (JEC corrections are already applied before)
 		// NOT CLEAR: do leptons from Z need to be excluded from jets
 		// in addition to min separation cut below? Description in 11-240 not totally clear.
-		if( !( jet1->pt > 20 && jet2->pt > 20 ) ) continue;
+		if( !( jet1->pt > cutJetPTMin && jet2->pt > cutJetPTMin ) ) continue;
 		// 	      printf("DEBUG: Pt is high enough\n");
 		
-		// Cuts presently missing
-		// TRACK MULTIPLICITY >= 2
-		// FRACTION OF EM ENERGY >= 1%
-		// FRACTION OF HAD ENERGY >= 1%      
-		if( !(jet1->nCharged >= 2 && jet2->nCharged >= 2 ) ) continue;
+		// Cuts on charged particle multiplicity and EM, Had energy fractions
+		if( !(jet1->nCharged >= cutJetTrackCountMin && jet2->nCharged >= cutJetTrackCountMin ) ) continue;
 		// Not clear in 11-240 if charged and neutral are cut on
 		// separately or added
-		if( !( (jet1->chgEMfrac + jet1->neuEMfrac) > 0.01 
-		       && (jet2->chgEMfrac + jet2->neuEMfrac) > 0.01 ) ) continue;
-		if( !( (jet1->chgHadrfrac + jet1->neuHadrfrac) > 0.01 
-		       && (jet2->chgHadrfrac + jet2->neuHadrfrac) > 0.01 ) ) continue;
+		if( !( (jet1->chgEMfrac + jet1->neuEMfrac) > cutEMFractionMin 
+		       && (jet2->chgEMfrac + jet2->neuEMfrac) > cutEMFractionMin ) ) continue;
+		if( !( (jet1->chgHadrfrac + jet1->neuHadrfrac) > cutHadFractionMin 
+		       && (jet2->chgHadrfrac + jet2->neuHadrfrac) > cutHadFractionMin ) ) continue;
 		
 		// Make sure leptons from Z are not too close to jets
-		if( toolbox::deltaR(jet1->eta, jet1->phi, electron1->scEta, electron1->scPhi) < dRJetLeptonMin ) continue;
-		if( toolbox::deltaR(jet1->eta, jet1->phi, electron2->scEta, electron2->scPhi) < dRJetLeptonMin ) continue;
-		if( toolbox::deltaR(jet2->eta, jet2->phi, electron1->scEta, electron1->scPhi) < dRJetLeptonMin ) continue;
-		if( toolbox::deltaR(jet2->eta, jet2->phi, electron2->scEta, electron2->scPhi) < dRJetLeptonMin ) continue;
+		if( toolbox::deltaR(jet1->eta, jet1->phi, electron1->scEta, electron1->scPhi) < cutDRJetLeptonMin ) continue;
+		if( toolbox::deltaR(jet1->eta, jet1->phi, electron2->scEta, electron2->scPhi) < cutDRJetLeptonMin ) continue;
+		if( toolbox::deltaR(jet2->eta, jet2->phi, electron1->scEta, electron1->scPhi) < cutDRJetLeptonMin ) continue;
+		if( toolbox::deltaR(jet2->eta, jet2->phi, electron2->scEta, electron2->scPhi) < cutDRJetLeptonMin ) continue;
 		// 	      printf("DEBUG: Not matched to leptons\n");
-		
-		// b-tagging
-		bool useCSV = true;
-		bool isBTag1 = false;
-		bool isBTag2 = false;
-		// Order CSV of jets in magnitude
-		double csv1 = jet1->csv;
-		double csv2 = jet2->csv;
-		if(csv1 < csv2){
-		  csv1 = jet2->csv;
-		  csv2 = jet1->csv;
-		}
-		if(useCSV){
-		  // The primary method. This is what 11-240 uses.
-		  // The ordering 1-2 may mean different jets for these booleans
-		  // vs original jet1 and jet2, but this does not affect anything.
-		  if( csv1 > csv1cut )
-		    isBTag1 = true;
-		  if( csv2 > csv2cut )
-		    isBTag2 = true;
-		} else {
-		  // Use the impact parameter significance of the second most significant
-		  // track ("high efficiency")
-		  if(fabs(jet1->tche)>2)
-		    isBTag1 = true;
-		  if(fabs(jet2->tche)>2)
-		    isBTag2 = true;
-		}
-		if(! (isBTag1 && isBTag2 ) ) continue;
-		// 	      printf("DEBUG: B-tagged\n");
-		
-		// Save if this is highest significance pair so far
-		double thisSignificance = -1;
-		if(useCSV){
-		  // Here we should add CSV values of the two jets
-		  thisSignificance = csv1 + csv2;
-		} else {
-		  thisSignificance = fabs(jet1->tche) + fabs(jet1->tche);
-		}
+
+		double thisSignificance = jet1->csv + jet2->csv;
 		if(thisSignificance > bestSignificance){
 		  bjet1 = jet1;
 		  bjet2 = jet2;
@@ -445,9 +442,9 @@ void selectZHtoEEbb(const TString conf)
 	      } // end inner loop over jets
 	      
 	      // Count jets toward jet veto
-	      if( jet1->pt > 20 && fabs(jet1->eta) < 2.5
-		  && toolbox::deltaR(jet1->eta, jet1->phi, electron1->scEta, electron1->scPhi) > dRJetLeptonMin
-		  && toolbox::deltaR(jet1->eta, jet1->phi, electron2->scEta, electron2->scPhi) > dRJetLeptonMin 
+	      if( jet1->pt > cutJetPTMin && fabs(jet1->eta) < cutJetEtaMax
+		  && toolbox::deltaR(jet1->eta, jet1->phi, electron1->scEta, electron1->scPhi) > cutDRJetLeptonMin
+		  && toolbox::deltaR(jet1->eta, jet1->phi, electron2->scEta, electron2->scPhi) > cutDRJetLeptonMin 
 		  ){
 		totalCentralJets++;
 	      } 
@@ -455,46 +452,48 @@ void selectZHtoEEbb(const TString conf)
 	    } // end outer loop over jets
 	    // 	  printf("DEBUG: N central jets %d\n", totalCentralJets);
 	    
-	    // Is there a good enough pair of b-jets?
+	    // Is there a good enough pair of jets?
 	    if( !( bjet1 && bjet2 ) ) continue;
-	    // 	  printf("DEBUG: two b-jets found\n");
 	    
 	    // Cuts on the Higgs -> bjet1 bjet2
 	    TLorentzVector b1Momentum, b2Momentum;
 	    b1Momentum.SetPtEtaPhiM(bjet1->pt, bjet1->eta, bjet1->phi, bjet1->mass);
 	    b2Momentum.SetPtEtaPhiM(bjet2->pt, bjet2->eta, bjet2->phi, bjet2->mass);
 	    TLorentzVector HMomentum = b1Momentum + b2Momentum;
-	    if( ! (HMomentum.Pt() > 100 ) ) continue;
+
+	    // Pt of the Higgs candidate
+	    if( ! (HMomentum.Pt() > cutHPtMin ) ) continue;
+	    // Pt of the Z candidate
+	    if( !( ZMomentum.Pt() > cutZPtMin ) ) continue;
+	    
+	    // Apply b-tagging.
+	    // First, order CSV of jets in magnitude
+	    double csv1 = bjet1->csv;
+	    double csv2 = bjet2->csv;
+	    if(csv1 < csv2){
+	      csv1 = bjet2->csv;
+	      csv2 = bjet1->csv;
+	    }
+	    // Second, apply the cut on CSV
+	    if( !( csv1 > csv1cut && csv2 > csv2cut ) ) continue;
+
+	    // Z and H are back to back
+	    if( ! ( fabs( ZMomentum.DeltaPhi(HMomentum) ) > cutDPhiZHMin ) ) continue;
+	    
+	    // Additional jet veto (no more than 1 additional jet)
+	    if( ! (totalCentralJets - 2 <= cutAdditionalCentralJetsMax) ) continue;
+	    
 	    // The mass cut on dijet should be a sliding window if we follow AN 11-240
 	    // The values below are for search at m_H = 115 GeV.
 	    // NOTE: AN 11-240 does not make it clear whether this mass window
 	    // should be applied to the pair of jets with highest b-jet probability,
 	    // or whether the pair should be selected from those that passed this cut.
-	    if( ! (HMomentum.M() > 95 && HMomentum.M() < 125 ) ) continue;
-	    
-	    // Z and H are back to back
-	    if( ! ( fabs( ZMomentum.DeltaPhi(HMomentum) ) > 2.95 ) ) continue;
-	    
-	    // Additional jet veto (no more than 1 additional jet)
-	    if( ! (totalCentralJets - 2 < 2) ) continue;
+	    if( ! (HMomentum.M() > cutHMassMin && HMomentum.M() < cutHMassMax ) ) continue;
 	    
 	    //
 	    // The ZH candidate for cut and count is identified
 	    //
 // 	    printf("DEBUG: ZH candidate found\n");
-	    
-	    // Count number of good primary vertices
-	    pvArr->Clear();
-	    pvBr->GetEntry(ientry);
-	    UInt_t nGoodPV=0;
-	    for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
-	      const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);                  
-	      if(pv->nTracksFit                        < 1)  continue;
-	      if(pv->ndof                              < 4)  continue;
-	      if(fabs(pv->z)                           > 24) continue;
-	      if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
-	      nGoodPV++;
-	    }
 	    
 	    //
 	    // Fill histograms
@@ -503,7 +502,6 @@ void selectZHtoEEbb(const TString conf)
 	    hHMassv[isam]->Fill(HMomentum.M(),weight);
 	    hZPtv[isam]  ->Fill(ZMomentum.Pt(),  weight);
 	    hHPtv[isam]  ->Fill(HMomentum.Pt(),  weight);
-	    hNGoodPVv[isam]->Fill(nGoodPV,weight);
 	    
 	    //
 	    // Fill ntuple data
