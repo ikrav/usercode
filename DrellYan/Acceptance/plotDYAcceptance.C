@@ -118,11 +118,11 @@ void plotDYAcceptance(const TString input)
   // Read weights from a file
   //
   const bool useFewzWeights = true;
-  TH2D *weights[DYTools::nMassBins];
-  TH2D *weightErrors[DYTools::nMassBins];
+  TH2D *weights[DYTools::nMassBins13];
+  TH2D *weightErrors[DYTools::nMassBins13];
   TFile fweights("../root_files/fewz/fewz_powheg_weights_04.root");
   if( !fweights.IsOpen() ) assert(0);
-  for(int i=0; i<DYTools::nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins13; i++){
     TString hname = TString::Format("weight_%02d",i+1);
     weights[i] = (TH2D*)fweights.Get(hname);
     hname = TString::Format("h_weighterror_%02d",i+1);
@@ -171,25 +171,25 @@ void plotDYAcceptance(const TString input)
       if((mass < massLow) || (mass > massHigh)) continue;
       
       int ibin = DYTools::findMassBin(mass);
-      int ibinPreFsr = DYTools::findMassBin(massPreFsr);
+      int ibinPreFsr13 = DYTools::findMassBin13(massPreFsr);
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
       double fewz_weight = 1.0;
       if(useFewzWeights){
-	if(ibinPreFsr != -1 && ibinPreFsr < DYTools::nMassBins){
-	  int ptBin = weights[ibinPreFsr]->GetXaxis()->FindBin( gen->vpt );
-	  int yBin = weights[ibinPreFsr]->GetYaxis()->FindBin( gen->vy );
+	if(ibinPreFsr13 != -1 && ibinPreFsr13 < DYTools::nMassBins13){
+	  int ptBin = weights[ibinPreFsr13]->GetXaxis()->FindBin( gen->vpt );
+	  int yBin = weights[ibinPreFsr13]->GetYaxis()->FindBin( gen->vy );
 	  // In case if pt or y are outside of the weight maps,
 	  // set them to the closest bin.
- 	  if(ptBin == weights[ibinPreFsr]->GetNbinsX() + 1)
- 	    ptBin = weights[ibinPreFsr]->GetNbinsX();
+ 	  if(ptBin == weights[ibinPreFsr13]->GetNbinsX() + 1)
+ 	    ptBin = weights[ibinPreFsr13]->GetNbinsX();
  	  if(ptBin == 0)
  	    ptBin = 1;
- 	  if(yBin == weights[ibinPreFsr]->GetNbinsY() + 1)
- 	    yBin = weights[ibinPreFsr]->GetNbinsY();
+ 	  if(yBin == weights[ibinPreFsr13]->GetNbinsY() + 1)
+ 	    yBin = weights[ibinPreFsr13]->GetNbinsY();
  	  if(yBin == 0)
  	    yBin = 1;
-	  fewz_weight = weights[ibinPreFsr]->GetBinContent( ptBin, yBin);
+	  fewz_weight = weights[ibinPreFsr13]->GetBinContent( ptBin, yBin);
 						      
 	}else
 	  cout << "Error: binning problem" << endl;

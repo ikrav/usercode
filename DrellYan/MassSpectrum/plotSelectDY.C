@@ -37,11 +37,6 @@
 
 #endif
 
-const int nEBins = 13;
-double eBinsLimits[nEBins+1] = 
-  {15,20,30,40,50,60,76,86,96,106,120,150,200,600};
-
-
 //=== MAIN MACRO =================================================================================================
 
 void plotSelectDY(const TString conf  = "data_plot.conf") 
@@ -154,7 +149,7 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
   char hname[100];
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     sprintf(hname,"hMass_%i",isam);  hMassv.push_back(new TH1F(hname,"",790,10,800));  hMassv[isam]->Sumw2();
-    sprintf(hname,"hMassBins_%i",isam);  hMassBinsv.push_back(new TH1F(hname,"",nEBins,eBinsLimits));  hMassBinsv[isam]->Sumw2();
+    sprintf(hname,"hMassBins_%i",isam);  hMassBinsv.push_back(new TH1F(hname,"",nMassBins,massBinLimits));  hMassBinsv[isam]->Sumw2();
     sprintf(hname,"hPt_%i",isam);    hPtv.push_back(new TH1F(hname,"",20,0,100));     hPtv[isam]->Sumw2();
     sprintf(hname,"hy_%i",isam);     hyv.push_back(new TH1F(hname,"",20,-3,3));       hyv[isam]->Sumw2();
     sprintf(hname,"hPhi_%i",isam);   hPhiv.push_back(new TH1F(hname,"",20,-3.2,3.2)); hPhiv[isam]->Sumw2();
@@ -631,10 +626,10 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
   cout << endl;
 
   // Print backgrounds table for all mass bins
-  double totalBg[nEBins];
-  double totalBgError[nEBins];
+  double totalBg[nMassBins];
+  double totalBgError[nMassBins];
   printf("Printout of the backgrounds for all mass bins\n");
-  for(int ibin=0; ibin<nEBins; ibin++){
+  for(int ibin=0; ibin<nMassBins; ibin++){
     printf("%5.1f-%5.1f GeV: ",
 	   hMassBinsv[0]->GetXaxis()->GetBinLowEdge(ibin+1),
 	   hMassBinsv[0]->GetXaxis()->GetBinUpEdge(ibin+1));
@@ -662,7 +657,7 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
     printf(" %14s ",snamev[isam].Data());
   }
   printf("           total          fraction\n");
-  for(int ibin=0; ibin<nEBins; ibin++){
+  for(int ibin=0; ibin<nMassBins; ibin++){
     printf("%5.1f-%5.1f GeV: ",
 	   hMassBinsv[0]->GetXaxis()->GetBinLowEdge(ibin+1),
 	   hMassBinsv[0]->GetXaxis()->GetBinUpEdge(ibin+1));
@@ -681,7 +676,7 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
 
 //   double rho = 0.9177; // from 10/264 v3 with WP95
 //   printf("Using DUMMY APRIME, do not trust final x-sec values\n");
-//   double aprime[nEBins] = {
+//   double aprime[nMassBins] = {
 //     0.020408,
 //     0.005599,
 //     0.050018,
@@ -698,14 +693,14 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
 
   printf("Printout of the signal and total backgorund, and x-sec for mass bins\n");
   // Also save into array to store
-  TVectorD YieldsSignal      (nEBins);
-  TVectorD YieldsSignalErr   (nEBins);
-  TVectorD BinLimitsForYields(nEBins+1);
-  for(int ibin=0; ibin<=nEBins; ibin++){
-    BinLimitsForYields[ibin] = eBinsLimits[ibin];
+  TVectorD YieldsSignal      (nMassBins);
+  TVectorD YieldsSignalErr   (nMassBins);
+  TVectorD BinLimitsForYields(nMassBins+1);
+  for(int ibin=0; ibin<=nMassBins; ibin++){
+    BinLimitsForYields[ibin] = massBinLimits[ibin];
   }
   printf("      mass              selected     background    backgr. fraction, %%\n");
-  for(int ibin=0; ibin<nEBins; ibin++){
+  for(int ibin=0; ibin<nMassBins; ibin++){
     printf("%5.1f-%5.1f GeV: ",
 	   hMassBinsv[0]->GetXaxis()->GetBinLowEdge(ibin+1),
 	   hMassBinsv[0]->GetXaxis()->GetBinUpEdge(ibin+1));

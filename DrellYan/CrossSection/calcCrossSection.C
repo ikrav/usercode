@@ -75,36 +75,13 @@ void printRelativeSystErrors();
 // the unfolding constants and energy scale corrections. We want
 // to change this in the future from hardwired text constants here
 // to reading ROOT files.
-// These values are from 2010 data at present.
-const double unfoldingSystematicsPercent[13] = {
-  5.44,
-  1.36,
-  0.81,
-  0.57,
-  0.83,
-  0.55,
-  2.37,
-  0.54,
-  3.14,
-  0.97,
-  1.11,
-  0.88,
-  0.39};
+const double unfoldingSystematicsPercent[nMassBins] = 
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-const double escaleSystematicsPercent[13] = {
-    16.1   ,   
-    2.9   ,    
-    2.1   ,   
-    2.5   ,   
-    2.1   ,    
-    4.5   ,    
-   14.8   ,    
-    1.8   ,    
-   23.5   ,   
-    7.9   ,    
-    4.5   ,   
-    4.8   ,   
-    4.3   };
+const double escaleSystematicsPercent[nMassBins] = 
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 // Some global arrays for convenience.
 // These will contain errors on R
@@ -341,9 +318,6 @@ void  unfold(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
     assert(0);
   }else
     printf("unfold: Binning in the inputs is consistent\n");
-
-  // Make sure the binning is the default
-  if( 13 != nMassBins) assert(0);
 
   // Apply unfolding matrix
   TVectorD systErrorPreviousPropagated(nBins);

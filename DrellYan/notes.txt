@@ -94,3 +94,9 @@ Open issues:
 
  5. Add theory systematics to calcCrossSection.C
  
+ 6. Make calcCrossSection read unfolding and escale systematics from ROOT files
+
+ 7. Add code that measures this systematics:
+   - energy scale
+   - unfolding
+   - FSR-related
