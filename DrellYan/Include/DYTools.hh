@@ -19,7 +19,7 @@ namespace DYTools {
   //
   // 2010 mass binning
   const int nMassBins13 = 13;
-  const double massBinLimits13[nMassBins+1] = 
+  const double massBinLimits13[nMassBins13+1] = 
     {15,20,30,40,50,60,76,86,96,106,120,150,200,600}; // 13 bins
 
   // 2011 mass binning
