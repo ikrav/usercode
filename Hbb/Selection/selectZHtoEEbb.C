@@ -35,7 +35,7 @@
 // define structures to read in ntuple
 #include "../Include/HiggsAnaDefs.hh"
 #include "../Include/TEventInfo.hh"
-#include "../Include/TDielectron.hh"
+#include "../Include/TElectron.hh"
 #include "../Include/TJet.hh"
 #include "../Include/TVertex.hh"
 #include "../Include/MyTools.hh"
@@ -53,9 +53,14 @@
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 // fill ntuple of selected events
-void fillData(ZHtoEEbbData *data, const mithep::TEventInfo *info, const mithep::TDielectron *dielectron,
+void fillData(ZHtoEEbbData *data, const mithep::TEventInfo *info, TLorentzVector ZMomentum,
+	      const mithep::TElectron *electron1, const mithep::TElectron *electron2,
 	      const mithep::TJet *jet1, const mithep::TJet *jet2, double dijetMass, double dijetPt,
               const UInt_t npv, const UInt_t njets, const Double_t weight);
+
+const double csv1cut = 0.85;
+const double csv2cut = 0.55;
+
 
 //=== MAIN MACRO =================================================================================================
 
@@ -169,9 +174,9 @@ void selectZHtoEEbb(const TString conf)
   char hname[100];
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     sprintf(hname,"hZMass_%i",isam);   hZMassv.push_back(new TH1F(hname,"",30,60,120));   hZMassv[isam]->Sumw2();
-    sprintf(hname,"hHMass_%i",isam);   hHMassv.push_back(new TH1F(hname,"",50,50,250));   hHMassv[isam]->Sumw2();
-    sprintf(hname,"hZPt_%i",isam);     hZPtv.push_back(new TH1F(hname,"",50,0,100));       hZPtv[isam]->Sumw2();
-    sprintf(hname,"hHPt_%i",isam);     hHPtv.push_back(new TH1F(hname,"",50,0,100));       hHPtv[isam]->Sumw2();
+    sprintf(hname,"hHMass_%i",isam);   hHMassv.push_back(new TH1F(hname,"",50,50,150));   hHMassv[isam]->Sumw2();
+    sprintf(hname,"hZPt_%i",isam);     hZPtv.push_back(new TH1F(hname,"",50,0,200));       hZPtv[isam]->Sumw2();
+    sprintf(hname,"hHPt_%i",isam);     hHPtv.push_back(new TH1F(hname,"",50,0,300));       hHPtv[isam]->Sumw2();
     sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());       hNGoodPVv.push_back(new TH1F(hname,"",15,-0.5,14.5));        hNGoodPVv[isam]->Sumw2();
     
     nSelv.push_back(0);
@@ -187,7 +192,7 @@ void selectZHtoEEbb(const TString conf)
   // Data structures to store info from TTrees
   mithep::TEventInfo *info    = new mithep::TEventInfo();
   TClonesArray *pfJetArr      = new TClonesArray("mithep::TJet");
-  TClonesArray *dielectronArr = new TClonesArray("mithep::TDielectron");
+  TClonesArray *electronArr   = new TClonesArray("mithep::TElectron");
   TClonesArray *pvArr         = new TClonesArray("mithep::TVertex");
   
   //
@@ -228,11 +233,12 @@ void selectZHtoEEbb(const TString conf)
       }
       
       // Get the TTree
+      printf("Get ntuple tree and define branches\n");
       eventTree = (TTree*)infile->Get("Events"); assert(eventTree);
 
       // Set branch address to structures that will store the info  
       eventTree->SetBranchAddress("Info",       &info);          TBranch *infoBr       = eventTree->GetBranch("Info");
-      eventTree->SetBranchAddress("Dielectron", &dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
+      eventTree->SetBranchAddress("Electron",   &electronArr);   TBranch *electronBr   = eventTree->GetBranch("Electron");
       eventTree->SetBranchAddress("PFJet",      &pfJetArr);      TBranch *pfJetBr      = eventTree->GetBranch("PFJet");
       eventTree->SetBranchAddress("PV",         &pvArr);         TBranch *pvBr         = eventTree->GetBranch("PV");
       
@@ -242,6 +248,7 @@ void selectZHtoEEbb(const TString conf)
       // <> xsec = 0                             => for data (use all events)
       // <> lumi > 0, xsec > 0, doWeight = true  => use all events and scale to lumi
       // <> lumi > 0, xsec > 0, doWeight = false => compute expected number of events
+      printf("Deal with sample weights\n");
       UInt_t maxEvents = eventTree->GetEntries();
       Double_t weight = 1;
       if(lumi>0) {
@@ -264,7 +271,7 @@ void selectZHtoEEbb(const TString conf)
 	if(ientry >= maxEvents) break;
 	
 	infoBr->GetEntry(ientry);
-		
+
 	// As above: commented out is the method to use within CMSSW,
 	// and JsonParser is a stand-alone tool
 //         mithep::RunLumiRangeMap::RunLumiPairType rl(info->runNum, info->lumiSec);      
@@ -284,207 +291,233 @@ void selectZHtoEEbb(const TString conf)
 	
         if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
 
-	dielectronArr->Clear(); 
-	dielectronBr->GetEntry(ientry);	
+	electronArr->Clear(); 
+	electronBr->GetEntry(ientry);	
 
 	// 
-	// Loop through dielectrons
+	// Loop over electrons
 	//
-        for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
-	  mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
+        for(Int_t i=0; i<electronArr->GetEntriesFast(); i++) {
+	  mithep::TElectron *electron1 = (mithep::TElectron*)((*electronArr)[i]);
 
-          // Exclude ECAL gap region and cut out of acceptance electrons
-          if((fabs(dielectron->scEta_1)>kGAP_LOW) && (fabs(dielectron->scEta_1)<kGAP_HIGH)) continue;
-          if((fabs(dielectron->scEta_2)>kGAP_LOW) && (fabs(dielectron->scEta_2)<kGAP_HIGH)) continue;
-          if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
-	  //
-	  // ET thresholds for electrons
-       	  if( ! (dielectron->scEt_1 > 20 && dielectron->scEt_2 > 20) ) continue;
-	  // Both electrons must match trigger objects. At least one ordering
-	  // must match
-	  if( ! ( 
-		 (dielectron->hltMatchBits_1 & leadingTriggerObjectBit && 
-		  dielectron->hltMatchBits_2 & trailingTriggerObjectBit )
-		  ||
-		 (dielectron->hltMatchBits_1 & trailingTriggerObjectBit && 
-		  dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
+	  for(Int_t j=0; j<electronArr->GetEntriesFast(); j++) {
+	    if( i==j ) continue; 
+	    mithep::TElectron *electron2 = (mithep::TElectron*)((*electronArr)[j]);
 
-	  // Other cuts to both electrons
+	    // Exclude ECAL gap region and cut out of acceptance electrons
+	    if((fabs(electron1->scEta)>kGAP_LOW) && (fabs(electron1->scEta)<kGAP_HIGH)) continue;
+	    if((fabs(electron2->scEta)>kGAP_LOW) && (fabs(electron2->scEta)<kGAP_HIGH)) continue;
+	    if((fabs(electron1->scEta) > 2.5)       || (fabs(electron2->scEta) > 2.5))       continue;  // outside eta range? Skip to next event...
+	    //
+	    // ET thresholds for electrons
+	    if( ! (electron1->scEt > 20 && electron2->scEt > 20) ) continue;
+	    // Both electrons must match trigger objects. At least one ordering
+	    // must match
+	    if( ! ( 
+		   (electron1->hltMatchBits & leadingTriggerObjectBit && 
+		    electron2->hltMatchBits & trailingTriggerObjectBit )
+		   ||
+		   (electron1->hltMatchBits & trailingTriggerObjectBit && 
+		    electron2->hltMatchBits & leadingTriggerObjectBit ) ) ) continue;
+	    
+	    // Other cuts to both electrons
+	    
+	    // Apply electron ID to both electrons
+	    bool useSmurf = false;
+	    if(useSmurf){
+	      // The Smurf electron ID package as used in HWW analysis.
+	      // It contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
+	      // with some customization, plus impact parameter cuts dz and dxy
+	      if(! ( passSmurf(electron1) && passSmurf(electron2)) ) continue;  
+	    }else{
+	      // Use ID cuts as in AN 11-240
+	      // The second argument is for using relative combined isolation
+	      // Note: relative combined isolation cut in this call is a bit
+	      // looser than in 11-240. The values for other cuts haev nto been
+	      // checked.
+	      if( ! ( passWP95(electron1, kTRUE) && passWP95(electron2,kTRUE)) ) continue;
+	    }
+	    
+	    TLorentzVector lep1Momentum, lep2Momentum;
+	    lep1Momentum.SetPtEtaPhiM(electron1->pt, electron1->eta, electron1->phi, 0.000511);
+	    lep2Momentum.SetPtEtaPhiM(electron2->pt, electron2->eta, electron2->phi, 0.000511);
+	    TLorentzVector ZMomentum = lep1Momentum + lep2Momentum;
 
-	  // Apply electron ID to both electrons
-	  bool useSmurf = false;
-	  if(useSmurf){
-	    // The Smurf electron ID package as used in HWW analysis.
-	    // It contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
-	    // with some customization, plus impact parameter cuts dz and dxy
-	    if(!passSmurf(dielectron)) continue;  
-	  }else{
-	    // Use ID cuts as in AN 11-240
-	    // The second argument is for using relative combined isolation
-	    // Note: relative combined isolation cut in this call is a bit
-	    // looser than in 11-240. The values for other cuts haev nto been
-	    // checked.
-	    if( !passWP95(dielectron, kTRUE)) continue;
-	  }
-
-          // mass window for Z candidate
-          if((dielectron->mass < 75) || (dielectron->mass > 105)) continue;
-	  
-	  TLorentzVector lep1Momentum, lep2Momentum;
-	  lep1Momentum.SetPtEtaPhiM(dielectron->pt_1, dielectron->eta_1, dielectron->phi_1, 0.000511);
-	  lep2Momentum.SetPtEtaPhiM(dielectron->pt_2, dielectron->eta_2, dielectron->phi_2, 0.000511);
-	  TLorentzVector ZMomentum = lep1Momentum + lep2Momentum;
-
-	  // Pt of the Z candidate
-	  if( !( ZMomentum.Pt() > 100 ) ) continue;
-
-	  // Selection of Z candidate is complete. 
-	  //
-// 	  printf("DEBUG: Z candidate found\n");
-
-	  // 
-	  // Find a pair of candidate b-jets with highest combined
-	  // probability.
-	  //
-	  double bestSignificance = -1.0;
-	  const mithep::TJet *bjet1 = 0;
-	  const mithep::TJet *bjet2 = 0;
-	  double dRJetLeptonMin = 0.3;
-	  int totalCentralJets = 0;
- 	  pfJetArr->Clear();
- 	  pfJetBr->GetEntry(ientry);
- 	  for(Int_t ijet=0; ijet<pfJetArr->GetEntriesFast(); ijet++) {
- 	    const mithep::TJet *jet1 = (mithep::TJet*)((*pfJetArr)[ijet]);
-	    for(Int_t jjet=0; jjet<pfJetArr->GetEntriesFast(); jjet++) {
-	      if( ijet == jjet ) continue;
-	      const mithep::TJet *jet2 = (mithep::TJet*)((*pfJetArr)[jjet]);
-	  
-	      // Cuts on jet kinematics
-	      if( !( fabs(jet1->eta) < 2.5 && fabs(jet2->eta) < 2.5) ) continue;
-// 	      printf("DEBUG: pair of central jets found\n");
-	      // Jet Pt cuts (JEC corrections are already applied before)
-	      // NOT CLEAR: do leptons from Z need to be excluded from jets
-	      // in addition to min separation cut below? Description in 11-240 not totally clear.
-	      if( !( jet1->pt > 20 && jet2->pt > 20 ) ) continue;
-// 	      printf("DEBUG: Pt is high enough\n");
-
-	      // Cuts presently missing
-	      // TRACK MULTIPLICITY >= 2
-	      // FRACTION OF EM ENERGY >= 1%
-	      // FRACTION OF HAD ENERGY >= 1%      
-
-	      // Make sure leptons from Z are not too close to jets
-	      if( toolbox::deltaR(jet1->eta, jet1->phi, dielectron->scEta_1, dielectron->scPhi_1) < dRJetLeptonMin ) continue;
-	      if( toolbox::deltaR(jet1->eta, jet1->phi, dielectron->scEta_2, dielectron->scPhi_2) < dRJetLeptonMin ) continue;
-	      if( toolbox::deltaR(jet2->eta, jet2->phi, dielectron->scEta_1, dielectron->scPhi_1) < dRJetLeptonMin ) continue;
-	      if( toolbox::deltaR(jet2->eta, jet2->phi, dielectron->scEta_2, dielectron->scPhi_2) < dRJetLeptonMin ) continue;
-// 	      printf("DEBUG: Not matched to leptons\n");
-
-	      // b-tagging
-	      bool useCSV = false;
-	      bool isBTag1 = false;
-	      bool isBTag2 = false;
-	      if(useCSV){
-		// The primary method is to be implemented once variables are available
-		// in the ntuples. This is what 11-240 uses.
-	      } else {
-		// Use the impact parameter significance of the second most significant
-		// track ("high efficiency")
-		if(fabs(jet1->tche)>2)
-		  isBTag1 = true;
-		if(fabs(jet2->tche)>2)
-		  isBTag2 = true;
-	      }
-	      if(! (isBTag1 && isBTag2 ) ) continue;
-// 	      printf("DEBUG: B-tagged\n");
+	    // mass window for Z candidate
+	    if((ZMomentum.M() < 75) || (ZMomentum.M() > 105)) continue;
+	    
+	    
+	    // Pt of the Z candidate
+	    if( !( ZMomentum.Pt() > 100 ) ) continue;
+	    
+	    // Selection of Z candidate is complete. 
+	    //
+	    // 	  printf("DEBUG: Z candidate found\n");
+	    
+	    // 
+	    // Find a pair of candidate b-jets with highest combined
+	    // probability.
+	    //
+	    double bestSignificance = -1.0;
+	    const mithep::TJet *bjet1 = 0;
+	    const mithep::TJet *bjet2 = 0;
+	    double dRJetLeptonMin = 0.3;
+	    int totalCentralJets = 0;
+	    pfJetArr->Clear();
+	    pfJetBr->GetEntry(ientry);
+	    for(Int_t ijet=0; ijet<pfJetArr->GetEntriesFast(); ijet++) {
+	      const mithep::TJet *jet1 = (mithep::TJet*)((*pfJetArr)[ijet]);
+	      for(Int_t jjet=0; jjet<pfJetArr->GetEntriesFast(); jjet++) {
+		if( ijet == jjet ) continue;
+		const mithep::TJet *jet2 = (mithep::TJet*)((*pfJetArr)[jjet]);
+		
+		// Cuts on jet kinematics
+		if( !( fabs(jet1->eta) < 2.5 && fabs(jet2->eta) < 2.5) ) continue;
+		// 	      printf("DEBUG: pair of central jets found\n");
+		// Jet Pt cuts (JEC corrections are already applied before)
+		// NOT CLEAR: do leptons from Z need to be excluded from jets
+		// in addition to min separation cut below? Description in 11-240 not totally clear.
+		if( !( jet1->pt > 20 && jet2->pt > 20 ) ) continue;
+		// 	      printf("DEBUG: Pt is high enough\n");
+		
+		// Cuts presently missing
+		// TRACK MULTIPLICITY >= 2
+		// FRACTION OF EM ENERGY >= 1%
+		// FRACTION OF HAD ENERGY >= 1%      
+		if( !(jet1->nCharged >= 2 && jet2->nCharged >= 2 ) ) continue;
+		// Not clear in 11-240 if charged and neutral are cut on
+		// separately or added
+		if( !( (jet1->chgEMfrac + jet1->neuEMfrac) > 0.01 
+		       && (jet2->chgEMfrac + jet2->neuEMfrac) > 0.01 ) ) continue;
+		if( !( (jet1->chgHadrfrac + jet1->neuHadrfrac) > 0.01 
+		       && (jet2->chgHadrfrac + jet2->neuHadrfrac) > 0.01 ) ) continue;
+		
+		// Make sure leptons from Z are not too close to jets
+		if( toolbox::deltaR(jet1->eta, jet1->phi, electron1->scEta, electron1->scPhi) < dRJetLeptonMin ) continue;
+		if( toolbox::deltaR(jet1->eta, jet1->phi, electron2->scEta, electron2->scPhi) < dRJetLeptonMin ) continue;
+		if( toolbox::deltaR(jet2->eta, jet2->phi, electron1->scEta, electron1->scPhi) < dRJetLeptonMin ) continue;
+		if( toolbox::deltaR(jet2->eta, jet2->phi, electron2->scEta, electron2->scPhi) < dRJetLeptonMin ) continue;
+		// 	      printf("DEBUG: Not matched to leptons\n");
+		
+		// b-tagging
+		bool useCSV = true;
+		bool isBTag1 = false;
+		bool isBTag2 = false;
+		// Order CSV of jets in magnitude
+		double csv1 = jet1->csv;
+		double csv2 = jet2->csv;
+		if(csv1 < csv2){
+		  csv1 = jet2->csv;
+		  csv2 = jet1->csv;
+		}
+		if(useCSV){
+		  // The primary method. This is what 11-240 uses.
+		  // The ordering 1-2 may mean different jets for these booleans
+		  // vs original jet1 and jet2, but this does not affect anything.
+		  if( csv1 > csv1cut )
+		    isBTag1 = true;
+		  if( csv2 > csv2cut )
+		    isBTag2 = true;
+		} else {
+		  // Use the impact parameter significance of the second most significant
+		  // track ("high efficiency")
+		  if(fabs(jet1->tche)>2)
+		    isBTag1 = true;
+		  if(fabs(jet2->tche)>2)
+		    isBTag2 = true;
+		}
+		if(! (isBTag1 && isBTag2 ) ) continue;
+		// 	      printf("DEBUG: B-tagged\n");
+		
+		// Save if this is highest significance pair so far
+		double thisSignificance = -1;
+		if(useCSV){
+		  // Here we should add CSV values of the two jets
+		  thisSignificance = csv1 + csv2;
+		} else {
+		  thisSignificance = fabs(jet1->tche) + fabs(jet1->tche);
+		}
+		if(thisSignificance > bestSignificance){
+		  bjet1 = jet1;
+		  bjet2 = jet2;
+		  bestSignificance = thisSignificance;
+		}
+	      } // end inner loop over jets
 	      
-	      // Save if this is highest significance pair so far
-	      double thisSignificance = -1;
-	      if(useCSV){
-		// Here we should add CSV values of the two jets
-	      } else {
-		thisSignificance = fabs(jet1->tche) + fabs(jet1->tche);
-	      }
-	      if(thisSignificance > bestSignificance){
-		bjet1 = jet1;
-		bjet2 = jet2;
-		bestSignificance = thisSignificance;
-	      }
-	    } // end inner loop over jets
-
-	    // Count jets toward jet veto
-	    if( jet1->pt > 20 && fabs(jet1->eta) < 2.5
-		&& toolbox::deltaR(jet1->eta, jet1->phi, dielectron->scEta_1, dielectron->scPhi_1) > dRJetLeptonMin
-		&& toolbox::deltaR(jet1->eta, jet1->phi, dielectron->scEta_2, dielectron->scPhi_2) > dRJetLeptonMin 
-		){
-	      totalCentralJets++;
-	    } 
-
-	  } // end outer loop over jets
-// 	  printf("DEBUG: N central jets %d\n", totalCentralJets);
-
-	  // Is there a good enough pair of b-jets?
-	  if( !( bjet1 && bjet2 ) ) continue;
-// 	  printf("DEBUG: two b-jets found\n");
-
-	  // Cuts on the Higgs -> bjet1 bjet2
-	  TLorentzVector b1Momentum, b2Momentum;
-	  b1Momentum.SetPtEtaPhiM(bjet1->pt, bjet1->eta, bjet1->phi, bjet1->mass);
-	  b2Momentum.SetPtEtaPhiM(bjet2->pt, bjet2->eta, bjet2->phi, bjet2->mass);
-	  TLorentzVector HMomentum = b1Momentum + b2Momentum;
-	  if( ! (HMomentum.Pt() > 100 ) ) continue;
-	  // The mass cut on dijet should be a sliding window if we follow AN 11-240
-	  // The values below are for search at m_H = 120 GeV.
-	  // NOTE: AN 11-240 does not make it clear whether this mass window
-	  // should be applied to the pair of jets with highest b-jet probability,
-	  // or whether the pair should be selected from those that passed this cut.
-	  if( ! (HMomentum.M() > 100 && HMomentum.M() < 130 ) ) continue;
-	  
-	  // Z and H are back to back
-	  if( ! ( fabs( ZMomentum.DeltaPhi(HMomentum) ) > 2.90 ) ) continue;
-
-	  // Additional jet veto (no more than 1 additional jet)
-	  if( ! (totalCentralJets - 2 < 2) ) continue;
-	  
-	  //
-	  // The ZH candidate for cut and count is identified
-	  //
-	  printf("DEBUG: ZH candidate found\n");
-
-	  // Count number of good primary vertices
-	  pvArr->Clear();
-          pvBr->GetEntry(ientry);
-          UInt_t nGoodPV=0;
-          for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
-            const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);                  
-            if(pv->nTracksFit                        < 1)  continue;
-            if(pv->ndof                              < 4)  continue;
-            if(fabs(pv->z)                           > 24) continue;
-            if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
-            nGoodPV++;
-          }
-	  
-	  //
-	  // Fill histograms
-	  // 
-	  hZMassv[isam]->Fill(dielectron->mass,weight);
-	  hHMassv[isam]->Fill(HMomentum.M(),weight);
-          hZPtv[isam]  ->Fill(dielectron->pt,  weight);
-          hHPtv[isam]  ->Fill(HMomentum.Pt(),  weight);
-          hNGoodPVv[isam]->Fill(nGoodPV,weight);
-	  
-	  //
-	  // Fill ntuple data
-	  //
-	  fillData(&data, info, dielectron, bjet1, bjet2, HMomentum.M(), HMomentum.Pt(),
-		   pvArr->GetEntriesFast(), totalCentralJets, weight);
-	  outTree->Fill();
-	  
-	  nsel    += weight;
-	  nselvar += weight*weight;
-      
-        }	 
-      }           
+	      // Count jets toward jet veto
+	      if( jet1->pt > 20 && fabs(jet1->eta) < 2.5
+		  && toolbox::deltaR(jet1->eta, jet1->phi, electron1->scEta, electron1->scPhi) > dRJetLeptonMin
+		  && toolbox::deltaR(jet1->eta, jet1->phi, electron2->scEta, electron2->scPhi) > dRJetLeptonMin 
+		  ){
+		totalCentralJets++;
+	      } 
+	      
+	    } // end outer loop over jets
+	    // 	  printf("DEBUG: N central jets %d\n", totalCentralJets);
+	    
+	    // Is there a good enough pair of b-jets?
+	    if( !( bjet1 && bjet2 ) ) continue;
+	    // 	  printf("DEBUG: two b-jets found\n");
+	    
+	    // Cuts on the Higgs -> bjet1 bjet2
+	    TLorentzVector b1Momentum, b2Momentum;
+	    b1Momentum.SetPtEtaPhiM(bjet1->pt, bjet1->eta, bjet1->phi, bjet1->mass);
+	    b2Momentum.SetPtEtaPhiM(bjet2->pt, bjet2->eta, bjet2->phi, bjet2->mass);
+	    TLorentzVector HMomentum = b1Momentum + b2Momentum;
+	    if( ! (HMomentum.Pt() > 100 ) ) continue;
+	    // The mass cut on dijet should be a sliding window if we follow AN 11-240
+	    // The values below are for search at m_H = 115 GeV.
+	    // NOTE: AN 11-240 does not make it clear whether this mass window
+	    // should be applied to the pair of jets with highest b-jet probability,
+	    // or whether the pair should be selected from those that passed this cut.
+	    if( ! (HMomentum.M() > 95 && HMomentum.M() < 125 ) ) continue;
+	    
+	    // Z and H are back to back
+	    if( ! ( fabs( ZMomentum.DeltaPhi(HMomentum) ) > 2.95 ) ) continue;
+	    
+	    // Additional jet veto (no more than 1 additional jet)
+	    if( ! (totalCentralJets - 2 < 2) ) continue;
+	    
+	    //
+	    // The ZH candidate for cut and count is identified
+	    //
+// 	    printf("DEBUG: ZH candidate found\n");
+	    
+	    // Count number of good primary vertices
+	    pvArr->Clear();
+	    pvBr->GetEntry(ientry);
+	    UInt_t nGoodPV=0;
+	    for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
+	      const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);                  
+	      if(pv->nTracksFit                        < 1)  continue;
+	      if(pv->ndof                              < 4)  continue;
+	      if(fabs(pv->z)                           > 24) continue;
+	      if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
+	      nGoodPV++;
+	    }
+	    
+	    //
+	    // Fill histograms
+	    // 
+	    hZMassv[isam]->Fill(ZMomentum.M(),weight);
+	    hHMassv[isam]->Fill(HMomentum.M(),weight);
+	    hZPtv[isam]  ->Fill(ZMomentum.Pt(),  weight);
+	    hHPtv[isam]  ->Fill(HMomentum.Pt(),  weight);
+	    hNGoodPVv[isam]->Fill(nGoodPV,weight);
+	    
+	    //
+	    // Fill ntuple data
+	    //
+	    fillData(&data, info, ZMomentum, electron1, electron2, bjet1, bjet2, HMomentum.M(), HMomentum.Pt(),
+		     pvArr->GetEntriesFast(), totalCentralJets, weight);
+	    outTree->Fill();
+	    
+	    nsel    += weight;
+	    nselvar += weight*weight;
+	    
+	  } // end second lepton loop	 
+	} // end first lepton loop
+      }  
       cout << nsel << " +/- " << sqrt(nselvar) << " events" << endl;
       nSelv[isam]    += nsel;
       nSelVarv[isam] += nselvar;
@@ -497,7 +530,7 @@ void selectZHtoEEbb(const TString conf)
     delete outFile;
   }
   delete info;
-  delete dielectronArr;
+  delete electronArr;
   delete pvArr;
 
   // Write useful histograms
@@ -512,7 +545,6 @@ void selectZHtoEEbb(const TString conf)
   //--------------------------------------------------------------------------------------------------------------
   // Make plots
   //==============================================================================================================
-  TCanvas *c = MakeCanvas("c","c",canw,canh);
 
   printf("Make plots\n");fflush(stdout);
   // string buffers
@@ -534,6 +566,7 @@ void selectZHtoEEbb(const TString conf)
   }
   
   // dielectron mass
+  TCanvas *c1 = MakeCanvas("c1","c1",canw,canh);
   sprintf(ylabel,"Events / %.1f GeV/c^{2}",hZMassv[0]->GetBinWidth(1));
   CPlot plotZMass("mass","","m(e^{+}e^{-}) [GeV/c^{2}]",ylabel);
   if(hasData) { plotZMass.AddHist1D(hZMassv[0],samplev[0]->label,"E"); }
@@ -546,9 +579,10 @@ void selectZHtoEEbb(const TString conf)
   else
     plotZMass.TransLegend(0.1,0);
   if(lumi>0) plotZMass.AddTextBox(lumitext,0.21,0.85,0.41,0.8,0);
-  plotZMass.Draw(c,kFALSE,format);
+  plotZMass.Draw(c1,kFALSE,format);
   
   // dijet mass
+  TCanvas *c2 = MakeCanvas("c2","c2",canw,canh);
   sprintf(ylabel,"Events / %.1f GeV/c^{2}",hHMassv[0]->GetBinWidth(1));
   CPlot plotHMass("mass","","m(jj) [GeV/c^{2}]",ylabel);
   if(hasData) { plotHMass.AddHist1D(hHMassv[0],samplev[0]->label,"E"); }
@@ -561,9 +595,10 @@ void selectZHtoEEbb(const TString conf)
   else
     plotHMass.TransLegend(0.1,0);
   if(lumi>0) plotHMass.AddTextBox(lumitext,0.21,0.85,0.41,0.8,0);
-  plotHMass.Draw(c,kFALSE,format);
+  plotHMass.Draw(c2,kFALSE,format);
   
   // dielectron pT
+  TCanvas *c3 = MakeCanvas("c3","c3",canw,canh);
   sprintf(ylabel,"Events / %.1f GeV/c",hZPtv[0]->GetBinWidth(1));
   CPlot ploZPt("pt","","p_{T}(e^{+}e^{-}) [GeV/c]",ylabel);
   if(hasData) { ploZPt.AddHist1D(hZPtv[0],samplev[0]->label,"E"); }
@@ -576,9 +611,10 @@ void selectZHtoEEbb(const TString conf)
     ploZPt.SetLegend(0.75,0.55,0.98,0.9);
   else
     ploZPt.TransLegend(0.1,0);
-  ploZPt.Draw(c,kFALSE,format);
+  ploZPt.Draw(c3,kFALSE,format);
 
   // dijet pT
+  TCanvas *c4 = MakeCanvas("c4","c4",canw,canh);
   sprintf(ylabel,"Events / %.1f GeV/c",hHPtv[0]->GetBinWidth(1));
   CPlot plotHPt("pt","","p_{T}(jj) [GeV/c]",ylabel);
   if(hasData) { plotHPt.AddHist1D(hHPtv[0],samplev[0]->label,"E"); }
@@ -591,8 +627,9 @@ void selectZHtoEEbb(const TString conf)
     plotHPt.SetLegend(0.75,0.55,0.98,0.9);
   else
     plotHPt.TransLegend(0.1,0);
-  plotHPt.Draw(c,kFALSE,format);
+  plotHPt.Draw(c4,kFALSE,format);
 
+  TCanvas *c5 = MakeCanvas("c5","c5",canw,canh);
   CPlot plotNGoodPV("ngoodpv","Good PVs","N_{PV}","Events");
   if(hasData) { plotNGoodPV.AddHist1D(hNGoodPVv[0],samplev[0]->label,"E"); }
   for(UInt_t isam=1; isam<samplev.size(); isam++) {
@@ -601,8 +638,8 @@ void selectZHtoEEbb(const TString conf)
   }
   if(lumi>0) plotNGoodPV.AddTextBox(lumitext,0.45,0.85,0.65,0.8,0);
   plotNGoodPV.TransLegend(0.1,0);
-  plotNGoodPV.SetLogy();
-  plotNGoodPV.Draw(c,kFALSE,format);
+//   plotNGoodPV.SetLogy();
+  plotNGoodPV.Draw(c5,kFALSE,format);
 
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out
@@ -659,7 +696,8 @@ void selectZHtoEEbb(const TString conf)
 //--------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------------------
-void fillData(ZHtoEEbbData *data, const mithep::TEventInfo *info, const mithep::TDielectron *dielectron, 
+void fillData(ZHtoEEbbData *data, const mithep::TEventInfo *info, TLorentzVector ZMomentum,
+	      const mithep::TElectron *electron1, const mithep::TElectron *electron2, 
 	      const mithep::TJet *jet1, const mithep::TJet *jet2, double dijetMass, double dijetPt,
               const UInt_t npv, const UInt_t njets, const Double_t weight)
 {
@@ -674,28 +712,28 @@ void fillData(ZHtoEEbbData *data, const mithep::TEventInfo *info, const mithep::
   data->pfSumET        = info->pfSumET;
 
   // Z part
-  data->diEMass           = dielectron->mass;
-  data->diEPt             = dielectron->pt;
-  data->diEY              = dielectron->y;
-  data->diEPhi            = dielectron->phi; 
+  data->diEMass           = ZMomentum.M();
+  data->diEPt             = ZMomentum.Pt();
+  data->diEY              = ZMomentum.Rapidity();
+  data->diEPhi            = ZMomentum.Phi(); 
 
-  data->pt_1           = dielectron->pt_1;
-  data->eta_1          = dielectron->eta_1;
-  data->phi_1          = dielectron->phi_1;
-  data->scEt_1         = dielectron->scEt_1;
-  data->scEta_1        = dielectron->scEta_1;
-  data->scPhi_1        = dielectron->scPhi_1;
-  data->hltMatchBits_1 = dielectron->hltMatchBits_1;
-  data->q_1            = dielectron->q_1;
+  data->pt_1           = electron1->pt;
+  data->eta_1          = electron1->eta;
+  data->phi_1          = electron1->phi;
+  data->scEt_1         = electron1->scEt;
+  data->scEta_1        = electron1->scEta;
+  data->scPhi_1        = electron1->scPhi;
+  data->hltMatchBits_1 = electron1->hltMatchBits;
+  data->q_1            = electron1->q;
 
-  data->pt_2           = dielectron->pt_2;
-  data->eta_2          = dielectron->eta_2;
-  data->phi_2          = dielectron->phi_2;
-  data->scEt_2         = dielectron->scEt_2;
-  data->scEta_2        = dielectron->scEta_2;
-  data->scPhi_2        = dielectron->scPhi_2;
-  data->hltMatchBits_2 = dielectron->hltMatchBits_2;
-  data->q_2            = dielectron->q_2;
+  data->pt_2           = electron2->pt;
+  data->eta_2          = electron2->eta;
+  data->phi_2          = electron2->phi;
+  data->scEt_2         = electron2->scEt;
+  data->scEta_2        = electron2->scEta;
+  data->scPhi_2        = electron2->scPhi;
+  data->hltMatchBits_2 = electron2->hltMatchBits;
+  data->q_2            = electron2->q;
 
   // H part
   data->diJetMass      = dijetMass;
