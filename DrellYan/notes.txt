@@ -72,3 +72,24 @@ the data-driven background values. At the moment, these
 come from RAL, who produce them for us using our ntuples.
 
 6. Calculate acceptance using signal MC.
+
+
+
+-------------------------------------------
+
+Open issues:
+
+ 1. FEWZ reweighting is not done for all analysis pieces. Should
+ it be? For example for efficiency corrections?
+
+ 2. Pile-up reweighting is not done for all analysis pieces.
+ For which should it be done? One should be careful and implement
+ it coherently for event efficiency and efficiency from tag and probe.
+
+ 3. Now subtractBackgrounds.C wants split di-bosons, while for
+ figures from plotSelectDY.C we have them combined. This should
+ be reconciled.
+
+ 4. Understand mass-dependent efficiency. Especially ID.
+
+ 5. Add theory systematics to calcCrossSection.C
