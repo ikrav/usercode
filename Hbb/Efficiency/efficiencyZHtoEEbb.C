@@ -44,39 +44,14 @@
 // Helper functions for Electron ID selection
 #include "../Include/EleIDCuts.hh" 
 
+// Constants that define cuts of the selection
+#include "../Include/ZHtoEEbbCuts.hh"
+
 #endif
 
+using namespace ZHtoEEbbCuts;
+
 //=== FUNCTION DECLARATIONS ======================================================================================
-
-// Electron cut values
-const double cutEleETMin  = 20.0;
-const double cutEleEtaMax = 2.5;
-const double cutEleIsoMax = 0.1;
-
-// Z cut values
-const double cutZMassMin  = 75.0;
-const double cutZMassMax  = 105.0;
-const double cutZPtMin    = 50.0;
-
-// Jet cut values
-const double cutJetPTMin  = 20.0;
-const double cutJetEtaMax = 2.5;
-const double cutJetTrackCountMin = 2;
-const double cutEMFractionMin = 0.01;
-const double cutHadFractionMin = 0.01;
-const double csv1cut = 0.85;
-const double csv2cut = 0.55;
-
-// Higgs (di-b-jet) cut values)
-// Mass cuts for 115 GeV Higgs
-const double cutHMassMin =  95.0;
-const double cutHMassMax = 125.0;
-const double cutHPtMin    = 50.0;
-
-// Other
-const double cutDRJetLeptonMin = 0.3;
-const double cutDPhiZHMin = 2.95;
-const int cutAdditionalCentralJetsMax = 1;
 
 //=== MAIN MACRO =================================================================================================
 
