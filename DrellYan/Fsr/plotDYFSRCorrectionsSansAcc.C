@@ -89,8 +89,8 @@ void plotDYFSRCorrectionsSansAcc(const TString input)
   // Set up histograms
   //
   vector<TH1F*> hZMassv;//, hZMass2v, hZPtv, hZPt2v, hZyv, hZPhiv;  
-  TH1F *hMassPreFsr = new TH1F("hMassPreFsr","",500,0,500);
-  TH1F *hMassPostFsr = new TH1F("hMassPostFsr","",500,0,500);
+  TH1F *hMassPreFsr = new TH1F("hMassPreFsr","",500,0,1500);
+  TH1F *hMassPostFsr = new TH1F("hMassPostFsr","",500,0,1500);
   
   UInt_t   nZv = 0;
   TVectorD nEventsv (DYTools::nMassBins);  
@@ -103,7 +103,7 @@ void plotDYFSRCorrectionsSansAcc(const TString input)
     
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
-    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,500)); hZMassv[ifile]->Sumw2();
+    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,1500)); hZMassv[ifile]->Sumw2();
   }
 
   // 
@@ -170,6 +170,10 @@ void plotDYFSRCorrectionsSansAcc(const TString input)
       if((mass < massLow) || (mass > massHigh)) continue;
       
       int ibin13 = DYTools::findMassBin13(mass);
+      // 13-bin is only used for FEWZ. If mass is larger than 600 GeV
+      // (last bin), use the last bin.
+      if(ibin13 == -1 && mass >= massBinLimits13[nMassBins13] )
+	ibin13 = nMassBins13-1;
       int ibinPostFsr = DYTools::findMassBin(massPostFsr);
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity and pt

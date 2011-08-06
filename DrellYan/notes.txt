@@ -100,3 +100,7 @@ Open issues:
    - energy scale
    - unfolding
    - FSR-related
+
+ 8. Error on FSR corrections is not properly calculated. The calculation
+  ignores correlation between numerator and denominator. As a result, 
+  the error is very large for larger mass bins.

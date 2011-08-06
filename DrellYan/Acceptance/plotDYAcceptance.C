@@ -172,6 +172,10 @@ void plotDYAcceptance(const TString input)
       
       int ibin = DYTools::findMassBin(mass);
       int ibinPreFsr13 = DYTools::findMassBin13(massPreFsr);
+      // 13-bin is only used for FEWZ. If mass is larger than 600 GeV
+      // (last bin), use the last bin.
+      if(ibinPreFsr13 == -1 && mass >= massBinLimits13[nMassBins13] )
+	ibinPreFsr13 = nMassBins13-1;
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
       double fewz_weight = 1.0;
@@ -286,7 +290,7 @@ void plotDYAcceptance(const TString input)
   plotAcceptance.SetLogx();
   plotAcceptance.AddGraph((TGraph*)acceptanceGraph,"PE",600,kFullDotMedium,1); 
   plotAcceptance.SetYRange(0,0.8);
-  plotAcceptance.SetXRange(10,700.0);
+  plotAcceptance.SetXRange(10,1500.0);
   acceptanceGraph->GetYaxis()->SetTitleOffset(1.0);
   acceptanceGraph->GetXaxis()->SetMoreLogLabels();
   acceptanceGraph->GetXaxis()->SetNoExponent();

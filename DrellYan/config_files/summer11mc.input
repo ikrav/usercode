@@ -1,3 +1,5 @@
 DY_m10+pr_1088pb
-/mnt/unl/home/ikrav/work/ntuples/42X/s11-zeem20-powheg-v11-pu_tight-loose_skim.root  1666  600 1 @POWHEG
-/mnt/unl/home/ikrav/work/ntuples/42X/s11-zeem1020-v11-pu_tight-loose_skim.root 3320  632 1 @Pythia1020
+/mnt/unl/home/ikrav/work/ntuples/42X/s11-zeem20to500-powheg-v11-pu_tight-loose_skim.root 1666.0    600 1 @Powheg 20-500
+/mnt/unl/home/ikrav/work/ntuples/42X/s11-zeem500to800-powheg-v11-pu_ntuple.root          0.02956   632 1 @Powheg 500-800
+/mnt/unl/home/ikrav/work/ntuples/42X/s11-zeem800-powheg-v11-pu_ntuple.root               0.0037864 432 1 @Powheg 800+
+/mnt/unl/home/ikrav/work/ntuples/42X/s11-zeem1020-v11-pu_tight-loose_skim.root           3320.0    800 1 @Pythia 10-20

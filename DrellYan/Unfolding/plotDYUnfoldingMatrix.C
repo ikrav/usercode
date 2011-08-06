@@ -120,7 +120,7 @@ void plotDYUnfoldingMatrix(const TString input)
   
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
-    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,500)); hZMassv[ifile]->Sumw2();
+    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,1500)); hZMassv[ifile]->Sumw2();
   }
 
   TH1F *hMassDiff   = new TH1F("hMassDiff","", 100, -30, 30);

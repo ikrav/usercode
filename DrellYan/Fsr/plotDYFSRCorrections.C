@@ -89,8 +89,8 @@ void plotDYFSRCorrections(const TString input)
   // Set up histograms
   //
   vector<TH1F*> hZMassv;//, hZMass2v, hZPtv, hZPt2v, hZyv, hZPhiv;  
-  TH1F *hMassPreFsr = new TH1F("hMassPreFsr","",500,0,500);
-  TH1F *hMassPostFsr = new TH1F("hMassPostFsr","",500,0,500);
+  TH1F *hMassPreFsr = new TH1F("hMassPreFsr","",500,0,1500);
+  TH1F *hMassPostFsr = new TH1F("hMassPostFsr","",500,0,1500);
   
   UInt_t   nZv = 0;
   TVectorD nEventsv (DYTools::nMassBins);  
@@ -103,7 +103,7 @@ void plotDYFSRCorrections(const TString input)
     
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
-    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,500)); hZMassv[ifile]->Sumw2();
+    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,1500)); hZMassv[ifile]->Sumw2();
   }
 
   // 
@@ -163,6 +163,10 @@ void plotDYFSRCorrections(const TString input)
       if((mass < massLow) || (mass > massHigh)) continue;
       
       int ibin13 = DYTools::findMassBin13(mass);
+      // 13-bin is only used for FEWZ. If mass is larger than 600 GeV
+      // (last bin), use the last bin.
+      if(ibin13 == -1 && mass >= massBinLimits13[nMassBins13] )
+	ibin13 = nMassBins13-1;
       int ibinPostFsr = DYTools::findMassBin(massPostFsr);
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity and pt
@@ -180,7 +184,7 @@ void plotDYFSRCorrections(const TString input)
 	  if(binY == weights[ibin13]->GetNbinsY() + 1) binY -= 1;
 	  fewz_weight = weights[ibin13]->GetBinContent( binX, binY);
 	}else
-	  cout << "Error: binning problem" << endl;
+	  cout << "Error: binning problem FEWZ bins, bin=" << ibin13 << "  mass= " << mass<< endl;
       }
     //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
 
@@ -188,13 +192,13 @@ void plotDYFSRCorrections(const TString input)
       if(ibin != -1 && ibin < nEventsv.GetNoElements())
 	nEventsv[ibin] += scale * gen->weight * fewz_weight;
       else if(ibin >= nEventsv.GetNoElements())
-	cout << "ERROR: binning problem" << endl;
+	cout << "ERROR: binning problem pre-FSR, bin=" << ibin << "  mass=" << mass << endl;
 
       if(ibinPostFsr != -1 && ibinPostFsr < nPassv.GetNoElements())
 	nPassv[ibinPostFsr] += scale * gen->weight * fewz_weight;
       else if(ibinPostFsr >= nPassv.GetNoElements()) {
 	// Do nothing: post-fsr mass could easily be below the lowest edge of mass range
-// 	cout << "ERROR: binning problem" << endl;
+// 	cout << "ERROR: binning problem post-FSR, bin=" << ibinPostFsr << "  mass=" << massPostFsr << endl;
       }
 
       hZMassv[ifile]->Fill(mass,scale * gen->weight * fewz_weight);

@@ -122,7 +122,7 @@ void plotDYEfficiency(const TString input)
     
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
-    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,500)); hZMassv[ifile]->Sumw2();
+    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,1500)); hZMassv[ifile]->Sumw2();
   }
 
   //
@@ -330,7 +330,7 @@ void plotDYEfficiency(const TString input)
   plotEfficiency.SetLogx();
   plotEfficiency.AddGraph((TGraph*)efficiencyGraph,"PE",600,kFullDotMedium,1); 
   plotEfficiency.SetYRange(0,0.8);
-  plotEfficiency.SetXRange(10,700.0);
+  plotEfficiency.SetXRange(10,1500.0);
   efficiencyGraph->GetYaxis()->SetTitleOffset(1.0);
   efficiencyGraph->GetXaxis()->SetMoreLogLabels();
   efficiencyGraph->GetXaxis()->SetNoExponent();

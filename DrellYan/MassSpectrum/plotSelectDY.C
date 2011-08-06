@@ -34,6 +34,7 @@
 
 #include "../Include/ElectronEnergyScale.hh"        // energy scale correction
 
+#include "../Include/DYTools.hh"
 
 #endif
 
