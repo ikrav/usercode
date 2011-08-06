@@ -37,9 +37,9 @@ void subtractBackground(const TString conf){
   TH1F *qcd   = (TH1F*) file.Get("qcd");   bool qcdMc = true;
   TH1F *ttbar = (TH1F*) file.Get("ttbar"); bool ttbarMc = true;
   TH1F *wjets = (TH1F*) file.Get("wjets"); bool wjetsMc = true;
-  TH1F *ww   = (TH1F*) file.Get("ww");     bool wwMc = false;
-  TH1F *wz   = (TH1F*) file.Get("wz");     bool wzMc = false;
-  TH1F *zz   = (TH1F*) file.Get("zz");     bool zzMc = false;
+  TH1F *ww   = (TH1F*) file.Get("ww");     bool wwMc = true;
+  TH1F *wz   = (TH1F*) file.Get("wz");     bool wzMc = true;
+  TH1F *zz   = (TH1F*) file.Get("zz");     bool zzMc = true;
 
   // Make sure that all MC predictions that are expected according
   // to boolean flags above are present. Data has to be present always.

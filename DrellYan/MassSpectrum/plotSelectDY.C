@@ -185,6 +185,21 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
   }
 
   //
+  //  Diboson backgrounds need to be saved separately, but plotted
+  //  together. Detect whether there are separate ww/wz/zz contribution,
+  //  and whether merging is needed later. Of course, this relies on
+  // the fact that the file data.conf has names ww, wz, zz for those
+  // contributions.
+  int nDibosonSamples = 0;
+  bool mergeDibosons = false;
+  for(UInt_t isam=0; isam<samplev.size(); isam++) {
+    if( snamev[isam] == "ww" || snamev[isam] == "wz" || snamev[isam] == "zz")
+      nDibosonSamples++;
+  }
+  if(nDibosonSamples==3)
+    mergeDibosons = true;
+
+  //
   // Access samples and fill histograms
   //  
   TFile *infile=0;
@@ -337,6 +352,22 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
     else       { sprintf(lumitext,"#int#font[12]{L}dt = %.3g pb^{-1}",lumi); }
   }
 
+  // Merge diboson histograms if needed
+  TH1F *hMassBinsDibosons = (TH1F*)hMassBinsv[1]->Clone("hMassBinsDibosons");
+  TH1F *hMassDibosons = (TH1F*)hMassv[1]->Clone("hMassDibosons");
+  hMassDibosons->Reset();
+  Int_t colorDibosons = 1;
+  TString labelDibosons = "WW/WZ/ZZ";
+  for(UInt_t isam=0; isam<samplev.size(); isam++) {
+    if( snamev[isam] == "ww" || snamev[isam] == "wz" || snamev[isam] == "zz"){
+      hMassDibosons->Add(hMassv[isam]);
+      hMassBinsDibosons->Add(hMassBinsv[isam]);
+      // Use color of the last diboson entry
+      colorDibosons = samplev[isam]->color;
+    }
+  }
+
+
 //   char text[100];  
 //   sprintf(text,"%i Events",(Int_t)(hMassv[0]->Integral()));
 //   sprintf(ylabel,"a.u. / %.1f GeV/c^{2}",hMassv[0]->GetBinWidth(1));
@@ -403,8 +434,13 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
   CPlot plotMass("mass","","m(e^{+}e^{-}) [GeV/c^{2}]",ylabel);
   plotMass.SetLogx();
   if(hasData) { plotMass.AddHist1D(hMassv[0],samplev[0]->label,"E"); }
-  for(UInt_t isam=1; isam<samplev.size(); isam++)
-    plotMass.AddToStack(hMassv[isam],samplev[isam]->label,samplev[isam]->color);
+  // Do not draw separately dibosons, but draw the merged histogram if needed
+  if(mergeDibosons)
+    plotMass.AddToStack(hMassDibosons, labelDibosons, colorDibosons);
+  for(UInt_t isam=1; isam<samplev.size(); isam++){
+    if( !(mergeDibosons && (snamev[isam]=="ww" || snamev[isam]=="wz" || snamev[isam]=="zz")))
+      plotMass.AddToStack(hMassv[isam],samplev[isam]->label,samplev[isam]->color);
+  }
   plotMass.SetLegend(0.75,0.55,0.98,0.9);
   if(lumi>0) plotMass.AddTextBox(lumitext,0.21,0.85,0.41,0.8,0);
   if(hasData){
@@ -431,8 +467,13 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
   CPlot plotMassBins("massBins","","m(e^{+}e^{-}) [GeV/c^{2}]",ylabel);
   plotMassBins.SetLogx();
   if(hasData) { plotMassBins.AddHist1D(hMassBinsv[0],samplev[0]->label,"E"); }
-  for(UInt_t isam=1; isam<samplev.size(); isam++)
-    plotMassBins.AddToStack(hMassBinsv[isam],samplev[isam]->label,samplev[isam]->color);
+  // Do not draw separately dibosons, but draw the merged histogram if needed
+  if(mergeDibosons)
+    plotMassBins.AddToStack(hMassBinsDibosons,labelDibosons,colorDibosons);
+  for(UInt_t isam=1; isam<samplev.size(); isam++){
+    if( !(mergeDibosons && (snamev[isam]=="ww" || snamev[isam]=="wz" || snamev[isam]=="zz")))
+      plotMassBins.AddToStack(hMassBinsv[isam],samplev[isam]->label,samplev[isam]->color);
+  }
   if(hasData){
     hMassBinsv[0]->GetXaxis()->SetMoreLogLabels();
     hMassBinsv[0]->GetXaxis()->SetNoExponent();
