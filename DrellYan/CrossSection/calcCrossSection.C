@@ -608,8 +608,8 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   }
 
   // Find normalized cross-section
-  int low = 5;
-  int high = 9;
+  int low = 9;
+  int high = 22;
   double xsecReference = 0;
   double xsecReferenceStatErr = 0;
   double xsecReferenceSystErr = 0;
@@ -663,8 +663,8 @@ void  crossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr
   }
 
   // Find normalized cross-section
-  int low = 5;
-  int high = 9;
+  int low = 9;
+  int high = 22;
   double xsecReference = 0;
   double xsecReferenceStatErr = 0;
   double xsecReferenceSystErr = 0;
@@ -714,8 +714,8 @@ void  postFsrCrossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   }
 
   // Find normalized cross-section
-  int low = 5;
-  int high = 9;
+  int low = 9;
+  int high = 22;
   double xsecReference = 0;
   double xsecReferenceStatErr = 0;
   double xsecReferenceSystErr = 0;
@@ -769,8 +769,8 @@ void  postFsrCrossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vin
   }
   
   // Find normalized cross-section
-  int low = 5;
-  int high = 9;
+  int low = 9;
+  int high = 22;
   double xsecReference = 0;
   double xsecReferenceStatErr = 0;
   double xsecReferenceSystErr = 0;

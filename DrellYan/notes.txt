@@ -104,3 +104,7 @@ Open issues:
  8. Error on FSR corrections is not properly calculated. The calculation
   ignores correlation between numerator and denominator. As a result, 
   the error is very large for larger mass bins.
+
+ 9. The normalization interval is now hardwired in calcCrossSection.C as
+bin numbers, this is not safe.
+ 
