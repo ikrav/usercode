@@ -187,8 +187,7 @@ void efficiencyZHtoEEbb(const TString input)
       for(Int_t i=0; i<electronArr->GetEntriesFast(); i++) {
 	mithep::TElectron *electron1 = (mithep::TElectron*)((*electronArr)[i]);
 	
-	for(Int_t j=0; j<electronArr->GetEntriesFast(); j++) {
-	  if( i==j ) continue; 
+	for(Int_t j=i+1; j<electronArr->GetEntriesFast(); j++) {
 	  mithep::TElectron *electron2 = (mithep::TElectron*)((*electronArr)[j]);
 	  
 	  passLooseEE += gen->weight * scale;

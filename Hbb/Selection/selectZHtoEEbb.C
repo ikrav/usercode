@@ -177,7 +177,7 @@ void selectZHtoEEbb(const TString conf)
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     sprintf(hname,"hZMass_%i",isam);   hZMassv.push_back(new TH1F(hname,"",30,60,120));   hZMassv[isam]->Sumw2();
     sprintf(hname,"hHMass_%i",isam);   hHMassv.push_back(new TH1F(hname,"",50,50,150));   hHMassv[isam]->Sumw2();
-    sprintf(hname,"hZPt_%i",isam);     hZPtv.push_back(new TH1F(hname,"",50,0,200));       hZPtv[isam]->Sumw2();
+    sprintf(hname,"hZPt_%i",isam);     hZPtv.push_back(new TH1F(hname,"",50,0,500));       hZPtv[isam]->Sumw2();
     sprintf(hname,"hHPt_%i",isam);     hHPtv.push_back(new TH1F(hname,"",50,0,300));       hHPtv[isam]->Sumw2();
     sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());       hNGoodPVv.push_back(new TH1F(hname,"",15,-0.5,14.5));        hNGoodPVv[isam]->Sumw2();
     
@@ -311,8 +311,7 @@ void selectZHtoEEbb(const TString conf)
         for(Int_t i=0; i<electronArr->GetEntriesFast(); i++) {
 	  mithep::TElectron *electron1 = (mithep::TElectron*)((*electronArr)[i]);
 
-	  for(Int_t j=0; j<electronArr->GetEntriesFast(); j++) {
-	    if( i==j ) continue; 
+	  for(Int_t j=i+1; j<electronArr->GetEntriesFast(); j++) {
 	    mithep::TElectron *electron2 = (mithep::TElectron*)((*electronArr)[j]);
 
 	    // Exclude ECAL gap region and cut out of acceptance electrons
@@ -361,6 +360,7 @@ void selectZHtoEEbb(const TString conf)
 	    TLorentzVector ZMomentum = lep1Momentum + lep2Momentum;
 
 	    // mass window for Z candidate
+	    hZMassv[isam]->Fill(ZMomentum.M(),weight);
 	    if((ZMomentum.M() < cutZMassMin) || (ZMomentum.M() > cutZMassMax)) continue;
 	    
 	    
@@ -438,8 +438,10 @@ void selectZHtoEEbb(const TString conf)
 	    TLorentzVector HMomentum = b1Momentum + b2Momentum;
 
 	    // Pt of the Higgs candidate
+	    hHPtv[isam]  ->Fill(HMomentum.Pt(),  weight);
 	    if( ! (HMomentum.Pt() > cutHPtMin ) ) continue;
 	    // Pt of the Z candidate
+	    hZPtv[isam]  ->Fill(ZMomentum.Pt(),  weight);
 	    if( !( ZMomentum.Pt() > cutZPtMin ) ) continue;
 	    
 	    // Apply b-tagging.
@@ -464,6 +466,7 @@ void selectZHtoEEbb(const TString conf)
 	    // NOTE: AN 11-240 does not make it clear whether this mass window
 	    // should be applied to the pair of jets with highest b-jet probability,
 	    // or whether the pair should be selected from those that passed this cut.
+	    hHMassv[isam]->Fill(HMomentum.M(),weight);
 	    if( ! (HMomentum.M() > cutHMassMin && HMomentum.M() < cutHMassMax ) ) continue;
 	    
 	    //
@@ -474,10 +477,6 @@ void selectZHtoEEbb(const TString conf)
 	    //
 	    // Fill histograms
 	    // 
-	    hZMassv[isam]->Fill(ZMomentum.M(),weight);
-	    hHMassv[isam]->Fill(HMomentum.M(),weight);
-	    hZPtv[isam]  ->Fill(ZMomentum.Pt(),  weight);
-	    hHPtv[isam]  ->Fill(HMomentum.Pt(),  weight);
 	    
 	    //
 	    // Fill ntuple data
