@@ -69,6 +69,10 @@ void printTableForNotes(TVectorD obs, TVectorD obsErr,
 void printAllCorrections();
 void printRelativeSystErrors();
 
+const double lowZMass = 60.0;
+const double highZMass = 120.0;
+void getNormBinRange(int &firstNormBin, int &lastNormBin);
+
 // The arrays below contain the estimate of relative systematic
 // error in percent obtained elsewhere. The calculation of these
 // errors is done outside of the main scripts that calculate
@@ -608,8 +612,8 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   }
 
   // Find normalized cross-section
-  int low = 9;
-  int high = 22;
+  int low, high;
+  getNormBinRange(low, high);
   double xsecReference = 0;
   double xsecReferenceStatErr = 0;
   double xsecReferenceSystErr = 0;
@@ -641,11 +645,11 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
 	   sqrt(voutNormStatErr[i] * voutNormStatErr[i] + voutNormSystErr[i] * voutNormSystErr[i]) );
   }
-  printf("\nPre FSR cross-section in the Z peak from %3f to %3f:\n",
-	 massBinLimits[low], massBinLimits[high]);
+  printf("\nPre FSR cross-section in the Z peak from %3.0f to %3.0f:\n",
+	 massBinLimits[low], massBinLimits[high+1]);
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
-    printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
+//     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
 
   return;
 }
@@ -663,8 +667,8 @@ void  crossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr
   }
 
   // Find normalized cross-section
-  int low = 9;
-  int high = 22;
+  int low, high;
+  getNormBinRange(low, high);
   double xsecReference = 0;
   double xsecReferenceStatErr = 0;
   double xsecReferenceSystErr = 0;
@@ -714,8 +718,8 @@ void  postFsrCrossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   }
 
   // Find normalized cross-section
-  int low = 9;
-  int high = 22;
+  int low, high;
+  getNormBinRange(low, high);
   double xsecReference = 0;
   double xsecReferenceStatErr = 0;
   double xsecReferenceSystErr = 0;
@@ -747,11 +751,11 @@ void  postFsrCrossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
 	   sqrt(voutNormStatErr[i] * voutNormStatErr[i] + voutNormSystErr[i] * voutNormSystErr[i]) );
   }
-  printf("\nPostFsr cross-section in the Z peak from %3f to %3f:\n",
-	 massBinLimits[low], massBinLimits[high]);
+  printf("\nPostFsr cross-section in the Z peak from %3.0f to %3.0f:\n",
+	 massBinLimits[low], massBinLimits[high+1]);
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
-    printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
+//     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
 
   return;
 }
@@ -769,8 +773,8 @@ void  postFsrCrossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vin
   }
   
   // Find normalized cross-section
-  int low = 9;
-  int high = 22;
+  int low, high;
+  getNormBinRange(low, high);
   double xsecReference = 0;
   double xsecReferenceStatErr = 0;
   double xsecReferenceSystErr = 0;
@@ -908,5 +912,28 @@ void printRelativeSystErrors(){
 	   100*sum);
     printf("\n");
   }
+}
+
+void getNormBinRange(int &firstNormBin, int &lastNormBin){
+
+  firstNormBin = -1;
+  lastNormBin = -1;
+ 
+  for(int i=0; i<=DYTools::nMassBins; i++){
+    if(DYTools::massBinLimits[i] == lowZMass)
+      firstNormBin = i;
+    if(DYTools::massBinLimits[i] == highZMass)
+      lastNormBin = i-1;
+  }
+  
+  if(firstNormBin == -1 || lastNormBin == -1){
+    printf("\nERROR: normalization limits are misaligned with mass binning!\n\n");
+    assert(0);
+  }
+  printf("\nCross section normalization is to the bins %d - %d from %5.1f to %5.1f GeV\n", 
+	 firstNormBin, lastNormBin, 
+	 DYTools::massBinLimits[firstNormBin], DYTools::massBinLimits[lastNormBin+1]);
+
+  return;
 }
 
