@@ -405,17 +405,21 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
 //       for example suspected in mid-2011)
 //  - data/MC scale factors for efficiency to select events may
 //       move normalization off by another 5%
-// Therefore, we normalize signal MC to the data Z peak. This gives us
+// Therefore, we normalize total MC to the data Z peak. This gives us
 // the scale factor that is applied to all samples. 
 // In the following calculation it is assumed that the first histogram
 // is data and the last is signal MC.  
-  int iSignalMc = hMassv.size() - 1;
+  TH1F *totalMCMass = (TH1F*)hMassv[0]->Clone("totalMCMass");
+  totalMCMass->Reset();
+  for(UInt_t isam=1; isam<samplev.size(); isam++) {
+    totalMCMass->Add(hMassv[isam]);
+  }
   double massNormMin = 60.0;
   double massNormMax = 120.0;
-  double dataOverMc = hMassv[0]->Integral(hMassv[0]->FindBin(massNormMin),
-					  hMassv[0]->FindBin(massNormMax)) /
-    hMassv[iSignalMc]->Integral(hMassv[iSignalMc]->FindBin(massNormMin),
-				hMassv[iSignalMc]->FindBin(massNormMax));
+  double dataOverMc = hMassv[0]->Integral(hMassv[0]->FindBin(massNormMin+0.001),
+					  hMassv[0]->FindBin(massNormMax-0.001)) /
+    totalMCMass->Integral(totalMCMass->FindBin(massNormMin+0.001),
+			  totalMCMass->FindBin(massNormMax-0.001));
   printf("data to MC extra correction from Z peak normalization: %f\n",dataOverMc);
 
   // Rescale all MC samples. This is not totally proper for fake lepton
