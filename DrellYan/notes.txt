@@ -73,38 +73,74 @@ come from RAL, who produce them for us using our ntuples.
 
 6. Calculate acceptance using signal MC.
 
-
+< the rest of explanations have been sent over email... >
 
 -------------------------------------------
 
 Open issues:
 
- 1. FEWZ reweighting is not done for all analysis pieces. Should
+ - FEWZ reweighting is not done for all analysis pieces. Should
  it be? For example for efficiency corrections?
 
- 2. Pile-up reweighting is not done for all analysis pieces.
+ - Pile-up reweighting is not done for all analysis pieces.
  For which should it be done? One should be careful and implement
  it coherently for event efficiency and efficiency from tag and probe.
 
- 3. Now subtractBackgrounds.C wants split di-bosons, while for
- figures from plotSelectDY.C we have them combined. This should
- be reconciled.
+ - Understand mass-dependent efficiency. Especially ID.
 
- 4. Understand mass-dependent efficiency. Especially ID.
-
- 5. Add theory systematics to calcCrossSection.C
+ - Add theory systematics to calcCrossSection.C
  
- 6. Make calcCrossSection read unfolding and escale systematics from ROOT files
+ - Make calcCrossSection read unfolding and escale systematics from ROOT files
 
- 7. Add code that measures this systematics:
+ - Add code that measures this systematics:
    - energy scale
    - unfolding
    - FSR-related
 
- 8. Error on FSR corrections is not properly calculated. The calculation
+ - Error on FSR corrections is not properly calculated. The calculation
   ignores correlation between numerator and denominator. As a result, 
   the error is very large for larger mass bins.
 
- 9. The normalization interval is now hardwired in calcCrossSection.C as
+ - It may be possible to tighten the tag cuts in tag and probe to
+  reduce backgrounds and therefore improve accuracy for lower Pt bins.
+
+ - We are asked to consider doing a study in tag and probe
+  where we do not use counting method at all, but instead use
+  fit. For MC, background can be added by hand.
+
+ - For the whole analysis, should we consider relaxing electron ID cuts,
+   given that we have so little background? A study would be needed
+   to answer this question.
+
+ - Should tag and probe be done with more eta or pt bins?
+
+ - What are the exact reasons that the event efficiency is lower
+   in 2011 than in 2010, significantly for lower mass?
+
+ - Can we investigate the origin of the rising background in
+   certain bins of tag and probe fits? Is it perhaps related
+   to ttbar?
+
+ - What is the difference between the efficiency scale factor
+   for given mass bin found as the average of scale factors
+   among all events using the nominal calibration vs the average
+   over 100 resmeared calibration sets? Which one is the right
+   one to use?
+
+ - One has to check whether errors are calculated correctly
+   for Acc, Eff, etc, when many signal MC samples are combined
+   with weights.
+
+Completed tasks:
+
+ - Now subtractBackgrounds.C wants split di-bosons, while for
+ figures from plotSelectDY.C we have them combined. This should
+ be reconciled.
+    This has been changed. Now we always split dibosons, but
+    got plotting plotSelectDY combines them.
+
+ - The normalization interval is now hardwired in calcCrossSection.C as
 bin numbers, this is not safe.
+   This has been fixed.
+
  
