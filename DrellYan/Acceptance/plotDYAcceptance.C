@@ -289,7 +289,7 @@ void plotDYAcceptance(const TString input)
   CPlot plotAcceptance("Acceptance","","M_{ee} [GeV/c^{2}]","acceptance");
   plotAcceptance.SetLogx();
   plotAcceptance.AddGraph((TGraph*)acceptanceGraph,"PE",600,kFullDotMedium,1); 
-  plotAcceptance.SetYRange(0,0.8);
+  plotAcceptance.SetYRange(0,1);
   plotAcceptance.SetXRange(10,1500.0);
   acceptanceGraph->GetYaxis()->SetTitleOffset(1.0);
   acceptanceGraph->GetXaxis()->SetMoreLogLabels();
