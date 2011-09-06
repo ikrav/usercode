@@ -329,7 +329,7 @@ void plotDYEfficiency(const TString input)
   CPlot plotEfficiency("Efficiency","","M_{ee} [GeV/c^{2}]","efficiency");
   plotEfficiency.SetLogx();
   plotEfficiency.AddGraph((TGraph*)efficiencyGraph,"PE",600,kFullDotMedium,1); 
-  plotEfficiency.SetYRange(0,0.8);
+  plotEfficiency.SetYRange(0,1.0);
   plotEfficiency.SetXRange(10,1500.0);
   efficiencyGraph->GetYaxis()->SetTitleOffset(1.0);
   efficiencyGraph->GetXaxis()->SetMoreLogLabels();
