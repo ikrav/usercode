@@ -58,6 +58,8 @@ using namespace ZHtoEEbbCuts;
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
+bool passJetID(const mithep::TJet *jet);
+
 // fill ntuple of selected events
 void fillData(ZHtoEEbbData *data, const mithep::TEventInfo *info, TLorentzVector ZMomentum,
 	      const mithep::TElectron *electron1, const mithep::TElectron *electron2,
