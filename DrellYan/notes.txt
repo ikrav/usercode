@@ -131,6 +131,9 @@ Open issues:
    for Acc, Eff, etc, when many signal MC samples are combined
    with weights.
 
+ - The MC closure test of unfolding, done when the script calcCrossSection.C
+   is executed, does not return a perfect result. Investigate why.
+
 Completed tasks:
 
  - Now subtractBackgrounds.C wants split di-bosons, while for
