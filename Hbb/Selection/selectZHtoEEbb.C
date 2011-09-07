@@ -733,3 +733,22 @@ void fillData(ZHtoEEbbData *data, const mithep::TEventInfo *info, TLorentzVector
 }
 
 //--------------------------------------------------------------------------------------------------
+
+bool passJetID(const mithep::TJet *jet){
+
+  // The cuts on the number of daughters and number of charged tracks
+  // are not totally clear.
+  bool result = false;
+  if (jet->nCharged >= cutJetTrackCountMin &&
+      jet->chgEMfrac   < cutEMFractionMax &&
+      jet->neuEMfrac   < cutEMFractionMax &&
+      jet->chgHadrfrac < cutHadFractionMax
+      ){
+    if (fabs(jet->eta) >= 2.4) result=true;
+    if (fabs(jet->eta) < 2.4 &&
+	jet->chgHadrfrac > 0 &&
+	jet->nCharged > cutJetTrackCountMin) result = true;
+  }
+  
+  return result;
+}
