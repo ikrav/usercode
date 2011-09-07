@@ -53,6 +53,8 @@ using namespace ZHtoEEbbCuts;
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
+bool passJetID(const mithep::TJet *jet);
+
 //=== MAIN MACRO =================================================================================================
 
 void efficiencyZHtoEEbb(const TString input) 
@@ -200,14 +202,16 @@ void efficiencyZHtoEEbb(const TString input)
 	  if( ! (electron1->scEt > cutEleETMin && electron2->scEt > cutEleETMin) ) continue;
 
 	  passInAcceptanceEE  += gen->weight * scale;
+	  // It is not clear whether individual trigger object matching
+	  // is applied in the official analysis, so this is commented out
 	  // Both electrons must match trigger objects. At least one ordering
-	  // must match
-	  if( ! ( 
-		 (electron1->hltMatchBits & leadingTriggerObjectBit && 
-		  electron2->hltMatchBits & trailingTriggerObjectBit )
-		 ||
-		 (electron1->hltMatchBits & trailingTriggerObjectBit && 
-		  electron2->hltMatchBits & leadingTriggerObjectBit ) ) ) continue;
+	  // must match.
+// 	  if( ! ( 
+// 		 (electron1->hltMatchBits & leadingTriggerObjectBit && 
+// 		  electron2->hltMatchBits & trailingTriggerObjectBit )
+// 		 ||
+// 		 (electron1->hltMatchBits & trailingTriggerObjectBit && 
+// 		  electron2->hltMatchBits & leadingTriggerObjectBit ) ) ) continue;
 	  
 	  passEETriggerMatch += gen->weight * scale;
 	  // Other cuts to both electrons
@@ -259,27 +263,23 @@ void efficiencyZHtoEEbb(const TString input)
 	  pfJetBr->GetEntry(ientry);
 	  for(Int_t ijet=0; ijet<pfJetArr->GetEntriesFast(); ijet++) {
 	    const mithep::TJet *jet1 = (mithep::TJet*)((*pfJetArr)[ijet]);
-	    for(Int_t jjet=0; jjet<pfJetArr->GetEntriesFast(); jjet++) {
-	      if( ijet == jjet ) continue;
+	    // Jet kinematics (JEC are already applied)
+	    if( !( fabs(jet1->eta) < cutJetEtaMax ) ) continue;
+	    if( !( fabs(jet1->pt ) > cutJetPTMin ) ) continue;
+	    // Jet ID
+	    if( ! passJetID(jet1) ) continue;
+		
+	    for(Int_t jjet=ijet+1; jjet<pfJetArr->GetEntriesFast(); jjet++) {
 	      const mithep::TJet *jet2 = (mithep::TJet*)((*pfJetArr)[jjet]);
 	      
-	      // Cuts on jet kinematics
-	      if( !( fabs(jet1->eta) < cutJetEtaMax && fabs(jet2->eta) < cutJetEtaMax) ) continue;
-	      // Jet Pt cuts (JEC corrections are already applied before)
-	      // NOT CLEAR: do leptons from Z need to be excluded from jets
-	      // in addition to min separation cut below? Description in 11-240 not totally clear.
-	      if( !( jet1->pt > cutJetPTMin && jet2->pt > cutJetPTMin ) ) continue;
-		
-	      // Cuts on charged particle multiplicity and EM, Had energy fractions
-	      if( !(jet1->nCharged >= cutJetTrackCountMin && jet2->nCharged >= cutJetTrackCountMin ) ) continue;
-	      // Not clear in 11-240 if charged and neutral are cut on
-	      // separately or added
-	      if( !( (jet1->chgEMfrac + jet1->neuEMfrac) > cutEMFractionMin 
-		     && (jet2->chgEMfrac + jet2->neuEMfrac) > cutEMFractionMin ) ) continue;
-	      if( !( (jet1->chgHadrfrac + jet1->neuHadrfrac) > cutHadFractionMin 
-		     && (jet2->chgHadrfrac + jet2->neuHadrfrac) > cutHadFractionMin ) ) continue;
+	      // Jet kinematics (JEC are already applied
+	      if( !( fabs(jet2->eta) < cutJetEtaMax ) ) continue;
+	      if( !( fabs(jet2->pt ) > cutJetPTMin ) ) continue;
+	      // Jet ID
+	      if( ! passJetID(jet2) ) continue;
 	      
 	      // Make sure leptons from Z are not too close to jets
+	      // It is not clear if this is needed.
 	      if( toolbox::deltaR(jet1->eta, jet1->phi, electron1->scEta, electron1->scPhi) < cutDRJetLeptonMin ) continue;
 	      if( toolbox::deltaR(jet1->eta, jet1->phi, electron2->scEta, electron2->scPhi) < cutDRJetLeptonMin ) continue;
 	      if( toolbox::deltaR(jet2->eta, jet2->phi, electron1->scEta, electron1->scPhi) < cutDRJetLeptonMin ) continue;
@@ -296,6 +296,7 @@ void efficiencyZHtoEEbb(const TString input)
 	    
 	      // Count jets toward jet veto
 	    if( jet1->pt > cutJetPTMin && fabs(jet1->eta) < cutJetEtaMax
+		&& passJetID(jet1)
 		&& toolbox::deltaR(jet1->eta, jet1->phi, electron1->scEta, electron1->scPhi) > cutDRJetLeptonMin
 		&& toolbox::deltaR(jet1->eta, jet1->phi, electron2->scEta, electron2->scPhi) > cutDRJetLeptonMin 
 		){
@@ -404,3 +405,22 @@ void efficiencyZHtoEEbb(const TString input)
 //--------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------------------
+
+bool passJetID(const mithep::TJet *jet){
+
+  // The cuts on the number of daughters and number of charged tracks
+  // are not totally clear.
+  bool result = false;
+  if (jet->nCharged >= cutJetTrackCountMin &&
+      jet->chgEMfrac   < cutEMFractionMax &&
+      jet->neuEMfrac   < cutEMFractionMax &&
+      jet->chgHadrfrac < cutHadFractionMax
+      ){
+    if (fabs(jet->eta) >= 2.4) result=true;
+    if (fabs(jet->eta) < 2.4 &&
+	jet->chgHadrfrac > 0 &&
+	jet->nCharged > cutJetTrackCountMin) result = true;
+  }
+  
+  return result;
+}

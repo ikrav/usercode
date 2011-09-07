@@ -321,14 +321,16 @@ void selectZHtoEEbb(const TString conf)
 	    //
 	    // ET thresholds for electrons
 	    if( ! (electron1->scEt > cutEleETMin && electron2->scEt > cutEleETMin) ) continue;
+	    // It is not clear whether individual trigger object matching
+	    // is applied in the official analysis, so this is commented out
 	    // Both electrons must match trigger objects. At least one ordering
 	    // must match
-	    if( ! ( 
-		   (electron1->hltMatchBits & leadingTriggerObjectBit && 
-		    electron2->hltMatchBits & trailingTriggerObjectBit )
-		   ||
-		   (electron1->hltMatchBits & trailingTriggerObjectBit && 
-		    electron2->hltMatchBits & leadingTriggerObjectBit ) ) ) continue;
+// 	    if( ! ( 
+// 		   (electron1->hltMatchBits & leadingTriggerObjectBit && 
+// 		    electron2->hltMatchBits & trailingTriggerObjectBit )
+// 		   ||
+// 		   (electron1->hltMatchBits & trailingTriggerObjectBit && 
+// 		    electron2->hltMatchBits & leadingTriggerObjectBit ) ) ) continue;
 	    
 	    // Other cuts to both electrons
 	    
@@ -380,28 +382,21 @@ void selectZHtoEEbb(const TString conf)
 	    pfJetBr->GetEntry(ientry);
 	    for(Int_t ijet=0; ijet<pfJetArr->GetEntriesFast(); ijet++) {
 	      const mithep::TJet *jet1 = (mithep::TJet*)((*pfJetArr)[ijet]);
-	      for(Int_t jjet=0; jjet<pfJetArr->GetEntriesFast(); jjet++) {
-		if( ijet == jjet ) continue;
+	      // Jet kinematics (JEC are already applied)
+	      if( !( fabs(jet1->eta) < cutJetEtaMax ) ) continue;
+	      if( !( fabs(jet1->pt ) > cutJetPTMin ) ) continue;
+	      // Jet ID
+	      if( ! passJetID(jet1) ) continue;
+
+	      for(Int_t jjet=ijet+1; jjet<pfJetArr->GetEntriesFast(); jjet++) {
 		const mithep::TJet *jet2 = (mithep::TJet*)((*pfJetArr)[jjet]);
-		
-		// Cuts on jet kinematics
-		if( !( fabs(jet1->eta) < cutJetEtaMax && fabs(jet2->eta) < cutJetEtaMax) ) continue;
-		// 	      printf("DEBUG: pair of central jets found\n");
-		// Jet Pt cuts (JEC corrections are already applied before)
-		// NOT CLEAR: do leptons from Z need to be excluded from jets
-		// in addition to min separation cut below? Description in 11-240 not totally clear.
-		if( !( jet1->pt > cutJetPTMin && jet2->pt > cutJetPTMin ) ) continue;
-		// 	      printf("DEBUG: Pt is high enough\n");
-		
-		// Cuts on charged particle multiplicity and EM, Had energy fractions
-		if( !(jet1->nCharged >= cutJetTrackCountMin && jet2->nCharged >= cutJetTrackCountMin ) ) continue;
-		// Not clear in 11-240 if charged and neutral are cut on
-		// separately or added
-		if( !( (jet1->chgEMfrac + jet1->neuEMfrac) > cutEMFractionMin 
-		       && (jet2->chgEMfrac + jet2->neuEMfrac) > cutEMFractionMin ) ) continue;
-		if( !( (jet1->chgHadrfrac + jet1->neuHadrfrac) > cutHadFractionMin 
-		       && (jet2->chgHadrfrac + jet2->neuHadrfrac) > cutHadFractionMin ) ) continue;
-		
+
+		// Jet kinematics (JEC are already applied
+		if( !( fabs(jet2->eta) < cutJetEtaMax ) ) continue;
+		if( !( fabs(jet2->pt ) > cutJetPTMin ) ) continue;
+		// Jet ID
+		if( ! passJetID(jet2) ) continue;
+	      
 		// Make sure leptons from Z are not too close to jets
 		if( toolbox::deltaR(jet1->eta, jet1->phi, electron1->scEta, electron1->scPhi) < cutDRJetLeptonMin ) continue;
 		if( toolbox::deltaR(jet1->eta, jet1->phi, electron2->scEta, electron2->scPhi) < cutDRJetLeptonMin ) continue;
@@ -419,6 +414,7 @@ void selectZHtoEEbb(const TString conf)
 	      
 	      // Count jets toward jet veto
 	      if( jet1->pt > cutJetPTMin && fabs(jet1->eta) < cutJetEtaMax
+		  && passJetID(jet1)
 		  && toolbox::deltaR(jet1->eta, jet1->phi, electron1->scEta, electron1->scPhi) > cutDRJetLeptonMin
 		  && toolbox::deltaR(jet1->eta, jet1->phi, electron2->scEta, electron2->scPhi) > cutDRJetLeptonMin 
 		  ){
@@ -427,7 +423,8 @@ void selectZHtoEEbb(const TString conf)
 	      
 	    } // end outer loop over jets
 	    // 	  printf("DEBUG: N central jets %d\n", totalCentralJets);
-	    
+	    //printf("DEBUG: found eejj combination\n");
+
 	    // Is there a good enough pair of jets?
 	    if( !( bjet1 && bjet2 ) ) continue;
 	    

@@ -19,6 +19,8 @@ namespace ZHtoEEbbCuts {
   const double cutJetTrackCountMin = 2;
   const double cutEMFractionMin = 0.01;
   const double cutHadFractionMin = 0.01;
+  const double cutEMFractionMax = 0.99;
+  const double cutHadFractionMax = 0.99;
   const double csv1cut = 0.898; // CSV Tight
   const double csv2cut = 0.50;
   
