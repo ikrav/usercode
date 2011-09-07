@@ -1,5 +1,9 @@
 #!/bin/sh
 
+cd ../Include
+rm *.so
+cd ../FullChain
+
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "WILL DO: plotDY(\"../config_files/data.conf\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
