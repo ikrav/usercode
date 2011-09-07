@@ -12,6 +12,7 @@
 #include <sstream>
 
 #include "../Include/DYTools.hh"
+#include "../Include/UnfoldingTools.hh"
 
 // This global constants will be filled from 
 // the configuration file. This is not great C++...
@@ -23,7 +24,14 @@ const TString fileDataYields        ("yields_bg-subtracted.root");
 
 const TString fileMcReferenceYields ("yields_MC_unfolding_reference.root");
 
+// This file contains unfolding matrix 
 const TString fileUnfoldingConstants("unfolding_constants.root");
+
+// Contains relative unfolding systematic errors
+const TString fileUnfoldingErrors("unfolding_systematics.root");
+
+// Contains relative escale systematic errors
+const TString fileEscaleErrors("escale_systematics.root");
 
 const TString fileEfficiencyConstants("event_efficiency_constants.root");
 
@@ -38,8 +46,10 @@ const TString fileFsrCorrectionSansAccConstants("fsr_constants_sans_acc.root");
 // Forward declarations
 void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2);
 
-void  unfold(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
+void  applyUnfolding(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
              TVectorD &vout, TVectorD &voutStatErr, TVectorD &voutSystErr);
+void  applyUnfoldingToMc(TString fullUnfoldingConstFileName, 
+			 TString fullMcRefYieldsFileName);
 void  efficiencyCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
              TVectorD &vout, TVectorD &voutStatErr, TVectorD &voutSystErr);
 void  acceptanceCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
@@ -74,48 +84,38 @@ void printTableForNotes(TVectorD obs, TVectorD obsErr,
 void printAllCorrections();
 void printRelativeSystErrors();
 
-  ////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////
-  //Four plots of R-shape at the same picture
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+//Four plots of R-shape at the same picture
 
-  void RShapePlot
+void RShapePlot
 (TVectorD relCrossSection, TVectorD relCrossSectionStatErr, 
-TVectorD relCrossSectionDET, TVectorD relCrossSectionDETStatErr, 
-TVectorD relPostFsrCrossSection, TVectorD relPostFsrCrossSectionStatErr, 
-TVectorD relPostFsrCrossSectionDET, TVectorD relPostFsrCrossSectionDETStatErr);
+ TVectorD relCrossSectionDET, TVectorD relCrossSectionDETStatErr, 
+ TVectorD relPostFsrCrossSection, TVectorD relPostFsrCrossSectionStatErr, 
+ TVectorD relPostFsrCrossSectionDET, TVectorD relPostFsrCrossSectionDETStatErr);
 
-  ////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 
 
 const double lowZMass = 60.0;
 const double highZMass = 120.0;
 void getNormBinRange(int &firstNormBin, int &lastNormBin);
 
-// The arrays below contain the estimate of relative systematic
-// error in percent obtained elsewhere. The calculation of these
-// errors is done outside of the main scripts that calculate
-// the unfolding constants and energy scale corrections. We want
-// to change this in the future from hardwired text constants here
-// to reading ROOT files.
-const double unfoldingSystematicsPercent[nMassBins] = 
-  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
-const double escaleSystematicsPercent[nMassBins] = 
-  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
 // Some global arrays for convenience.
 // These will contain errors on R
 // (after unfolding, etc).
-// This is messy, until the next re-write
+
+// Absolute error values at the point just before unfolding
 TVectorD systBackgrBeforeUnfolding(DYTools::nMassBins);
 TVectorD systEscaleBeforeUnfolding(DYTools::nMassBins);
-TVectorD systBackgr(DYTools::nMassBins);
-TVectorD systEscale(DYTools::nMassBins);
+
+// Relative error values. These are meant to be AFTER unfolding.
+TVectorD systBackgrRelative(DYTools::nMassBins);
+TVectorD systEscaleRelative(DYTools::nMassBins);
+TVectorD systUnfoldRelative(DYTools::nMassBins);
+
 TVectorD systEfficiency(DYTools::nMassBins);
-TVectorD systUnfolding(DYTools::nMassBins);
 TVectorD systOthers(DYTools::nMassBins);
 
 // ---------------------------------------------------------------
@@ -203,18 +203,15 @@ void calcCrossSection(const TString conf){
 
   systBackgrBeforeUnfolding = 0;
   systEscaleBeforeUnfolding = 0;
-  systBackgr = 0;
-  systEscale = 0;
   systEfficiency = 0;
-  systUnfolding = 0;
   systOthers = 0;
 
   // Read data yields from file (background subtraction is already done)
   readData(signalYields, signalYieldsStatErr, signalYieldsSystErr);
 
   // Apply unfolding
-  unfold(signalYields, signalYieldsStatErr, signalYieldsSystErr,
-	 unfoldedYields, unfoldedYieldsStatErr, unfoldedYieldsSystErr);
+  applyUnfolding(signalYields, signalYieldsStatErr, signalYieldsSystErr,
+		 unfoldedYields, unfoldedYieldsStatErr, unfoldedYieldsSystErr);
 
   // Apply efficiency correction
   efficiencyCorrection(unfoldedYields, unfoldedYieldsStatErr, unfoldedYieldsSystErr,
@@ -267,11 +264,11 @@ void calcCrossSection(const TString conf){
   //Four plots of R-shape at the same picture
 
   RShapePlot
-(relCrossSection, relCrossSectionStatErr, 
-relCrossSectionDET, relCrossSectionStatErrDET, 
-relPostFsrCrossSection, relPostFsrCrossSectionStatErr, 
-relPostFsrCrossSectionDET, relPostFsrCrossSectionStatErrDET);
-
+    (relCrossSection, relCrossSectionStatErr, 
+     relCrossSectionDET, relCrossSectionStatErrDET, 
+     relPostFsrCrossSection, relPostFsrCrossSectionStatErr, 
+     relPostFsrCrossSectionDET, relPostFsrCrossSectionStatErrDET);
+  
   ////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////
 
@@ -305,6 +302,24 @@ void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2){
   }else
     printf("readData: Binning in the inputs is consistent\n");
 
+  // We also load systematic errors relevant at this point
+  TString fullEscaleSystErrorsFileName = TString("../root_files/systematics/")
+    +tagDirYields+TString("/")
+    +fileEscaleErrors;
+  TFile fileEscaleSystematics(fullEscaleSystErrorsFileName);
+  if( ! fileEscaleSystematics.IsOpen()){
+    printf("ERROR: required file with escale errors %s is not found!\n",
+	   fullEscaleSystErrorsFileName.Data());
+    assert(0);
+  }
+  TVectorD escaleSystematicsPercent 
+    = *(TVectorD *)fileEscaleSystematics.FindObjectAny("escaleSystPercent");
+  if( escaleSystematicsPercent.GetNoElements() != DYTools::nMassBins){
+    printf("ERROR: Wrong binning of the escale systematics array!\n");
+    assert(0);
+  }
+
+  // Prepare output yields and errors
   for(int i=0; i<nMassBins; i++){
     v[i] = YieldsSignal[i];
     vErr1[i] = YieldsSignalErr[i];
@@ -318,118 +333,97 @@ void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2){
   } 
 
   fileYields.Close();
+  fileEscaleSystematics.Close();
   return;
 }
 
 //-----------------------------------------------------------------
 // Unfold
 //-----------------------------------------------------------------
-void  unfold(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
+void  applyUnfolding(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
              TVectorD &vout, TVectorD &voutStatErr, TVectorD &voutSystErr)
 {
 
-  // Read unfolding constants
-  printf("unfold: Load constants\n"); fflush(stdout);
-    
-  TFile fileConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileUnfoldingConstants);
-  TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
-  TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
-  TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
-  TVectorD BinLimitsArray          = *(TVectorD *)fileConstants.FindObjectAny("BinLimitsArray");
+  // Construct file names
+  TString fullUnfoldingConstFileName = TString("../root_files/constants/")+tagDirConstants+TString("/")+fileUnfoldingConstants;
+  TString fullUnfoldingErrFileName   = TString("../root_files/systematics/")+tagDirConstants+TString("/")+fileUnfoldingErrors;
+  TString fullMcRefYieldsFileName    = TString("../root_files/constants/")+tagDirConstants+TString("/")+fileMcReferenceYields;
+  
+  // First, propagate through unfolding the signal yields with stat and syst errors
+  unfolding::unfold(vin, vout, fullUnfoldingConstFileName);
+  unfolding::propagateErrorThroughUnfolding(vinStatErr,voutStatErr, fullUnfoldingConstFileName);
+  unfolding::propagateErrorThroughUnfolding(vinSystErr,voutSystErr, fullUnfoldingConstFileName);
+
+  // Second, propagate separately several systematic error components.
+  // These are already included in the total systematic error above in vinSystErr,
+  // however we do it separately so that we can quote the breakdown in the
+  // table of systematic errors
+  TVectorD systBackgr(vin.GetNoElements());
+  TVectorD systEscale(vin.GetNoElements());
+  unfolding::propagateErrorThroughUnfolding(systBackgrBeforeUnfolding, systBackgr, fullUnfoldingConstFileName);
+  unfolding::propagateErrorThroughUnfolding(systEscaleBeforeUnfolding, systEscale, fullUnfoldingConstFileName);
+
+  // Pool together the unfolding systematics and add it to the total systematics
+  TVectorD systUnfolding(vin.GetNoElements());
+  unfolding::calculateTotalUnfoldingSystError(vin, systUnfolding, 
+					      fullUnfoldingConstFileName, 
+					      fullUnfoldingErrFileName);
+  // Add unfolding systematics to the total systematic error
+  for(int i=0; i<DYTools::nMassBins; i++){
+    voutSystErr[i] = sqrt( voutSystErr[i]*voutSystErr[i] + systUnfolding[i]*systUnfolding[i]);
+  }
+
+  // After propagating through unfolding all errors that we had on yields before 
+  // unfolding we can compute the relative errors of each kind. While unfolding
+  // changes relative errors, all subsequent manipulations do not, so we can 
+  // save the errors here.
+  for(int i=0; i<DYTools::nMassBins; i++){
+    systBackgrRelative[i] = systBackgr[i]/vout[i];
+    systEscaleRelative[i] = systEscale[i]/vout[i];
+    systUnfoldRelative[i] = systUnfolding[i]/vout[i];
+  }  
+
+
+  // Print the result
+  printf("\nUNFOLD: Results for the data, yields:\n");
+  printf("                   yields observed        after unfolding            \n");
+  for(int i=0; i<DYTools::nMassBins; i++){
+    printf("%4.0f-%4.0f   %8.1f +- %6.1f +- %5.1f       %8.1f +- %7.1f +- %6.1f\n",
+	   DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
+	   vin[i], vinStatErr[i], vinSystErr[i],
+	   vout[i], voutStatErr[i], voutSystErr[i]);
+  }
+
+  // Last, do a closure test on MC
+  applyUnfoldingToMc(fullUnfoldingConstFileName, fullMcRefYieldsFileName);
+
+  return;
+}
+
+void applyUnfoldingToMc(TString fullUnfoldingConstFileName, TString fullMcRefYieldsFileName){
 
   printf("Load MC reference yields\n"); fflush(stdout);
-  TFile fileMcRef(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileMcReferenceYields);
+  TFile fileMcRef(fullMcRefYieldsFileName);
   TVectorD yieldsMcFsrOfRec        = *(TVectorD *)fileMcRef.FindObjectAny("yieldsMcFsrOfRec");
   TVectorD yieldsMcRec             = *(TVectorD *)fileMcRef.FindObjectAny("yieldsMcRec");
 
- // Check that the binning is consistent
-  bool checkResult = true;
-  int nBins = BinLimitsArray.GetNoElements()-1;
-  if( DetResponse.GetNrows()    != nMassBins ) checkResult = false;
-  if( BinLimitsArray.GetNoElements() != nMassBins+1) checkResult = false;
-  for(int i=0; i<nBins+1; i++){
-    if( BinLimitsArray[i] != massBinLimits[i] )
-      checkResult = false;
-  }
-  if( !checkResult ){
-    printf("unfold: ERROR: inconsistent binning in the inputs\n");
-    assert(0);
-  }else
-    printf("unfold: Binning in the inputs is consistent\n");
-
-  // Apply unfolding matrix
-  TVectorD systErrorPreviousPropagated(nBins);
-  TVectorD systErrorAdditional(nBins);
+  int nBins = yieldsMcRec.GetNoElements();
   TVectorD dNdMmcCheck(nBins);
-  // Initialize all elements. Stat error is propagated, 
-  // but systematic error has the propagated component and the new additions
-  vout = 0;
-  voutStatErr = 0;
-  voutSystErr = 0;
-  systErrorPreviousPropagated = 0;
-  systErrorAdditional = 0;
   dNdMmcCheck = 0;
-  systBackgr = 0;
-  systEscale = 0;
-  for(int i=0; i<nBins; i++){
-    for(int j=0; j<nBins; j++){
-      vout[i] += DetInvertedResponse(j,i) * vin[j];
-      voutStatErr                [i] += pow( DetInvertedResponse   (j,i) * vinStatErr[j], 2);
+  unfolding::unfold(yieldsMcRec, dNdMmcCheck, fullUnfoldingConstFileName);
 
-      systErrorPreviousPropagated[i] += pow( DetInvertedResponse   (j,i) * vinSystErr[j], 2);
-      systErrorAdditional        [i] += pow( DetInvertedResponseErr(j,i) * vin[j], 2);
-
-      systBackgr[i] += pow( DetInvertedResponse   (j,i) * systBackgrBeforeUnfolding[j], 2);
-      systEscale[i] += pow( DetInvertedResponse   (j,i) * systEscaleBeforeUnfolding[j], 2);
-
-      dNdMmcCheck[i] += DetInvertedResponse(j,i) * yieldsMcRec[j];
-    }
-    voutStatErr[i] = sqrt(voutStatErr[i]);
-    systBackgr[i] = sqrt(systBackgr[i])/vout[i];
-    systEscale[i] = sqrt(systEscale[i])/vout[i];
-
-    systErrorPreviousPropagated[i] = sqrt(systErrorPreviousPropagated[i]);
-    // the "additional" systematic error below comes from error propagation
-    // of the errors on the unfolding matrix elements
-    systErrorAdditional[i]         = sqrt(systErrorAdditional[i]);
-    // Add externally computed systematics from other sources for this step
-    double unfoldingSystematics = (unfoldingSystematicsPercent[i]/100.0)*vout[i];
-    systErrorAdditional[i] = sqrt( systErrorAdditional[i]*systErrorAdditional[i] + 
-				   unfoldingSystematics*unfoldingSystematics);
-    systUnfolding[i] = systErrorAdditional[i]/vout[i];
-
-    // The total systematic error ends up being from 3 sources:
-    //  - original systematic error on the signal yields before unfolding, propagated through unfolding
-    //  - the systematic error due to uncertainty in the elements of the unfolding matrix due
-    //         to limites statistics
-    //  - the systematic error due to uncertainty in extra smearing applied to MC
-    //         when the unfolding matrix is extracted
-    voutSystErr[i] = sqrt(systErrorPreviousPropagated[i]*systErrorPreviousPropagated[i] 
-			  + systErrorAdditional[i]*systErrorAdditional[i]);
-  }
-  
   // Report results
   printf("\nUNFOLD: Check on the MC, yields:\n");
   for(int i=0; i<nBins; i++){
     printf("%4.0f-%4.0f   %10.0f    %10.0f\n",
-	   BinLimitsArray[i],BinLimitsArray[i+1],
-	   yieldsMcFsrOfRec[i],
-	   dNdMmcCheck[i]);
-  }
-  printf("\nUNFOLD: Results for the data, yields:\n");
-  printf("                   yields observed        after unfolding                     syst-err-unfolding,%%\n");
-  for(int i=0; i<nBins; i++){
-    printf("%4.0f-%4.0f   %8.1f +- %6.1f +- %5.1f       %8.1f +- %7.1f +- %6.1f       %7.1f\n",
-	   BinLimitsArray[i],BinLimitsArray[i+1],
-	   vin[i], vinStatErr[i], vinSystErr[i],
-	   vout[i], voutStatErr[i], voutSystErr[i],
-	   systErrorAdditional[i]*100.0/vout[i]);
+ 	   DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
+ 	   yieldsMcFsrOfRec[i],
+ 	   dNdMmcCheck[i]);
   }
 
   fileMcRef.Close();
-  fileConstants.Close();
-  return;
 }
+
 
 void  efficiencyCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
              TVectorD &vout, TVectorD &voutStatErr, TVectorD &voutSystErr)
@@ -679,10 +673,11 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
 	   sqrt(voutNormStatErr[i] * voutNormStatErr[i] + voutNormSystErr[i] * voutNormSystErr[i]) );
   }
-  printf("\nPre FSR cross-section in the Z peak from %3.0f to %3.0f:\n",massBinLimits[low], massBinLimits[high+1]);
+  printf("\nPre FSR cross-section in the Z peak from %3.0f to %3.0f:\n",
+	 massBinLimits[low], massBinLimits[high+1]);
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
-//    printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
+//     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
 
   return;
 }
@@ -788,7 +783,7 @@ void  postFsrCrossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
 	 massBinLimits[low], massBinLimits[high+1]);
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
-//    printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
+//     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
 
   return;
 }
@@ -895,16 +890,16 @@ void printAllCorrections(){
   for(int i=0; i<nMassBins; i++){
 
     double effFactor = efficiencyArray[i] * rhoDataMc[i];
-    double effErr = effFactor
-      * sqrt( efficiencyErrArray[i]*efficiencyErrArray[i]/efficiencyArray[i]/efficiencyArray[i]
-	      + rhoDataMcErr[i]*rhoDataMcErr[i]/rhoDataMc[i]/rhoDataMc[i]);
+//     double effErr = effFactor
+//       * sqrt( efficiencyErrArray[i]*efficiencyErrArray[i]/efficiencyArray[i]/efficiencyArray[i]
+// 	      + rhoDataMcErr[i]*rhoDataMcErr[i]/rhoDataMc[i]/rhoDataMc[i]);
 
     double accFactor = acceptanceArray[i];
     double accErr    = acceptanceErrArray[i];
 
     double accEff = accFactor * effFactor;
-    double accEffErr = accEff*sqrt( (effErr/effFactor)*(effErr/effFactor) 
-				    + (accErr/accFactor)*(accErr/accFactor));
+//     double accEffErr = accEff*sqrt( (effErr/effFactor)*(effErr/effFactor) 
+// 				    + (accErr/accFactor)*(accErr/accFactor));
 
     double fsrFactor = fsrCorrectionArray[i];
     double fsrErr    = fsrCorrectionErrArray[i];
@@ -932,16 +927,16 @@ void printRelativeSystErrors(){
   printf("\n\nLatex table of relative systematic errors  in percent for PAS/paper\n");
   printf("              escale & efficiency & backgrounds & unfolding & sum\n");
   for(int i=0; i<nMassBins; i++){
-    double sum = sqrt(systEscale[i]*systEscale[i]
+    double sum = sqrt(systEscaleRelative[i]*systEscaleRelative[i]
 		      + systEfficiency[i]*systEfficiency[i]
-		      + systBackgr[i]*systBackgr[i]
-		      + systUnfolding[i]*systUnfolding[i]);
+		      + systBackgrRelative[i]*systBackgrRelative[i]
+		      + systUnfoldRelative[i]*systUnfoldRelative[i]);
     printf("%4.0f-%4.0f &", massBinLimits[i],massBinLimits[i+1]);
     printf("   $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$", 
-	   100*systEscale[i], 
+	   100*systEscaleRelative[i], 
 	   100*systEfficiency[i], 
-	   100*systBackgr[i], 
-	   100*systUnfolding[i],
+	   100*systBackgrRelative[i], 
+	   100*systUnfoldRelative[i],
 	   100*sum);
     printf("\n");
   }
@@ -957,7 +952,7 @@ TVectorD relPostFsrCrossSection, TVectorD relPostFsrCrossSectionStatErr,
 TVectorD relPostFsrCrossSectionDET, TVectorD relPostFsrCrossSectionStatErrDET)
 {
     
-   TCanvas *c1 = new TCanvas("c1","c1",10,10,1000,1000);
+   TCanvas *c1 = new TCanvas("c1","c1",10,10,600,600);
    c1->SetGrid();
    c1->SetLogx(1);
    c1->SetLogy(1);
@@ -1045,7 +1040,7 @@ TVectorD relPostFsrCrossSectionDET, TVectorD relPostFsrCrossSectionStatErrDET)
    mg->Add(gr1);
    mg->Draw("ap");
 TAxis* yax=mg->GetYaxis();
-yax->SetRangeUser(10e-5,2);
+yax->SetRangeUser(5e-6,2);
    //mg->GetXaxis()->SetTitle("M_{ee}");
    //mg->GetYaxis()->SetTitle("R-shape");
    //mg->SetName("(d#sigma /dM)/ (d#sigma /dM)_{z}");
@@ -1062,6 +1057,7 @@ yax->SetRangeUser(10e-5,2);
   ////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////
 void getNormBinRange(int &firstNormBin, int &lastNormBin){
+
   firstNormBin = -1;
   lastNormBin = -1;
  
@@ -1082,3 +1078,4 @@ void getNormBinRange(int &firstNormBin, int &lastNormBin){
 
   return;
 }
+

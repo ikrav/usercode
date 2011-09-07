@@ -54,10 +54,9 @@ void SimpleDivide(double passed, double total,
 void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TErrNeg,
 				   TMatrixD &TinvErr);
 
-
 //=== MAIN MACRO =================================================================================================
 
-void plotDYUnfoldingMatrix(const TString input) 
+void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, int randomSeed = 1) 
 {
   gBenchmark->Start("plotDYUnfoldingMatrix");
 
@@ -113,6 +112,17 @@ void plotDYUnfoldingMatrix(const TString input)
   //==============================================================================================================
 
   TRandom random;
+  // The random seeds are needed only if we are running this script in systematics mode
+  int seed = randomSeed;
+  random.SetSeed(seed);
+  gRandom->SetSeed(seed);
+  // In the case of systematic studies, generate an array of random offsets
+  TVectorD shift(escale::nEtaBins);
+  shift = 0;
+  if(systematicsMode)
+    for(int i=0; i<escale::nEtaBins; i++)
+      shift[i] = gRandom->Gaus(0,1);
+
   //  
   // Set up histograms
   //
@@ -266,8 +276,14 @@ void plotDYUnfoldingMatrix(const TString input)
 
 	// Apply extra smearing to MC reconstructed dielectron mass
 	// to better resemble the data
-	double smear1 = extraSmearingSigma(dielectron->scEta_1);
-        double smear2 = extraSmearingSigma(dielectron->scEta_2);
+	double smear1 = escale::extraSmearingSigma(dielectron->scEta_1);
+        double smear2 = escale::extraSmearingSigma(dielectron->scEta_2);
+	// In systematics mode, overwrite the smear values with
+	// shifted ones.
+	if(systematicsMode){
+	  smear1 = escale::extraSmearingSigmaShifted(dielectron->scEta_1,shift);
+	  smear2 = escale::extraSmearingSigmaShifted(dielectron->scEta_2,shift);
+	}
         double smearTotal = sqrt(smear1*smear1 + smear2*smear2);
         double massResmeared = dielectron->mass + random.Gaus(0.0,smearTotal);
 
@@ -373,8 +389,15 @@ void plotDYUnfoldingMatrix(const TString input)
 
   // Store constants in the file
   TString outputDir(TString("../root_files/constants/")+dirTag);
+  if(systematicsMode)
+    outputDir = TString("../root_files/systematics/")+dirTag;
   gSystem->mkdir(outputDir,kTRUE);
   TString unfoldingConstFileName(outputDir+TString("/unfolding_constants.root"));
+  if(systematicsMode){
+    unfoldingConstFileName = outputDir+TString("/unfolding_constants_seed_");
+    unfoldingConstFileName += seed;
+    unfoldingConstFileName += ".root";
+  }
   TFile fConst(unfoldingConstFileName, "recreate" );
   DetResponse             .Write("DetResponse");
   DetInvertedResponse     .Write("DetInvertedResponse");
