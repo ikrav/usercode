@@ -253,8 +253,8 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
 	// if related studies need to be done. But the correction really
 	// needs to be applied in the original selection script so that 
 	// ET cut on electrons is applied properly there.
-	//   	double corr1 = findEnergyScaleCorrection(data.scEta_1);
-	//   	double corr2 = findEnergyScaleCorrection(data.scEta_2);
+	//   	double corr1 = escale::findEnergyScaleCorrection(data.scEta_1);
+	//   	double corr2 = escale::findEnergyScaleCorrection(data.scEta_2);
  	double corr1 = 1;
  	double corr2 = 1;
 	scEt1 = data.scEt_1 * corr1;
@@ -283,8 +283,8 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
 
       // If This is MC, add extra smearing to the mass
       if(isam!=0) {            	    
-	double smear1 = extraSmearingSigma(data.scEta_1);
-	double smear2 = extraSmearingSigma(data.scEta_2);
+	double smear1 = escale::extraSmearingSigma(data.scEta_1);
+	double smear2 = escale::extraSmearingSigma(data.scEta_2);
 	double smearTotal = sqrt(smear1*smear1 + smear2*smear2);
 	data.mass = data.mass + random.Gaus(0.0,smearTotal);
       }

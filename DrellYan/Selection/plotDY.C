@@ -404,8 +404,8 @@ void plotDY(const TString conf)
 	  Double_t scEt2 = dielectron->scEt_2;
 	  // Electron energy scale correction
           if(isam==0) {            	    
-    	    double corr1 = findEnergyScaleCorrection(dielectron->scEta_1);
-    	    double corr2 = findEnergyScaleCorrection(dielectron->scEta_2);
+    	    double corr1 = escale::findEnergyScaleCorrection(dielectron->scEta_1);
+    	    double corr2 = escale::findEnergyScaleCorrection(dielectron->scEta_2);
 	    scEt1 = dielectron->scEt_1 * corr1;
 	    scEt2 = dielectron->scEt_2 * corr2;
 

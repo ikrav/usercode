@@ -1,6 +1,8 @@
 #ifndef ElectronEnergyScale
 #define ElectronEnergyScale
 
+#include <TVectorD.h>
+
 namespace escale{
 
   // Energy scale corrections and MC extra smearing from Andrius drived July 2011
