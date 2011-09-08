@@ -10,7 +10,7 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Selection
 rm *.so
 #root -b -q -l auxScript.C+
-#breaks for some reason
+#still crashes for some reason
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "DONE: plotDY(\"../config_files/data.conf\")"
@@ -40,6 +40,7 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "WILL DO: plotDYUnfoldingMatrix(\"../config_files/summer11mc.input\")"
+echo "20 times; and calcUnfoldingSystematics"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Unfolding
 rm *.so
@@ -47,6 +48,7 @@ root -b -q -l auxScript.C+
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "DONE: plotDYUnfoldingMatrix(\"../config_files/summer11mc.input\")"
+echo "20 times; and calcUnfoldingSystematics"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
