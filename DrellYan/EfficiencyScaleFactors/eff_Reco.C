@@ -45,10 +45,14 @@
 #include "../Include/TDielectron.hh"
 #include "../Include/TElectron.hh"
 #include "../Include/TPhoton.hh"
-
 #include "../Include/DYTools.hh"
-
 #include "../Include/EleIDCuts.hh"
+
+#include "../Include/cutFunctions.hh"
+#include "../Include/fitFunctions.hh"
+#include "../Include/fitFunctionsCore.hh"
+
+
 
 #endif
 
@@ -59,51 +63,47 @@ using namespace mithep;
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
-Bool_t dielectronMatchedToGeneratorLevel(const TGenInfo *gen, const TDielectron *dielectron);
+//from Include/cutFunctions.C
 
-Bool_t electronMatchedToGeneratorLevel(const TGenInfo *gen, const TElectron *electron);
-
-Bool_t scMatchedToGeneratorLevel(const TGenInfo *gen, const TPhoton *sc);
-
-void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,
-			TTree *passTree, TTree *failTree,
-			TCanvas *passCanvas, TCanvas *failCanvas);
-void measureEfficiency(TTree *passTree, TTree *failTree, 
-		       int method, int etBinning, int etaBinning, 
-		       TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
-		       bool useTemplates, TFile *templatesFile, TFile *resultsRootFile);
-void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree, 
-				    int etBinning, int etaBinning, 
-				    TCanvas *canvas, ofstream &effOutput, bool saveResultsToRootFile, TFile *resultsRootFile);
-void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, 
-			      int method, int etBinning, int etaBinning, 
-			      TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
-			      bool useTemplates, TFile *templatesFile, TFile *resultsRootFile);
-void fitMass(TTree *passTree, TTree *failTree, 
-	     TString cut, int mode,
-	     double &efficiency, double &efficiencyErrHigh, double &efficiencyErrLow, 
-	     TPad *passPad, TPad *failPad, ofstream &fitLog);
-void fitMassWithTemplates(TTree *passTree, TTree *failTree, 
-		TString cut, int mode,
-		double &efficiency, double &efficiencyErrHigh, double &efficiencyErrLow, 
-		TPad *passPad, TPad *failPad, ofstream &fitLog,
-		TH1F *templatePass, TH1F *templateFail);
-
+Bool_t dielectronMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TDielectron *dielectron);
+Bool_t electronMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TElectron *electron);
+Bool_t scMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TPhoton *sc);
 bool isTag(const TElectron *electron, UInt_t trigger);
 bool passID(const TElectron *electron);
+TString getLabel(int sample, int effType, int method, int etBinning, int etaBinning);
+bool isTag(const TElectron *electron, UInt_t trigger);
+bool passID(const TElectron *electron);
+TString getLabel(int sample, int effType, int method, int etBinning, int etaBinning);
 
-void printCorrelations(ostream& os, RooFitResult *res);
-TString getLabel(int sample, int effType, int method, 
-		 int etBinning, int etaBinning);
+//finished from Include/cutFuctions.C
+
+//from Include/fitFunctions.C
+
+void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,TTree *passTree, TTree *failTree,TCanvas *passCanvas, TCanvas *failCanvas,char* setBinsType);
+void measureEfficiency(TTree *passTree, TTree *failTree, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, TFile *resultsRootFile, int NsetBins, bool isRECO, char* setBinsType);
+void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, bool saveResultsToRootFile, TFile *resultsRootFile);
+void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, TFile *resultsRootFile, int NsetBins, bool isRECO, char* setBinsType);
 int getTemplateBin(int etBin, int etaBin, int etaBinning);
 TH1F * getPassTemplate(int etBin, int etaBin, int etaBinning, TFile *file);
 TH1F * getFailTemplate(int etBin, int etaBin, int etaBinning, TFile *file);
+
+//finished from Include/fitFunctions.C
+
+//from Include/fitFucntionsCore.C
+
+void printCorrelations(ostream& os, RooFitResult *res);
+void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHigh, double &efficiencyErrLow, TPad *passPad, TPad *failPad, ofstream &fitLog, int NsetBins, bool isRECO, char* setBinsType);
+void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, TH1F *templatePass, TH1F *templateFail, bool isRECO, char* setBinsType);
+
+//finished from Include/fitFunctionsCore.C
 
 //=== MAIN MACRO =================================================================================================
 
 void eff_Reco(const TString configFile) 
 {
 
+  using namespace mithep; 
+ 
   gBenchmark->Start("eff_Reco");
   
   //--------------------------------------------------------------------------------------------------------------
@@ -214,10 +214,12 @@ void eff_Reco(const TString configFile)
   //  
   // Set up histograms
   //
-//   TH1F* hMass           = new TH1F("hMass"     ,"",30,massLow,massHigh);
+  //   TH1F* hMass           = new TH1F("hMass"     ,"",30,massLow,massHigh);
   TH1F* hMassTotal      = new TH1F("hMassTotal","",30,massLow,massHigh);
   TH1F* hMassPass       = new TH1F("hMassPass" ,"",30,massLow,massHigh);
   TH1F* hMassFail       = new TH1F("hMassFail" ,"",30,massLow,massHigh);
+
+  
 
   // Save MC templates if sample is MC
   TString tagAndProbeDir(TString("../root_files/tag_and_probe/")+dirTag);
@@ -286,7 +288,7 @@ void eff_Reco(const TString configFile)
   double ymax = 800;
   if(nDivisions <4 )
     ymax = nDivisions * 200;
-  TCanvas *c1 = MakeCanvas("c1","c1", 600, ymax);
+  TCanvas *c1 = MakeCanvas("c1","c1", 600, (int)ymax);
   c1->Divide(2,nDivisions);
 
   int eventsInNtuple = 0;
@@ -302,7 +304,7 @@ void eff_Reco(const TString configFile)
   int numTagProbePairsPassEta = 0;
   int numTagProbePairsGenMatched = 0;
   int numTagProbePairsInMassWindow = 0;
-
+  
   // Loop over files
   for(UInt_t ifile=0; ifile<ntupleFileNames.size(); ifile++){
 
@@ -341,8 +343,8 @@ void eff_Reco(const TString configFile)
     // loop over events    
     eventsInNtuple += eventTree->GetEntries();
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-//       for(UInt_t ientry=0; ientry<100000; ientry++) { // This is for faster turn-around in testing
-       
+      //for(UInt_t ientry=0; ientry<1000; ientry++) { // This is for faster turn-around in testing
+      
       if(sample != DATA)
 	genBr->GetEntry(ientry);
       eleArr->Clear();
@@ -370,7 +372,8 @@ void eff_Reco(const TString configFile)
       
       // Loop over the tag electrons
       for(int iele = 0; iele < eleArr->GetEntriesFast(); iele++){
-	const TElectron *electron = (TElectron*)((*eleArr)[iele]);
+	
+	const mithep::TElectron *electron = (mithep::TElectron*)((*eleArr)[iele]);
 	tagCand++;
 
 	// All cuts for the tag electron should be applied here
@@ -381,18 +384,19 @@ void eff_Reco(const TString configFile)
 	bool isEele = isEndcap(electron->scEta);
 	if( ! isBele && ! isEele) continue;
 	tagCandPassEta++;
-
+	
 	if( sample != DATA)
 	  if( ! electronMatchedToGeneratorLevel(gen, electron) ) continue;
+	
 	tagCandGenMatched++;
 
 	// ECAL driven: this condition is NOT applied	
-
+	
 	if( !isTag( electron, tagTriggerObjectBit) ) continue;
 
 	tagCandFinalCount++;
-
-      
+	
+	
 	// Loop over superclusters in this event: the probes
 	// Note: each supercluster has a number assigned: scID,
 	// and each electron object from TElectron collection has
@@ -400,6 +404,7 @@ void eff_Reco(const TString configFile)
 	// comes from. That allows to make the match between the 
 	// object in TPhoton collection and TElectron collection to
 	// find superclusters reconstructed as electrons.
+	
 	for(int isc = 0; isc < scArr->GetEntriesFast(); isc++){
 	  
 	  const TPhoton *sc = (TPhoton*)((*scArr)[isc]);
@@ -463,10 +468,11 @@ void eff_Reco(const TString configFile)
 	    if(sample != DATA && templateBin != -1)
 	      hFailTemplateV[templateBin]->Fill(mass);
 	  }
-	} // end loop over superclusters - probes
-      } // end loop over electrons - tags
+	  
+	  } // end loop over superclusters - probes	  
+      } // end loop over electrons - tags      
     } // end loop over events
-  
+    
     delete infile;
     infile=0;
     eventTree=0;
@@ -532,9 +538,12 @@ void eff_Reco(const TString configFile)
   if(sample == DATA)
     useTemplates = true;
 
-  measureEfficiency(passTree, failTree,
-		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,
-		    useTemplates, templatesFile, resultsRootFile);
+  int NsetBins=30;
+  bool isRECO=1;
+  char* setBinsType="cache";
+  measureEfficiency(passTree, failTree, calcMethod, etBinning, etaBinning, c1, effOutput, fitLog, useTemplates, templatesFile, resultsRootFile, NsetBins, isRECO, setBinsType);
+
+  
 
   effOutput.close();
   fitLog.close();
@@ -543,6 +552,7 @@ void eff_Reco(const TString configFile)
   system(command.Data());
 
   TString fitpicname = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString("_fit.png");
+  //c1->Update();
   c1->SaveAs(fitpicname);
 
   // Save MC templates
@@ -558,847 +568,11 @@ void eff_Reco(const TString configFile)
     templatesFile->Close();
   }
 
+    
+
   gBenchmark->Show("eff_Reco");
   
   
 }
 
-
-//=== FUNCTION DEFINITIONS ======================================================================================
-
-Bool_t dielectronMatchedToGeneratorLevel(const TGenInfo *gen, const TDielectron *dielectron){
-
-  Bool_t result = kTRUE;
-  // In the generator branch of this ntuple, first particle is always
-  // negative, and second always positive. In the Dielectron block
-  // of the ntuple, the first particle is always the one with larger Pt.
-  double dR1=999, dR2=999;
-  TLorentzVector v1reco, v2reco, v1gen, v2gen;
-  v1reco.SetPtEtaPhiM(dielectron->pt_1, dielectron->eta_1, dielectron->phi_1, 0.000511);
-  v2reco.SetPtEtaPhiM(dielectron->pt_2, dielectron->eta_2, dielectron->phi_2, 0.000511);
-  v1gen .SetPtEtaPhiM(gen->pt_1, gen->eta_1, gen->phi_1, 0.000511);
-  v2gen .SetPtEtaPhiM(gen->pt_2, gen->eta_2, gen->phi_2, 0.000511);
-  if( dielectron->q_1 < 0 ){
-    dR1 = v1reco.DeltaR(v1gen);
-    dR2 = v2reco.DeltaR(v2gen);
-  }else{
-    dR1 = v1reco.DeltaR(v2gen);
-    dR2 = v2reco.DeltaR(v1gen);
-  }
-  // Require that both are within loose dR of 0.4, otherwise bail out
-  if( fabs(dR1) > 0.4 || fabs(dR2) > 0.4 ) result = kFALSE; 
-  
-  return result;
-}
-
-Bool_t electronMatchedToGeneratorLevel(const TGenInfo *gen, const TElectron *electron){
-
-  Bool_t result = kTRUE;
-  // In the generator branch of this ntuple, first particle is always
-  // negative, and second always positive. 
-  double dR=999;
-  TLorentzVector vreco, v1gen, v2gen;
-  vreco.SetPtEtaPhiM(electron->pt, electron->eta, electron->phi, 0.000511);
-  v1gen .SetPtEtaPhiM(gen->pt_1, gen->eta_1, gen->phi_1, 0.000511);
-  v2gen .SetPtEtaPhiM(gen->pt_2, gen->eta_2, gen->phi_2, 0.000511);
-  if( electron->q < 0 ){
-    dR = vreco.DeltaR(v1gen);
-  }else{
-    dR = vreco.DeltaR(v2gen);
-  }
-  // Require that both are within loose dR of 0.4, otherwise bail out
-  if( fabs(dR) > 0.4 ) result = kFALSE; 
-  
-  return result;
-}
-
-Bool_t scMatchedToGeneratorLevel(const TGenInfo *gen, const TPhoton *sc){
-
-  Bool_t result = kTRUE;
-  // We do not know which of the gen electrons possibly
-  // produced this supercluster, so we check both.
-  double dR1=999, dR2=999;
-  TLorentzVector vreco, v1gen, v2gen;
-  vreco.SetPtEtaPhiM(sc->pt, sc->eta, sc->phi, 0.000511);
-  v1gen .SetPtEtaPhiM(gen->pt_1, gen->eta_1, gen->phi_1, 0.000511);
-  v2gen .SetPtEtaPhiM(gen->pt_2, gen->eta_2, gen->phi_2, 0.000511);
-  dR1 = vreco.DeltaR(v1gen);
-  dR2 = vreco.DeltaR(v2gen);
-  // Require that at least one is  within loose dR of 0.4, otherwise bail out
-  if( fabs(dR1) > 0.4 && fabs(dR2) > 0.4 ) result = kFALSE; 
-  
-  return result;
-}
-
-void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,
-			TTree *passTree, TTree *failTree,
-			TCanvas *passCanvas, TCanvas *failCanvas){
-
-  // Define data sets
-  RooRealVar mass("mass","mass",60, 120);
-  mass.setBins(120);
-  RooRealVar pt ("et" ,"et" ,10.0, 1000);
-  RooRealVar eta("eta","eta",-10, 10);
-  RooDataSet *dataPass = new RooDataSet("dataPass","dataPass",passTree,RooArgSet(mass,pt,eta));
-
-  RooDataSet *dataFail = new RooDataSet("dataFail","dataFail",RooArgList(mass,pt,eta),Import(*failTree));
-  RooCategory probeType("probeType","probeType");
-  probeType.defineType("pass");
-  probeType.defineType("fail");
-  RooAbsData *data;
-  // If needed do binned fit
-  bool unbinnedFit = false;
-  if(unbinnedFit){
-    data = new RooDataSet("data","data",mass,Index(probeType),
-			  Import("pass",*dataPass), Import("fail",*dataFail));
-  }else{
-    RooDataHist *dataPassBinned = dataPass->binnedClone("dataPassBinned","dataPassBinned");
-    RooDataHist *dataFailBinned = dataFail->binnedClone("dataFailBinned","dataFailBinned");
-    data = new RooDataHist("data","data",mass,Index(probeType),
-			   Import("pass",*dataPassBinned), Import("fail",*dataFailBinned));    
-  }
-  // Define the PDFs
-  //
-  // Common pieces
-  //
-  // True signal model
-  RooRealVar zMass ("zMass" ,"zMass" ,91.188);
-  RooRealVar zWidth("zWidth","zWidth",2.495);
-  RooBreitWigner bwPdf("bwPdf","bwPdf",mass,zMass,zWidth);
-  // Total signal events and efficiency
-  RooRealVar nsignal("nsignal","nsignal",1000,0.0,1.0e7);
-  RooRealVar eff    ("eff"    ,"eff"    ,0.7,0.0,1.0);
-
-  //  PDF for the PASS sample
-  // 
-  // Background
-  RooRealVar lambdaBgPass("lambdaBgPass","lambdaBgPass",-0.1, -0.5, 0.0);
-  RooExponential bgPassPdf("bgPassPdf","bgPassPdf",mass,lambdaBgPass);
-  // Signal
-  //     - resolution function
-  RooRealVar cbMeanPass("cbMeanPass","cbMeanPass"   ,0.0, -10.0,10.0);
-  RooRealVar cbWidthPass("cbWidthPass","cbWidthPass",1.0,  0.1, 5.0);
-  RooRealVar cbAlphaPass("cbAlphaPass","cbAlphaPass",5.0,  0.0,20.0);
-  RooRealVar cbNPass("cbNPass","cbNPass"            ,1.0,  0.0,10.0);
-  RooCBShape cbPassPdf("cbPassPdf","cbPassPdf",mass,cbMeanPass,cbWidthPass,cbAlphaPass,cbNPass);
-  //     - realistic model
-  mass.setBins(10000,"cache");
-  RooFFTConvPdf signalPassPdf("signalPassPdf","signalPassPdf",mass, bwPdf, cbPassPdf);
-  // Combine signal and background
-  RooFormulaVar nsigPass("nsigPass","nsigPass","@0*@1",RooArgList(nsignal,eff));
-  RooRealVar nbgPass ("nbgPass" ,"nbgPass" ,1,0.0,1.0e5);
-  RooAddPdf passPdf("passPdf","passPdf",RooArgList(signalPassPdf,bgPassPdf), RooArgList(nsigPass,nbgPass));
-  
-  //
-  //  PDF for the FAIL sample
-  // 
-  // Background
-  RooRealVar lambdaBgFail("lambdaBgFail","lambdaBgFail",-0.1, -0.5, 0.0);
-  RooExponential bgFailPdf("bgFailPdf","bgFailPdf",mass,lambdaBgFail);
-  // Signal
-  //     - resolution function
-  RooRealVar cbMeanFail("cbMeanFail","cbMeanFail"   ,0.0, -10.0,10.0);
-  RooRealVar cbWidthFail("cbWidthFail","cbWidthFail",1.0,   0.1, 5.0);
-  RooRealVar cbAlphaFail("cbAlphaFail","cbAlphaFail",5.0,   0.0,20.0);
-  RooRealVar cbNFail("cbNFail","cbNFail"            ,1.0,   0.0,10.0);
-  RooCBShape cbFailPdf("cbFailPdf","cbFailPdf",mass,cbMeanFail,cbWidthFail,cbAlphaFail,cbNFail);
-  //     - realistic model
-  RooFFTConvPdf signalFailPdf("signalFailPdf","signalFailPdf",mass, bwPdf, cbFailPdf);
-  // Combine signal and background
-  RooFormulaVar nsigFail("nsigFail","nsigFail","@0*(1.0-@1)",RooArgList(nsignal,eff));
-  RooRealVar nbgFail ("nbgFail" ,"nbgFail" ,1,0.0,1.0e5);
-  RooAddPdf failPdf("failPdf","failPdf",RooArgList(signalFailPdf,bgFailPdf), RooArgList(nsigFail,nbgFail));
-  
-  // Combine pass and fail
-  RooSimultaneous fullPdf("fullPdf","fullPdf",probeType);
-  fullPdf.addPdf(passPdf,"pass");
-  fullPdf.addPdf(failPdf,"fail");
-
-  // Do the fit
-
-  // Start with a reasonable point and do rough approximation first
-  double total = dataPass->numEntries()+dataFail->numEntries();
-  nsignal.setVal( 0.99*total);
-  eff.setVal(0.90);
-  nbgPass.setVal(0.01*total);
-  nbgFail.setVal(0.01*total);
-  cbAlphaPass.setVal(1.0);
-  cbAlphaFail.setVal(0.5);
-  cbNPass    .setVal(5.0);
-  cbNFail    .setVal(5.0);
-  cbAlphaPass.setConstant(kTRUE);
-  cbAlphaFail.setConstant(kTRUE);
-  cbNPass    .setConstant(kTRUE);
-  cbNFail    .setConstant(kTRUE);
-  RooFitResult *result = fullPdf.fitTo(*data,Extended(kTRUE),Save());
-
-  // Release shape parameters and refine the fit
-  cbAlphaPass.setConstant(kFALSE);
-  cbAlphaFail.setConstant(kFALSE);
-  cbNPass    .setConstant(kFALSE);
-  cbNFail    .setConstant(kFALSE);
-  result = fullPdf.fitTo(*data,Extended(kTRUE),Save());
-
-  cout << "Fit status 1st iteration " << result->status() << endl;
-//   if(!result->status()){
-//     result = fullPdf.fitTo(*data,Extended(kTRUE),Save());
-//     cout << "Fit status 2d iteration " << result->status() << endl;
-//   }
-
-  // Plot
-  passCanvas->cd();
-  passCanvas->SetWindowPosition(0,0);
-  passCanvas->Draw();
-  RooPlot *framePass = mass.frame();
-  dataPass->plotOn(framePass);
-  passPdf.plotOn(framePass);
-  passPdf.plotOn(framePass,Components("bgPassPdf"),LineStyle(kDashed));
-  framePass->Draw();
-
-  failCanvas->cd();
-  failCanvas->SetWindowPosition(0+ failCanvas->GetWindowWidth(),0);
-  failCanvas->Draw();
-  RooPlot *frameFail = mass.frame();
-  dataFail->plotOn(frameFail);
-  failPdf.plotOn(frameFail);
-  failPdf.plotOn(frameFail,Components("bgFailPdf"),LineStyle(kDashed));
-  frameFail->Draw();
-
-  signal        = nsignal.getVal();
-  signalErr     = nsignal.getError();
-  efficiency    = eff.getVal();
-  efficiencyErr = eff.getError();
-
-  return;
-}
-
-bool isTag(const TElectron *electron, UInt_t trigger){
-
-  bool elePassID  = passID(electron);
-  bool elePassHLT =  (electron ->hltMatchBits & trigger);
-
-  bool result = ( elePassID && elePassHLT && (electron->scEt > 20) );
-
-  return result;
-}
-
-bool passID(const TElectron *electron){
-
-  bool result = passSmurf(electron);
-  return result;
-}
-
-void measureEfficiency(TTree *passTree, TTree *failTree, 
-		       int method, int etBinning, int etaBinning, 
-		       TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
-		       bool useTemplates, TFile *templatesFile, TFile *resultsRootFile){
-
-  // For COUNTnCOUNT method we should write to root file results
-  // from measureEfficiencyCountAndCount routine, otherwise
-  // from measureEfficiencyWithFit routine.
-  bool saveCountingToRootFile = true;
-  if( method == COUNTnFIT || method == FITnFIT )
-    saveCountingToRootFile = false;
-
-  // Always report counting method results
-  measureEfficiencyCountAndCount(passTree, failTree, etBinning, etaBinning, 
-				 canvas, effOutput, saveCountingToRootFile, resultsRootFile);
-
-  if( method == COUNTnFIT || method == FITnFIT )
-    measureEfficiencyWithFit(passTree, failTree, 
-			     method, etBinning, etaBinning, 
-			     canvas, effOutput, fitLog,
-			     useTemplates, templatesFile, resultsRootFile);
-  
-  return;
-}
-
-void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree, 
-				    int etBinning, int etaBinning, 
-				    TCanvas *canvas, ofstream &effOutput,
-				    bool saveResultsToRootFile, TFile *resultsRootFile){
-
-  int nEt                = getNEtBins(etBinning);
-  const double *limitsEt = getEtBinLimits(etBinning);
-
-  int nEta                = getNEtaBins(etaBinning);
-  const double *limitsEta = getEtaBinLimits(etaBinning);
-  printf("eta bins %d\n", nEta);
-
-  TMatrixD effArray2D(nEt, nEta);
-  TMatrixD effArrayErrLow2D(nEt, nEta);
-  TMatrixD effArrayErrHigh2D(nEt, nEta);
- 
-  effOutput << endl;
-  effOutput << "Efficiency, counting method:\n";  
-  effOutput << "     SC ET         SC eta           efficiency             pass         fail\n";
-  for(int j=0; j<nEta; j++){
-    for(int i=0; i<nEt; i++){
-      double effCount, effErrLowCount, effErrHighCount;
-      TString etCut = TString::Format(" ( et >=%6.1f && et <%6.1f ) ",
-				      limitsEt[i], limitsEt[i+1]);
-      TString etaCut = TString::Format(" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ",
-				       limitsEta[j], limitsEta[j+1]);
-      TString cut = etCut + TString(" && ") + etaCut;
-      //cout << cut.Data() << endl;
-      double probesPass = passTree->GetEntries(cut);
-      double probesFail = failTree->GetEntries(cut);
-      DYTools::calcEfficiency( probesPass, probesPass+probesFail, DYTools::EFF_CLOPPER_PEARSON,
-			       effCount, effErrLowCount, effErrHighCount);
-      char strOut[200];
-      sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f    %10.0f  %10.0f\n",
-	     limitsEt[i], limitsEt[i+1],
-	     limitsEta[j], limitsEta[j+1],
-	     effCount*100, effErrLowCount*100, effErrHighCount*100,
-	     probesPass, probesFail);
-      effOutput << strOut;
-      canvas->cd(1 + 2*(i + j*nEt) + 0);
-      passTree->Draw("mass",cut);
-      canvas->cd(1 + 2*(i + j*nEt) + 1);
-      failTree->Draw("mass",cut);
-      canvas->Update();
-      effArray2D(i,j) = effCount;
-      effArrayErrLow2D(i,j) = effErrLowCount;
-      effArrayErrHigh2D(i,j) = effErrHighCount;
-    }
-  }
-  effOutput << endl;
-
-  if(saveResultsToRootFile){
-    if(resultsRootFile && resultsRootFile->IsOpen()){
-      resultsRootFile->cd();
-      effArray2D.Write("effArray2D");
-      effArrayErrLow2D.Write("effArrayErrLow2D");
-      effArrayErrHigh2D.Write("effArrayErrHigh2D");    
-      resultsRootFile->Close();
-    }else assert(0);
-  }
-
-  return;
-}
-
-void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, 
-			      int method, int etBinning, int etaBinning, 
-			      TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
-			      bool useTemplates, TFile *templatesFile, TFile *resultsRootFile){
-  
-  int nEt                = getNEtBins(etBinning);
-  const double *limitsEt = getEtBinLimits(etBinning);
-
-  int nEta                = getNEtaBins(etaBinning);
-  const double *limitsEta = getEtaBinLimits(etaBinning);
-  printf("eta bins %d\n", nEta);
-  
-  TMatrixD effArray2D(nEt, nEta);
-  TMatrixD effArrayErrLow2D(nEt, nEta);
-  TMatrixD effArrayErrHigh2D(nEt, nEta);
- 
-  effOutput << endl;
-  effOutput << "Efficiency, Count+Fit method:\n";  
-  effOutput << "     SC ET         SC eta           efficiency             pass         fail\n";
-  for(int j=0; j<nEta; j++){
-    for(int i=0; i<nEt; i++){
-      TString etCut = TString::Format(" ( et >=%6.1f && et <%6.1f ) ",
-				      limitsEt[i], limitsEt[i+1]);
-      TString etaCut = TString::Format(" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ",
-				       limitsEta[j], limitsEta[j+1]);
-      TString cut = etCut + TString(" && ") + etaCut;
-      //cout << cut.Data() << endl;
-      double probesPass = passTree->GetEntries(cut);
-      double probesFail = failTree->GetEntries(cut);
-      TPad *passPad = (TPad*)canvas->GetPad(1 + 2*(i + j*nEt) + 0);
-      TPad *failPad = (TPad*)canvas->GetPad(1 + 2*(i + j*nEt) + 1);
-      double efficiency, efficiencyErrHigh, efficiencyErrLow;
-      printf("\n ==\n");
-      char strOut[200];
-      sprintf(strOut," ==   Start fitting Et: %3.0f - %3.0f  and eta:  %5.3f - %5.3f \n",
-	     limitsEt[i], limitsEt[i+1],
-	     limitsEta[j], limitsEta[j+1]);
-      printf("%s",strOut);
-      printf(" ==\n\n");
-      fitLog << endl << strOut << endl;
-      // In case templates are used, find the right templates
-      TH1F *templatePass = getPassTemplate(i,j,etaBinning, templatesFile);
-      TH1F *templateFail = getFailTemplate(i,j,etaBinning, templatesFile);
-      if(!useTemplates){
-	fitMass(passTree, failTree, cut, method, 
-		efficiency, efficiencyErrHigh, efficiencyErrLow,
-		passPad, failPad, fitLog);
-      }else{
-	printf("\nMASS TEMPLATES ARE USED IN THE FIT\n\n");
-	fitMassWithTemplates(passTree, failTree, cut, method, 
-			     efficiency, efficiencyErrHigh, efficiencyErrLow,
-		passPad, failPad, fitLog, templatePass, templateFail);
-      }
-      sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f        %10.0f  %10.0f\n",
-	      limitsEt[i], limitsEt[i+1],
-	      limitsEta[j], limitsEta[j+1],
-	      efficiency*100, efficiencyErrHigh*100, efficiencyErrLow*100,
-	      probesPass, probesFail);
-//       sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +-%5.1f           %10.0f  %10.0f\n",
-// 	      limitsEt[i], limitsEt[i+1],
-// 	      limitsEta[j], limitsEta[j+1],
-// 	      efficiency*100, efficiencyErr*100,
-// 	      probesPass, probesFail);
-      effOutput << strOut;
-      effArray2D(i,j) = efficiency;
-      effArrayErrLow2D(i,j) = efficiencyErrLow;
-      effArrayErrHigh2D(i,j) = efficiencyErrHigh;
-    }
-  }
-  effOutput << endl;
-
-  if(resultsRootFile && resultsRootFile->IsOpen()){
-    resultsRootFile->cd();
-    effArray2D.Write("effArray2D");
-    effArrayErrLow2D.Write("effArrayErrLow2D");
-    effArrayErrHigh2D.Write("effArrayErrHigh2D");    
-    resultsRootFile->Close();
-  }else assert(0);
-
-  return;
-}
-
-void fitMass(TTree *passTree, TTree *failTree, 
-	     TString cut, int mode,
-	     double &efficiency, double &efficiencyErrHigh, double &efficiencyErrLow,  
-	     TPad *passPad, TPad *failPad, ofstream &fitLog){
-  
-  // Define data sets
-  RooRealVar mass("mass","mass",60, 120);
-  mass.setBins(30);
-  RooRealVar et ("et" ,"et" ,10.0, 1000);
-  RooRealVar eta("eta","eta",-10, 10);
-  RooFormulaVar rooCut("rooCut","rooCut",cut,RooArgSet(et,eta));
-  RooDataSet  *dataUnbinnedPass = new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
-						 passTree,RooArgSet(mass,et,eta), rooCut);
-  RooDataSet  *dataUnbinnedFail = new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
-						 failTree,RooArgSet(mass,et,eta), rooCut);
-  RooDataHist *dataBinnedPass   = dataUnbinnedPass->binnedClone("dataBinnedPass","dataBinnedPass");
-  RooDataHist *dataBinnedFail   = dataUnbinnedFail->binnedClone("dataBinnedFail","dataBinnedFail");
-  RooCategory probeType("probeType","probeType");
-  probeType.defineType("pass");
-  probeType.defineType("fail");
-  RooAbsData *data;
-
-  // If needed do binned fit
-  bool unbinnedFit = true;
-  if(unbinnedFit){
-    data = new RooDataSet("data","data",mass,Index(probeType),
-			  Import("pass",*dataUnbinnedPass), 
-			  Import("fail",*dataUnbinnedFail));
-    cout << endl << "Setting up UNBINNED fit" << endl << endl;
-  }else{
-    data = new RooDataHist("data","data",mass,Index(probeType),
-			   Import("pass",*dataBinnedPass), 
-			   Import("fail",*dataBinnedFail));    
-    cout << endl << "Setting up BINNED fit" << endl << endl;
-  }
-  // Define the PDFs
-  //
-  // Common pieces
-  //
-  // True signal model
-  RooRealVar zMass ("zMass" ,"zMass" ,91.188);
-  RooRealVar zWidth("zWidth","zWidth",2.495);
-  RooBreitWigner bwPdf("bwPdf","bwPdf",mass,zMass,zWidth);
-  // Total signal events and efficiency
-  RooRealVar nsignal("nsignal","nsignal",1000,0.0,1.0e7);
-  RooRealVar eff    ("eff"    ,"eff"    ,0.7,0.0,1.0);
-
-  //  PDF for the PASS sample
-  // 
-  // Background
-  RooRealVar lambdaBgPass("lambdaBgPass","lambdaBgPass",-0.1, -0.5, 0.0);
-  RooExponential bgPassPdf("bgPassPdf","bgPassPdf",mass,lambdaBgPass);
-  // Signal
-  //     - resolution function
-  RooRealVar cbMeanPass("cbMeanPass","cbMeanPass"   ,0.0, -5.0, 5.0);
-  RooRealVar cbWidthPass("cbWidthPass","cbWidthPass",1.0,  0.1, 6.0);
-  RooRealVar cbAlphaPass("cbAlphaPass","cbAlphaPass",5.0,  0.0,20.0);
-  RooRealVar cbNPass("cbNPass","cbNPass"            ,1.0,  0.0,10.0);
-  RooCBShape cbPassPdf("cbPassPdf","cbPassPdf",mass,cbMeanPass,cbWidthPass,cbAlphaPass,cbNPass);
-  //     - realistic model
-  mass.setBins(10000,"cache");
-  RooFFTConvPdf signalPassPdf("signalPassPdf","signalPassPdf",mass, bwPdf, cbPassPdf);
-  // Combine signal and background
-  RooFormulaVar nsigPass("nsigPass","nsigPass","@0*@1",RooArgList(nsignal,eff));
-  RooRealVar nbgPass ("nbgPass" ,"nbgPass" ,1,0.0,1.0e5);
-  RooAbsPdf *passPdf;
-  if( mode == COUNTnFIT ){
-    RooGenericPdf * simpleSignal = new RooGenericPdf("simpleSignal","simpleSignal",
-						     "1.0",RooArgList());
-    RooExtendPdf * simpleSignalExtended = new RooExtendPdf("passPdf", "passPdf",
-							   *simpleSignal, nsigPass);
-    passPdf = simpleSignalExtended;
-  }else if( mode == FITnFIT ){
-    passPdf = new RooAddPdf("passPdf","passPdf",RooArgList(signalPassPdf,bgPassPdf), RooArgList(nsigPass,nbgPass));
-  }else{
-    printf("ERROR: inappropriate mode requested\n");
-    return;
-  }
-  //
-  //  PDF for the FAIL sample
-  // 
-  // Background
-  RooRealVar lambdaBgFail("lambdaBgFail","lambdaBgFail",-0.1, -0.5, 0.0);
-  RooExponential bgFailPdf("bgFailPdf","bgFailPdf",mass,lambdaBgFail);
-  // Signal
-  //     - resolution function
-  RooRealVar cbMeanFail("cbMeanFail","cbMeanFail"   ,0.0,  -5.0, 5.0);
-  RooRealVar cbWidthFail("cbWidthFail","cbWidthFail",1.0,   0.1, 6.0);
-  RooRealVar cbAlphaFail("cbAlphaFail","cbAlphaFail",5.0,   0.0,20.0);
-  RooRealVar cbNFail("cbNFail","cbNFail"            ,1.0,   0.0,10.0);
-  RooCBShape cbFailPdf("cbFailPdf","cbFailPdf",mass,cbMeanFail,cbWidthFail,cbAlphaFail,cbNFail);
-  //     - realistic model
-  RooFFTConvPdf signalFailPdf("signalFailPdf","signalFailPdf",mass, bwPdf, cbFailPdf);
-  // Combine signal and background
-  RooFormulaVar nsigFail("nsigFail","nsigFail","@0*(1.0-@1)",RooArgList(nsignal,eff));
-  RooRealVar nbgFail ("nbgFail" ,"nbgFail" ,1,0.0,1.0e5);
-  RooAddPdf failPdf("failPdf","failPdf",RooArgList(signalFailPdf,bgFailPdf), RooArgList(nsigFail,nbgFail));
-  
-  // Combine pass and fail
-  RooSimultaneous fullPdf("fullPdf","fullPdf",probeType);
-  fullPdf.addPdf(*passPdf,"pass");
-  fullPdf.addPdf(failPdf,"fail");
-
-  
-  // Do the fit
-  // Start with a reasonable point and do rough approximation first
-  double total = dataUnbinnedPass->numEntries() + dataUnbinnedFail->numEntries();
-  nsignal.setVal( 0.99*total);
-  eff.setVal(0.90);
-  if( mode == FITnFIT ){
-    nbgPass.setVal(0.01*total);
-    cbAlphaPass.setVal(1.0);
-    cbNPass    .setVal(5.0);
-    cbAlphaPass.setConstant(kTRUE);
-    cbNPass    .setConstant(kTRUE);
-  }
-  nbgFail.setVal(0.01*total);
-  cbAlphaFail.setVal(0.5);
-  cbNFail    .setVal(5.0);
-  cbAlphaFail.setConstant(kTRUE);
-  cbNFail    .setConstant(kTRUE);
-  RooFitResult *result = fullPdf.fitTo(*data,
-				       Extended(kTRUE),
-				       Save());
-
-  // Release shape parameters and refine the fit
-  if( mode == FITnFIT ){
-    cbAlphaPass.setConstant(kFALSE);
-    cbNPass    .setConstant(kFALSE);
-  }
-  cbAlphaFail.setConstant(kFALSE);
-  cbNFail    .setConstant(kFALSE);
-  result = fullPdf.fitTo(*data,
-			 Extended(kTRUE),
-			 Minos(RooArgSet(eff)),
-			 Save());
-  // If minos fails, refit without minos
-  if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5)){
-    cout << "MINOS FAILS" << endl;
-    result = fullPdf.fitTo(*data,
-			   Extended(kTRUE),
-			   Save());
-  }
-
-  efficiency     = eff.getVal();
-  efficiencyErrHigh  = eff.getErrorHi();
-  efficiencyErrLow   = fabs(eff.getErrorLo());
-
-  // Draw fit results
-  passPad->cd();
-  passPad->Clear();
-  RooPlot *framePass = mass.frame();
-  dataUnbinnedPass->plotOn(framePass);
-  if(mode == FITnFIT){
-    passPdf->plotOn(framePass);
-    passPdf->plotOn(framePass,Components("bgPassPdf"),LineStyle(kDashed));
-  }
-  framePass->Draw();
-  passPad->Update();
-
-  failPad->cd();
-  failPad->Clear();
-  RooPlot *frameFail = mass.frame();
-  dataUnbinnedFail->plotOn(frameFail);
-  failPdf.plotOn(frameFail);
-  failPdf.plotOn(frameFail,Components("bgFailPdf"),LineStyle(kDashed));
-  frameFail->Draw();
-  failPad->Update();
-
-  // Print fit outcome into fit log
-  result->printStream(fitLog,RooPrintable::kValue,RooPrintable::kVerbose);
-  fitLog << endl;
-  printCorrelations(fitLog, result);
-  
-  return;
-}
-
-void printCorrelations(ostream& os, RooFitResult *res)
-{
-  ios_base::fmtflags flags = os.flags();
-  const RooArgList *parlist = res->correlation("eff");
-  
-  os << "  Correlation Matrix" << endl;
-  os << " --------------------" << endl;
-  for(Int_t i=0; i<parlist->getSize(); i++) {
-    for(Int_t j=0; j<parlist->getSize(); j++) 
-      os << "  " << setw(7) << setprecision(4) << fixed << res->correlationMatrix()(i,j);    
-    os << endl;
-  }
-  os.flags(flags);
-}
-
-TString getLabel(int sample, int effType, int method, 
-		 int etBinning, int etaBinning){
-
-  TString label = "";
-
-  if(sample == DATA)
-    label += "data";
-  else if(sample == MC)
-    label += "mc";
-  else
-    assert(0);
-
-  if( effType == GSF )
-    label += "_gsf";
-  else
-    assert(0);
-
-  if(method == COUNTnCOUNT)
-    label += "_count-count";
-  else if( method == COUNTnFIT ) 
-    label += "_count-fit";
-  else if( method == FITnFIT ) 
-    label += "_fit-fit";
-  else
-    assert(0);
-
-  label += "_bins-et";
-  label += getNEtBins(etBinning);
-  label += "-eta";
-  label += getNEtaBins(etaBinning);
-
-  return label;
-}
-
-int getTemplateBin(int etBin, int etaBin, int etaBinning){
-
-  int templateBin = -1;
-
-  if( etBin != -1 && etaBin != -1)
-    templateBin = etBin * getNEtaBins(etaBinning) + etaBin;
-
-  return templateBin;
-
-}
-
-TH1F * getPassTemplate(int etBin, int etaBin, int etaBinning, TFile *file){
-
-  TH1F *hist = 0;
-  int templateBin = getTemplateBin(etBin, etaBin, etaBinning);
-  if( templateBin == -1 )
-    return hist;
-
-  TString name = "hMassTemplate_Et";
-  name += etBin;
-  name += "_eta";
-  name += etaBin;
-  name += "_pass";
-
-  hist = (TH1F*)file->Get(name);
-  return hist;
-}
-
-TH1F * getFailTemplate(int etBin, int etaBin, int etaBinning, TFile *file){
-
-  TH1F *hist = 0;
-  int templateBin = getTemplateBin(etBin, etaBin, etaBinning);
-  if( templateBin == -1 )
-    return hist;
-
-  TString name = "hMassTemplate_Et";
-  name += etBin;
-  name += "_eta";
-  name += etaBin;
-  name += "_fail";
-
-  hist = (TH1F*)file->Get(name);
-  return hist;
-}
-
-
-// Alternative fit model
-void fitMassWithTemplates(TTree *passTree, TTree *failTree, 
-			  TString cut, int mode,
-			  double &efficiency, double &efficiencyErrHigh, double &efficiencyErrLow, 
-			  TPad *passPad, TPad *failPad, ofstream &fitLog,
-			  TH1F *templatePass, TH1F *templateFail){
-  
-  // Define data sets
-  RooRealVar mass("mass","mass",60, 120);
-  mass.setBins(30);
-  RooRealVar et ("et" ,"et" ,10.0, 1000);
-  RooRealVar eta("eta","eta",-10, 10);
-  RooFormulaVar rooCut("rooCut","rooCut",cut,RooArgSet(et,eta));
-  RooDataSet  *dataUnbinnedPass = new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
-						 passTree,RooArgSet(mass,et,eta), rooCut);
-  RooDataSet  *dataUnbinnedFail = new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
-						 failTree,RooArgSet(mass,et,eta), rooCut);
-  RooDataHist *dataBinnedPass   = dataUnbinnedPass->binnedClone("dataBinnedPass","dataBinnedPass");
-  RooDataHist *dataBinnedFail   = dataUnbinnedFail->binnedClone("dataBinnedFail","dataBinnedFail");
-  RooCategory probeType("probeType","probeType");
-  probeType.defineType("pass");
-  probeType.defineType("fail");
-  RooAbsData *data;
-
-  // If needed do binned fit
-  bool unbinnedFit = true;
-  if(unbinnedFit){
-    data = new RooDataSet("data","data",mass,Index(probeType),
-			  Import("pass",*dataUnbinnedPass), 
-			  Import("fail",*dataUnbinnedFail));
-    cout << endl << "Setting up UNBINNED fit" << endl << endl;
-  }else{
-    data = new RooDataHist("data","data",mass,Index(probeType),
-			   Import("pass",*dataBinnedPass), 
-			   Import("fail",*dataBinnedFail));    
-    cout << endl << "Setting up BINNED fit" << endl << endl;
-  }
-  // Define the PDFs
-  //
-  // Common pieces
-  //
-  // Total signal events and efficiency
-  RooRealVar nsignal("nsignal","nsignal",1000,0.0,1.0e7);
-  RooRealVar eff    ("eff"    ,"eff"    ,0.7,0.0,1.0);
-
-  //  PDF for the PASS sample
-  // 
-  // Background
-  RooRealVar lambdaBgPass("lambdaBgPass","lambdaBgPass",-0.1, -0.5, 0.0);
-  RooExponential bgPassPdf("bgPassPdf","bgPassPdf",mass,lambdaBgPass);
-  // Signal
-  //     - resolution function
-  RooRealVar resMeanPass("resMeanPass","cbMeanPass"   ,0.0, -5.0, 5.0);
-  RooRealVar resSigma   ("resSigma"   ,"resSigma  "   ,1.0, 0.1, 6.0);
-  RooGaussian resPassPdf("resPassPdf","resPassPdf", mass, resMeanPass, resSigma);
-//   RooRealVar cbMeanPass("cbMeanPass","cbMeanPass"   ,0.0, -5.0, 5.0);
-//   RooRealVar cbWidthPass("cbWidthPass","cbWidthPass",1.0,  0.1, 6.0);
-//   RooRealVar cbAlphaPass("cbAlphaPass","cbAlphaPass",5.0,  0.0,20.0);
-//   RooRealVar cbNPass("cbNPass","cbNPass"            ,1.0,  0.0,10.0);
-//   RooCBShape cbPassPdf("cbPassPdf","cbPassPdf",mass,cbMeanPass,cbWidthPass,cbAlphaPass,cbNPass);
-  //      - mc template
-  RooDataHist rooTemplatePass("rooTemplatePass","rooTemplatePass",RooArgList(mass),templatePass);
-  RooHistPdf templatePassPdf("templatePassPdf","templatePassPdf",RooArgSet(mass),rooTemplatePass);
-  //     - realistic model
-  mass.setBins(10000,"cache");
-//   RooFFTConvPdf signalPassPdf("signalPassPdf","signalPassPdf",mass, templatePassPdf, cbPassPdf);
-  RooFFTConvPdf signalPassPdf("signalPassPdf","signalPassPdf",mass, templatePassPdf, resPassPdf);
-  // Combine signal and background
-  RooFormulaVar nsigPass("nsigPass","nsigPass","@0*@1",RooArgList(nsignal,eff));
-  RooRealVar nbgPass ("nbgPass" ,"nbgPass" ,1,0.0,1.0e5);
-  RooAbsPdf *passPdf;
-  if( mode == COUNTnFIT ){
-    RooGenericPdf * simpleSignal = new RooGenericPdf("simpleSignal","simpleSignal",
-						     "1.0",RooArgList());
-    RooExtendPdf * simpleSignalExtended = new RooExtendPdf("passPdf", "passPdf",
-							   *simpleSignal, nsigPass);
-    passPdf = simpleSignalExtended;
-  }else if( mode == FITnFIT ){
-    passPdf = new RooAddPdf("passPdf","passPdf",RooArgList(signalPassPdf,bgPassPdf), RooArgList(nsigPass,nbgPass));
-  }else{
-    printf("ERROR: inappropriate mode requested\n");
-    return;
-  }
-  //
-  //  PDF for the FAIL sample
-  // 
-  // Background
-  RooRealVar lambdaBgFail("lambdaBgFail","lambdaBgFail",-0.1, -0.5, 0.0);
-  RooExponential bgFailPdf("bgFailPdf","bgFailPdf",mass,lambdaBgFail);
-  // Signal
-  //     - resolution function
-  // The limits for the "fail" come from stating at the fit results without
-  // splitting into Et bins. In some cases, the peak is not there at all.
-  RooRealVar resMeanFail("resMeanFail","cbMeanFail"   ,0.0, -3.0, 3.0);
-  RooGaussian resFailPdf("resFailPdf","resFailPdf", mass, resMeanFail, resSigma);
-//   RooRealVar cbMeanFail("cbMeanFail","cbMeanFail"   ,0.0,  -5.0, 5.0);
-//   RooRealVar cbWidthFail("cbWidthFail","cbWidthFail",1.0,   0.1, 6.0);
-//   RooRealVar cbAlphaFail("cbAlphaFail","cbAlphaFail",5.0,   0.0,20.0);
-//   RooRealVar cbNFail("cbNFail","cbNFail"            ,1.0,   0.0,10.0);
-//   RooCBShape cbFailPdf("cbFailPdf","cbFailPdf",mass,cbMeanFail,cbWidthFail,cbAlphaFail,cbNFail);
-  //      - mc template
-  RooDataHist rooTemplateFail("rooTemplateFail","rooTemplateFail",RooArgList(mass),templateFail);
-  RooHistPdf templateFailPdf("templateFailPdf","templateFailPdf",RooArgSet(mass),rooTemplateFail);
-  //     - realistic model
-//   RooFFTConvPdf signalFailPdf("signalFailPdf","signalFailPdf",mass, templateFailPdf, cbFailPdf);
-  RooFFTConvPdf signalFailPdf("signalFailPdf","signalFailPdf",mass, templateFailPdf, resFailPdf);
-  // Combine signal and background
-  RooFormulaVar nsigFail("nsigFail","nsigFail","@0*(1.0-@1)",RooArgList(nsignal,eff));
-  RooRealVar nbgFail ("nbgFail" ,"nbgFail" ,1,0.0,1.0e5);
-  RooAddPdf failPdf("failPdf","failPdf",RooArgList(signalFailPdf,bgFailPdf), RooArgList(nsigFail,nbgFail));
-  
-  // Combine pass and fail
-  RooSimultaneous fullPdf("fullPdf","fullPdf",probeType);
-  fullPdf.addPdf(*passPdf,"pass");
-  fullPdf.addPdf(failPdf,"fail");
-
-  
-  // Do the fit
-  double total = dataUnbinnedPass->numEntries() + dataUnbinnedFail->numEntries();
-  nsignal.setVal( 0.99*total);
-  eff.setVal(0.90);
-  if( mode == FITnFIT ){
-    nbgPass.setVal(0.01*total);
-  }
-  nbgFail.setVal(0.01*total);
-  RooFitResult *result = fullPdf.fitTo(*data,
-				       Extended(kTRUE),
-				       Minos(RooArgSet(eff)),
-				       Save());
-  // If minos fails, refit without minos
-  if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5)){
-    cout << "MINOS FAILS" << endl;
-    result = fullPdf.fitTo(*data,
-			   Extended(kTRUE),
-			   Save());
-  }
-
-  efficiency     = eff.getVal();
-  efficiencyErrHigh  = eff.getErrorHi();
-  efficiencyErrLow   = fabs(eff.getErrorLo());
-//   efficiencyErr  = eff.getError();
-
-  // Draw fit results
-  passPad->cd();
-  passPad->Clear();
-  RooPlot *framePass = mass.frame();
-  dataUnbinnedPass->plotOn(framePass);
-  if(mode == FITnFIT){
-    passPdf->plotOn(framePass);
-    passPdf->plotOn(framePass,Components("bgPassPdf"),LineStyle(kDashed));
-  }
-  framePass->Draw();
-  passPad->Update();
-
-  failPad->cd();
-  failPad->Clear();
-  RooPlot *frameFail = mass.frame();
-  dataUnbinnedFail->plotOn(frameFail);
-  failPdf.plotOn(frameFail);
-  failPdf.plotOn(frameFail,Components("bgFailPdf"),LineStyle(kDashed));
-  frameFail->Draw();
-  failPad->Update();
-
-  // Print fit outcome into fit log
-  result->printStream(fitLog,RooPrintable::kValue,RooPrintable::kVerbose);
-  fitLog << endl;
-  printCorrelations(fitLog, result);
-  
-  return;
-}
 
