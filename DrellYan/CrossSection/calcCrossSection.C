@@ -667,7 +667,7 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   printf("\nPre FSR cross sections: :\n");
   printf("                    absolute                   normalized +- stat +- sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %9.4f +- %8.4f +- %8.4f  ( %8.4f )\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %11.6f +- %10.6f +- %10.6f  ( %10.6f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -722,7 +722,7 @@ void  crossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr
   printf("\nPre FSR DET shape: :\n");
   printf("                    absolute                   normalized +-stat +-sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %9.4f +- %8.4f +- %8.4f  ( %8.4f )\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %11.6f +- %10.6f +- %10.6f  ( %10.6f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -773,7 +773,7 @@ void  postFsrCrossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   printf("\nPost FSR cross sections: :\n");
   printf("                    absolute                   normalized +-stat +-sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %9.4f +- %8.4f +- %8.4f  ( %8.4f )\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %11.6f +- %10.6f +- %10.6f  ( %10.6f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -828,7 +828,7 @@ void  postFsrCrossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vin
   printf("\nPost FSR DET shape: :\n");
   printf("                    absolute                   normalized +-stat +-sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %9.4f +- %8.4f +- %8.4f  ( %8.4f )\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %11.6f +- %10.6f +- %10.6f  ( %10.6f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
