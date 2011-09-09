@@ -665,13 +665,17 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   }
 
   printf("\nPre FSR cross sections: :\n");
-  printf("                    absolute                   normalized +- stat +- sys (total)\n");
+  printf("                    absolute                      normalized +- stat +- sys (total)          (1/sigma)(1/dM)norm +-stat +-syst (total) \n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %11.6f +- %10.6f +- %10.6f  ( %10.6f )\n",
+    double binw = massBinLimits[i+1] - massBinLimits[i];
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %9.6f +- %8.6f +- %8.6f  ( %8.6f )  %10.8f +- %10.8f +- %10.8f  ( %10.8f )    \n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
-	   sqrt(voutNormStatErr[i] * voutNormStatErr[i] + voutNormSystErr[i] * voutNormSystErr[i]) );
+	   sqrt(voutNormStatErr[i] * voutNormStatErr[i] + voutNormSystErr[i] * voutNormSystErr[i]),
+	   voutNorm[i]/binw, voutNormStatErr[i]/binw, voutNormSystErr[i]/binw,
+	   sqrt(voutNormStatErr[i] * voutNormStatErr[i] + voutNormSystErr[i] * voutNormSystErr[i])/binw
+	   );
   }
   printf("\nPre FSR cross-section in the Z peak from %3.0f to %3.0f:\n",
 	 massBinLimits[low], massBinLimits[high+1]);
