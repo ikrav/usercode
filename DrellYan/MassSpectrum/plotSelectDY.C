@@ -115,7 +115,15 @@ void plotSelectDY(const TString conf  = "data_plot.conf")
   }
   ifs.close();
   
-  CPlot::sOutDir = outputDir + TString("/plots");
+  // sOutDir is a static data member in the CPlot class.
+  // There is a strange crash of the whole ROOT session well after
+  // this script is executed when one attempts to exit ROOT, with 
+  // a dump of memory map. This happens only on UNL Tier3, but
+  // there is no sign of a problem on any other computer.
+  //   The consequence of this variable is not set is that the plots
+  // will be created in the local directory rather than the
+  // one configured through sOutDir.
+//   CPlot::sOutDir = outputDir + TString("/plots");
 
   Bool_t hasData = (samplev[0]->fnamev.size()>0);
     
