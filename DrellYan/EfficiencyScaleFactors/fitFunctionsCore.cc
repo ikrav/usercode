@@ -24,7 +24,7 @@ struct RealLimit
   double hi;
 };
 
-void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, int NsetBins, bool isRECO, char* setBinsType){
+void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, int NsetBins, bool isRECO, char* setBinsType, TString dirTag){
   
 
   RealLimit lims[19];
@@ -282,7 +282,7 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &ef
 }
 
 
-void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, TH1F *templatePass, TH1F *templateFail, bool isRECO, char* setBinsType ){
+void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, TH1F *templatePass, TH1F *templateFail, bool isRECO, char* setBinsType, TString dirTag){
 
     
   RealLimit lims[12];
@@ -505,8 +505,8 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   TCanvas cPass("cPass","cPass");
   framePass->Draw();
   cPass.Update();
-  if (isRECO) cPass.Print(("../root_files/tag_and_probe/DY_m10+pr_1088pb/fit-reco-"+(std::string)cutF+"-pass.png").c_str());
-  else cPass.Print(("../root_files/tag_and_probe/DY_m10+pr_1088pb/fit-id-"+(std::string)cutF+"-pass.png").c_str());
+  if (isRECO) cPass.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-reco-"+(std::string)cutF+"-pass.png").c_str());
+  else cPass.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-id-"+(std::string)cutF+"-pass.png").c_str());
 
   failPad->cd();
   failPad->Clear();
@@ -520,8 +520,8 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   TCanvas cFail("cFail","cFail");
   frameFail->Draw();
   cFail.Update();
-  if (isRECO) cFail.Print(("../root_files/tag_and_probe/DY_m10+pr_1088pb/fit-reco-"+(std::string)cutF+"-fail.png").c_str());
-  else cFail.Print(("../root_files/tag_and_probe/DY_m10+pr_1088pb/fit-id-"+(std::string)cutF+"-fail.png").c_str());
+  if (isRECO) cFail.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-reco-"+(std::string)cutF+"-fail.png").c_str());
+  else cFail.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-id-"+(std::string)cutF+"-fail.png").c_str());
 
   // Print fit outcome into fit log
   result->printStream(fitLog,RooPrintable::kValue,RooPrintable::kVerbose);

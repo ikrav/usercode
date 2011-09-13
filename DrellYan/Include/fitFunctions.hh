@@ -3,6 +3,7 @@
 #include <TFile.h>                  // file handle class
 #include <TTree.h>                  // class to access ntuples
 #include <TChain.h>
+#include <TString.h>
 #include <TCanvas.h>                // class for drawing
 
 #include <iostream>                 // standard I/O
@@ -18,11 +19,11 @@
 
 void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,TTree *passTree, TTree *failTree,TCanvas *passCanvas, TCanvas *failCanvas,char* setBinsType);
 
-void measureEfficiency(TTree *passTree, TTree *failTree, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, TFile *resultsRootFile,int NsetBins, bool isRECO, char* setBinsType);
+void measureEfficiency(TTree *passTree, TTree *failTree, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, TFile *resultsRootFile,int NsetBins, bool isRECO, char* setBinsType, TString dirTag);
 
 void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, bool saveResultsToRootFile, TFile *resultsRootFile);
 
-void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, TFile *resultsRootFile, int NsetBins, bool isRECO, char* setBinsType);
+void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, TFile *resultsRootFile, int NsetBins, bool isRECO, char* setBinsType, TString dirTag);
 
 int getTemplateBin(int etBin, int etaBin, int etaBinning);
 

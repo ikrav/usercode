@@ -145,7 +145,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
 		       int method, int etBinning, int etaBinning, 
 		       TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
 		       bool useTemplates, TFile *templatesFile, TFile *resultsRootFile,
-		       int NsetBins, bool isRECO, char* setBinsType){
+		       int NsetBins, bool isRECO, char* setBinsType, TString dirTag){
 
   // For COUNTnCOUNT method we should write to root file results
   // from measureEfficiencyCountAndCount routine, otherwise
@@ -163,7 +163,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
 			     method, etBinning, etaBinning, 
 			     canvas, effOutput, fitLog,
 			     useTemplates, templatesFile, resultsRootFile,
-			     NsetBins, isRECO, setBinsType);
+			     NsetBins, isRECO, setBinsType, dirTag);
   
   return;
 }
@@ -236,7 +236,7 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
 			      int method, int etBinning, int etaBinning, 
 			      TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
 			      bool useTemplates, TFile *templatesFile, TFile *resultsRootFile, 
-			      int NsetBins, bool isRECO, char* setBinsType){
+			      int NsetBins, bool isRECO, char* setBinsType, TString dirTag){
   
   int nEt                = getNEtBins(etBinning);
   const double *limitsEt = getEtBinLimits(etBinning);
@@ -281,13 +281,13 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
       
       
       if(!useTemplates){
-	fitMass(passTree, failTree, cut, method, efficiency, efficiencyErrHi, efficiencyErrLo, passPad, failPad, fitLog, NsetBins, isRECO, setBinsType);
+	fitMass(passTree, failTree, cut, method, efficiency, efficiencyErrHi, efficiencyErrLo, passPad, failPad, fitLog, NsetBins, isRECO, setBinsType, dirTag);
       }else{
 	printf("\nMASS TEMPLATES ARE USED IN THE FIT\n\n");
 	fitMassWithTemplates(passTree, failTree, cut, method, 
 			     efficiency, efficiencyErrHi, efficiencyErrLo,
 			     passPad, failPad, fitLog, templatePass, templateFail, 
-			     isRECO, setBinsType);
+			     isRECO, setBinsType, dirTag);
       }
             
 

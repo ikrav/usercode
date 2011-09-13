@@ -63,40 +63,6 @@ using namespace mithep;
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
-//from Include/cutFunctions.C
-
-Bool_t dielectronMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TDielectron *dielectron);
-Bool_t electronMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TElectron *electron);
-Bool_t scMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TPhoton *sc);
-bool isTag(const TElectron *electron, UInt_t trigger);
-bool passID(const TElectron *electron);
-TString getLabel(int sample, int effType, int method, int etBinning, int etaBinning);
-bool isTag(const TElectron *electron, UInt_t trigger);
-bool passID(const TElectron *electron);
-TString getLabel(int sample, int effType, int method, int etBinning, int etaBinning);
-
-//finished from Include/cutFuctions.C
-
-//from Include/fitFunctions.C
-
-void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,TTree *passTree, TTree *failTree,TCanvas *passCanvas, TCanvas *failCanvas,char* setBinsType);
-void measureEfficiency(TTree *passTree, TTree *failTree, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, TFile *resultsRootFile, int NsetBins, bool isRECO, char* setBinsType);
-void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, bool saveResultsToRootFile, TFile *resultsRootFile);
-void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, TFile *resultsRootFile, int NsetBins, bool isRECO, char* setBinsType);
-int getTemplateBin(int etBin, int etaBin, int etaBinning);
-TH1F * getPassTemplate(int etBin, int etaBin, int etaBinning, TFile *file);
-TH1F * getFailTemplate(int etBin, int etaBin, int etaBinning, TFile *file);
-
-//finished from Include/fitFunctions.C
-
-//from Include/fitFucntionsCore.C
-
-void printCorrelations(ostream& os, RooFitResult *res);
-void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHigh, double &efficiencyErrLow, TPad *passPad, TPad *failPad, ofstream &fitLog, int NsetBins, bool isRECO, char* setBinsType);
-void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, TH1F *templatePass, TH1F *templateFail, bool isRECO, char* setBinsType);
-
-//finished from Include/fitFunctionsCore.C
-
 //=== MAIN MACRO =================================================================================================
 
 void eff_Reco(const TString configFile) 
@@ -541,7 +507,11 @@ void eff_Reco(const TString configFile)
   int NsetBins=30;
   bool isRECO=1;
   char* setBinsType="cache";
-  measureEfficiency(passTree, failTree, calcMethod, etBinning, etaBinning, c1, effOutput, fitLog, useTemplates, templatesFile, resultsRootFile, NsetBins, isRECO, setBinsType);
+  
+  measureEfficiency(passTree, failTree,
+		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,
+		    useTemplates, templatesFile, resultsRootFile,
+		    NsetBins, isRECO, setBinsType, dirTag);
 
   
 
