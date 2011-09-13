@@ -9,8 +9,7 @@ echo "WILL DO: plotDY(\"../config_files/data.conf\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Selection
 rm *.so
-#root -b -q -l auxScript.C+
-#still crashes for some reason
+root -b -q -l auxScript.C+
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "DONE: plotDY(\"../config_files/data.conf\")"
