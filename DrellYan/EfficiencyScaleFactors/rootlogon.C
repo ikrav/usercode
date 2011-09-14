@@ -17,6 +17,11 @@
   gROOT->ProcessLine(".L ../Include/TVertex.hh+");
   gROOT->ProcessLine(".L ../Include/EleIDCuts.hh+");
 
+  gROOT->ProcessLine(".L cutFunctions.cc+");
+  gROOT->ProcessLine(".L fitFunctionsCore.cc+");
+  gROOT->ProcessLine(".L fitFunctions.cc+");
+
+
 //   gROOT->Macro("../Include/TJet.hh+");
 //   gROOT->Macro("../Include/TPhoton.hh+");
 //   gROOT->Macro("../Include/TVertex.hh+");
