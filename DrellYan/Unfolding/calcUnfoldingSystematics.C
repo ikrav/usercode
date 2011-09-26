@@ -16,11 +16,13 @@ Double_t lumi = 0;
 
 void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2);
 
-void  applyUnfoldingShort(TVectorD &vin, TVectorD &vout, int seed);
+void  applyUnfoldingShort(TVectorD &vin, TVectorD &vout, bool ifSeed, int seed, int reweightInt);
 
 const TString fileDataYields        ("yields_bg-subtracted.root");
 
-const TString fileUnfoldingConstantsBase("unfolding_constants_seed_");
+const TString fileUnfoldingConstantsBaseSeed("unfolding_constants_seed_");
+const TString fileUnfoldingConstantsBaseReweight("unfolding_constants_reweight_");
+
 const int seedFirst = 1001;
 const int seedLast = 1020;
 
@@ -68,36 +70,74 @@ void calcUnfoldingSystematics(const TString conf){
 
   // Read data yields from file
   readData(signalYields, signalYieldsStatErr, signalYieldsSystErr);
-  
+
+
+/////////////////////////////////
+//calculate smearing systematics 
+/////////////////////////////////
+
   int nseeds = 0;
+
   for(int i=seedFirst; i<=seedLast; i++){
     nseeds++;
-    applyUnfoldingShort(signalYields, unfoldedYields, i);
+    applyUnfoldingShort(signalYields, unfoldedYields, 1, i, 100);
     for(int iMassBin = 0; iMassBin < nMassBins; iMassBin++){
       unfoldedYieldsMean[iMassBin] += unfoldedYields[iMassBin];
       unfoldedYieldsSquaredMean[iMassBin] += unfoldedYields[iMassBin]*unfoldedYields[iMassBin];
     }
   }
-  // Final calculation of the mean and RMS
-  TVectorD unfoldingSystPercent(nMassBins);
-  for(int iMassBin = 0; iMassBin < nMassBins; iMassBin++){
-    unfoldedYieldsMean[iMassBin] = unfoldedYieldsMean[iMassBin]/(1.0*nseeds);
-    unfoldedYieldsSquaredMean[iMassBin] = unfoldedYieldsSquaredMean[iMassBin]/(1.0*nseeds);
-    unfoldedYieldsRMS[iMassBin] = sqrt(unfoldedYieldsSquaredMean[iMassBin] - 
-				unfoldedYieldsMean[iMassBin]*unfoldedYieldsMean[iMassBin]);
-    unfoldingSystPercent[iMassBin] = unfoldedYieldsRMS[iMassBin]*100.0/unfoldedYieldsMean[iMassBin];
+
+
+
+  // Final calculation of the mean and RMS for Smearing
+  TVectorD unfoldingSystPercentSmear(nMassBins);
+  for(int i = 0; i < nMassBins; i++){
+    unfoldedYieldsMean[i] = unfoldedYieldsMean[i]/(1.0*nseeds);
+    unfoldedYieldsSquaredMean[i] = unfoldedYieldsSquaredMean[i]/(1.0*nseeds);
+    unfoldedYieldsRMS[i] = sqrt(unfoldedYieldsSquaredMean[i] - 
+				unfoldedYieldsMean[i]*unfoldedYieldsMean[i]);
+    unfoldingSystPercentSmear[i] = unfoldedYieldsRMS[i]*100.0/unfoldedYieldsMean[i];
   }
   
-  printf("               mean-unfolded   RMS-unfolded   rel-error     rel-error-in-percent\n");
+  
+/////////////////////////////////
+//calculate Fsr systematics 
+/////////////////////////////////
+
+  TVectorD unfoldedYieldsFsrMax(nMassBins);
+  TVectorD unfoldedYieldsFsrMin(nMassBins);
+  TVectorD unfoldedYieldsFsrErr(nMassBins);
+  applyUnfoldingShort(signalYields, unfoldedYieldsFsrMax, 0, 1000, 105);
+  applyUnfoldingShort(signalYields, unfoldedYieldsFsrMin, 0, 1000, 95);
+
+  TVectorD unfoldingSystPercentFsr(nMassBins); 
+
+  for(int i = 0; i < nMassBins; i++){
+    unfoldedYieldsFsrErr[i] = fabs(unfoldedYieldsFsrMax[i]-unfoldedYieldsFsrMin[i])/(unfoldedYieldsFsrMax[i]+unfoldedYieldsFsrMin[i]);
+    unfoldingSystPercentFsr[i] = unfoldedYieldsFsrErr[i]*100.0;
+  }
+ 
+
+/////////////////////////////////
+//calculate total systematics 
+/////////////////////////////////
+    TVectorD unfoldingSystPercent(nMassBins); 
+    for(int i = 0; i < nMassBins; i++)
+      unfoldingSystPercent[i] = sqrt(unfoldingSystPercentSmear[i]*unfoldingSystPercentSmear[i]+unfoldingSystPercentFsr[i]*unfoldingSystPercentFsr[i]);
+
+//printing out to the screen
+
+  printf("        mean-unfolded   RMS-unfolded   rel-error     rel-err-percent-Smear     rel-err-percent-Fsr      rel-err-percent-total \n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %7.1f      %7.1f          %6.4f        %6.1f\n",
+    printf("%4.0f-%4.0f   %7.1f      %7.1f          %6.4f             %6.1f                 %6.3f                       %6.1f\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   unfoldedYieldsMean[i], unfoldedYieldsRMS[i],
 	   unfoldedYieldsRMS[i]/unfoldedYieldsMean[i],
-	   unfoldingSystPercent[i]);
-// 	   unfoldedYieldsRMS[i]*100.0/unfoldedYieldsMean[i]);
+	   unfoldingSystPercentSmear[i], unfoldingSystPercentFsr[i], unfoldingSystPercent[i]);
+           //unfoldedYieldsRMS[i]*100.0/unfoldedYieldsMean[i]);
   }
-  
+
+
   // Store constants in the file
   TString outputDir(TString("../root_files/systematics/")+tagDirConstants);
   gSystem->mkdir(outputDir,kTRUE);
@@ -150,7 +190,10 @@ void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2){
 //-----------------------------------------------------------------
 // Unfold
 //-----------------------------------------------------------------
-void  applyUnfoldingShort(TVectorD &vin, TVectorD &vout, int seed)
+void  applyUnfoldingShort(TVectorD &vin, TVectorD &vout, bool ifSeed, int seed, int reweightInt)
+//if ifSeed==1, smearing systematics
+//if ifSeed==0, Fsr 
+//reweightInt = 95%, 105%
 {
 
   // Read unfolding constants
@@ -158,11 +201,19 @@ void  applyUnfoldingShort(TVectorD &vin, TVectorD &vout, int seed)
 
 
   // Construct file names
-  TString fullUnfoldingConstFileName = TString("../root_files/systematics/")
-    +tagDirConstants+TString("/")+fileUnfoldingConstantsBase;
-  fullUnfoldingConstFileName += seed;
-  fullUnfoldingConstFileName += ".root";
-  printf("Apply unfolding using unfolding matrix from %s\n", fullUnfoldingConstFileName.Data());
+  TString fullUnfoldingConstFileName = TString("../root_files/systematics/")+tagDirConstants+TString("/");
+  if (ifSeed){
+    fullUnfoldingConstFileName += fileUnfoldingConstantsBaseSeed;
+    fullUnfoldingConstFileName += seed;
+    fullUnfoldingConstFileName += ".root";
+    printf("Apply unfolding using unfolding matrix from %s\n", fullUnfoldingConstFileName.Data());
+  }
+ else{
+    fullUnfoldingConstFileName += fileUnfoldingConstantsBaseReweight;    
+    fullUnfoldingConstFileName += reweightInt;
+    fullUnfoldingConstFileName += ".root";
+    printf("Apply unfolding using unfolding matrix from %s\n", fullUnfoldingConstFileName.Data());
+ }
     
   unfolding::unfold(vin, vout, fullUnfoldingConstFileName);
 

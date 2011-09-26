@@ -54,12 +54,18 @@ void SimpleDivide(double passed, double total,
 void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TErrNeg,
 				   TMatrixD &TinvErr);
 
+void partialReweight(TH1F* hist, double limit, double reweightFsr);
+//changes weights for bins with x<limit to reweight
+
 //=== MAIN MACRO =================================================================================================
 
-void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, int randomSeed = 1) 
+void plotDYUnfoldingMatrix(const TString input, int systematicsMode = 0, int randomSeed = 1, double reweightFsr = 1.0, double massLimit = -1.0)
+//systematicsMode 0 - no systematic calc
+//1 - systematic due to smearing, 2 - systematics due to FSR, reweighting
+//check mass spectra with reweightFsr = 0.95; 1.00; 1.05  
+//mass value until which do reweighting
 {
   gBenchmark->Start("plotDYUnfoldingMatrix");
-
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
   //==============================================================================================================
@@ -119,7 +125,7 @@ void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, in
   // In the case of systematic studies, generate an array of random offsets
   TVectorD shift(escale::nEtaBins);
   shift = 0;
-  if(systematicsMode)
+  if(systematicsMode==1)
     for(int i=0; i<escale::nEtaBins; i++)
       shift[i] = gRandom->Gaus(0,1);
 
@@ -222,14 +228,24 @@ void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, in
   
     // loop over events    
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
+
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
+
+      double reweight;
+      if (systematicsMode!=2) reweight=1.0;
+      else if (((gen->mass)-(gen->vmass))>massLimit) reweight=1.0;
+      else reweight=reweightFsr;
+
+      if (ientry<20) std::cout<<"reweight="<<reweight<<std::endl;
+
 
       // Use post-FSR generator level mass in unfolding
       int ibinFsr = DYTools::findMassBin(gen->mass);
       if(ibinFsr != -1 && ibinFsr < yieldsMcFsr.GetNoElements()){
-	yieldsMcFsr[ibinFsr] += scale * gen->weight;
+         yieldsMcFsr[ibinFsr] += reweight * scale * gen->weight;
       }
+
 
       // For EPS2011 for both data and MC (starting from Summer11 production)
       // we use an OR of the twi triggers below. Both are unpresecaled.
@@ -246,6 +262,7 @@ void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, in
       dielectronArr->Clear();
       dielectronBr->GetEntry(ientry);    
       for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
+
         const mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
 	
 	// Apply selection
@@ -272,7 +289,7 @@ void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, in
 	// with some customization, plus impact parameter cuts dz and dxy
 	if(!passSmurf(dielectron)) continue;  
 
-        /******** We have a Z candidate! HURRAY! ********/
+        // We have a Z candidate! HURRAY! 
 
 	// Apply extra smearing to MC reconstructed dielectron mass
 	// to better resemble the data
@@ -280,7 +297,7 @@ void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, in
         double smear2 = escale::extraSmearingSigma(dielectron->scEta_2);
 	// In systematics mode, overwrite the smear values with
 	// shifted ones.
-	if(systematicsMode){
+	if(systematicsMode==1){
 	  smear1 = escale::extraSmearingSigmaShifted(dielectron->scEta_1,shift);
 	  smear2 = escale::extraSmearingSigmaShifted(dielectron->scEta_2,shift);
 	}
@@ -292,21 +309,25 @@ void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, in
 	// Fill structures for response matrix and bin by bin corrections
 
 	if(ibinFsr != -1 && ibinFsr < yieldsMcFsrOfRec.GetNoElements()){
-	    yieldsMcFsrOfRec[ibinFsr] += scale * gen->weight;
-	    DetCorrFactorDenominator(ibinFsr) += scale * gen->weight;
-	}else if(ibinFsr >= yieldsMcFsrOfRec.GetNoElements())
+	    yieldsMcFsrOfRec[ibinFsr] += reweight * scale * gen->weight;
+	    DetCorrFactorDenominator(ibinFsr) += reweight * scale * gen->weight;
+          }
+
+	else if(ibinFsr >= yieldsMcFsrOfRec.GetNoElements())
 	  cout << "ERROR: binning problem" << endl;
 
 	int ibinRec = DYTools::findMassBin(massResmeared);
 	if(ibinRec != -1 && ibinRec < yieldsMcRec.GetNoElements()){
-	  yieldsMcRec[ibinRec] += scale * gen->weight;
-	  DetCorrFactorNumerator  (ibinRec) += scale * gen->weight;
-	}else if(ibinRec >= yieldsMcRec.GetNoElements())
+	    yieldsMcRec[ibinRec] += reweight * scale * gen->weight;
+	    DetCorrFactorNumerator(ibinRec) += reweight * scale * gen->weight;
+          }
+
+	else if(ibinRec >= yieldsMcRec.GetNoElements())
 	  cout << "ERROR: binning problem" << endl;
 	
 	if( ibinRec != -1 && ibinRec < yieldsMcRec.GetNoElements() 
 	    && ibinFsr != -1 && ibinFsr < yieldsMcRec.GetNoElements() ){
-	  DetMigration(ibinFsr,ibinRec) += scale * gen->weight;
+          DetMigration(ibinFsr,ibinRec) += reweight * scale * gen->weight;
 	}
 	
         Bool_t isB1 = (fabs(dielectron->scEta_1)<kGAP_LOW);
@@ -326,11 +347,28 @@ void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, in
 // 	  printf("Missed bin:  M_fsr=%f   M_reco=%f\n", gen->mass, massResmeared);
 	
       } // end loop over dielectrons
+
     } // end loop over events 
     delete infile;
     infile=0, eventTree=0;
   } // end loop over files
   delete gen;
+
+
+  //for systematicsMode==2, do reweighting of massSpectra
+  if (systematicsMode==2) 
+  {
+    partialReweight(hMassDiff, massLimit, reweightFsr);
+    partialReweight(hMassDiffBB, massLimit, reweightFsr);
+    partialReweight(hMassDiffEB, massLimit, reweightFsr);
+    partialReweight(hMassDiffEE, massLimit, reweightFsr);
+    for (int j=0; j<DYTools::nMassBins; j++)
+    {
+      partialReweight(hMassDiffV[j], massLimit, reweightFsr);
+    }
+  }
+  //finish reweighting of mass spectra
+
   
   // Find bin by bin corrections and the errors
   double tCentral, tErrNeg, tErrPos;
@@ -389,13 +427,18 @@ void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, in
 
   // Store constants in the file
   TString outputDir(TString("../root_files/constants/")+dirTag);
-  if(systematicsMode)
+  if(systematicsMode==1 || systematicsMode==2)
     outputDir = TString("../root_files/systematics/")+dirTag;
   gSystem->mkdir(outputDir,kTRUE);
   TString unfoldingConstFileName(outputDir+TString("/unfolding_constants.root"));
-  if(systematicsMode){
+  if(systematicsMode==1){
     unfoldingConstFileName = outputDir+TString("/unfolding_constants_seed_");
     unfoldingConstFileName += seed;
+    unfoldingConstFileName += ".root";
+  }
+  if(systematicsMode==2){
+    unfoldingConstFileName = outputDir+TString("/unfolding_constants_reweight_");
+    unfoldingConstFileName += int(100*reweightFsr);
     unfoldingConstFileName += ".root";
   }
   TFile fConst(unfoldingConstFileName, "recreate" );
@@ -421,6 +464,7 @@ void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, in
   //--------------------------------------------------------------------------------------------------------------
   // Make plots 
   //==============================================================================================================  
+
   TCanvas *c = MakeCanvas("c","c",800,600);
 
   // string buffers
@@ -513,6 +557,8 @@ void plotDYUnfoldingMatrix(const TString input, bool systematicsMode = false, in
   plotMassDiff.AddHist1D(hMassDiffEB,"EE-EB","hist",kBlue);
   plotMassDiff.AddHist1D(hMassDiffEE,"EE-EE","hist",kRed);
   plotMassDiff.Draw(g);
+
+
 
   // Create a plot of reco - gen post-FSR mass difference for several mass bins
   TCanvas *h = MakeCanvas("h","h",600,600);
@@ -729,4 +775,25 @@ void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TEr
   return;
 }
 
+void partialReweight(TH1F* hist, double limit, double reweightFsr)
+//changes weights for bins with x<limit to reweight in histogram hist
+{
+  int limitBin;
+  int NBins;
+  NBins=hist->GetNbinsX();
+  for (int i=0; i<NBins; i++)
+  {
+    double diff=limit-(hist->GetBinCenter(i));
+    if ( (diff<=(0.5*hist->GetBinWidth(i))) || ((-diff)>=(0.5*hist->GetBinWidth(i)))) 
+      {
+        limitBin=i;
+        break;
+      } 
+  }
+  for (int i=0; i<limitBin; i++)
+  {
+    double currentBinContent=hist->GetBinContent(i);
+    hist->SetBinContent(i,currentBinContent*reweightFsr);
+  }
+}
 
