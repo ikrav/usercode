@@ -1,10 +1,10 @@
 {
-  gROOT->ProcessLine(".L plotDYUnfoldingMatrixNew.C+");
+  gROOT->ProcessLine(".L plotDYUnfoldingMatrix.C+");
   //plotDYUnfoldingMatrix("../config_files/summer11mc.input",2,1,100,-1);
   plotDYUnfoldingMatrix("../config_files/summer11mc.input",2,1,1.05,-1);
   plotDYUnfoldingMatrix("../config_files/summer11mc.input",2,1,0.95,-1);
 
-  gROOT->ProcessLine(".L calcUnfoldingSystematicsNew.C+");
+  gROOT->ProcessLine(".L calcUnfoldingSystematics.C+");
   calcUnfoldingSystematics("../config_files/xsecCalc.conf");
 
 
