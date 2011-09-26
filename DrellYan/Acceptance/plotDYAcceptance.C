@@ -31,7 +31,11 @@
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDYAcceptance(const TString input) 
+void plotDYAcceptance(const TString input, int systematicsMode = 0, double reweightFsr = 1.0, double massLimit=-1)
+//systematicsMode 0 - no systematic calc
+//2 - systematics due to FSR, reweighting
+//check mass spectra with reweight = 95%; 100%; 105%  
+//mass value until which do reweighting 
 {
   gBenchmark->Start("plotDYAcceptance");
 
@@ -154,7 +158,7 @@ void plotDYAcceptance(const TString input)
     // all subsequent ones are normalized to xsection and luminosity
     lumiv[ifile] = eventTree->GetEntries()/xsecv[ifile];
     double scale = lumiv[0]/lumiv[ifile];
-//     if(ifile != 0) scale *= 0.87;
+    //     if(ifile != 0) scale *= 0.87;
     cout << "       -> sample weight is " << scale << endl;
 
     // Set branch address to structures that will store the info  
@@ -164,11 +168,19 @@ void plotDYAcceptance(const TString input)
     // loop over events    
     nZv += scale * eventTree->GetEntries();
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
+
       genBr->GetEntry(ientry);
+
       // Which mass is used?
       double massPreFsr = gen->vmass;   // pre-FSR
       double mass = gen->mass;    // post-FSR
       if((mass < massLow) || (mass > massHigh)) continue;
+
+      double reweight;
+      if (systematicsMode!=2) reweight=1.0;
+      else if ((mass-massPreFsr)>massLimit) reweight=1.0;
+      else reweight=reweightFsr;
+
       
       int ibin = DYTools::findMassBin(mass);
       int ibinPreFsr13 = DYTools::findMassBin13(massPreFsr);
@@ -201,7 +213,7 @@ void plotDYAcceptance(const TString input)
 //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
 
       if(ibin != -1 && ibin < nEventsv.GetNoElements())
-	nEventsv[ibin] += scale * gen->weight * fewz_weight;
+	nEventsv[ibin] += reweight * scale * gen->weight * fewz_weight;
       else if(ibin >= nEventsv.GetNoElements())
 	cout << "ERROR: binning problem" << endl;
 
@@ -217,13 +229,13 @@ void plotDYAcceptance(const TString input)
 	 && (fabs(gen->eta_1)<2.5) && (fabs(gen->eta_2)<2.5)) {
         
 	if(ibin != -1 && ibin < nPassv.GetNoElements()){
-	  nPassv[ibin] += scale * gen->weight * fewz_weight;
+	  nPassv[ibin] += reweight * scale * gen->weight * fewz_weight;
 	  if(isB1 && isB2)                          { nPassBBv[ibin] += scale * gen->weight * fewz_weight; } 
 	  else if(isE1 && isE2)                     { nPassEEv[ibin] += scale * gen->weight * fewz_weight; } 
 	  else if((isB1 && isE2) || (isE1 && isB2)) { nPassBEv[ibin] += scale * gen->weight * fewz_weight; }
 	}
       }
-      hZMassv[ifile]->Fill(mass,scale * gen->weight * fewz_weight);
+      hZMassv[ifile]->Fill(mass,reweight * scale * gen->weight * fewz_weight);
     }   
     delete infile;
     infile=0, eventTree=0;
@@ -299,10 +311,19 @@ void plotDYAcceptance(const TString input)
   plotAcceptance.Draw(c1,doSave,format);
           
   // Store constants in the file
-  TString outputDir(TString("../root_files/constants/")+dirTag);
-  gSystem->mkdir(outputDir,kTRUE);
-  TString accConstFileName(outputDir+TString("/acceptance_constants.root"));
-
+  TString accConstFileName(TString("../root_files/"));
+  if (systematicsMode==0){
+    accConstFileName+=TString("constants/")+dirTag;
+    gSystem->mkdir(accConstFileName,kTRUE);
+    accConstFileName+=TString("/acceptance_constants.root");
+  }
+  else if (systematicsMode==2){
+    accConstFileName+=TString("systematics/")+dirTag;
+    gSystem->mkdir(accConstFileName,kTRUE);
+    accConstFileName+=TString("/acceptance_constants_reweight_");
+    accConstFileName+=int(reweightFsr*100);
+    accConstFileName+=TString(".root");
+  }
   TFile fa(accConstFileName,"recreate");
   acceptanceGraph->Write("A_FSR");
   accv.Write("acceptanceArray");
