@@ -66,16 +66,16 @@ void subtractBackground(const TString conf){
   file.Close();
 
   // Read data driven background estimates
-  bool useTrue2eBgDataDriven = false;
-  TFile fTrueDataDriven(inputDir+TString("/DY_bg_true_data-driven_tmp20110719.root"));
+  bool useTrue2eBgDataDriven = true;
+  TFile fTrueDataDriven(inputDir+TString("/true2eBkgDataPoints.root"));
   TVectorD true2eBackgroundFromData          = *(TVectorD*)fTrueDataDriven.Get("true2eBackgroundFromData");
   TVectorD true2eBackgroundFromDataError     = *(TVectorD*)fTrueDataDriven.Get("true2eBackgroundFromDataError");
   TVectorD true2eBackgroundFromDataErrorSyst = *(TVectorD*)fTrueDataDriven.Get("true2eBackgroundFromDataErrorSyst");
-  bool useFakeBgDataDriven = false;
-  TFile fFakeDataDriven(inputDir+TString("/DY_bg_fake_data-driven_tmp20110719.root"));
-  TVectorD fakeEleBackgroundFromData          = *(TVectorD*)fFakeDataDriven.Get("fakeEleBackgroundFromData");
-  TVectorD fakeEleBackgroundFromDataError     = *(TVectorD*)fFakeDataDriven.Get("fakeEleBackgroundFromDataError");
-  TVectorD fakeEleBackgroundFromDataErrorSyst = *(TVectorD*)fFakeDataDriven.Get("fakeEleBackgroundFromDataErrorSyst");
+  bool useFakeBgDataDriven = true;
+  TFile fFakeDataDriven(inputDir+TString("/fakeBkgDataPoints.root"));
+  TVectorD fakeEleBackgroundFromData          = *(TVectorD*)fFakeDataDriven.Get("fakeBackgroundFromData");
+  TVectorD fakeEleBackgroundFromDataError     = *(TVectorD*)fFakeDataDriven.Get("fakeBackgroundFromDataError");
+  TVectorD fakeEleBackgroundFromDataErrorSyst = *(TVectorD*)fFakeDataDriven.Get("fakeBackgroundFromDataErrorSyst");
 
   // A few consistency checks
   bool checkResult = true;
