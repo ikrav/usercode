@@ -95,12 +95,14 @@ void plotDYFSRCorrections(const TString input)
   UInt_t   nZv = 0;
   TVectorD nEventsv (DYTools::nMassBins);  
   TVectorD nPassv   (DYTools::nMassBins);
+  TVectorD nCorrelv  (DYTools::nMassBins);
   TVectorD corrv     (DYTools::nMassBins);
   TVectorD corrErrv  (DYTools::nMassBins);
 
   nEventsv = 0;
   nPassv = 0;
-    
+  nCorrelv =0;
+
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
     sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,1500)); hZMassv[ifile]->Sumw2();
@@ -161,7 +163,7 @@ void plotDYFSRCorrections(const TString input)
       double mass = gen->vmass;    // pre-FSR
       double massPostFsr = gen->mass;    // post-FSR
       if((mass < massLow) || (mass > massHigh)) continue;
-      
+
       int ibin13 = DYTools::findMassBin13(mass);
       // 13-bin is only used for FEWZ. If mass is larger than 600 GeV
       // (last bin), use the last bin.
@@ -201,6 +203,14 @@ void plotDYFSRCorrections(const TString input)
 // 	cout << "ERROR: binning problem post-FSR, bin=" << ibinPostFsr << "  mass=" << massPostFsr << endl;
       }
 
+      if (ibin==ibinPostFsr)
+      {
+      if(ibin != -1 && ibin < nCorrelv.GetNoElements())
+          nCorrelv[ibin] += scale * gen->weight * fewz_weight;
+      else if(ibin >= nCorrelv.GetNoElements())
+	cout << "ERROR: binning problem Correlation, bin=" << ibin << "  mass=" << mass << endl;
+      }
+
       hZMassv[ifile]->Fill(mass,scale * gen->weight * fewz_weight);
       hMassPreFsr->Fill(mass, scale*gen->weight * fewz_weight);
       hMassPostFsr->Fill(massPostFsr, scale*gen->weight * fewz_weight);
@@ -209,17 +219,18 @@ void plotDYFSRCorrections(const TString input)
     infile=0, eventTree=0;
   }
   delete gen;
-  
+
   corrv      = 0;
   corrErrv   = 0;
   for(int i=0; i<DYTools::nMassBins; i++){
     if(nEventsv[i] != 0){
       corrv[i] = nPassv[i]/nEventsv[i];
-      corrErrv[i] = corrv[i] * sqrt( 1.0/nPassv[i] + 1.0/nEventsv[i] );
-//       corrErrv[i] = sqrt(corrv[i]*(1-corrv[i])/nEventsv[i]);     
+      corrErrv[i] = corrv[i] * sqrt( 1.0/nPassv[i] + 1.0/nEventsv[i]- 2*nCorrelv[i]/(nPassv[i]*nEventsv[i]) );
+//        corrErrv[i] = corrv[i] * sqrt( 1.0/nPassv[i] + 1.0/nEventsv[i] );
+//       corrErrv[i] = sqrt(corrv[i]*(1-corrv[i])/nEventsv[i]);
     }
   }
-  
+
   //--------------------------------------------------------------------------------------------------------------
   // Make plots 
   //==============================================================================================================  
@@ -298,12 +309,12 @@ void plotDYFSRCorrections(const TString input)
   for(int i=0; i<DYTools::nMassBins; i++){
     printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f \n",
 	   DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
-	   nEventsv[i], nPassv[i],
-	   corrv[i], corrErrv[i]);
+	   nEventsv[i], nPassv[i], 
+           corrv[i], corrErrv[i]);
   }
 
   cout << endl;
-  
+
   gBenchmark->Show("plotDYFSRCorrections");
 }
 
