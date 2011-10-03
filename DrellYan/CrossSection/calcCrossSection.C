@@ -41,6 +41,8 @@ const TString fileAcceptanceConstants("acceptance_constants.root");
 
 const TString fileAcceptanceSystematics("theoretical_uncertainties.root");
 
+const TString fileAcceptanceFSRSystematics("acceptance_FSR_systematics.root");
+
 const TString fileFsrCorrectionConstants("fsr_constants.root");
 
 const TString fileFsrCorrectionSansAccConstants("fsr_constants_sans_acc.root");
@@ -117,6 +119,7 @@ TVectorD systBackgrRelative(DYTools::nMassBins);
 TVectorD systEscaleRelative(DYTools::nMassBins);
 TVectorD systUnfoldRelative(DYTools::nMassBins);
 TVectorD systAccTheoryRelative(DYTools::nMassBins);
+TVectorD systAcceptanceRelative(DYTools::nMassBins);
 
 TVectorD systEfficiency(DYTools::nMassBins);
 TVectorD systOthers(DYTools::nMassBins);
@@ -502,6 +505,9 @@ void  acceptanceCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   TFile fileSystematics(TString("../root_files/systematics/")+tagDirConstants+TString("/")+fileAcceptanceSystematics);
   TVectorD acceptanceTheoryErrArray = *(TVectorD *)fileSystematics.FindObjectAny("acceptanceTheoryErrArray");
 
+  TFile fileAccFSRSyst(TString("../root_files/systematics/")+tagDirConstants+TString("/")+fileAcceptanceFSRSystematics);
+  TVectorD acceptanceFSRErrArray = *(TVectorD *)fileAccFSRSyst.FindObjectAny("accSystPercent");
+
   // Check that the binning is consistent
   bool checkResult = true;
   if( acceptanceArray.GetNoElements() != nMassBins) checkResult = false;
@@ -521,6 +527,7 @@ void  acceptanceCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
     double accFactor = acceptanceArray[i];
     double accErr    = acceptanceErrArray[i];
     double accThErr  = acceptanceTheoryErrArray[i];
+    double accFSRErr = acceptanceFSRErrArray[i]/100;
     systAccTheoryRelative[i]=acceptanceTheoryErrArray[i];
     vout[i]        = vin[i] / accFactor;
     voutStatErr[i] = vinStatErr[i] / accFactor;
@@ -528,8 +535,9 @@ void  acceptanceCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
     systErrorAdditional[i] = (vin[i]/accFactor)*(accErr/accFactor);
     //voutSystErr[i] = sqrt(systErrorPropagated[i]*systErrorPropagated[i] + systErrorAdditional[i]*systErrorAdditional[i]);
     voutSystErr[i] = sqrt(systErrorPropagated[i]*systErrorPropagated[i] + systErrorAdditional[i]*systErrorAdditional[i] 
-            + vout[i]*accThErr*vout[i]*accThErr
-            );
+            + vout[i]*accThErr*vout[i]*accThErr + vout[i]*accFSRErr*vout[i]*accFSRErr);
+    systAcceptanceRelative[i]=sqrt(systErrorAdditional[i]*systErrorAdditional[i]/(vout[i]*vout[i]) 
+            + accThErr*accThErr + accFSRErr*accFSRErr);
   }
 
   printf("\nAcceptance: Results for the data, yields:\n");
@@ -943,18 +951,20 @@ void printAllCorrections(){
 void printRelativeSystErrors(){
 
   printf("\n\nLatex table of relative systematic errors  in percent for PAS/paper\n");
-  printf("              Escale  &   Eff.   &   Bkg    &    Unfol &  sum      & AccTheory%%\n");
+  printf("              Escale  &   Eff.   &   Bkg    &    Unfol &    Acc   &    sum   & AccTheory%%\n");
   for(int i=0; i<nMassBins; i++){
     double sum = sqrt(systEscaleRelative[i]*systEscaleRelative[i]
 		      + systEfficiency[i]*systEfficiency[i]
 		      + systBackgrRelative[i]*systBackgrRelative[i]
-		      + systUnfoldRelative[i]*systUnfoldRelative[i]);
+		      + systUnfoldRelative[i]*systUnfoldRelative[i]
+                      + systAcceptanceRelative[i]*systAcceptanceRelative[i]);
     printf("%4.0f-%4.0f &", massBinLimits[i],massBinLimits[i+1]);
-    printf("   $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$  &  $%5.1f$",
+    printf("   $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$  &  $%5.1f$ & $%5.1f",
 	   100*systEscaleRelative[i], 
 	   100*systEfficiency[i], 
 	   100*systBackgrRelative[i], 
 	   100*systUnfoldRelative[i],
+           100*systAcceptanceRelative[i],
 	   100*sum,
            100*systAccTheoryRelative[i]);
     printf("\n");
@@ -1058,8 +1068,8 @@ TVectorD relPostFsrCrossSectionDET, TVectorD relPostFsrCrossSectionStatErrDET)
    mg->Add(gr2);
    mg->Add(gr1);
    mg->Draw("ap");
-TAxis* yax=mg->GetYaxis();
-yax->SetRangeUser(5e-6,2);
+  TAxis* yax=mg->GetYaxis();
+  yax->SetRangeUser(5e-6,2);
    //mg->GetXaxis()->SetTitle("M_{ee}");
    //mg->GetYaxis()->SetTitle("R-shape");
    //mg->SetName("(d#sigma /dM)/ (d#sigma /dM)_{z}");
