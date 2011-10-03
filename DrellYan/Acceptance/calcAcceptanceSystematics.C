@@ -78,9 +78,9 @@ void calcAcceptanceSystematics(const TString conf){
   // Store constants in the file
   TString outputDir(TString("../root_files/systematics/")+tagDirConstants);
   gSystem->mkdir(outputDir,kTRUE);
-  TString unfoldingSystFileName(outputDir+TString("/acceptance_systematics.root"));
+  TString acceptanceSystFileName(outputDir+TString("/acceptance_systematics.root"));
 
-  TFile fa(unfoldingSystFileName,"recreate");
+  TFile fa(acceptanceSystFileName,"recreate");
   accSystPercentFsr.Write("accSystPercent");
   fa.Close();
 
