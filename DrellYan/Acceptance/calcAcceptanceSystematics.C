@@ -49,14 +49,6 @@ void calcAcceptanceSystematics(const TString conf){
   }
   ifs.close();
 
-/*
-  TVectorD signalYields(nMassBins);
-  TVectorD signalYieldsStatErr(nMassBins);
-  TVectorD signalYieldsSystErr(nMassBins);
-
-  // Read data yields from file
-  readData(signalYields, signalYieldsStatErr, signalYieldsSystErr);  
- */ 
   /////////////////////////////////
   //calculate Fsr systematics 
   /////////////////////////////////
@@ -95,44 +87,7 @@ void calcAcceptanceSystematics(const TString conf){
   return;
 }
 
-/*
-//-----------------------------------------------------------------
-// Read data
-//-----------------------------------------------------------------
-void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2){
 
-  printf("Load data yields\n"); fflush(stdout);
-  TFile fileYields   (TString("../root_files/yields/")+tagDirYields+TString("/")+fileDataYields);
-  TVectorD YieldsSignal       = *(TVectorD *)fileYields.FindObjectAny("YieldsSignal");
-  TVectorD YieldsSignalErr    = *(TVectorD *)fileYields.FindObjectAny("YieldsSignalErr");
-  TVectorD BinLimitsForYields = *(TVectorD *)fileYields.FindObjectAny("BinLimitsForYields");
-
-  // Check that the binning is consistent
-  bool checkResult = true;
-  if( v.GetNoElements() != nMassBins ) checkResult = false;
-  if( YieldsSignal.GetNoElements() != nMassBins ) checkResult = false;
-  for(int i=0; i<nMassBins+1; i++){
-    if( massBinLimits[i] != BinLimitsForYields[i] )
-      checkResult = false;
-  }
-  if( !checkResult ){
-    printf("ERROR: inconsistent binning in the inputs\n");
-    assert(0);
-  }else
-    printf("readData: Binning in the inputs is consistent\n");
-
-  for(int i=0; i<nMassBins; i++){
-    v[i] = YieldsSignal[i];
-    vErr1[i] = YieldsSignalErr[i];
-    // Presently zero, but in the future non-zero
-    // (e.g. background systematics, or energy scale correction effect on yields)
-    vErr2[i] = 0;
-  } 
-
-  fileYields.Close();
-  return;
-}
-*/
 //-----------------------------------------------------------------
 // Acceptance
 //-----------------------------------------------------------------
