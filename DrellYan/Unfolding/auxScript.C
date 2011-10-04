@@ -7,7 +7,7 @@
   plotDYUnfoldingMatrix("../config_files/summer11mc.input",DYTools::FSR_STUDY,1,1.05,-1);
   plotDYUnfoldingMatrix("../config_files/summer11mc.input",DYTools::FSR_STUDY,1,0.95,-1);
 
-  for (int i=1; i<=2; i++)
+  for (int i=1; i<=20; i++)
   {
     plotDYUnfoldingMatrix("../config_files/summer11mc.input",DYTools::RESOLUTION_STUDY,1000+i);
   }
