@@ -11,9 +11,13 @@
 
 namespace DYTools {
 
+  // Systematics modes for unfolding and acceptance 
+  enum {NORMAL, RESOLUTION_STUDY, FSR_STUDY};
+
   // Tag and probe fitting constants
   enum {COUNTnCOUNT, COUNTnFIT, FITnFIT};
   enum {GSF, ID, HLT};
+ 
   //
   // Define mass binning
   //
