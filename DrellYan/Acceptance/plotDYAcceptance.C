@@ -31,9 +31,9 @@
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDYAcceptance(const TString input, int systematicsMode = 0, double reweightFsr = 1.0, double massLimit=-1)
-//systematicsMode 0 - no systematic calc
-//2 - systematics due to FSR, reweighting
+void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL, double reweightFsr = 1.0, double massLimit=-1)
+//systematicsMode 0 (NORMAL) - no systematic calc
+//2 (FSR_STUDY) - systematics due to FSR, reweighting
 //check mass spectra with reweight = 95%; 100%; 105%  
 //mass value until which do reweighting 
 {
@@ -43,6 +43,15 @@ void plotDYAcceptance(const TString input, int systematicsMode = 0, double rewei
   // Settings 
   //==============================================================================================================
   
+  if (systematicsMode==DYTools::NORMAL)
+    std::cout<<"Running script in the NORMAL mode"<<std::endl;
+  else if (systematicsMode==DYTools::FSR_STUDY)
+    std::cout<<"Running script in the FSR_STUDY mode"<<std::endl;
+  else { 
+    std::cout<<"requested mode not recognized"<<std::endl;
+    assert(0);
+  }
+
   Bool_t doSave  = false;    // save plots?
   TString format = "png";   // output file format
   
@@ -177,7 +186,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = 0, double rewei
       if((mass < massLow) || (mass > massHigh)) continue;
 
       double reweight;
-      if (systematicsMode!=2) reweight=1.0;
+      if (systematicsMode!=DYTools::FSR_STUDY) reweight=1.0;
       else if ((mass-massPreFsr)>massLimit) reweight=1.0;
       else reweight=reweightFsr;
 
@@ -230,9 +239,9 @@ void plotDYAcceptance(const TString input, int systematicsMode = 0, double rewei
         
 	if(ibin != -1 && ibin < nPassv.GetNoElements()){
 	  nPassv[ibin] += reweight * scale * gen->weight * fewz_weight;
-	  if(isB1 && isB2)                          { nPassBBv[ibin] += scale * gen->weight * fewz_weight; } 
-	  else if(isE1 && isE2)                     { nPassEEv[ibin] += scale * gen->weight * fewz_weight; } 
-	  else if((isB1 && isE2) || (isE1 && isB2)) { nPassBEv[ibin] += scale * gen->weight * fewz_weight; }
+	  if(isB1 && isB2)                          { nPassBBv[ibin] += reweight * scale * gen->weight * fewz_weight; } 
+	  else if(isE1 && isE2)                     { nPassEEv[ibin] += reweight * scale * gen->weight * fewz_weight; } 
+	  else if((isB1 && isE2) || (isE1 && isB2)) { nPassBEv[ibin] += reweight * scale * gen->weight * fewz_weight; }
 	}
       }
       hZMassv[ifile]->Fill(mass,reweight * scale * gen->weight * fewz_weight);
@@ -312,12 +321,12 @@ void plotDYAcceptance(const TString input, int systematicsMode = 0, double rewei
           
   // Store constants in the file
   TString accConstFileName(TString("../root_files/"));
-  if (systematicsMode==0){
+  if (systematicsMode==DYTools::NORMAL){
     accConstFileName+=TString("constants/")+dirTag;
     gSystem->mkdir(accConstFileName,kTRUE);
     accConstFileName+=TString("/acceptance_constants.root");
   }
-  else if (systematicsMode==2){
+  else if (systematicsMode==DYTools::FSR_STUDY){
     accConstFileName+=TString("systematics/")+dirTag;
     gSystem->mkdir(accConstFileName,kTRUE);
     accConstFileName+=TString("/acceptance_constants_reweight_");
