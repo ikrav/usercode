@@ -53,19 +53,27 @@ void SimpleDivide(double passed, double total,
 
 void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TErrNeg,
 				   TMatrixD &TinvErr);
-
-void partialReweight(TH1F* hist, double limit, double reweightFsr);
-//changes weights for bins with x<limit to reweight
-
 //=== MAIN MACRO =================================================================================================
 
-void plotDYUnfoldingMatrix(const TString input, int systematicsMode = 0, int randomSeed = 1, double reweightFsr = 1.0, double massLimit = -1.0)
-//systematicsMode 0 - no systematic calc
-//1 - systematic due to smearing, 2 - systematics due to FSR, reweighting
+void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NORMAL, int randomSeed = 1, double reweightFsr = 1.0, double massLimit = -1.0)
+//systematicsMode 0 (NORMAL) - no systematic calc
+//1 (RESOLUTION_STUDY) - systematic due to smearing, 2 (FSR_STUDY) - systematics due to FSR, reweighting
 //check mass spectra with reweightFsr = 0.95; 1.00; 1.05  
 //mass value until which do reweighting
 {
   gBenchmark->Start("plotDYUnfoldingMatrix");
+
+  if (systematicsMode==DYTools::NORMAL)
+    std::cout<<"Running script in the NORMAL mode"<<std::endl;
+  else if (systematicsMode==DYTools::RESOLUTION_STUDY)
+    std::cout<<"Running script in the RESOLUTION_STUDY mode"<<std::endl;
+  else if (systematicsMode==DYTools::FSR_STUDY)
+    std::cout<<"Running script in the FSR_STUDY mode"<<std::endl;
+  else { 
+    std::cout<<"requested mode not recognized"<<std::endl;
+    assert(0);
+  }
+
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
   //==============================================================================================================
@@ -125,7 +133,7 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = 0, int ran
   // In the case of systematic studies, generate an array of random offsets
   TVectorD shift(escale::nEtaBins);
   shift = 0;
-  if(systematicsMode==1)
+  if(systematicsMode==DYTools::RESOLUTION_STUDY)
     for(int i=0; i<escale::nEtaBins; i++)
       shift[i] = gRandom->Gaus(0,1);
 
@@ -233,7 +241,7 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = 0, int ran
       infoBr->GetEntry(ientry);
 
       double reweight;
-      if (systematicsMode!=2) reweight=1.0;
+      if (systematicsMode!=DYTools::FSR_STUDY) reweight=1.0;
       else if (((gen->mass)-(gen->vmass))>massLimit) reweight=1.0;
       else reweight=reweightFsr;
 
@@ -297,7 +305,7 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = 0, int ran
         double smear2 = escale::extraSmearingSigma(dielectron->scEta_2);
 	// In systematics mode, overwrite the smear values with
 	// shifted ones.
-	if(systematicsMode==1){
+	if(systematicsMode==DYTools::RESOLUTION_STUDY){
 	  smear1 = escale::extraSmearingSigmaShifted(dielectron->scEta_1,shift);
 	  smear2 = escale::extraSmearingSigmaShifted(dielectron->scEta_2,shift);
 	}
@@ -355,18 +363,6 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = 0, int ran
   delete gen;
 
 
-  //for systematicsMode==2, do reweighting of massSpectra
-  if (systematicsMode==2) 
-  {
-    partialReweight(hMassDiff, massLimit, reweightFsr);
-    partialReweight(hMassDiffBB, massLimit, reweightFsr);
-    partialReweight(hMassDiffEB, massLimit, reweightFsr);
-    partialReweight(hMassDiffEE, massLimit, reweightFsr);
-    for (int j=0; j<DYTools::nMassBins; j++)
-    {
-      partialReweight(hMassDiffV[j], massLimit, reweightFsr);
-    }
-  }
   //finish reweighting of mass spectra
 
   
@@ -427,16 +423,16 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = 0, int ran
 
   // Store constants in the file
   TString outputDir(TString("../root_files/constants/")+dirTag);
-  if(systematicsMode==1 || systematicsMode==2)
+  if((systematicsMode==DYTools::RESOLUTION_STUDY) || (systematicsMode==DYTools::FSR_STUDY))
     outputDir = TString("../root_files/systematics/")+dirTag;
   gSystem->mkdir(outputDir,kTRUE);
   TString unfoldingConstFileName(outputDir+TString("/unfolding_constants.root"));
-  if(systematicsMode==1){
+  if(systematicsMode==DYTools::RESOLUTION_STUDY){
     unfoldingConstFileName = outputDir+TString("/unfolding_constants_seed_");
     unfoldingConstFileName += seed;
     unfoldingConstFileName += ".root";
   }
-  if(systematicsMode==2){
+  if(systematicsMode==DYTools::FSR_STUDY){
     unfoldingConstFileName = outputDir+TString("/unfolding_constants_reweight_");
     unfoldingConstFileName += int(100*reweightFsr);
     unfoldingConstFileName += ".root";
@@ -774,26 +770,3 @@ void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TEr
 
   return;
 }
-
-void partialReweight(TH1F* hist, double limit, double reweightFsr)
-//changes weights for bins with x<limit to reweight in histogram hist
-{
-  int limitBin;
-  int NBins;
-  NBins=hist->GetNbinsX();
-  for (int i=0; i<NBins; i++)
-  {
-    double diff=limit-(hist->GetBinCenter(i));
-    if ( (diff<=(0.5*hist->GetBinWidth(i))) || ((-diff)>=(0.5*hist->GetBinWidth(i)))) 
-      {
-        limitBin=i;
-        break;
-      } 
-  }
-  for (int i=0; i<limitBin; i++)
-  {
-    double currentBinContent=hist->GetBinContent(i);
-    hist->SetBinContent(i,currentBinContent*reweightFsr);
-  }
-}
-
