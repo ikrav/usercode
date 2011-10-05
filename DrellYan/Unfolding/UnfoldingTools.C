@@ -130,7 +130,7 @@ namespace unfolding {
     // Add all pieces of unfolding systematics together
     for(int i=0; i<nBins; i++){
       systUnfolding[i] = sqrt( systElementsError[i]*systElementsError[i] 
-			       + systOtherSourcesPercent[i] * systOtherSourcesPercent[i]);
+			       + systOtherSources[i] * systOtherSources[i]);
     }
     fileExtraUnfoldingErrors.Close();
     fileConstants.Close();
