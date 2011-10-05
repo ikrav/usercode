@@ -372,9 +372,11 @@ void  applyUnfolding(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   unfolding::calculateTotalUnfoldingSystError(vin, systUnfolding, 
 					      fullUnfoldingConstFileName, 
 					      fullUnfoldingErrFileName);
-  // Add unfolding systematics to the total systematic error
+  // Add unfolding and escale systematics to the total systematic error
   for(int i=0; i<DYTools::nMassBins; i++){
-    voutSystErr[i] = sqrt( voutSystErr[i]*voutSystErr[i] + systUnfolding[i]*systUnfolding[i]);
+    voutSystErr[i] = sqrt( voutSystErr[i]*voutSystErr[i] 
+			   + systUnfolding[i]*systUnfolding[i]
+			   + systEscale[i]*systEscale[i]);
   }
 
   // After propagating through unfolding all errors that we had on yields before 
