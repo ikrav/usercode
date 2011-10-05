@@ -952,18 +952,24 @@ void printRelativeSystErrors(){
   printf("\n\nLatex table of relative systematic errors  in percent for PAS/paper\n");
   printf("              Escale  &   Eff.   &   Bkg    &    Unfol &    Acc   &    sum   & AccTheory%%\n");
   for(int i=0; i<nMassBins; i++){
+
+    // Factor out theory error from the total acceptance error
+    double systAcceptanceExpRelative 
+      = sqrt( systAcceptanceRelative[i]*systAcceptanceRelative[i]
+	      - systAccTheoryRelative[i]*systAccTheoryRelative[i]);
+    // The "sum" contains only the experimental systematic errors
     double sum = sqrt(systEscaleRelative[i]*systEscaleRelative[i]
 		      + systEfficiency[i]*systEfficiency[i]
 		      + systBackgrRelative[i]*systBackgrRelative[i]
 		      + systUnfoldRelative[i]*systUnfoldRelative[i]
-                      + systAcceptanceRelative[i]*systAcceptanceRelative[i]);
+		      + systAcceptanceExpRelative*systAcceptanceExpRelative);
     printf("%4.0f-%4.0f &", massBinLimits[i],massBinLimits[i+1]);
     printf("   $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$  &  $%5.1f$ & $%5.1f",
 	   100*systEscaleRelative[i], 
 	   100*systEfficiency[i], 
 	   100*systBackgrRelative[i], 
 	   100*systUnfoldRelative[i],
-           100*systAcceptanceRelative[i],
+           100*systAcceptanceExpRelative,
 	   100*sum,
            100*systAccTheoryRelative[i]);
     printf("\n");
