@@ -112,7 +112,6 @@ void getNormBinRange(int &firstNormBin, int &lastNormBin);
 
 // Absolute error values at the point just before unfolding
 TVectorD systBackgrBeforeUnfolding(DYTools::nMassBins);
-TVectorD systEscaleBeforeUnfolding(DYTools::nMassBins);
 
 // Relative error values. These are meant to be AFTER unfolding.
 TVectorD systBackgrRelative(DYTools::nMassBins);
@@ -208,7 +207,6 @@ void calcCrossSection(const TString conf){
   TVectorD relPostFsrCrossSectionSystErrDET(nMassBins);
 
   systBackgrBeforeUnfolding = 0;
-  systEscaleBeforeUnfolding = 0;
   systEfficiency = 0;
   systOthers = 0;
 
@@ -308,38 +306,17 @@ void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2){
   }else
     printf("readData: Binning in the inputs is consistent\n");
 
-  // We also load systematic errors relevant at this point
-  TString fullEscaleSystErrorsFileName = TString("../root_files/systematics/")
-    +tagDirYields+TString("/")
-    +fileEscaleErrors;
-  TFile fileEscaleSystematics(fullEscaleSystErrorsFileName);
-  if( ! fileEscaleSystematics.IsOpen()){
-    printf("ERROR: required file with escale errors %s is not found!\n",
-	   fullEscaleSystErrorsFileName.Data());
-    assert(0);
-  }
-  TVectorD escaleSystematicsPercent 
-    = *(TVectorD *)fileEscaleSystematics.FindObjectAny("escaleSystPercent");
-  if( escaleSystematicsPercent.GetNoElements() != DYTools::nMassBins){
-    printf("ERROR: Wrong binning of the escale systematics array!\n");
-    assert(0);
-  }
-
   // Prepare output yields and errors
   for(int i=0; i<nMassBins; i++){
     v[i] = YieldsSignal[i];
     vErr1[i] = YieldsSignalErr[i];
     // Background systematics should be already in, add 
     // energy scale systematics
-    double escaleError = (escaleSystematicsPercent[i]/100.0)*v[i];
-    vErr2[i] = sqrt(YieldsSignalSystErr[i] * YieldsSignalSystErr[i]
-		    + escaleError*escaleError);
+    vErr2[i] = YieldsSignalSystErr[i];
     systBackgrBeforeUnfolding[i] = YieldsSignalSystErr[i];
-    systEscaleBeforeUnfolding[i] = escaleError;
   } 
 
   fileYields.Close();
-  fileEscaleSystematics.Close();
   return;
 }
 
@@ -360,14 +337,35 @@ void  applyUnfolding(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   unfolding::propagateErrorThroughUnfolding(vinStatErr,voutStatErr, fullUnfoldingConstFileName);
   unfolding::propagateErrorThroughUnfolding(vinSystErr,voutSystErr, fullUnfoldingConstFileName);
 
-  // Second, propagate separately several systematic error components.
+  // Second, propagate separately systematic error components that need it.
   // These are already included in the total systematic error above in vinSystErr,
   // however we do it separately so that we can quote the breakdown in the
   // table of systematic errors
   TVectorD systBackgr(vin.GetNoElements());
-  TVectorD systEscale(vin.GetNoElements());
   unfolding::propagateErrorThroughUnfolding(systBackgrBeforeUnfolding, systBackgr, fullUnfoldingConstFileName);
-  unfolding::propagateErrorThroughUnfolding(systEscaleBeforeUnfolding, systEscale, fullUnfoldingConstFileName);
+
+  // The electron energy scale systematics that is loaded here
+  // is estimated on the unfolded yields. So we read it in at this time
+  // and will add to the outgoing total systematic below in this function.
+  TVectorD systEscale(vin.GetNoElements());
+  TString fullEscaleSystErrorsFileName = TString("../root_files/systematics/")
+    +tagDirYields+TString("/")
+    +fileEscaleErrors;
+  TFile fileEscaleSystematics(fullEscaleSystErrorsFileName);
+  if( ! fileEscaleSystematics.IsOpen()){
+    printf("ERROR: required file with escale errors %s is not found!\n",
+	   fullEscaleSystErrorsFileName.Data());
+    assert(0);
+  }
+  TVectorD escaleSystematicsPercent 
+    = *(TVectorD *)fileEscaleSystematics.FindObjectAny("escaleSystPercent");
+  if( escaleSystematicsPercent.GetNoElements() != DYTools::nMassBins){
+    printf("ERROR: Wrong binning of the escale systematics array!\n");
+    assert(0);
+  }
+  for(int i=0; i<nMassBins; i++){
+    systEscale[i] = (escaleSystematicsPercent[i]/100.0) * vout[i];
+  }
 
   // Pool together the unfolding systematics and add it to the total systematics
   TVectorD systUnfolding(vin.GetNoElements());
@@ -388,7 +386,6 @@ void  applyUnfolding(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
     systEscaleRelative[i] = systEscale[i]/vout[i];
     systUnfoldRelative[i] = systUnfolding[i]/vout[i];
   }  
-
 
   // Print the result
   printf("\nUNFOLD: Results for the data, yields:\n");
