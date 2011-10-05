@@ -117,11 +117,21 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   TVectorD nPassBEv(DYTools::nMassBins), accBEv(DYTools::nMassBins), accErrBEv(DYTools::nMassBins); 
   TVectorD nPassEEv(DYTools::nMassBins), accEEv(DYTools::nMassBins), accErrEEv(DYTools::nMassBins);
 
+  // Vectors for calculation of errors with weighted sums
+  TVectorD w2Eventsv (DYTools::nMassBins);  
+  TVectorD w2Passv   (DYTools::nMassBins);
+
+
   nEventsv = 0;
+  nPassv   = 0;
   nPassBBv = 0;
   nPassBEv = 0;
   nPassEEv = 0;
-    
+
+  w2Eventsv = 0;
+  w2Passv   = 0;
+
+
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
     sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,500)); hZMassv[ifile]->Sumw2();
@@ -131,11 +141,11 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   // Read weights from a file
   //
   const bool useFewzWeights = true;
-  TH2D *weights[DYTools::nMassBins13];
-  TH2D *weightErrors[DYTools::nMassBins13];
-  TFile fweights("../root_files/fewz/fewz_powheg_weights_04.root");
+  TH2D *weights[DYTools::nMassBins];
+  TH2D *weightErrors[DYTools::nMassBins];
+  TFile fweights("../root_files/fewz/fewz_powheg_weights_stepwise_2011.root");
   if( !fweights.IsOpen() ) assert(0);
-  for(int i=0; i<DYTools::nMassBins13; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     TString hname = TString::Format("weight_%02d",i+1);
     weights[i] = (TH2D*)fweights.Get(hname);
     hname = TString::Format("h_weighterror_%02d",i+1);
@@ -192,38 +202,40 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
 
       
       int ibin = DYTools::findMassBin(mass);
-      int ibinPreFsr13 = DYTools::findMassBin13(massPreFsr);
-      // 13-bin is only used for FEWZ. If mass is larger than 600 GeV
+      int ibinPreFsr = DYTools::findMassBin(massPreFsr);
+      // If mass is larger than the highest bin boundary
       // (last bin), use the last bin.
-      if(ibinPreFsr13 == -1 && mass >= massBinLimits13[nMassBins13] )
-	ibinPreFsr13 = nMassBins13-1;
+      if(ibinPreFsr == -1 && mass >= massBinLimits[nMassBins] )
+	ibinPreFsr = nMassBins-1;
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
       double fewz_weight = 1.0;
       if(useFewzWeights){
-	if(ibinPreFsr13 != -1 && ibinPreFsr13 < DYTools::nMassBins13){
-	  int ptBin = weights[ibinPreFsr13]->GetXaxis()->FindBin( gen->vpt );
-	  int yBin = weights[ibinPreFsr13]->GetYaxis()->FindBin( gen->vy );
+	if(ibinPreFsr != -1 && ibinPreFsr < DYTools::nMassBins){
+	  int ptBin = weights[ibinPreFsr]->GetXaxis()->FindBin( gen->vpt );
+	  int yBin = weights[ibinPreFsr]->GetYaxis()->FindBin( gen->vy );
 	  // In case if pt or y are outside of the weight maps,
 	  // set them to the closest bin.
- 	  if(ptBin == weights[ibinPreFsr13]->GetNbinsX() + 1)
- 	    ptBin = weights[ibinPreFsr13]->GetNbinsX();
+ 	  if(ptBin == weights[ibinPreFsr]->GetNbinsX() + 1)
+ 	    ptBin = weights[ibinPreFsr]->GetNbinsX();
  	  if(ptBin == 0)
  	    ptBin = 1;
- 	  if(yBin == weights[ibinPreFsr13]->GetNbinsY() + 1)
- 	    yBin = weights[ibinPreFsr13]->GetNbinsY();
+ 	  if(yBin == weights[ibinPreFsr]->GetNbinsY() + 1)
+ 	    yBin = weights[ibinPreFsr]->GetNbinsY();
  	  if(yBin == 0)
  	    yBin = 1;
-	  fewz_weight = weights[ibinPreFsr13]->GetBinContent( ptBin, yBin);
+	  fewz_weight = weights[ibinPreFsr]->GetBinContent( ptBin, yBin);
 						      
 	}else
 	  cout << "Error: binning problem" << endl;
       }
 //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
 
-      if(ibin != -1 && ibin < nEventsv.GetNoElements())
-	nEventsv[ibin] += reweight * scale * gen->weight * fewz_weight;
-      else if(ibin >= nEventsv.GetNoElements())
+      if(ibin != -1 && ibin < nEventsv.GetNoElements()){
+	double fullWeight = reweight * scale * gen->weight * fewz_weight;
+	nEventsv[ibin] += fullWeight;
+	w2Eventsv[ibin] += fullWeight*fullWeight;
+      }else if(ibin >= nEventsv.GetNoElements())
 	cout << "ERROR: binning problem" << endl;
 
       Bool_t isB1 = (fabs(gen->eta_1)<kGAP_LOW);
@@ -238,7 +250,9 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
 	 && (fabs(gen->eta_1)<2.5) && (fabs(gen->eta_2)<2.5)) {
         
 	if(ibin != -1 && ibin < nPassv.GetNoElements()){
-	  nPassv[ibin] += reweight * scale * gen->weight * fewz_weight;
+	  double fullWeight = reweight * scale * gen->weight * fewz_weight;
+	  nPassv[ibin] += fullWeight;
+	  w2Passv[ibin] += fullWeight*fullWeight;
 	  if(isB1 && isB2)                          { nPassBBv[ibin] += reweight * scale * gen->weight * fewz_weight; } 
 	  else if(isE1 && isE2)                     { nPassEEv[ibin] += reweight * scale * gen->weight * fewz_weight; } 
 	  else if((isB1 && isE2) || (isE1 && isB2)) { nPassBEv[ibin] += reweight * scale * gen->weight * fewz_weight; }
@@ -262,8 +276,27 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   for(int i=0; i<DYTools::nMassBins; i++){
     if(nEventsv[i] != 0){
       accv[i] = nPassv[i]/nEventsv[i];
-      accErrv[i] = sqrt(accv[i]*(1-accv[i])/nEventsv[i]); 
-    
+      // The commented out piece does not have correct error calculation
+      // for weighted events.
+      //
+      // accErrv[i] = sqrt(accv[i]*(1-accv[i])/nEventsv[i]); 
+      //
+      // The correct error calculation when Npass and Nfail
+      // are accumulated as sum of weights:
+      //    Npass = sum(weight) over all passed events
+      //    NpassErr = sqrt( sum( weight^2 ) ) over all passed events
+      //    Similarly, for Nfail.
+      //    After that, we propagate errors in formula Npass/(Npass+Nfail)
+      //    where the errors are computed as above.
+      //
+      double nTotal = nEventsv[i];
+      double nPass = nPassv[i];
+      double nPassErr = sqrt( w2Passv[i] );
+      double nFail = nTotal - nPass;
+      double nFailErr = sqrt( w2Eventsv[i] - w2Passv[i] );
+      accErrv[i] = sqrt( ( nFail*nFail * nPassErr*nPassErr + nPass*nPass * nFailErr*nFailErr)
+			 / (nTotal*nTotal*nTotal*nTotal));
+
       accBBv[i] = nPassBBv[i]/nEventsv[i];
       accErrBBv[i] = sqrt(accBBv[i]*(1-accBBv[i])/nEventsv[i]);
       
