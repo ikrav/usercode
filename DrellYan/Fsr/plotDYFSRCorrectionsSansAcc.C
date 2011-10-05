@@ -112,11 +112,11 @@ void plotDYFSRCorrectionsSansAcc(const TString input)
   // Read weights from a file
   //
   const bool useFewzWeights = true;
-  TH2D *weights[DYTools::nMassBins13];
-  TH2D *weightErrors[DYTools::nMassBins13];
-  TFile fweights("../root_files/fewz/fewz_powheg_weights_04.root");
+  TH2D *weights[DYTools::nMassBins];
+  TH2D *weightErrors[DYTools::nMassBins];
+  TFile fweights("../root_files/fewz/fewz_powheg_weights_stepwise_2011.root");
   if( !fweights.IsOpen() ) assert(0);
-  for(int i=0; i<DYTools::nMassBins13; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     TString hname1 = TString::Format("weight_%02d",i+1);
     weights[i] = (TH2D*)fweights.Get(hname1);
     hname1 = TString::Format("h_weighterror_%02d",i+1);
@@ -170,34 +170,33 @@ void plotDYFSRCorrectionsSansAcc(const TString input)
       double mass = gen->vmass;    // pre-FSR
       double massPostFsr = gen->mass;    // post-FSR
       if((mass < massLow) || (mass > massHigh)) continue;
-      
-      int ibin13 = DYTools::findMassBin13(mass);
-      // 13-bin is only used for FEWZ. If mass is larger than 600 GeV
+
+      int ibin = DYTools::findMassBin(mass);
+      // If mass is larger than the highest bin boundary
       // (last bin), use the last bin.
-      if(ibin13 == -1 && mass >= massBinLimits13[nMassBins13] )
-	ibin13 = nMassBins13-1;
+      if(ibin == -1 && mass >= massBinLimits[nMassBins] )
+	ibin = nMassBins-1;
       int ibinPostFsr = DYTools::findMassBin(massPostFsr);
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity and pt
       double fewz_weight = 1.0;
       if(useFewzWeights){
-	if(ibin13 != -1 && ibin13 < DYTools::nMassBins13){
+	if(ibin != -1 && ibin < DYTools::nMassBins){
 	  // Check that the virtual Z has Pt and Y within the
 	  // weight map range. If it is in the underflow or overflow,
 	  // move the index to point to the appropriate edge bin
-	  int binX = weights[ibin13]->GetXaxis()->FindBin( gen->vpt );
-	  int binY = weights[ibin13]->GetYaxis()->FindBin( gen->vy );
+	  int binX = weights[ibin]->GetXaxis()->FindBin( gen->vpt );
+	  int binY = weights[ibin]->GetYaxis()->FindBin( gen->vy );
 	  if(binX == 0) binX += 1;
-	  if(binX == weights[ibin13]->GetNbinsX() + 1) binX -= 1;
+	  if(binX == weights[ibin]->GetNbinsX() + 1) binX -= 1;
 	  if(binY == 0) binY += 1;
-	  if(binY == weights[ibin13]->GetNbinsY() + 1) binY -= 1;
-	  fewz_weight = weights[ibin13]->GetBinContent( binX, binY);
+	  if(binY == weights[ibin]->GetNbinsY() + 1) binY -= 1;
+	  fewz_weight = weights[ibin]->GetBinContent( binX, binY);
 	}else
-	  cout << "Error: binning problem" << endl;
+	  cout << "Error: binning problem FEWZ bins, bin=" << ibin << "  mass= " << mass<< endl;
       }
 //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
 
-      int ibin = DYTools::findMassBin(mass);
       if(ibin != -1 && ibin < nEventsv.GetNoElements())
 	nEventsv[ibin] += scale * gen->weight * fewz_weight;
       else if(ibin >= nEventsv.GetNoElements())
