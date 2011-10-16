@@ -18,6 +18,7 @@
 #include <TClonesArray.h>           // ROOT array class
 #include <TCanvas.h>                // class for drawing
 #include <TH1F.h>                   // 1D histograms
+#include <TH2D.h>
 #include <TBenchmark.h>             // class to track macro running statistics
 #include <TLorentzVector.h>         // 4-vector class
 #include <TVector3.h>               // 3D vector class
@@ -32,10 +33,12 @@
 #include "../Include/MitStyleRemix.hh"  // style settings for drawing
 #include "../Include/MyTools.hh"        // miscellaneous helper functions
 #include "../Include/CSample.hh"        // helper class for organizing input ntuple files
+#include "../Include/DYTools.hh"
 
 // define structures to read in ntuple
 #include "../Include/EWKAnaDefs.hh"
 #include "../Include/TEventInfo.hh"
+#include "../Include/TGenInfo.hh"
 #include "../Include/TDielectron.hh"
 #include "../Include/TJet.hh"
 #include "../Include/TVertex.hh"
@@ -277,6 +280,21 @@ void plotDY(const TString conf)
     nNegSSv.push_back(0);    
   }
   
+  // 
+  // Read weights from a file
+  //
+  const bool useFewzWeights = true;
+  TH2D *weights[DYTools::nMassBins];
+  TH2D *weightErrors[DYTools::nMassBins];
+  TFile fweights("../root_files/fewz/fewz_powheg_weights_stepwise_2011.root");
+  if( !fweights.IsOpen() ) assert(0);
+  for(int i=0; i<DYTools::nMassBins; i++){
+    TString hname = TString::Format("weight_%02d",i+1);
+    weights[i] = (TH2D*)fweights.Get(hname);
+    hname = TString::Format("h_weighterror_%02d",i+1);
+    weightErrors[i] = (TH2D*)fweights.Get(hname);
+  }
+
   //
   // Access samples and fill histograms
   //  
@@ -285,6 +303,7 @@ void plotDY(const TString conf)
   
   // Data structures to store info from TTrees
   mithep::TEventInfo *info    = new mithep::TEventInfo();
+  mithep::TGenInfo *gen       = new mithep::TGenInfo();
   // TClonesArray *caloJetArr    = new TClonesArray("mithep::TJet");
   // TClonesArray *trackJetArr   = new TClonesArray("mithep::TJet");
   TClonesArray *pfJetArr      = new TClonesArray("mithep::TJet");
@@ -345,6 +364,13 @@ void plotDY(const TString conf)
       // eventTree->SetBranchAddress("TrackJet",   &trackJetArr);   TBranch *trackJetBr   = eventTree->GetBranch("TrackJet");
       eventTree->SetBranchAddress("PFJet",      &pfJetArr);      TBranch *pfJetBr      = eventTree->GetBranch("PFJet");
       eventTree->SetBranchAddress("PV",         &pvArr);         TBranch *pvBr         = eventTree->GetBranch("PV");
+      // Generator information is present only for MC. Moreover, we
+      // need to look it up only for signal MC in this script
+      TBranch *genBr = 0;
+      if( snamev[isam] == "zee" ){
+	eventTree->SetBranchAddress("Gen",&gen);
+	genBr = eventTree->GetBranch("Gen");
+      }
       
       // Determine maximum number of events to consider
       // *** CASES ***
@@ -373,7 +399,46 @@ void plotDY(const TString conf)
 	if(ientry >= maxEvents) break;
 	
 	infoBr->GetEntry(ientry);
-		
+      if( snamev[isam] == "zee" )
+	  genBr->GetEntry(ientry);
+
+	// Load FEWZ weights for signal MC
+	double fewz_weight = 1.0;
+	if( snamev[isam] == "zee" ){
+	  int ibinPreFsr = DYTools::findMassBin(gen->vmass);
+	  // If mass is larger than the highest bin boundary
+	  // (last bin), use the last bin.
+	  if(ibinPreFsr == -1 && gen->vmass >= massBinLimits[nMassBins] )
+	    ibinPreFsr = nMassBins-1;
+	  // Find FEWZ-powheg reweighting factor 
+	  // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
+	  if(useFewzWeights){
+	    if(ibinPreFsr != -1 && ibinPreFsr < DYTools::nMassBins){
+	      int ptBin = weights[ibinPreFsr]->GetXaxis()->FindBin( gen->vpt );
+	      int yBin = weights[ibinPreFsr]->GetYaxis()->FindBin( gen->vy );
+	      // In case if pt or y are outside of the weight maps,
+	      // set them to the closest bin.
+	      if(ptBin == weights[ibinPreFsr]->GetNbinsX() + 1)
+		ptBin = weights[ibinPreFsr]->GetNbinsX();
+	      if(ptBin == 0)
+		ptBin = 1;
+	      if(yBin == weights[ibinPreFsr]->GetNbinsY() + 1)
+		yBin = weights[ibinPreFsr]->GetNbinsY();
+	      if(yBin == 0)
+		yBin = 1;
+	      fewz_weight = weights[ibinPreFsr]->GetBinContent( ptBin, yBin);
+	    }else{
+	      // Error printout is commented out: the maps now go down
+	      // to 15 GeV. Events with generator level mass below 15 GeV 
+	      // may contribute to 
+	      // reconstructed events when reconstructed mass is above 15 GeV
+// 	      cout << "Error: vmass outside of FEWZ weight maps, vmass=" 
+// 		   << gen->vmass << endl;
+	    }
+	  }
+	}
+
+
 	// mithep::RunLumiRangeMap::RunLumiPairType rl(info->runNum, info->lumiSec);      
 	// if(hasJSON && !rlrm.HasRunLumi(rl)) continue;  // not certified run? Skip to next event...
         if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
@@ -583,7 +648,10 @@ void plotDY(const TString conf)
           hNGoodPVv[isam]->Fill(nGoodPV,weight);
 	  
 	  // fill ntuple data
-	  fillData(&data, info, dielectron, pvArr->GetEntriesFast(), npfjets, weight);
+	  double weightSave = weight;
+	  if( snamev[isam] == "zee" )
+	    weightSave *= fewz_weight;
+	  fillData(&data, info, dielectron, pvArr->GetEntriesFast(), npfjets, weightSave);
 	  outTree->Fill();
 	  
 	  nsel    += weight;
