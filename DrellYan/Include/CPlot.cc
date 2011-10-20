@@ -436,9 +436,9 @@ void CPlot::AddFcn(TF1* fcn, TString label, int color, int linesty)
 } 
 
 //--------------------------------------------------------------------------------------------------
-void CPlot::Draw(TCanvas *c, bool doSave, TString format)
+void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
 { 
-  c->cd();
+  c->cd(subpad);
   
   c->SetLogy(0);
   c->SetLogx(0);
