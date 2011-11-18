@@ -1,3 +1,4 @@
+
 #include "CPlot.hh"
 #include <TLatex.h>
 
@@ -481,11 +482,11 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
       c->SetLogx(fLogx);
       c->SetLogy(fLogy);
       
-      for(UInt_t i=0; i<fLines.size(); i++)
-        fLines[i]->Draw();
+      for(UInt_t j=0; j<fLines.size(); j++)
+        fLines[j]->Draw();
 
-      for(UInt_t i=0; i<fBoxes.size(); i++)
-        fBoxes[i]->Draw();
+      for(UInt_t j=0; j<fBoxes.size(); j++)
+        fBoxes[j]->Draw();
       
       for(UInt_t j=0; j<fTextBoxes.size(); j++)
         fTextBoxes[j]->Draw();
