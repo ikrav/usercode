@@ -375,8 +375,8 @@ namespace DYTools {
       // asymmertic errors.
       // a) Clopper-Pearson method requires integer pass/total.
       // b) C++ does not have a built-in rounding function
-      int nPassInt = (nPass-floor(nPass)<0.5)?floor(nPass):ceil(nPass);
-      int nTotalInt = (nTotal-floor(nTotal)<0.5)?floor(nTotal):ceil(nTotal);
+      int nPassInt = int((nPass-floor(nPass)<0.5)?floor(nPass):ceil(nPass)+1e-3);
+      int nTotalInt = int((nTotal-floor(nTotal)<0.5)?floor(nTotal):ceil(nTotal)+1e-3);
       effErrLow  = eff - TEfficiency::ClopperPearson(nTotalInt, nPassInt, 0.68269, kFALSE);
       effErrHigh = TEfficiency::ClopperPearson(nTotalInt, nPassInt, 0.68269, kTRUE) - eff;
     } else{
