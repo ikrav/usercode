@@ -112,9 +112,12 @@ void plotDYFSRCorrections(const TString input)
   // Read weights from a file
   //
   const bool useFewzWeights = true;
+  const bool cutZPT100 = true;
+  if(cutZPT100)
+    cout << "NOTE: in MC, for Z/gamma* PT>100 the FEWZ weights for 80<PT<100 GeV are used!" << endl;
   TH2D *weights[DYTools::nMassBins];
   TH2D *weightErrors[DYTools::nMassBins];
-  TFile fweights("../root_files/fewz/fewz_powheg_weights_stepwise_2011.root");
+  TFile fweights("../root_files/fewz/weights_stepwise_prec10-5_fine12.root");
   if( !fweights.IsOpen() ) assert(0);
   for(int i=0; i<DYTools::nMassBins; i++){
     TString hname1 = TString::Format("weight_%02d",i+1);
@@ -184,6 +187,10 @@ void plotDYFSRCorrections(const TString input)
 	  if(binX == weights[ibin]->GetNbinsX() + 1) binX -= 1;
 	  if(binY == 0) binY += 1;
 	  if(binY == weights[ibin]->GetNbinsY() + 1) binY -= 1;
+	  // Apply PT cut if needed
+	  if( cutZPT100 ) 
+	    if( binX == weights[ibin]->GetNbinsX() )
+	      binX = weights[ibin]->GetNbinsX() - 1;
 	  fewz_weight = weights[ibin]->GetBinContent( binX, binY);
 	}else
 	  cout << "Error: binning problem FEWZ bins, bin=" << ibin << "  mass= " << mass<< endl;

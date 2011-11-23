@@ -141,9 +141,12 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   // Read weights from a file
   //
   const bool useFewzWeights = true;
+  const bool cutZPT100 = true;
+  if(cutZPT100)
+    cout << "NOTE: in MC, for Z/gamma* PT>100 the FEWZ weights for 80<PT<100 GeV are used!" << endl;
   TH2D *weights[DYTools::nMassBins];
   TH2D *weightErrors[DYTools::nMassBins];
-  TFile fweights("../root_files/fewz/fewz_powheg_weights_stepwise_2011.root");
+  TFile fweights("../root_files/fewz/weights_stepwise_prec10-5_fine12.root");
   if( !fweights.IsOpen() ) assert(0);
   for(int i=0; i<DYTools::nMassBins; i++){
     TString hname = TString::Format("weight_%02d",i+1);
@@ -224,6 +227,10 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
  	    yBin = weights[ibinPreFsr]->GetNbinsY();
  	  if(yBin == 0)
  	    yBin = 1;
+	  // Apply PT cut if needed
+	  if( cutZPT100 ) 
+	    if( ptBin == weights[ibinPreFsr]->GetNbinsX() )
+	      ptBin = weights[ibinPreFsr]->GetNbinsX() - 1;
 	  fewz_weight = weights[ibinPreFsr]->GetBinContent( ptBin, yBin);
 						      
 	}else
