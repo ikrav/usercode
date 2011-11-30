@@ -533,7 +533,7 @@ void plotDY(const TString conf)
 	  hMass3v[isam]->Fill(dielectron->mass,weight);
 	  
           // mass window 
-          if((dielectron->mass < 10) || (dielectron->mass > 1000)) continue;
+          if( dielectron->mass < 10 ) continue;
 	  
 	  
           /******** We have a Z candidate! HURRAY! ********/
