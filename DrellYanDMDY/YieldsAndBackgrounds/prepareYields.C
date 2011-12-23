@@ -274,7 +274,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
 
       // Find the 2D bin for this event:
       int massBin = findMassBin2D(data.mass);
-      int yBin    = findYBin2D(massBin, data.y);
+      int yBin    = findAbsYBin2D(massBin, data.y);
       (*thisSampleYields)(massBin,yBin) += weight;
       (*thisSampleYieldsSumw2)(massBin,yBin) += weight*weight;
 
@@ -375,7 +375,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
   plotMass.SetLogy();
   plotMass.SetLogx();
   plotMass.Draw(c1);
-  plotMass.SetYRange(1.0,35000);  
+  plotMass.SetYRange(1.0,300000);  
   plotMass.Draw(c1,kFALSE,format);
 
   // Second, draw with the mass binning used in the analysis
@@ -399,7 +399,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
   plotMassBins.SetLogy();
   plotMassBins.SetLogx();
   plotMassBins.Draw(c2);
-  plotMassBins.SetYRange(1.0,35000);  
+  plotMassBins.SetYRange(1.0,2000000);  
   plotMassBins.Draw(c2,kFALSE,format);
  
   //
@@ -449,7 +449,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
   }
   plotFlattened.SetLogy();
   plotFlattened.Draw(c3);
-  plotFlattened.SetYRange(1.0,35000);  
+  plotFlattened.SetYRange(1.0,200000);  
   plotFlattened.Draw(c3,kFALSE,format);
 
   //
@@ -565,7 +565,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
     printf("%5.0f-%5.0f GeV: ", DYTools::massBinLimits2D[im],
 	   DYTools::massBinLimits2D[im+1]);
     printf(" %7.0f", totalData[im]);
-    printf(" %7.2f+-%5.2f", totalSignalMC[im], totalSignalMCError[im]);
+    printf(" %9.1f+-%6.1f", totalSignalMC[im], totalSignalMCError[im]);
     printf(" %7.2f+-%5.2f", totalBg[im], totalBgError[im]);
     printf("\n");
   }
@@ -578,8 +578,8 @@ void drawRapidityInMassSlices(vector<TMatrixD*> &yields,
 			      vector<TString>   &sampleTags,
 			      int nhist, TCanvas *canvas){
 
-  if(nhist != 11){
-    printf("ERROR: this function can draw only 10 histograms on one canvas\n");
+  if(nhist != 7){
+    printf("ERROR: this function can draw only 6 histograms on one canvas\n");
     printf("       after underflow is dropped\n");
     printf("       Drawing is aborted\n");
     return;
@@ -587,10 +587,10 @@ void drawRapidityInMassSlices(vector<TMatrixD*> &yields,
 
   // Create rapidity histograms for data and total MC,
   // drop underflow bin.
-  TH1F *histData[10];
-  TH1F *histTotalMC[10];
+  TH1F *histData[6];
+  TH1F *histTotalMC[6];
   char hname[100];
-  for(int im=0; im<10; im++){ // Loop over mass slices
+  for(int im=0; im<6; im++){ // Loop over mass slices
     // Start from 1, ignoring 0=underflow
     int iMassBin = im + 1;
     sprintf(hname,"rapidity_data_for_massbin_%i",iMassBin);
@@ -629,11 +629,11 @@ void drawRapidityInMassSlices(vector<TMatrixD*> &yields,
   
   double topCanvasMargin = 0.1;
   double bottomCanvasMargin = 0.1;
-  const int nPadRows = 5;
+  const int nPadRows = 3;
   const int nPadCols = 2;
   double plotsize = (1.0 - topCanvasMargin - bottomCanvasMargin)/nPadRows;
 
-  TPad *pads[10];
+  TPad *pads[6];
   for(int irow = 0; irow < nPadRows; irow++){
     for(int icol = 0; icol < nPadCols; icol++){
       int padindex = icol*nPadRows + irow;

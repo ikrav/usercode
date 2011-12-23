@@ -2,6 +2,8 @@
 
 // TODO:
 //
+// Are trigger bits implemented correctly for full 2011 dataset?
+//
 // Sort out EfficiencyDivide and other functions!
 //
 // Review systematics for unfolding. Can it be done more
