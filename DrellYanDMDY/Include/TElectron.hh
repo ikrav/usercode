@@ -27,7 +27,7 @@ namespace mithep
       Float_t sigiEtaiEta;         // eta-width of shower in number of crystals
       Float_t partnerDeltaCot;     // cot(theta) difference with conversion partner track	
       Float_t partnerDist;         // distance in x-y plane to nearest conversion partner track
-      Float_t ellhID;              // electron likelihood ID ***NOT YET DEFINED***
+      Float_t mva;                 // MVA electron ID
       Int_t   q;                   // charge
       UInt_t  nExpHitsInner;       // number of hits expected before first hit      	             
       UInt_t  scID;                // supercluster ID (for matching to photon superclusters)

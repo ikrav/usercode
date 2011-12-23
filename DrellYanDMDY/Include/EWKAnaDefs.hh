@@ -47,43 +47,63 @@ enum EQualityBit
 enum ETriggerBit
 {
   // MuEG
-  kHLT_Mu17_Ele8_CaloIdL          = 1UL<<1, // MC, data
-  kHLT_Mu8_Ele17_CaloIdL          = 1UL<<2, // MC, data
-  kHLT_Mu8_Photon20_CaloIdVT_IsoT = 1UL<<3, // MC, data
-  kHLT_Mu15_Photon20_CaloIdL      = 1UL<<4, // MC, data
-
+  kHLT_Mu17_Ele8_CaloIdL           = 1UL<<1,  // s11(v2), f11(v9), data
+  kHLT_Mu8_Ele17_CaloIdL           = 1UL<<2,  // s11(v2), f11(v9), data
+  kHLT_Mu8_Photon20_CaloIdVT_IsoT  = 1UL<<3,  // s11(v2), f11(v9), data
+  kHLT_Mu15_Photon20_CaloIdL       = 1UL<<4,  // s11(v3), f11(v10), data
+  kHLT_Mu17_Ele8_CaloIdT_CaloIsoVL = 1UL<<21, // f11(v4), data
+  kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL = 1UL<<22, // f11(v4), data
+  
   // DoubleElectron
-  kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL                                   = 1UL<<5,  // MC, data
-  kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL = 1UL<<6,  // MC, data
-  kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30                              = 1UL<<7,  // MC, data
-  kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30                             = 1UL<<8,  // data
-  kHLT_Ele32_CaloIdL_CaloIsoVL_SC17                                                     = 1UL<<9,  // MC, data
-  kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17                                       = 1UL<<10, // data
-  kHLT_Ele8                                                                             = 1UL<<11, // MC, data
-  kHLT_Ele8_CaloIdL_TrkIdVL                                                             = 1UL<<12, // MC, data
-  kHLT_Ele8_CaloIdL_CaloIsoVL                                                           = 1UL<<13, // MC, data
-  kHLT_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL                                          = 1UL<<14, // data
-  kHLT_Ele17_CaloIdL_CaloIsoVL                                                          = 1UL<<15, // MC, data
-  kHLT_Ele8_CaloIdL_CaloIsoVL_Jet40                                                     = 1UL<<16, // MC, data
-  kHLT_Photon20_CaloIdVT_IsoT_Ele8_CaloIdL_CaloIsoVL                                    = 1UL<<17, // MC, data
+  kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL                                   = 1UL<<5,  // s11(v2), data
+  kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL = 1UL<<6,  // s11(v2), f11(v8), data
+  kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30                              = 1UL<<7,  // s11(v2), f11(v8), data
+  kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30                             = 1UL<<8,  // f11(v7), data
+  kHLT_Ele32_CaloIdL_CaloIsoVL_SC17                                                     = 1UL<<9,  // s11(v2), data
+  kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17                                       = 1UL<<10, // f11(v6), data
+  kHLT_Ele8                                                                             = 1UL<<11, // s11(v2), f11(v8), data
+  kHLT_Ele8_CaloIdL_TrkIdVL                                                             = 1UL<<12, // s11(v2), f11(v8), data
+  kHLT_Ele8_CaloIdL_CaloIsoVL                                                           = 1UL<<13, // s11(v2), f11(v8), data
+  kHLT_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL                                          = 1UL<<14, // f11(v6), data
+  kHLT_Ele17_CaloIdL_CaloIsoVL                                                          = 1UL<<15, // s11(v2), f11(v8), data
+  kHLT_Ele8_CaloIdL_CaloIsoVL_Jet40                                                     = 1UL<<16, // s11(v2), data
+  kHLT_Photon20_CaloIdVT_IsoT_Ele8_CaloIdL_CaloIsoVL                                    = 1UL<<17, // s11(v2), data
 
   // SingleElectron
-  kHLT_Ele27_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT = 1UL<<18, // MC, data
-  kHLT_Ele32_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT = 1UL<<19  // MC, data  
+  kHLT_Ele27_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT = 1UL<<18, // s11(v2), data
+  kHLT_Ele32_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT = 1UL<<19, // s11(v1), f11(v7), data 
+  kHLT_Ele45_CaloIdVT_TrkIdT                  = 1UL<<23, // s11(v2), data
+  kHLT_Ele52_CaloIdVT_TrkIdT                  = 1UL<<24, // data
+  kHLT_Ele65_CaloIdVT_TrkIdT                  = 1UL<<31, // f11(v4), data
+  kHLT_Ele80_CaloIdVT_TrkIdT                  = 1UL<<32, // data  
+
+kHLT_Ele17_SW_L1R = 1UL<<20,  // MC
+
+  // Photon
+  kHLT_Photon30_CaloIdVL = 1UL<<25,
+  kHLT_Photon50_CaloIdVL = 1UL<<26,
+  kHLT_Photon75_CaloIdVL = 1UL<<27,
+  kHLT_Photon90_CaloIdVL = 1UL<<28,
+  kHLT_Photon125         = 1UL<<29,
+  kHLT_Photon135         = 1UL<<30
 };
 
 enum ETriggerObjBit
 {
   // MuEG 
-  kHLT_Mu17_Ele8_CaloIdL_MuObj          = 1UL<<0,
-  kHLT_Mu17_Ele8_CaloIdL_EGObj          = 1UL<<1,  
-  kHLT_Mu8_Ele17_CaloIdL_MuObj          = 1UL<<2,
-  kHLT_Mu8_Ele17_CaloIdL_EGObj          = 1UL<<3,
-  kHLT_Mu8_Photon20_CaloIdVT_IsoT_MuObj = 1UL<<4,
-  kHLT_Mu8_Photon20_CaloIdVT_IsoT_EGObj = 1UL<<5,
-  kHLT_Mu15_Photon20_CaloIdL_MuObj      = 1UL<<6,
-  kHLT_Mu15_Photon20_CaloIdL_EGObj      = 1UL<<7,
-
+  kHLT_Mu17_Ele8_CaloIdL_MuObj           = 1UL<<0,
+  kHLT_Mu17_Ele8_CaloIdL_EGObj           = 1UL<<1,  
+  kHLT_Mu8_Ele17_CaloIdL_MuObj           = 1UL<<2,
+  kHLT_Mu8_Ele17_CaloIdL_EGObj           = 1UL<<3,
+  kHLT_Mu8_Photon20_CaloIdVT_IsoT_MuObj  = 1UL<<4,
+  kHLT_Mu8_Photon20_CaloIdVT_IsoT_EGObj  = 1UL<<5,
+  kHLT_Mu15_Photon20_CaloIdL_MuObj       = 1UL<<6,
+  kHLT_Mu15_Photon20_CaloIdL_EGObj       = 1UL<<7,
+  kHLT_Mu17_Ele8_CaloIdT_CaloIsoVL_MuObj = 1UL<<32,
+  kHLT_Mu17_Ele8_CaloIdT_CaloIsoVL_EGObj = 1UL<<33,
+  kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_MuObj = 1UL<<34,
+  kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_EGObj = 1UL<<35,
+  
   // DoubleElectron
   kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj                                   = 1UL<<8,
   kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj                                   = 1UL<<9,
@@ -109,6 +129,20 @@ enum ETriggerObjBit
   
   // SingleElectron
   kHLT_Ele27_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_EleObj = 1UL<<29,
-  kHLT_Ele32_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_EleObj = 1UL<<30
+  kHLT_Ele32_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_EleObj = 1UL<<30,
+  kHLT_Ele45_CaloIdVT_TrkIdT_EleObj                  = 1UL<<36,
+  kHLT_Ele52_CaloIdVT_TrkIdT_EleObj                  = 1UL<<37,
+  kHLT_Ele65_CaloIdVT_TrkIdT_EleObj                  = 1UL<<44,
+  kHLT_Ele80_CaloIdVT_TrkIdT_EleObj                  = 1UL<<45,
+    
+kHLT_Ele17_SW_L1R_EleObj = 1UL<<31,
+
+  // Photon
+  kHLT_Photon30_CaloIdVL_PhoObj = 1UL<<38,
+  kHLT_Photon50_CaloIdVL_PhoObj = 1UL<<39,
+  kHLT_Photon75_CaloIdVL_PhoObj = 1UL<<40,
+  kHLT_Photon90_CaloIdVL_PhoObj = 1UL<<41,
+  kHLT_Photon125_PhoObj         = 1UL<<42,
+  kHLT_Photon135_PhoObj         = 1UL<<43  
 };
 #endif
