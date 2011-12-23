@@ -379,7 +379,7 @@ namespace DYTools {
       ele-> nExpHitsInner       = dielectron-> nExpHitsInner_1      ;       
       ele-> partnerDeltaCot     = dielectron-> partnerDeltaCot_1    ;     
       ele-> partnerDist         = dielectron-> partnerDist_1        ;         
-      ele->ellhID               = dielectron->ellhID_1 ;
+//       ele->ellhID               = dielectron->ellhID_1 ;
 
       ele-> q                   = dielectron-> q_1                  ;                 
       ele-> hltMatchBits        = dielectron-> hltMatchBits_1       ;       
@@ -417,7 +417,7 @@ namespace DYTools {
       ele-> nExpHitsInner       = dielectron-> nExpHitsInner_2      ;       
       ele-> partnerDeltaCot     = dielectron-> partnerDeltaCot_2    ;     
       ele-> partnerDist         = dielectron-> partnerDist_2        ;         
-      ele->ellhID               = dielectron->ellhID_2 ;
+//       ele->ellhID               = dielectron->ellhID_2 ;
 
       ele-> q                   = dielectron-> q_2                  ;                 
       ele-> hltMatchBits        = dielectron-> hltMatchBits_2       ;       
