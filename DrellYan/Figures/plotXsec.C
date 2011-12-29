@@ -1,3 +1,8 @@
+//// Run by following commands
+////$ root -l 
+////root [0] .L plotXsec.C+
+////root [1] plotXsec();
+////////////////////////
 #include "TCanvas.h"
 #include "TGraph.h"
 #include "TMultiGraph.h"
