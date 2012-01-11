@@ -24,5 +24,5 @@
   gROOT->ProcessLine(".L ../Unfolding/UnfoldingTools.C+");
 
   gROOT->ProcessLine(".L ../Selection/ElectronEnergyScale.cc+");
-             
+  gROOT->ProcessLine(".L ../Include/EtaEtaMass.hh+");
 }

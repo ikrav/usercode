@@ -10,35 +10,46 @@ class ElectronEnergyScale {
 public:
 
   enum CalibrationSet {
-    UNDEFINED,
-    Date20110901_EPS11_default
+    UNDEFINED=0,
+    UNCORRECTED,
+    Date20110901_EPS11_default,
+    Date20120101_Gauss_6bins,
+    Date20120101_Gauss_6binNegs
   };
 
   // Constructor
   ElectronEnergyScale(CalibrationSet calibrationSet);
+  ElectronEnergyScale(const TString &escaleTagName);
 
   // Initialization
   bool initializeAllConstants();
   bool initializeExtraSmearingFunction();
+  bool isInitialized() const { return _isInitialized; }
 
   // Access
-  double getEnergyScaleCorrection(double eta);
-  double generateMCSmear(double eta1, double eta2);
+  double getEnergyScaleCorrection(double eta) const;
+  double generateMCSmear(double eta1, double eta2) const;
 
   // Several functions for systematic studies. These
   // randomize constants for energy scale corrections
   // within their errors.
   void   randomizeEnergyScaleCorrections(int seed);
-  double getEnergyScaleCorrectionRandomized(double eta);
+  double getEnergyScaleCorrectionRandomized(double eta) const;
 
   void   randomizeSmearingWidth(int seed);
-  double generateMCSmearRandomized(double eta1, double eta2);
+  double generateMCSmearRandomized(double eta1, double eta2) const;
 
-  void print();
+  void print() const;
 
+  // Useful functions
+  static CalibrationSet DetermineCalibrationSet(const TString &escaleTagName);  // TString -> CalibrationSet
+  static TString CalibrationSetName(CalibrationSet escaleTag);   // CalibrationSet -> TString
+  static TString CalibrationSetFunctionName(CalibrationSet escaleTag); // name of the calibrating function
+
+protected:
   // Internal functions, not for general use
-  double getEnergyScaleCorrectionAny(double eta, bool randomize);
-  double generateMCSmearAny(double eta1, double eta2, bool randomize);
+  double getEnergyScaleCorrectionAny(double eta, bool randomize) const;
+  double generateMCSmearAny(double eta1, double eta2, bool randomize) const;
 
 private:
 
@@ -84,5 +95,6 @@ private:
   TF1 *smearingFunctionGridRandomized[nMaxFunctions][nMaxFunctions];
 
 };
+
 
 #endif

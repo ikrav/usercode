@@ -124,14 +124,12 @@ void prepareYields(const TString conf  = "data_plot.conf")
   }
   ifs.close();
   
-  ElectronEnergyScale::CalibrationSet calibrationSet 
-    = ElectronEnergyScale::UNDEFINED;
-  if( escaleTag == TString("Date20110901_EPS11_default")){
-    calibrationSet = ElectronEnergyScale::Date20110901_EPS11_default;
-  }else{
-    printf("Failed to match escale calibration. Tag: >>%s<<\n", escaleTag.Data());
-    assert(0);
-  }
+  // 
+  // Set up energy scale corrections
+  //
+  ElectronEnergyScale escale(escaleTag);
+  assert(escale.isInitialized());
+  escale.print();
 
   // sOutDir is a static data member in the CPlot class.
   // There is a strange crash of the whole ROOT session well after
@@ -190,11 +188,6 @@ void prepareYields(const TString conf  = "data_plot.conf")
     nSelVarv.push_back(0);  
   }
   
-  // 
-  // Set up energy scale corrections
-  //
-  ElectronEnergyScale escale(calibrationSet);
-  escale.print();
 
   ZeeData data;
   TRandom random;

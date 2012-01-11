@@ -23,7 +23,7 @@ namespace DYTools {
   // in rapidity.
   const double yRangeMin =  0.0;
   const double yRangeMax =  2.5;
-  const double nYBins[nMassBins2D] = 
+  const int nYBins[nMassBins2D] = 
     { 25,// underflow, binned like first mass bin 
       25, 25, 25, 25, 25, 10,
     }; // overflow is neglected
@@ -44,7 +44,7 @@ namespace DYTools {
     }
     int nYBinsThisSlice = nYBins[massBin];
     result = new double[nYBinsThisSlice+1];
-    double delta = (yRangeMax - yRangeMin)/nYBinsThisSlice;
+    double delta = (yRangeMax - yRangeMin)/double(nYBinsThisSlice);
     for(int i=0; i<nYBinsThisSlice; i++){
       result[i] = yRangeMin + i * delta;
     }
@@ -80,7 +80,7 @@ namespace DYTools {
     int nYBinsThisMassRange = nYBins[massBin];
     // Make the array large enough to accommodate any Y binning
     double yBinLimits[5000];
-    double width = (yRangeMax - yRangeMin)/nYBinsThisMassRange;
+    double width = (yRangeMax - yRangeMin)/double(nYBinsThisMassRange);
     for(int i=0; i<nYBinsThisMassRange; i++){
       yBinLimits[i] = yRangeMin + i * width;
     }

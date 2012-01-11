@@ -53,6 +53,7 @@
 #include "../Include/ZeeData.hh"
 
 #include "../Include/ElectronEnergyScale.hh" //energy scale correction
+#include "../Include/EtaEtaMass.hh" // EtaEtaMassData_t definition
 
 #endif
 
@@ -96,7 +97,15 @@ void selectEvents(const TString conf)
   assert(ifs.is_open());
   string line;
   Int_t state=0;
+  string generateEEMFile;
   while(getline(ifs,line)) {
+    if ((line[0]=='#') && (line[1]=='$') && (line[2]=='$')) {
+      if (line.find("generate_EEM_files=") != string::npos) {
+	generateEEMFile=line.substr(line.find('=')+1);
+	std::cout << "\n\tEEM files will be generated, tag=<" << generateEEMFile << ">\n\n";
+	continue;
+      }
+    }
     if(line[0]=='#') continue;
     if(line[0]=='%') { 
       state++; 
@@ -115,7 +124,7 @@ void selectEvents(const TString conf)
       samplev.back()->color = color;
       continue;
     }
-    
+
     if(state==0) {  // general settings
       stringstream ss1(line); ss1 >> lumi;
       getline(ifs,line);
@@ -148,14 +157,14 @@ void selectEvents(const TString conf)
   }
   ifs.close();
 
-  ElectronEnergyScale::CalibrationSet calibrationSet 
-    = ElectronEnergyScale::UNDEFINED;
-  if( escaleTag == TString("Date20110901_EPS11_default")){
-    calibrationSet = ElectronEnergyScale::Date20110901_EPS11_default;
-  }else{
-    printf("Failed to match escale calibration. Tag: >>%s<<\n", escaleTag.Data());
-    assert(0);
-  }
+
+  // 
+  // Set up energy scale corrections
+  //
+  ElectronEnergyScale escale(escaleTag);
+  assert(escale.isInitialized());
+  escale.print();
+
 
   // sOutDir is a static data member in the CPlot class.
   // There is a strange crash of the whole ROOT session well after
@@ -232,11 +241,6 @@ void selectEvents(const TString conf)
     weightErrors[i] = (TH2D*)fweights.Get(hnames);
   }
 
-  // 
-  // Set up energy scale corrections
-  //
-  ElectronEnergyScale escale(calibrationSet);
-  escale.print();
 
   //
   // Access samples and fill histograms
@@ -249,6 +253,7 @@ void selectEvents(const TString conf)
   mithep::TGenInfo *gen       = new mithep::TGenInfo();
   TClonesArray *dielectronArr = new TClonesArray("mithep::TDielectron");
   TClonesArray *pvArr         = new TClonesArray("mithep::TVertex");
+  EtaEtaMassData_t *eem = new EtaEtaMassData_t();
   
   //
   // Set up event dump to file
@@ -265,6 +270,20 @@ void selectEvents(const TString conf)
   for(UInt_t isam=0; isam<samplev.size(); isam++) {        
     if(isam==0 && !hasData) continue;
     
+    //
+    // Set up output (eta,eta,mass) EEM file, if needed
+    //
+    TString outEEMName;
+    TFile *eemFile=NULL;
+    TTree *eemTree=NULL;
+    if (generateEEMFile.size()) {
+      outEEMName = ntupDir + TString("/") + snamev[isam] + TString("_") + TString(generateEEMFile.c_str()) + TString("_EtaEtaM.root");
+      eemFile = new TFile(outEEMName,"RECREATE");
+      eemTree = new TTree("Data","Data");
+      assert(eemTree);
+      eemTree->Branch("Data","EtaEtaMassData_t",&eem);
+    }
+
     //
     // Set up output ntuple file for the sample
     //
@@ -290,7 +309,8 @@ void selectEvents(const TString conf)
       JsonParser jsonParser;
       if((samp->jsonv.size()>0) && (samp->jsonv[ifile].CompareTo("NONE")!=0)) { 
         hasJSON = kTRUE;
-	// rlrm.AddJSONFile(samp->jsonv[ifile].Data()); 
+	// rlrm.AddJSONFile(samp->jsonv[ifile].Data());
+	std::cout << "JSON file " << samp->jsonv[ifile] << "\n";
         jsonParser.Initialize(samp->jsonv[ifile].Data()); 
       }
       
@@ -399,10 +419,15 @@ void selectEvents(const TString conf)
 	// loop through dielectrons
         for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
 	  mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
+
           // Exclude ECAL gap region and cut out of acceptance electrons
           if((fabs(dielectron->scEta_1)>kGAP_LOW) && (fabs(dielectron->scEta_1)<kGAP_HIGH)) continue;
           if((fabs(dielectron->scEta_2)>kGAP_LOW) && (fabs(dielectron->scEta_2)<kGAP_HIGH)) continue;
           if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
+
+	  // Keep the EEM values before any changes
+	  eem->Assign(dielectron->scEta_1,dielectron->scEta_2,dielectron->mass);
+
 	  //
 	  // Energy scale corrections for data
 	  // NOTE: the electrons and dielectron 4-vectors are updated, the supercluster quantities are not
@@ -501,6 +526,10 @@ void selectEvents(const TString conf)
 	  int njets = -1;
 	  fillData(&data, info, dielectron, pvArr->GetEntriesFast(), njets, weightSave);
 	  outTree->Fill();
+	  if (eemTree) {
+	    eemTree->Fill();
+	    //std::cout << "store eem=" << (*eem) << "\n"; 
+	  }
 	  
 	  nsel    += weight;
 	  nselvar += weight*weight;
@@ -517,6 +546,12 @@ void selectEvents(const TString conf)
     delete outTree;
     outFile->Close();        
     delete outFile;
+    if (eemFile) {
+      eemFile->Write();
+      delete eemTree;
+      eemFile->Close();
+      delete eemFile;
+    }
   }
   delete info;
   delete dielectronArr;
