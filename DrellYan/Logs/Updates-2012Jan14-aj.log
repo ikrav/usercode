@@ -1,0 +1,139 @@
+A.J. changes to DrellYan (1D) package, made on 2012 Jan 14
+  Missing: FullChain.sh was not checked
+
+
+Include/
+  (ElectronEnergyScale both units are in this directory)
+
+CPlot.cc  -- same (commented debug printout)
+CPlot.hh  -- same
+CSample.hh  -- same
+
+
+DYTools.hh
+	DrellYanDMDY version has new contents. The subroutine extractElectron has a minor bug. New class definitions do not have ellhID, but contains mva instead.
+    ACTION: copied over. Corrected extractElectron
+
+
+EWKAnaDefs.hh 
+	nothing removed, new info added
+	the comments are changed making impression that there are contents changes
+    ACTION: copied over
+
+
+EleIDCuts.hh  -- same
+
+
+ElectronEnergyScale.hh
+	DrellYanDMDY has a new module.
+    ACTION: copied over. Old version saved as ElectronEnergyScale-old.hh
+
+
+ElectronEnergyScale.cc
+	wasn't here.
+    ACTION: copied from 2D analysis
+
+
+EtaEtaMass.hh
+	new in DrellYanDMDY
+   ACTION: copied over	
+
+
+JsonParser.cc   -- same
+JsonParser.hh   -- same
+MitStyleRemix.cc  -- same
+MitStyleRemix.hh  -- same
+MyTools.hh  -- same
+
+
+TDielectron.hh
+	ellhID_*   became mva_*
+    ACTION: copied over
+
+
+TElectron.hh
+	ellhID  became  mva
+    ACTION: copied over
+
+
+TEventInfo.hh
+	variables reordered
+	added nPUminus, nPUplus
+	added rhoLowEta, rhoHighEta
+	removed rho
+    ACTION: copied over
+
+
+TGenInfo.hh  -- same
+
+
+TJet.hh
+	added rawPt, dz
+    ACTION: copied over
+
+
+TMuon.hh
+	added trkKink, gblKink
+    ACTION: copied over
+
+
+TPhoton.hh
+	formatting suggests more changes than there are
+	added trkIso04NoPV, sigiPhiiPhi
+	added passSpikeFilter, passEleVetoConvRec, passConvId
+    ACTION: copied over
+
+
+TriggerSelection.hh
+	new in DrellYanDMDY
+    ACTION: copied over
+
+
+TVertex.hh  -- same
+
+
+rootlogon.C
+	updated 
+
+
+
+
+Selection/
+
+auxScript.C -- no changes
+data.conf  -- no changes
+
+plotDY.C  -- renamed to plotDY-old2012Jan14.C
+    ACTION: updated to selectEvents1D.C
+
+plotDYCuts2010.C  -- no changes
+
+rootlogon.C  -- replaced by a newer
+
+selectEvents1D.C
+	wasn't here
+    ACTION: created based on plotDY.C and DrellYanDMDY/Selection/selectEvents.C
+	Allows choice of the electron energy scale corrections. A string should be placed in a line above format definition (e.g. "png"). Compatible with config file having no definition
+
+
+
+MassSpectrum/
+
+auxScript1.C  -- unchanged
+auxScript2.C  -- unchanged
+plotSelectDY.C  -- renamed to plotSelectDY-old2012Jan14.C
+rootlogon.C -- updated
+subtractBackground.C -- unchanged
+
+prepareYields1D.C
+	wasn't here
+    ACTION: created, based on plotSelectDY.C and DrellYanDMDY/YieldsAndBackgrounds/prepareYields.C
+
+
+
+FullChain/
+
+FullChain.sh  -- old version renamed to FullChain-old2012Jan14.sh 
+   ACTION: updated
+
+FullChainNew.sh -- unchanged

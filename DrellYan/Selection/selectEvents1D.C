@@ -44,6 +44,7 @@
 #include "../Include/TVertex.hh"
 
 // lumi section selection with JSON files
+#include "../Include/TriggerSelection.hh"
 #include "../Include/JsonParser.hh"
 
 // Helper functions for Electron ID selection
@@ -53,6 +54,7 @@
 #include "../Include/ZeeData.hh"
 
 #include "../Include/ElectronEnergyScale.hh" //energy scale correction
+#include "../Include/EtaEtaMass.hh" // EtaEtaMassData_t definition
 
 #endif
 
@@ -73,9 +75,9 @@ void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron,
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDY(const TString conf) 
+void selectEvents1D(const TString conf) 
 {  
-  gBenchmark->Start("plotDY");
+  gBenchmark->Start("selectEvents1D");
 
   
   //--------------------------------------------------------------------------------------------------------------
@@ -98,7 +100,16 @@ void plotDY(const TString conf)
   assert(ifs.is_open());
   string line;
   Int_t state=0;
+  TString escaleTag = "Date20110901_EPS11_default";
+  string generateEEMFile;
   while(getline(ifs,line)) {
+    if ((line[0]=='#') && (line[1]=='$') && (line[2]=='$')) {
+      if (line.find("generate_EEM_files=") != string::npos) {
+	generateEEMFile=line.substr(line.find('=')+1);
+	std::cout << "\n\tEEM files will be generated, tag=<" << generateEEMFile << ">\n\n";
+	continue;
+      }
+    }
     if(line[0]=='#') continue;
     if(line[0]=='%') { 
       state++; 
@@ -125,8 +136,18 @@ void plotDY(const TString conf)
       getline(ifs,line);
       outputDir = TString(line);
       getline(ifs,line);
-      format = TString(line);
-      
+      // backwards compatibility for the input file
+      if (line.size()>3) {  // escale is defined
+	escaleTag=TString(line);
+	getline(ifs,line);
+	// check that it was correct to use this work-around
+	if (line.find('%')!=std::string::npos) {
+	  std::cout << "backwards-compatibility code failure\n";
+	  return;
+	}
+      }
+      format = TString(line);      
+
     } else if(state==1) {  // define data sample
       string fname;
       Double_t xsec;
@@ -147,6 +168,13 @@ void plotDY(const TString conf)
     }
   }
   ifs.close();
+
+  // 
+  // Set up energy scale corrections
+  //
+  ElectronEnergyScale escale(escaleTag);
+  assert(escale.isInitialized());
+  escale.print();
 
   // sOutDir is a static data member in the CPlot class.
   // There is a strange crash of the whole ROOT session well after
@@ -292,10 +320,10 @@ void plotDY(const TString conf)
   TFile fweights("../root_files/fewz/weights_stepwise_prec10-5_fine12.root");
   if( !fweights.IsOpen() ) assert(0);
   for(int i=0; i<DYTools::nMassBins; i++){
-    TString hname = TString::Format("weight_%02d",i+1);
-    weights[i] = (TH2D*)fweights.Get(hname);
-    hname = TString::Format("h_weighterror_%02d",i+1);
-    weightErrors[i] = (TH2D*)fweights.Get(hname);
+    TString hname_tmp = TString::Format("weight_%02d",i+1);
+    weights[i] = (TH2D*)fweights.Get(hname_tmp);
+    hname_tmp = TString::Format("h_weighterror_%02d",i+1);
+    weightErrors[i] = (TH2D*)fweights.Get(hname_tmp);
   }
 
   //
@@ -312,7 +340,8 @@ void plotDY(const TString conf)
   TClonesArray *pfJetArr      = new TClonesArray("mithep::TJet");
   TClonesArray *dielectronArr = new TClonesArray("mithep::TDielectron");
   TClonesArray *pvArr         = new TClonesArray("mithep::TVertex");
-  
+  EtaEtaMassData_t *eem = new EtaEtaMassData_t();
+
   //
   // Set up event dump to file
   //
@@ -327,6 +356,19 @@ void plotDY(const TString conf)
   //
   for(UInt_t isam=0; isam<samplev.size(); isam++) {        
     if(isam==0 && !hasData) continue;
+
+    // Set up output (eta,eta,mass) EEM file, if needed
+    //
+    TString outEEMName;
+    TFile *eemFile=NULL;
+    TTree *eemTree=NULL;
+    if (generateEEMFile.size()) {
+      outEEMName = ntupDir + TString("/") + snamev[isam] + TString("_") + TString(generateEEMFile.c_str()) + TString("_EtaEtaM.root");
+      eemFile = new TFile(outEEMName,"RECREATE");
+      eemTree = new TTree("Data","Data");
+      assert(eemTree);
+      eemTree->Branch("Data","EtaEtaMassData_t",&eem);
+    }
     
     //
     // Set up output ntuple file for the sample
@@ -354,6 +396,7 @@ void plotDY(const TString conf)
       if((samp->jsonv.size()>0) && (samp->jsonv[ifile].CompareTo("NONE")!=0)) { 
         hasJSON = kTRUE;
 	// rlrm.AddJSONFile(samp->jsonv[ifile].Data()); 
+	std::cout << "JSON file " << samp->jsonv[ifile] << "\n";
         jsonParser.Initialize(samp->jsonv[ifile].Data()); 
       }
       
@@ -450,14 +493,13 @@ void plotDY(const TString conf)
 	// if(hasJSON && !rlrm.HasRunLumi(rl)) continue;  // not certified run? Skip to next event...
         if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
         
-	// For EPS2011 for both data and MC (starting from Summer11 production)
-	// we use an OR of the twi triggers below. Both are unpresecaled.
-	UInt_t eventTriggerBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL 
-	  | kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL;
-	UInt_t leadingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj
-	  | kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
-	UInt_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj
-	  | kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+	// Configure the object for trigger matching	
+	bool isData = (isam == 0 && hasData);
+	TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
+	TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
+	ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit();
+	ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit();
+	ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit();
 	if(isam==0) {
 	  nProcessedEvents++;
 	  for(UInt_t ibit=0; ibit<32; ibit++) {
@@ -477,6 +519,10 @@ void plotDY(const TString conf)
           if((fabs(dielectron->scEta_1)>kGAP_LOW) && (fabs(dielectron->scEta_1)<kGAP_HIGH)) continue;
           if((fabs(dielectron->scEta_2)>kGAP_LOW) && (fabs(dielectron->scEta_2)<kGAP_HIGH)) continue;
           if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
+
+	  // Keep the EEM values before any changes
+	  eem->Assign(dielectron->scEta_1,dielectron->scEta_2,dielectron->mass);
+
 	  //
 	  // Energy scale corrections for data
 	  // NOTE: the electrons and dielectron 4-vectors are updated, the supercluster quantities are not
@@ -485,8 +531,8 @@ void plotDY(const TString conf)
 	  Double_t scEt2 = dielectron->scEt_2;
 	  // Electron energy scale correction
           if(isam==0) {            	    
-    	    double corr1 = escale::findEnergyScaleCorrection(dielectron->scEta_1);
-    	    double corr2 = escale::findEnergyScaleCorrection(dielectron->scEta_2);
+    	    double corr1 = escale.getEnergyScaleCorrection(dielectron->scEta_1);
+    	    double corr2 = escale.getEnergyScaleCorrection(dielectron->scEta_2);
 	    scEt1 = dielectron->scEt_1 * corr1;
 	    scEt2 = dielectron->scEt_2 * corr2;
 
@@ -660,6 +706,10 @@ void plotDY(const TString conf)
 	    weightSave *= fewz_weight;
 	  fillData(&data, info, dielectron, pvArr->GetEntriesFast(), npfjets, weightSave);
 	  outTree->Fill();
+	  if (eemTree) {
+	    eemTree->Fill();
+	    //std::cout << "store eem=" << (*eem) << "\n"; 
+	  }
 	  
 	  nsel    += weight;
 	  nselvar += weight*weight;
@@ -708,6 +758,12 @@ void plotDY(const TString conf)
     delete outTree;
     outFile->Close();        
     delete outFile;
+    if (eemFile) {
+      eemFile->Write();
+      delete eemTree;
+      eemFile->Close();
+      delete eemFile;
+    }
   }
   delete info;
   delete dielectronArr;
@@ -1560,7 +1616,7 @@ void plotDY(const TString conf)
   cout << " <> Output saved in " << outputDir << "/" << endl;
   cout << endl;
         
-  gBenchmark->Show("plotDY");       
+  gBenchmark->Show("selectEvents1D");
 } 
 
 

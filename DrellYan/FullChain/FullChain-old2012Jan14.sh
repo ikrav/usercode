@@ -141,13 +141,13 @@ root -b -q -l rootlogon.C+              | tee ${logDir}/out${timeStamp}-00-inclu
 if [ ${do_selection} -eq 1 ] ; then
 statusSelection=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: selectEvents1D(${filename_data})"
+echo "WILL DO: plotDY(${filename_data})"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Selection
 rm -f *.so
 echo
-checkFile selectEvents1D.C
-root -b -q -l selectEvents1D.C+\($filename_data\)           | tee ${logDir}/out${timeStamp}-01-selectEvents1D.log
+checkFile plotDY.C
+root -b -q -l plotDY.C+\($filename_data\)           | tee ${logDir}/out${timeStamp}-01-plotDY.log
 #echo "exit code {$?}"
 if [ $? != 0 ]; then 
    statusSelection=FAILED
@@ -155,7 +155,7 @@ if [ $? != 0 ]; then
 fi
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: selectEvents1D(${filename_data})"
+echo "DONE: plotDY(${filename_data})"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else
   statusSelection=skipped
@@ -165,20 +165,20 @@ fi
 if [ ${do_plotSelectDY} -eq 1 ] ; then
 statusPlotSelectDY=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: prepareYields1D.C(${filename_data})"
+echo "WILL DO: plotSelectDY.C(${filename_data})"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../MassSpectrum
 rm -f *.so
 echo
-checkFile prepareYields1D.C
-root -b -q -l prepareYields1D.C+\($filename_data\)       | tee ${logDir}/out${timeStamp}-02-prepareYields1D.log
+checkFile plotSelectDY.C
+root -b -q -l plotSelectDY.C+\($filename_data\)       | tee ${logDir}/out${timeStamp}-02-plotSelectDY.log
 if [ $? != 0 ]; then 
    statusPlotSelectDY=FAILED
    skipAll
 fi
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: prepareYields1D.C(${filename_data})"
+echo "DONE: plotSelectDY.C(${filename_data})"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else 
     statusPlotSelectDY=skipped

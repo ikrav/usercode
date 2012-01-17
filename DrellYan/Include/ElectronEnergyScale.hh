@@ -1,74 +1,100 @@
-#ifndef ElectronEnergyScale
-#define ElectronEnergyScale
+#ifndef ElectronEnergyScale_HH
+#define ElectronEnergyScale_HH
 
-#include <TVectorD.h>
+#include <TString.h>
+#include <TF1.h>
+#include <TRandom.h>
 
-namespace escale{
+class ElectronEnergyScale {
 
-  // Energy scale corrections and MC extra smearing from Andrius drived July 2011
-  // on 204 pb-1 May 10 ReReco and 800 pb-1 PromptReco, matched
-  // against Summer11 powheg MC
-  // Note that Andrius has 6 eta bins in absolute  eta, so value "i"
-  // below is equal to value "N-i"
-  const int nEtaBins = 12;
-  const double escaleEtaBinLimits[nEtaBins+1] = 
-    {-2.50001, -2.0, -1.5, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.5, 2.0, 2.50001};
-  const double corrValues[nEtaBins] = 
-    {1.04642, 1.00187, 1.01556, 1.00500, 1.00093, 1.00149, 1.00149, 1.00093, 1.00500, 1.01556, 1.00187, 1.04642};
-  const double corrErrors[nEtaBins] = 
-    {4.28928e-04,3.39718e-04,4.89342e-04,5.80480e-05,1.21192e-05,1.27489e-04,1.27489e-04,1.21192e-05,5.80480e-05,4.89342e-04,3.39718e-04,4.28928e-04};
-  const double smearValues[nEtaBins] = 
-    {2.05888e+00,1.46747e+00,1.14861e+00,7.63770e-01,5.04140e-01,5.27258e-01,5.27258e-01,5.04140e-01,7.63770e-01,1.14861e+00,1.46747e+00,2.05888e+00};
-  const double smearErrors[nEtaBins] =
-    {2.85889e-02,3.85260e-02,4.26451e-02,3.22979e-02,3.76972e-02,3.32377e-02,3.32377e-02,3.76972e-02,3.22979e-02,4.26451e-02,3.85260e-02,2.85889e-02};
+public:
 
-  double findEnergyScaleCorrection(double eta){
-    
-    double corr = 1.0;
-    
-    for(int i=0; i<nEtaBins; i++){
-      if(eta >= escaleEtaBinLimits[i] && eta < escaleEtaBinLimits[i+1] ){
-	corr = corrValues[i];
-	break;
-      }
-    }
-    
-    return corr;
-    
-  }
+  enum CalibrationSet {
+    UNDEFINED=0,
+    UNCORRECTED,
+    Date20110901_EPS11_default,
+    Date20120101_Gauss_6bins,
+    Date20120101_Gauss_6binNegs
+  };
+
+  // Constructor
+  ElectronEnergyScale(CalibrationSet calibrationSet);
+  ElectronEnergyScale(const TString &escaleTagName);
+
+  // Initialization
+  bool initializeAllConstants();
+  bool initializeExtraSmearingFunction();
+  bool isInitialized() const { return _isInitialized; }
+
+  // Access
+  double getEnergyScaleCorrection(double eta) const;
+  double generateMCSmear(double eta1, double eta2) const;
+
+  // Several functions for systematic studies. These
+  // randomize constants for energy scale corrections
+  // within their errors.
+  void   randomizeEnergyScaleCorrections(int seed);
+  double getEnergyScaleCorrectionRandomized(double eta) const;
+
+  void   randomizeSmearingWidth(int seed);
+  double generateMCSmearRandomized(double eta1, double eta2) const;
+
+  void print() const;
+
+  // Useful functions
+  static CalibrationSet DetermineCalibrationSet(const TString &escaleTagName);  // TString -> CalibrationSet
+  static TString CalibrationSetName(CalibrationSet escaleTag);   // CalibrationSet -> TString
+  static TString CalibrationSetFunctionName(CalibrationSet escaleTag); // name of the calibrating function
+
+protected:
+  // Internal functions, not for general use
+  double getEnergyScaleCorrectionAny(double eta, bool randomize) const;
+  double generateMCSmearAny(double eta1, double eta2, bool randomize) const;
+
+private:
+
+  CalibrationSet     _calibrationSet;
+  bool               _isInitialized;
+
+  // The data structure assumes the following:
+  //  - the binning is in eta only
+  //  - data constants contain a single scale factor 
+  //  - MC constants contain several variable describing the shape
+  //         of the smearing function
+  //  - each constant, data or MC, comes with an error
+
+  // Data constants
+  int                    _nEtaBins;
+  double *               _etaBinLimits;
+  double *               _dataConst;
+  double *               _dataConstErr;
+  // randomized for systematics studies
+  double *               _dataConstRandomized;
+  bool                   _energyScaleCorrectionRandomizationDone;
   
-  double extraSmearingSigma(double eta){
-    
-    double smear = 0.0;
-    
-    for(int i=0; i<nEtaBins; i++){
-      if(eta >= escaleEtaBinLimits[i] && eta < escaleEtaBinLimits[i+1] ){
-	smear = smearValues[i];
-	break;
-      }
-    }
-    
-    return smear;
-    
-  }
-  
-  // This function is meant to be used for systematic
-  // studies where we want to smear the extra smearing constant
-  // within its errors.
-  double extraSmearingSigmaShifted(double eta, TVectorD &shift){
-    
-    double smear = 0.0;
-    
-    for(int i=0; i<nEtaBins; i++){
-      if(eta >= escaleEtaBinLimits[i] && eta < escaleEtaBinLimits[i+1] ){
-	smear = smearValues[i] + shift[i] * smearErrors[i];
-	break;
-      }
-    }
-    
-    return smear;
-    
-  }
-  
-} // end of namespace
+  // MC constants. The number of constants and the names depend
+  // on particular calibration set. For now, maximum possible is four.
+  int                    _nMCConstants;
+  TString                _mcConst1Name;
+  TString                _mcConst2Name;
+  TString                _mcConst3Name;
+  TString                _mcConst4Name;
+  double *               _mcConst1;
+  double *               _mcConst2;
+  double *               _mcConst3;
+  double *               _mcConst4;
+  double *               _mcConst1Err;
+  double *               _mcConst2Err;
+  double *               _mcConst3Err;
+  double *               _mcConst4Err;
+  bool                   _smearingWidthRandomizationDone;
+
+  // Functions to be used for extra smearing
+  static const int nMaxFunctions = 50;
+  TF1 *smearingFunctionGrid[nMaxFunctions][nMaxFunctions];
+  TF1 *smearingFunctionGridRandomized[nMaxFunctions][nMaxFunctions];
+
+};
+
+
 #endif

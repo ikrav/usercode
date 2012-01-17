@@ -1,5 +1,12 @@
 {  
 
+  gROOT->ProcessLine(".x ../Include/rootlogon.C");
+
+}
+
+/*
+{  
+
 // Load "MIT Style" plotting
   gROOT->Macro("../Include/CPlot.cc+");
   gROOT->Macro("../Include/MitStyleRemix.cc+");
@@ -22,3 +29,4 @@
 //   gROOT->Macro("../Include/TVertex.hh+");
              
 }
+*/

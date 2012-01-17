@@ -30,7 +30,7 @@ namespace mithep
       Float_t sigiEtaiEta_1;       
       Float_t partnerDeltaCot_1;   
       Float_t partnerDist_1;       
-      Float_t ellhID_1;            
+      Float_t mva_1;            
       Int_t   q_1;                 
       UInt_t  nExpHitsInner_1;     
       UInt_t  scID_1;              
@@ -56,7 +56,7 @@ namespace mithep
       Float_t sigiEtaiEta_2;       
       Float_t partnerDeltaCot_2;   
       Float_t partnerDist_2;       
-      Float_t ellhID_2;            
+      Float_t mva_2;            
       Int_t   q_2;                 
       UInt_t  nExpHitsInner_2;     
       UInt_t  scID_2;              
@@ -65,7 +65,7 @@ namespace mithep
       Bool_t  isEcalDriven_2;      
       Bool_t  isConv_2;
 
-    ClassDef(TDielectron,1)
+    ClassDef(TDielectron,2)
   };
 }
 #endif

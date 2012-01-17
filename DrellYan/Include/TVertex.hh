@@ -17,7 +17,7 @@ namespace mithep
       Float_t sumPt;
       Float_t x,y,z;					 
 
-    ClassDef(TVertex,1)
+    ClassDef(TVertex,2)
   };
 }
 #endif

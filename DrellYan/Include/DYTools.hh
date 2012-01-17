@@ -11,6 +11,121 @@
 
 namespace DYTools {
 
+  // Constants that define binning in mass and rapidity
+  // Note: bin zero is underflow, overflow is neglected
+  const int nMassBins2D = 7;
+  const double massBinLimits2D[nMassBins2D+1] = 
+    {0, // first bin is underflow
+     20, 30, 45, 60, 120, 200, 1500
+    }; // overflow is very unlikely, do not account for it
+  // Rapidity binning is different for different mass bins
+  // Note: this implementation neglects underflow and overflow
+  // in rapidity.
+  const double yRangeMin =  0.0;
+  const double yRangeMax =  2.5;
+  const int nYBins[nMassBins2D] = 
+    { 25,// underflow, binned like first mass bin 
+      25, 25, 25, 25, 25, 10,
+    }; // overflow is neglected
+  // 
+  // 
+  // Unfolding matrix binning
+  int getNumberOf2DBins(){
+    int result = 0;
+    for(int i=0; i<nMassBins2D; i++)
+      result += nYBins[i];
+    return result;
+  }
+  // Bin limits in rapidity for particular mass slice
+  double *getYBinLimits2D(int massBin){
+    double *result = 0;
+    if( massBin < 0 || massBin >= nMassBins2D ) {
+      return result;
+    }
+    int nYBinsThisSlice = nYBins[massBin];
+    result = new double[nYBinsThisSlice+1];
+    double delta = (yRangeMax - yRangeMin)/double(nYBinsThisSlice);
+    for(int i=0; i<nYBinsThisSlice; i++){
+      result[i] = yRangeMin + i * delta;
+    }
+    result[nYBinsThisSlice] = yRangeMax;
+    return result;
+  }
+//   // Note: this HAS TO BE the total number of all 2D bins, that is
+//   // the sum of the contents of the nYBins array above
+//   const int nUnfoldingBins = 160;
+  
+  // Functions that return mass and rapidity bin index
+  int findMassBin2D(double m){
+    
+    int result =-1;
+    for(int ibin=0; ibin < nMassBins2D; ibin++){
+      if( m >= massBinLimits2D[ibin] && m < massBinLimits2D[ibin+1]) {
+	result = ibin;
+	break;
+      }
+    }
+    
+    return result;
+    
+  }
+  
+  int findAbsYBin2D(int massBin, double y){
+    
+    int result = -1;
+    if(massBin < 0 || massBin > nMassBins2D) return result;
+
+    double absY = fabs(y);
+    
+    int nYBinsThisMassRange = nYBins[massBin];
+    // Make the array large enough to accommodate any Y binning
+    double yBinLimits[5000];
+    double width = (yRangeMax - yRangeMin)/double(nYBinsThisMassRange);
+    for(int i=0; i<nYBinsThisMassRange; i++){
+      yBinLimits[i] = yRangeMin + i * width;
+    }
+    // The line below could have been done in the loop above,
+    // but it is here done separately to avoid rounding uncertainty.
+    yBinLimits[nYBinsThisMassRange] = yRangeMax;
+    
+    for(int i=0; i < nYBinsThisMassRange; i++){
+      if( absY >= yBinLimits[i] && absY < yBinLimits[i+1]) {
+	result = i;
+	break;
+      }
+    }
+    
+    return result;
+  }
+  
+  // This function finds a unique 1D index for (index_m, index_y) pair
+  int findIndexFlat(int massBin, int yBin){
+    
+    int result = -1;
+    if( massBin < 0 || massBin > nMassBins2D || yBin < 0 || yBin > nYBins[massBin] )
+      return result;
+    
+    result = 0;
+    for(int i=0; i< massBin; i++)
+      result += nYBins[i];
+    
+    result += yBin;
+    
+    return result;
+  }
+
+  // This function finds what is the maximum number of Y bins
+  // among the all mass slices.
+  int findMaxYBins(){
+    int result = 0;
+    for(int i=0; i<nMassBins2D; i++)
+      if( result < nYBins[i])
+	result = nYBins[i];
+    return result;
+  }
+  
+  // ------------- 2011 and 2010 content is below ---------------
+
   // Systematics modes for unfolding and acceptance 
   enum {NORMAL, RESOLUTION_STUDY, FSR_STUDY};
 
@@ -264,7 +379,8 @@ namespace DYTools {
       ele-> nExpHitsInner       = dielectron-> nExpHitsInner_1      ;       
       ele-> partnerDeltaCot     = dielectron-> partnerDeltaCot_1    ;     
       ele-> partnerDist         = dielectron-> partnerDist_1        ;         
-      ele->ellhID               = dielectron->ellhID_1 ;
+//       ele->ellhID               = dielectron->ellhID_1 ;
+      ele->mva                  = dielectron->mva_1                 ;
 
       ele-> q                   = dielectron-> q_1                  ;                 
       ele-> hltMatchBits        = dielectron-> hltMatchBits_1       ;       
@@ -302,7 +418,8 @@ namespace DYTools {
       ele-> nExpHitsInner       = dielectron-> nExpHitsInner_2      ;       
       ele-> partnerDeltaCot     = dielectron-> partnerDeltaCot_2    ;     
       ele-> partnerDist         = dielectron-> partnerDist_2        ;         
-      ele->ellhID               = dielectron->ellhID_2 ;
+//       ele->ellhID               = dielectron->ellhID_2 ;
+      ele->mva                  = dielectron->mva_2                 ;
 
       ele-> q                   = dielectron-> q_2                  ;                 
       ele-> hltMatchBits        = dielectron-> hltMatchBits_2       ;       

@@ -16,6 +16,10 @@
   gROOT->ProcessLine(".L ../Include/TJet.hh+");
   gROOT->ProcessLine(".L ../Include/TVertex.hh+");
   gROOT->ProcessLine(".L ../Include/EleIDCuts.hh+");
+  gROOT->ProcessLine(".L ../Include/JsonParser.cc+");
+  gROOT->ProcessLine(".L ../Include/TriggerSelection.hh+");
+  gROOT->ProcessLine(".L ../Include/ElectronEnergyScale.cc+");
+  gROOT->ProcessLine(".L ../Include/EtaEtaMass.hh+");
 
   gROOT->ProcessLine(".L ../Unfolding/UnfoldingTools.C+");
 

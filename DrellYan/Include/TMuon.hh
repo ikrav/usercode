@@ -21,6 +21,8 @@ namespace mithep
       Float_t d0, dz;                 // impact parameter
       Float_t tkNchi2;	              // track chi^2/ndf 
       Float_t muNchi2;	              // global muon chi^2/ndf
+      Float_t trkKink;                // kink of tracker track
+      Float_t gblKink;                // kink of global track
       Int_t   q;		      // charge
       Int_t   nValidHits;	      // number of valid hits in muon system
       UInt_t  qualityBits;            // bits for various muon quality criteria
@@ -32,7 +34,7 @@ namespace mithep
       UInt_t  trkID;                  // tracker track ID
       ULong_t hltMatchBits;           // bits for matching with HLT primitives 
 
-    ClassDef(TMuon,1)
+    ClassDef(TMuon,2)
   };  
 }
 #endif

@@ -28,7 +28,7 @@ namespace mithep
       Float_t scEt_2, scEta_2;
       Float_t scMass;
       	  
-    ClassDef(TGenInfo,1)
+    ClassDef(TGenInfo,2)
   };
 }
 #endif
