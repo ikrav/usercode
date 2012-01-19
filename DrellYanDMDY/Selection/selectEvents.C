@@ -98,11 +98,13 @@ void selectEvents(const TString conf)
   string line;
   Int_t state=0;
   string generateEEMFile;
+  int generateEEMFEWZFile=0;
   while(getline(ifs,line)) {
     if ((line[0]=='#') && (line[1]=='$') && (line[2]=='$')) {
       if (line.find("generate_EEM_files=") != string::npos) {
 	generateEEMFile=line.substr(line.find('=')+1);
-	std::cout << "\n\tEEM files will be generated, tag=<" << generateEEMFile << ">\n\n";
+	generateEEMFEWZFile=(line.find("FEWZ") != string::npos) ? 1:0;
+	std::cout << "\n\tEEM files will be generated, tag=<" << generateEEMFile << ">, with_FEWZ_weights=" << generateEEMFEWZFile << "\n\n";
 	continue;
       }
     }
@@ -408,9 +410,9 @@ void selectEvents(const TString conf)
 	bool isData = (isam == 0 && hasData);
 	TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
 	TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
-	UInt_t eventTriggerBit = requiredTriggers.getEventTriggerBit();
-	UInt_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit();
-	UInt_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit();
+	ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit();
+	ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit();
+	ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit();
 	// Apply trigger cut at the event level        	
         if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
 
@@ -519,8 +521,11 @@ void selectEvents(const TString conf)
 	  
 	  // fill ntuple data
 	  double weightSave = weight;
-	  if( snamev[isam] == "zee" )
+	  eem->weight(weight);
+	  if( snamev[isam] == "zee" ) {
 	    weightSave *= fewz_weight;
+	    if (generateEEMFEWZFile) eem->weight(weightSave);
+	  }
 	  // Note: we do not need jet count at the moment. It can be found
 	  // by looping over PFJets list if needed. See early 2011 analysis.
 	  int njets = -1;

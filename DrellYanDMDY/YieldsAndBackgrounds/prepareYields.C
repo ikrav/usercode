@@ -268,8 +268,10 @@ void prepareYields(const TString conf  = "data_plot.conf")
       // Find the 2D bin for this event:
       int massBin = findMassBin2D(data.mass);
       int yBin    = findAbsYBin2D(massBin, data.y);
-      (*thisSampleYields)(massBin,yBin) += weight;
-      (*thisSampleYieldsSumw2)(massBin,yBin) += weight*weight;
+      if ((massBin!=-1) && (yBin!=-1)) {
+        (*thisSampleYields)(massBin,yBin) += weight;
+        (*thisSampleYieldsSumw2)(massBin,yBin) += weight*weight;
+      }
 
       hMassv[isam]->Fill(data.mass,weight);
       hMassBinsv[isam]->Fill(data.mass,weight);

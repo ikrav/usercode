@@ -13,18 +13,26 @@ public:
     UNDEFINED=0,
     UNCORRECTED,
     Date20110901_EPS11_default,
-    Date20120101_Gauss_6bins,
-    Date20120101_Gauss_6binNegs
+    Date20120101_default,
+    CalSet_File_Gauss
   };
 
   // Constructor
   ElectronEnergyScale(CalibrationSet calibrationSet);
   ElectronEnergyScale(const TString &escaleTagName);
+  // Destructor
+  ~ElectronEnergyScale() { this->clear(); }
+  // Clean-up
+  void clear();
 
   // Initialization
   bool initializeAllConstants();
   bool initializeExtraSmearingFunction();
   bool isInitialized() const { return _isInitialized; }
+
+  bool loadInputFile(const TString &fileName, int debug=0);
+  bool assignConstants(const std::vector<string> &lines, int debug=0);
+  static bool assignConstants(const std::vector<string> &lines, int count, double *eta, double *scale, double *scaleErr, double *smear, double *smearErr, int debug=0);
 
   // Access
   double getEnergyScaleCorrection(double eta) const;
@@ -42,8 +50,8 @@ public:
   void print() const;
 
   // Useful functions
-  static CalibrationSet DetermineCalibrationSet(const TString &escaleTagName);  // TString -> CalibrationSet
-  static TString CalibrationSetName(CalibrationSet escaleTag);   // CalibrationSet -> TString
+  static CalibrationSet DetermineCalibrationSet(const TString &escaleTagName, TString *inputFileName=NULL);  // TString -> CalibrationSet
+  static TString CalibrationSetName(CalibrationSet escaleTag, const TString *fileName);   // CalibrationSet -> TString
   static TString CalibrationSetFunctionName(CalibrationSet escaleTag); // name of the calibrating function
 
 protected:
@@ -51,9 +59,13 @@ protected:
   double getEnergyScaleCorrectionAny(double eta, bool randomize) const;
   double generateMCSmearAny(double eta1, double eta2, bool randomize) const;
 
+protected:
+  void init(CalibrationSet calSet);
+
 private:
 
   CalibrationSet     _calibrationSet;
+  TString            _inpFileName;
   bool               _isInitialized;
 
   // The data structure assumes the following:
@@ -89,6 +101,7 @@ private:
   double *               _mcConst4Err;
   bool                   _smearingWidthRandomizationDone;
 
+protected:
   // Functions to be used for extra smearing
   static const int nMaxFunctions = 50;
   TF1 *smearingFunctionGrid[nMaxFunctions][nMaxFunctions];

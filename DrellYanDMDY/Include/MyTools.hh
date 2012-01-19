@@ -83,6 +83,7 @@ Double_t toolbox::deltaPhi(Double_t phi1, Double_t phi2)
 }
 
 //------------------------------------------------------------------------------------------------------------------------
+
 Int_t toolbox::roundToInt(Double_t x)
 {
   if(x>0)
@@ -90,5 +91,20 @@ Int_t toolbox::roundToInt(Double_t x)
   else
     return ((x-floor(x)) < (ceil(x)-x)) ? (Int_t)ceil(x) : (Int_t)floor(x);
 }
+
+//------------------------------------------------------------------------------------------------------------------------
+
+template<class T>
+void PrintVec(const char *msg, const std::vector<T>& vec, int prneol=0) {
+  if (msg) std::cout << msg;
+  std::cout << "vec[" << vec.size() << "]: ";
+  for (unsigned int i=0; i<vec.size(); ++i) {
+    if (prneol) std::cout << "\n" << i << ") ";
+    std::cout << " " << vec[i];
+  }
+  if (prneol) std::cout << "\n";
+}
+
+//------------------------------------------------------------------------------------------------------------------------
 
 #endif
