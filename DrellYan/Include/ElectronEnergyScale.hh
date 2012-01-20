@@ -21,7 +21,7 @@ public:
   ElectronEnergyScale(CalibrationSet calibrationSet);
   ElectronEnergyScale(const TString &escaleTagName);
   // Destructor
-  ~ElectronEnergyScale() { this->clear(); }
+  //~ElectronEnergyScale() { this->clear(); }
   // Clean-up
   void clear();
 
