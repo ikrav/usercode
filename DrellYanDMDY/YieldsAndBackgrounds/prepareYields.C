@@ -269,7 +269,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
       int massBin = findMassBin2D(data.mass);
       int yBin    = findAbsYBin2D(massBin, data.y);
 
-      if ((massBin!=-1) || (yBin!=-1)) // out of range
+      if ((massBin==-1) || (yBin==-1)) // out of range
 	continue;
 
       (*thisSampleYields)(massBin,yBin) += weight;
