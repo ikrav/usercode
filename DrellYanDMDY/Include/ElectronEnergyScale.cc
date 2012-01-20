@@ -318,49 +318,6 @@ bool ElectronEnergyScale::initializeAllConstants(){
   }
     break;
 
-    /*
-  case Date20120101_Gauss_6bins: {
-    //
-    // Data of full 2011. Eta bins like for
-    // for Summer 11 result. Note that the 
-    // constants are symmetric about eta = 0.
-    //
-    const int nEtaBins = 12;
-    const double etaBinLimits[nEtaBins+1] = 
-      {-2.50001, -2.0, -1.5, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.5, 2.0, 2.50001};
-    std::vector<string> lines;
-    lines.push_back("! g_esfWorkCase=6 (6 bins)");
-    lines.push_back("! g_esfFitModel=1 (fit model Gauss)");
-    lines.push_back("scaling sqrt");
-    lines.push_back("! bins  0.00 0.40 0.80 1.20 1.50 2.00 2.50");
-    lines.push_back("MCOverData=53382.626340");
-    lines.push_back("EtaDivisionCount=6");
-    lines.push_back("ScalingFactorsCount=6");
-    lines.push_back("SmearingFactorsCount=6");
-    lines.push_back("scale_0      1.00427 -9.33125e-05");
-    lines.push_back("scale_1      1.00487  -9.2255e-05");
-    lines.push_back("scale_2      1.01121  -0.00012073");
-    lines.push_back("scale_3      1.02144 -0.000199873");
-    lines.push_back("scale_4     0.989138 -0.000184884");
-    lines.push_back("scale_5      1.01263 -0.000218029");
-    lines.push_back("smear_0     0.485588   -0.0169862");
-    lines.push_back("smear_1     0.435977   -0.0204939");
-    lines.push_back("smear_2     0.739175   -0.0163163");
-    lines.push_back("smear_3      1.17939   -0.0205025");
-    lines.push_back("smear_4      1.50625   -0.0194033");
-    lines.push_back("smear_5      1.99576   -0.0155175");
-
-    if (nEtaBins1!=nEtaBins) assert(0);
-
-    assert(_etaBinLimits); 
-    assert(_dataConst); assert(_dataConstErr);
-    assert(_mcConst1); assert(_mcConst1Err);
-    for(int i=0; i<nEtaBins+1; i++) _etaBinLimits[i] = etaBinLimits[i];
-    if (!AssignConstants(lines, nEtaBins,_dataConst,_dataConstErr,_mcConst1,_mcConst1Err)) assert(0);
-  }
-    break;
-    */
-
   case Date20120101_default: {
     //
     // Data of full 2011. Eta bins like for
@@ -371,39 +328,40 @@ bool ElectronEnergyScale::initializeAllConstants(){
     //const double etaBinLimits[nEtaBins+1] = 
     //  {-2.50001, -2.0, -1.5, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.5, 2.0, 2.50001};
     std::vector<string> lines;
-    lines.push_back("! g_esfWorkCase=12 (6 bins on each eta side)");
+    lines.push_back("! Date 2012 Jan 19\n");
+    lines.push_back("! g_esfWorkCase=15 (6 bins on each eta side)");
     lines.push_back("! g_esfWorkCaseShortName= 6binNegs");
     lines.push_back("! g_esfFitModel=1 (fit model Gauss)");
     lines.push_back("scaling sqrt");
     lines.push_back("! bins  -2.50 -2.00 -1.50 -1.20 -0.80 -0.40 0.00 0.40 0.80 1.20 1.50 2.00 2.50");
-    lines.push_back("MCOverData=15565.640556");
+    lines.push_back("MCOverData=15503.114069");
     lines.push_back("EtaDivisionCount=12");
     lines.push_back("ScalingFactorsCount=12");
     lines.push_back("SmearingFactorsCount=12");
-    lines.push_back("scale_0      1.01223 -0.000283215");
-    lines.push_back("scale_1     0.989088 -0.000210782");
-    lines.push_back("scale_2      1.02209 -0.000250671");
-    lines.push_back("scale_3       1.0114 -0.000155979");
-    lines.push_back("scale_4      1.00601 -0.000155017");
-    lines.push_back("scale_5       1.0057 -0.000109885");
-    lines.push_back("scale_6      1.00293 -0.000137715");
-    lines.push_back("scale_7      1.00371 -2.22722e-05");
-    lines.push_back("scale_8      1.01091  -8.8298e-05");
-    lines.push_back("scale_9      1.02074 -0.000232632");
-    lines.push_back("scale_10     0.989139 -0.000200525");
-    lines.push_back("scale_11      1.01299 -0.000299865");
-    lines.push_back("smear_0      1.94993   -0.0222418");
-    lines.push_back("smear_1      1.55407   -0.0263524");
-    lines.push_back("smear_2      1.19115   -0.0280501");
-    lines.push_back("smear_3      0.76452   -0.0219793");
-    lines.push_back("smear_4     0.429524   -0.0282913");
-    lines.push_back("smear_5      0.52105   -0.0239832");
-    lines.push_back("smear_6     0.454759   -0.0256199");
-    lines.push_back("smear_7     0.470073   -0.0273218");
-    lines.push_back("smear_8     0.736159   -0.0226141");
-    lines.push_back("smear_9      1.19079   -0.0283186");
-    lines.push_back("smear_10      1.48027   -0.0271734");
-    lines.push_back("smear_11       2.0404   -0.0214981");
+    lines.push_back("scale_0      1.01214 -0.000303694");
+    lines.push_back("scale_1     0.989212 -0.000268224");
+    lines.push_back("scale_2      1.02211 -0.000280481");
+    lines.push_back("scale_3      1.01145 -0.000168768");
+    lines.push_back("scale_4      1.00602  -0.00014565");
+    lines.push_back("scale_5      1.00573 -0.000144208");
+    lines.push_back("scale_6      1.00293   -0.0001399");
+    lines.push_back("scale_7      1.00375 -0.000146988");
+    lines.push_back("scale_8      1.01098 -0.000170304");
+    lines.push_back("scale_9      1.02083 -0.000283934");
+    lines.push_back("scale_10     0.989319 -0.000270072");
+    lines.push_back("scale_11      1.01284 -0.000304156");
+    lines.push_back("smear_0      1.94897   -0.0226282");
+    lines.push_back("smear_1      1.56441   -0.0266465");
+    lines.push_back("smear_2       1.1956   -0.0284747");
+    lines.push_back("smear_3     0.768533   -0.0221135");
+    lines.push_back("smear_4     0.432683    -0.028314");
+    lines.push_back("smear_5     0.525586   -0.0239693");
+    lines.push_back("smear_6     0.455353   -0.0257488");
+    lines.push_back("smear_7     0.471485   -0.0277377");
+    lines.push_back("smear_8     0.742029   -0.0229296");
+    lines.push_back("smear_9      1.19892   -0.0287477");
+    lines.push_back("smear_10      1.49028   -0.0275794");
+    lines.push_back("smear_11      2.03342   -0.0219498");
 
     if (nEtaBins1!=nEtaBins) assert(0);
 
@@ -420,7 +378,8 @@ bool ElectronEnergyScale::initializeAllConstants(){
       std::cout << "ElectronEnergyScale::initializeAllConstants. Calibration set CalSet_File_Gauss requires input file to be set\n";
       assert(0);
     }
-    success = loadInputFile(_inpFileName,1);
+    int debug=0;
+    success = loadInputFile(_inpFileName,debug);
     break;
   }
 
@@ -695,23 +654,31 @@ void ElectronEnergyScale::print() const {
 //------------------------------------------------------
 //------------------------------------------------------
 
-ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet(const TString &escaleTagName, TString *inputFileName) {
+ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet(const TString &escaleTagName_orig, TString *inputFileName) {
   ElectronEnergyScale::CalibrationSet calibrationSet  = ElectronEnergyScale::UNDEFINED;
   TString fileName;
-  if ( escaleTagName == TString("UNCORRECTED")) {
+  TString escaleTagName;
+  {
+    //std::cout << "entered DetermineCalibrationSet(\"" << escaleTagName_orig << "\", " << ((inputFileName) ? "ptr":"NULL") << ")\n";
+    Ssiz_t pos = escaleTagName_orig.Index("#");
+    if (pos>0) escaleTagName=escaleTagName_orig(0,pos-1); 
+    else escaleTagName=escaleTagName_orig;
+    //std::cout << "escaleTagName_orig={" << escaleTagName_orig << "}, escaleTagName={" << escaleTagName << "}\n";
+  }
+  if ( escaleTagName.Contains("UNCORRECTED")) {
     calibrationSet = ElectronEnergyScale::UNCORRECTED;
   }
-  else if ( escaleTagName == TString("Date20110901_EPS11_default")) {
+  else if ( escaleTagName.Contains("Date20110901_EPS11_default")) {
     calibrationSet = ElectronEnergyScale::Date20110901_EPS11_default;
   }
-  else if ( escaleTagName == TString("Date20120101_default")) {
+  else if ( escaleTagName.Contains("Date20120101_default")) {
     calibrationSet = ElectronEnergyScale::Date20120101_default;
   }
-  else if ( escaleTagName == TString("Date20120101_Gauss_6bins")) {
+  else if ( escaleTagName.Contains("Date20120101_Gauss_6bins")) {
     calibrationSet = ElectronEnergyScale::CalSet_File_Gauss;
     fileName="../root_files/constants/testESF_6bins_Gauss_20120119.inp";
   }
-  else if ( escaleTagName == TString("Date20120101_Gauss_6binNegs")) {
+  else if ( escaleTagName.Contains("Date20120101_Gauss_6binNegs")) {
     calibrationSet = ElectronEnergyScale::CalSet_File_Gauss;
     fileName="../root_files/constants/testESF_6binNegs_Gauss_20120119.inp";
   }
