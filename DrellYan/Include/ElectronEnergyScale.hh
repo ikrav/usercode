@@ -26,6 +26,8 @@ public:
   void clear();
 
   // Initialization
+  void init(CalibrationSet calSet);
+  void init(const TString &stringWithEScaleTagName);
   bool initializeAllConstants();
   bool initializeExtraSmearingFunction();
   bool isInitialized() const { return _isInitialized; }
@@ -58,9 +60,6 @@ protected:
   // Internal functions, not for general use
   double getEnergyScaleCorrectionAny(double eta, bool randomize) const;
   double generateMCSmearAny(double eta1, double eta2, bool randomize) const;
-
-protected:
-  void init(CalibrationSet calSet);
 
 private:
 

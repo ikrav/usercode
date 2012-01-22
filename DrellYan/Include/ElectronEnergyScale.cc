@@ -29,7 +29,7 @@ ElectronEnergyScale::ElectronEnergyScale(const TString &escaleTagName):
   _energyScaleCorrectionRandomizationDone(false),
   _smearingWidthRandomizationDone(false)
 {
-  this->init(ElectronEnergyScale::DetermineCalibrationSet(escaleTagName,&_inpFileName));
+  this->init(escaleTagName);
 }
 
 //------------------------------------------------------
@@ -49,6 +49,14 @@ void ElectronEnergyScale::clear() {
     if (_mcConst3Err) delete[] _mcConst3Err;
     if (_mcConst4Err) delete[] _mcConst4Err;
   }
+}
+
+//------------------------------------------------------
+
+void ElectronEnergyScale::init(const TString &stringWithEScaleTagName) {
+  this->clear();
+  this->init(ElectronEnergyScale::DetermineCalibrationSet(stringWithEScaleTagName,&_inpFileName));
+  return;
 }
 
 //------------------------------------------------------
