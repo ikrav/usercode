@@ -94,10 +94,26 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
   assert(ifs.is_open());
   string line;
   Int_t state=0;
+  const int inputFileMustContainEScaleDefinition = 0;
+  ElectronEnergyScale escale((inputFileMustContainEScaleDefinition) ? 
+	  ElectronEnergyScale::UNDEFINED : // read electron energy scale from the file
+	  ElectronEnergyScale::Date20120101_default);
   while(getline(ifs,line)) {
     if(line[0]=='#') continue;
     if(state == 0){
       dirTag = TString(line);
+      if (inputFileMustContainEScaleDefinition) {
+	// try to determine whether the input file was updated
+	getline(ifs,line);
+	escale.init(TString(line.c_str()));
+	if (!escale.isInitialized()) {
+	  std::cout << "\n\tInput file error: verify that the file has format\n";
+	  std::cout << "\tLine1: directory\n";
+	  std::cout << "\tLine2: electron energy scale correction name (NEW from 2012 Jan 21)\n";
+	  std::cout << "\tLine3: file_name.root xsect color linesty label\n";
+	  return;
+	}
+      }
       state++;
       continue;
     }else{
@@ -131,11 +147,13 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
   random.SetSeed(seed);
   gRandom->SetSeed(seed);
   // In the case of systematic studies, generate an array of random offsets
-  TVectorD shift(escale::nEtaBins);
+  TVectorD shift(escale._nEtaBins); // this vector is outdated by the new features in the escale obj.class
   shift = 0;
-  if(systematicsMode==DYTools::RESOLUTION_STUDY)
-    for(int i=0; i<escale::nEtaBins; i++)
+  if(systematicsMode==DYTools::RESOLUTION_STUDY) {
+    escale.randomizeSmearingWidth(seed);
+    for(int i=0; i<escale._nEtaBins; i++)
       shift[i] = gRandom->Gaus(0,1);
+  }
 
   //  
   // Set up histograms
@@ -301,7 +319,9 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
 
 	// Apply extra smearing to MC reconstructed dielectron mass
 	// to better resemble the data
-	double smear1 = escale::extraSmearingSigma(dielectron->scEta_1);
+	/*
+	  outdated lines. kept for reference
+	double smear1 = escale.extraSmearingSigma(dielectron->scEta_1);
         double smear2 = escale::extraSmearingSigma(dielectron->scEta_2);
 	// In systematics mode, overwrite the smear values with
 	// shifted ones.
@@ -310,6 +330,12 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
 	  smear2 = escale::extraSmearingSigmaShifted(dielectron->scEta_2,shift);
 	}
         double smearTotal = sqrt(smear1*smear1 + smear2*smear2);
+	*/
+	/* lines based on new features -- begin */
+	double smearTotal = (systematicsMode == DYTools::RESOLUTION_STUDY) ?
+	  escale.generateMCSmearRandomized(dielectron->scEta_1,dielectron->scEta_2) :
+	  escale.generateMCSmear(dielectron->scEta_1,dielectron->scEta_2);
+	/* lines based on new features -- end */
         double massResmeared = dielectron->mass + random.Gaus(0.0,smearTotal);
 
 	hZMassv[ifile]->Fill(massResmeared,scale * gen->weight);
