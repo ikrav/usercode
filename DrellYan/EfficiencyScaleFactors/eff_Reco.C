@@ -324,11 +324,11 @@ void eff_Reco(const TString configFile)
       // For EPS2011 for both data and MC (starting from Summer11 production)
       // we use a special trigger for tag and probe that has second leg
       // unbiased with cuts at HLT
-      UInt_t eventTriggerBit = kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30
+      ULong_t eventTriggerBit = kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30
 	| kHLT_Ele32_CaloIdL_CaloIsoVL_SC17;
       // The tag trigger bit matches the "electron" of the trigger we
       // use for this tag and probe study: electron+sc
-      UInt_t tagTriggerObjectBit = kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj
+      ULong_t tagTriggerObjectBit = kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj
 	| kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj;
       // The probe trigger, however, is any of possibilities used in
       // the trigger that is used in the main analysis

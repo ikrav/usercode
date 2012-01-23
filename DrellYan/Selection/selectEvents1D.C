@@ -70,7 +70,7 @@ void fillData(ZeeData *data, const mithep::TEventInfo *info, const mithep::TDiel
 // print event dump
 void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron, 
                const UInt_t runNum, const UInt_t lumiSec, const UInt_t evtNum, 
-	       const UInt_t triggerObj1, const UInt_t triggerObj2);
+	       const ULong_t triggerObj1, const ULong_t triggerObj2);
 
 
 //=== MAIN MACRO =================================================================================================
@@ -1813,7 +1813,7 @@ void fillData(ZeeData *data, const mithep::TEventInfo *info, const mithep::TDiel
 //--------------------------------------------------------------------------------------------------
 void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron, 
                const UInt_t runNum, const UInt_t lumiSec, const UInt_t evtNum, 
-	       const UInt_t triggerObj1, const UInt_t triggerObj2)
+	       const ULong_t triggerObj1, const ULong_t triggerObj2)
 {
   ofs << endl;
   ofs << "Run:" << runNum;
