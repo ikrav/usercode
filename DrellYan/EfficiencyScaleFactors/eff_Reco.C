@@ -506,7 +506,7 @@ void eff_Reco(const TString configFile)
 
   int NsetBins=30;
   bool isRECO=1;
-  char* setBinsType="cache";
+  const char* setBinsType="cache";
   
   measureEfficiency(passTree, failTree,
 		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,

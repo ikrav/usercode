@@ -2,7 +2,7 @@
 #include "../Include/fitFunctions.hh"
 #endif
 
-void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,TTree *passTree, TTree *failTree,TCanvas *passCanvas, TCanvas *failCanvas,char* setBinsType){
+void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,TTree *passTree, TTree *failTree,TCanvas *passCanvas, TCanvas *failCanvas,const char* setBinsType){
 
   // Define data sets
   RooRealVar mass("mass","mass",60, 120);
@@ -145,7 +145,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
 		       int method, int etBinning, int etaBinning, 
 		       TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
 		       bool useTemplates, TFile *templatesFile, TFile *resultsRootFile,
-		       int NsetBins, bool isRECO, char* setBinsType, TString dirTag){
+		       int NsetBins, bool isRECO, const char* setBinsType, TString dirTag){
 
   // For COUNTnCOUNT method we should write to root file results
   // from measureEfficiencyCountAndCount routine, otherwise
@@ -236,7 +236,7 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
 			      int method, int etBinning, int etaBinning, 
 			      TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
 			      bool useTemplates, TFile *templatesFile, TFile *resultsRootFile, 
-			      int NsetBins, bool isRECO, char* setBinsType, TString dirTag){
+			      int NsetBins, bool isRECO, const char* setBinsType, TString dirTag){
   
   int nEt                = getNEtBins(etBinning);
   const double *limitsEt = getEtBinLimits(etBinning);

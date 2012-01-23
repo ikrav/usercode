@@ -24,7 +24,7 @@ struct RealLimit
   double hi;
 };
 
-void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, int NsetBins, bool isRECO, char* setBinsType, TString dirTag){
+void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, int NsetBins, bool isRECO, const char* setBinsType, TString dirTag){
   
 
   RealLimit lims[19];
@@ -282,7 +282,7 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &ef
 }
 
 
-void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, TH1F *templatePass, TH1F *templateFail, bool isRECO, char* setBinsType, TString dirTag){
+void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, TH1F *templatePass, TH1F *templateFail, bool isRECO, const char* setBinsType, TString dirTag){
 
     
   RealLimit lims[12];
