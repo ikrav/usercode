@@ -147,14 +147,14 @@ bool ElectronEnergyScale::assignConstants(const std::vector<string> &lines, int 
   assert(_etaBinLimits); 
   assert(_dataConst); assert(_dataConstErr);
   assert(_mcConst1); assert(_mcConst1Err);
-  int res=ElectronEnergyScale::assignConstants(lines,_nEtaBins,_etaBinLimits,_dataConst,_dataConstErr,_mcConst1,_mcConst1Err,debug);
+  int res=ElectronEnergyScale::AssignConstants(lines,_nEtaBins,_etaBinLimits,_dataConst,_dataConstErr,_mcConst1,_mcConst1Err,debug);
   if (!res) std::cout << "failed in this->assignConstants(lines)\n";
   return res;
 }
 
 //------------------------------------------------------
 
-bool ElectronEnergyScale::assignConstants(const std::vector<string> &lines, int count, double *eta, double *scale, double *scaleErr, double *smear, double *smearErr, int debug) {
+bool ElectronEnergyScale::AssignConstants(const std::vector<string> &lines, int count, double *eta, double *scale, double *scaleErr, double *smear, double *smearErr, int debug) {
   int etaDivCount=0;
   for (unsigned int i=0; !etaDivCount && (i<lines.size()); ++i) {
     if (lines[i].find("EtaDivisionCount")!=std::string::npos) {
@@ -377,7 +377,7 @@ bool ElectronEnergyScale::initializeAllConstants(){
     assert(_dataConst); assert(_dataConstErr);
     assert(_mcConst1); assert(_mcConst1Err);
     //for(int i=0; i<nEtaBins+1; i++) _etaBinLimits[i] = etaBinLimits[i];
-    if (!assignConstants(lines, nEtaBins,_etaBinLimits,_dataConst,_dataConstErr,_mcConst1,_mcConst1Err)) assert(0);
+    if (!AssignConstants(lines, nEtaBins,_etaBinLimits,_dataConst,_dataConstErr,_mcConst1,_mcConst1Err)) assert(0);
   }
     break;
 
@@ -461,6 +461,27 @@ void   ElectronEnergyScale::randomizeEnergyScaleCorrections(int seed){
 
   return;
 }
+
+//------------------------------------------------------
+
+bool ElectronEnergyScale::setCalibrationSet(CalibrationSet calSet) {
+  bool ok=kTRUE;
+  if (isInitialized() && (calSet==UNCORRECTED)) {
+    _calibrationSet = UNCORRECTED;
+  }
+  else {
+    if (calSet==UNCORRECTED) {
+      std::cout << "setCalibrationSet(" << ElectronEnergyScale::CalibrationSetName(calSet,NULL) << ") cannot be called for uninitialized object\n";
+    }
+    else {
+      std::cout << "setCalibrationSet(calSet) cannot be called for " << ElectronEnergyScale::CalibrationSetName(calSet,NULL) << ". Use a constructor or init(calSet) instead.\n";
+    }
+    ok=kFALSE;
+    assert(0);
+  }
+  return ok;
+}
+
 
 //------------------------------------------------------
 
@@ -622,6 +643,57 @@ double ElectronEnergyScale::generateMCSmearAny(double eta1, double eta2, bool ra
     result = smearingFunctionGridRandomized[ibin][jbin]->GetRandom();
 
   return result;
+}
+
+//------------------------------------------------------
+
+bool ElectronEnergyScale::addSmearedWeightAny(TH1F *hMass, int eta1Bin, int eta2Bin, double mass, double weight, bool randomize) const {
+  
+  //std::cout << "mass=" << mass << ", weight=" << weight << "\n";
+  if( !_isInitialized ){
+    printf("ElectronEnergyScale ERROR: the object is not properly initialized\n");
+    return kFALSE;
+  }
+  if (!hMass) {
+    std::cout << "this subroutine will do nothing for hMass=NULL\n";
+    assert(hMass);
+  }
+  
+  if (_calibrationSet == UNCORRECTED) {
+    hMass->Fill(mass,weight);
+    return kTRUE;
+  }
+
+  if (randomize && !this->isSmearRandomized()) {
+    std::cout << "ElectronEnergyScale ERROR: the smearing was not randomized\n";
+    return kFALSE;
+  }
+
+  eta1Bin--; eta2Bin--;
+  assert((eta1Bin>=0)); assert((eta2Bin>=0));
+  TF1 *smearFnc = (randomize) ? 
+    smearingFunctionGridRandomized[eta1Bin][eta2Bin] :
+    smearingFunctionGrid[eta1Bin][eta2Bin];
+
+  TH1F *h=hMass;
+  for (int i=1; i<=h->GetNbinsX(); i++) {
+    const double xa=h->GetBinLowEdge(i);
+    const double xw=h->GetBinWidth(i);
+    const double w= smearFnc->Integral( xa-mass, xa-mass+xw );
+    h->Fill(xa+0.5*xw, w * weight);
+    //std::cout << "adding " << w *weight << " in " << (xa+0.5*xw) << "\n";
+  }
+
+  return kTRUE;
+}
+
+//------------------------------------------------------
+
+void ElectronEnergyScale::smearDistributionAny(TH1F *destination, int eta1Bin, int eta2Bin, const TH1F *source, bool randomize) const {
+  assert(source); assert(destination);
+  for (int i=1; i<source->GetNbinsX(); ++i) {
+    assert(addSmearedWeightAny(destination,eta1Bin,eta2Bin,source->GetBinCenter(i),source->GetBinContent(i),randomize));
+  }
 }
 
 //------------------------------------------------------

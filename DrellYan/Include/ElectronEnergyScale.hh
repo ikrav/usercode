@@ -4,6 +4,7 @@
 #include <TString.h>
 #include <TF1.h>
 #include <TRandom.h>
+#include <TH1F.h>
 
 class ElectronEnergyScale {
 
@@ -31,14 +32,43 @@ public:
   bool initializeAllConstants();
   bool initializeExtraSmearingFunction();
   bool isInitialized() const { return _isInitialized; }
+  bool isScaleRandomized() const { return _energyScaleCorrectionRandomizationDone; }
+  bool isSmearRandomized() const { return _smearingWidthRandomizationDone; }
 
   bool loadInputFile(const TString &fileName, int debug=0);
   bool assignConstants(const std::vector<string> &lines, int debug=0);
-  static bool assignConstants(const std::vector<string> &lines, int count, double *eta, double *scale, double *scaleErr, double *smear, double *smearErr, int debug=0);
+  static bool AssignConstants(const std::vector<string> &lines, int count, double *eta, double *scale, double *scaleErr, double *smear, double *smearErr, int debug=0);
 
   // Access
+  CalibrationSet getCalibrationSet() const { return _calibrationSet; }
+  bool setCalibrationSet(CalibrationSet calSet); // in specific cases allow to change the calibration set
+  int numberOfEtaBins() const { return _nEtaBins; }
+  int numberOfEtaEtaBins() const { return _nEtaBins*(_nEtaBins+1); }
+
+  // Eta bin index in the same way as TH1F bin index
+  int getEtaBinIdx(double eta) const {
+    int idx=-1;
+    for (int i=0; (idx<0) && (i<_nEtaBins); ++i) {
+      if ((eta>_etaBinLimits[i]) && (eta<=_etaBinLimits[i+1])) idx=i+1;
+    }
+    return idx;
+  }
+
+  double getEtaBinCenter(int i) const { return 0.5*(_etaBinLimits[i-1]+_etaBinLimits[i]); }
+
   double getEnergyScaleCorrection(double eta) const;
+  // old-style smear (event shift)
   double generateMCSmear(double eta1, double eta2) const;
+  // updated smear (distribution) : one event
+  bool addSmearedWeight(TH1F *hMassDestination, int eta1Bin, int eta2Bin, double mass, double weight) const {
+    assert(this->isInitialized());
+    return addSmearedWeightAny(hMassDestination,eta1Bin,eta2Bin,mass,weight,kFALSE);
+  }
+  // updated smear (distribution) : smear collection
+  void smearDistribution(TH1F *destination, int eta1Bin, int eta2Bin, const TH1F *source) const {
+    assert(this->isInitialized());
+    smearDistributionAny(destination,eta1Bin,eta2Bin,source,kFALSE);
+  }
 
   // Several functions for systematic studies. These
   // randomize constants for energy scale corrections
@@ -47,7 +77,19 @@ public:
   double getEnergyScaleCorrectionRandomized(double eta) const;
 
   void   randomizeSmearingWidth(int seed);
+
+  // old-style smear (event shift)
   double generateMCSmearRandomized(double eta1, double eta2) const;
+  // updated smear (distribution) : one event
+  bool addSmearedWeightRandomized(TH1F *hMassDestination, int eta1Bin, int eta2Bin, double mass, double weight) const {
+    assert(this->isInitialized()); assert(this->isSmearRandomized());
+    return addSmearedWeightAny(hMassDestination,eta1Bin,eta2Bin,mass,weight,kTRUE);
+  }
+  // updated smear (distribution) : smear collection
+  void smearDistributionRandomized(TH1F *destination, int eta1Bin, int eta2Bin, const TH1F *source) const {
+    assert(this->isInitialized()); assert(this->isSmearRandomized());
+    smearDistributionAny(destination,eta1Bin,eta2Bin,source,kTRUE);
+  }
 
   void print() const;
 
@@ -56,10 +98,19 @@ public:
   static TString CalibrationSetName(CalibrationSet escaleTag, const TString *fileName);   // CalibrationSet -> TString
   static TString CalibrationSetFunctionName(CalibrationSet escaleTag); // name of the calibrating function
 
+  TString calibrationSetName() const { return ElectronEnergyScale::CalibrationSetName(this->_calibrationSet, &this->_inpFileName); }
+  TString calibrationSetFunctionName() const { return ElectronEnergyScale::CalibrationSetFunctionName(this->_calibrationSet); }
+
 protected:
   // Internal functions, not for general use
   double getEnergyScaleCorrectionAny(double eta, bool randomize) const;
+
+  // old-style smear (event shift)
   double generateMCSmearAny(double eta1, double eta2, bool randomize) const;
+  // updated smear (distribution) : one event
+  bool addSmearedWeightAny(TH1F *hMassDestination, int eta1Bin, int eta2Bin, double mass, double weight, bool randomize) const;
+  // updated smear (distribution) : smear collection
+  void smearDistributionAny(TH1F *destination, int eta1Bin, int eta2Bin, const TH1F *source, bool randomize) const;
 
 private:
 
