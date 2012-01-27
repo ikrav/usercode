@@ -47,6 +47,7 @@
 #include "../Include/TPhoton.hh"
 #include "../Include/DYTools.hh"
 #include "../Include/EleIDCuts.hh"
+#include "../Include/TriggerSelection.hh"
 
 #include "../Include/cutFunctions.hh"
 #include "../Include/fitFunctions.hh"
@@ -65,13 +66,18 @@ using namespace mithep;
 
 //=== MAIN MACRO =================================================================================================
 
-void eff_Reco(const TString configFile) 
+void eff_Reco(const TString configFile, TString triggerSetString) 
 {
 
   using namespace mithep; 
  
   gBenchmark->Start("eff_Reco");
   
+  // fast check
+  TriggerConstantSet triggerSet=DetermineTriggerSet(triggerSetString);  
+  assert ( triggerSet != TrigSet_UNDEFINED );
+
+
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
   //==============================================================================================================
@@ -89,7 +95,10 @@ void eff_Reco(const TString configFile)
   vector<TString> ntupleFileNames;
   ifstream ifs;
   ifs.open(configFile.Data());
-  assert(ifs.is_open());
+  if (!ifs.is_open()) {
+    std::cout << "configFile=" << configFile << "\n";
+    assert(ifs.is_open());
+  }
   string line;
   Int_t state=0;
   while(getline(ifs,line)) {
@@ -171,7 +180,10 @@ void eff_Reco(const TString configFile)
 
   // The label is a string that contains the fields that are passed to
   // the function below, to be used to name files with the output later.
-  TString label = getLabel(sample, effType, calcMethod, etBinning, etaBinning);
+  TString label = getLabel(sample, effType, calcMethod, etBinning, etaBinning, triggerSet);
+
+  // Construct the trigger object
+  TriggerSelection triggers(triggerSet, (sample==DATA)?true:false, 0);
 
   //--------------------------------------------------------------------------------------------------------------
   // Main analysis code 
@@ -227,8 +239,10 @@ void eff_Reco(const TString configFile)
 	labelMC.Replace(labelMC.Index("fit-fit_"),8,"");
       TString templatesLabel = tagAndProbeDir+TString("/mass_templates_")+labelMC+TString(".root");
       templatesFile = new TFile(templatesLabel);
-      if( ! templatesFile->IsOpen() )
+      if( ! templatesFile->IsOpen() ) {
+	std::cout << "templatesFile name " << templatesLabel << "\n";
 	assert(0);
+      }
     }
   }
 
@@ -273,6 +287,11 @@ void eff_Reco(const TString configFile)
   
   // Loop over files
   for(UInt_t ifile=0; ifile<ntupleFileNames.size(); ifile++){
+
+    if (!triggers.suitableInputFile(ntupleFileNames[ifile])) {
+      std::cout << "... skipping input file " << ntupleFileNames[ifile] << "\n";
+      continue;
+    }
 
     //
     // Access samples and fill histograms
@@ -321,6 +340,7 @@ void eff_Reco(const TString configFile)
       // Check that the whole event has fired the appropriate trigger
       infoBr->GetEntry(ientry);
 
+      /*  Old code
       // For EPS2011 for both data and MC (starting from Summer11 production)
       // we use a special trigger for tag and probe that has second leg
       // unbiased with cuts at HLT
@@ -332,6 +352,9 @@ void eff_Reco(const TString configFile)
 	| kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj;
       // The probe trigger, however, is any of possibilities used in
       // the trigger that is used in the main analysis
+      */
+      ULong_t eventTriggerBit= triggers.getEventTriggerBit_SCtoGSF(info->runNum);
+      ULong_t tagTriggerObjectBit= triggers.getLeadingTriggerObjectBit_SCtoGSF(info->runNum);
 
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event... 
       eventsAfterTrigger++;
