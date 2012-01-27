@@ -74,7 +74,7 @@ bool passID(const mithep::TElectron *electron){
   return result;
 }
 
-bool isTag(const mithep::TElectron *electron, UInt_t trigger){
+bool isTag(const mithep::TElectron *electron, ULong_t trigger){
 
   bool elePassID  = passID(electron);
   bool elePassHLT =  (electron ->hltMatchBits & trigger);
@@ -84,7 +84,9 @@ bool isTag(const mithep::TElectron *electron, UInt_t trigger){
   return result;
 }
 
-TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning){
+// -------------------------------------------------------------------
+
+TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, TriggerConstantSet trigSet){
 
   TString label = "";
 
@@ -94,6 +96,9 @@ TString getLabel(int sample, int effType, int method,  int etBinning, int etaBin
     label += "mc";
   else
     assert(0);
+
+  assert ( trigSet != TrigSet_UNDEFINED );
+  label+= TriggerSetName(trigSet);
 
   if( effType == GSF )
     label += "_gsf";
@@ -120,3 +125,5 @@ TString getLabel(int sample, int effType, int method,  int etBinning, int etaBin
 
   return label;
 }
+
+// -------------------------------------------------------------------
