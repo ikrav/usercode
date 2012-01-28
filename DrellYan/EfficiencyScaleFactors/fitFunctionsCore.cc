@@ -225,7 +225,8 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &ef
   cbNFail    .setConstant(kTRUE);
   RooFitResult *result = fullPdf.fitTo(*data,
 				       Extended(kTRUE),
-				       Save());
+				       Save(),
+				       NumCPU(2,true));
 
   // Release shape parameters and refine the fit
   if( mode == FITnFIT ){
@@ -237,13 +238,15 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &ef
   result = fullPdf.fitTo(*data,
 			 Extended(kTRUE),
 			 Minos(RooArgSet(eff)),
-			 Save());
+			 Save(),
+			 NumCPU(2,true));
   // If minos fails, refit without minos
   if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5)){
     cout << "MINOS FAILS" << endl;
     result = fullPdf.fitTo(*data,
 			   Extended(kTRUE),
-			   Save());
+			   Save(),
+			   NumCPU(2,true));
   }
 
   efficiency       = eff.getVal();
@@ -464,14 +467,14 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   nbgFail.setVal(0.01*total);
 
   RooFitResult *result;  
-  result = fullPdf.fitTo(*data, Extended(kTRUE), Minos(RooArgSet(eff)), Save());
+  result = fullPdf.fitTo(*data, Extended(kTRUE), Minos(RooArgSet(eff)), Save(), NumCPU(2,true));
   
   
   
   // If minos fails, refit without minos
   if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5)){
     cout << "MINOS FAILS" << endl;
-    result = fullPdf.fitTo(*data, Extended(kTRUE), Save());
+    result = fullPdf.fitTo(*data, Extended(kTRUE), Save(), NumCPU(2,true));
   }
   
   efficiency     = eff.getVal();

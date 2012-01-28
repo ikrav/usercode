@@ -99,14 +99,14 @@ void measurePassAndFail(double &signal, double &signalErr, double &efficiency, d
   cbAlphaFail.setConstant(kTRUE);
   cbNPass    .setConstant(kTRUE);
   cbNFail    .setConstant(kTRUE);
-  RooFitResult *result = fullPdf.fitTo(*data,Extended(kTRUE),Save());
+  RooFitResult *result = fullPdf.fitTo(*data,Extended(kTRUE),Save(),RooFit::NumCPU(2,true));
 
   // Release shape parameters and refine the fit
   cbAlphaPass.setConstant(kFALSE);
   cbAlphaFail.setConstant(kFALSE);
   cbNPass    .setConstant(kFALSE);
   cbNFail    .setConstant(kFALSE);
-  result = fullPdf.fitTo(*data,Extended(kTRUE),Save());
+  result = fullPdf.fitTo(*data,Extended(kTRUE),Save(),RooFit::NumCPU(2,true));
 
   cout << "Fit status 1st iteration " << result->status() << endl;
 //   if(!result->status()){
