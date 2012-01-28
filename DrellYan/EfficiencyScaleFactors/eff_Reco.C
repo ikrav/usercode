@@ -62,6 +62,9 @@ using namespace mithep;
 
 //=== COMMON CONSTANTS ===========================================================================================
 
+const int debug=0;
+
+
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 //=== MAIN MACRO =================================================================================================
@@ -178,12 +181,12 @@ void eff_Reco(const TString configFile, TString triggerSetString)
     assert(0);
   printf("Sample: %s\n", sampleTypeString.Data());
 
-  // The label is a string that contains the fields that are passed to
-  // the function below, to be used to name files with the output later.
-  TString label = getLabel(sample, effType, calcMethod, etBinning, etaBinning, triggerSet);
-
   // Construct the trigger object
   TriggerSelection triggers(triggerSet, (sample==DATA)?true:false, 0);
+
+  // The label is a string that contains the fields that are passed to
+  // the function below, to be used to name files with the output later.
+  TString label = getLabel(sample, effType, calcMethod, etBinning, etaBinning, triggers);
 
   //--------------------------------------------------------------------------------------------------------------
   // Main analysis code 
@@ -288,7 +291,7 @@ void eff_Reco(const TString configFile, TString triggerSetString)
   // Loop over files
   for(UInt_t ifile=0; ifile<ntupleFileNames.size(); ifile++){
 
-    if (!triggers.suitableInputFile(ntupleFileNames[ifile])) {
+    if (!triggers.suitableDataFile(ntupleFileNames[ifile])) {
       std::cout << "... skipping input file " << ntupleFileNames[ifile] << "\n";
       continue;
     }
@@ -319,6 +322,7 @@ void eff_Reco(const TString configFile, TString triggerSetString)
     eventTree->SetBranchAddress("Electron",&eleArr); 
     TBranch *electronBr   = eventTree->GetBranch("Electron");
     TBranch *photonBr     = eventTree->GetBranch("Photon");
+    assert(electronBr); assert(photonBr);
     TBranch *genBr = 0;
     if(sample != DATA){
       eventTree->SetBranchAddress("Gen",&gen);
@@ -328,7 +332,12 @@ void eff_Reco(const TString configFile, TString triggerSetString)
     // loop over events    
     eventsInNtuple += eventTree->GetEntries();
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-      //for(UInt_t ientry=0; ientry<1000; ientry++) { // This is for faster turn-around in testing
+      //for(UInt_t ientry=0; ientry<1000; ientry++) { 
+      if (debug) {
+	if (ientry>100000) break;  // This is for faster turn-around in testing
+	if (ientry%10000==0) std::cout << "ientry=" << ientry << "\n";
+      }
+	
       
       if(sample != DATA)
 	genBr->GetEntry(ientry);
@@ -472,6 +481,8 @@ void eff_Reco(const TString configFile, TString triggerSetString)
     delete scArr;
   } // end loop over files
 
+  if (debug) { std::cout << "\n\tthis was a debug run. No fit is done\n\n"; throw 2; }
+
   //
   // Efficiency analysis
   //
@@ -495,7 +506,6 @@ void eff_Reco(const TString configFile, TString triggerSetString)
   printf("\nNumber of probes, total                                      %15.0f\n", hMassTotal->GetSumOfWeights());
   printf("Number of probes, passed                                     %15.0f\n", hMassPass->GetSumOfWeights());
   printf("Number of probes, failed                                     %15.0f\n", hMassFail->GetSumOfWeights());
-
 
   // Human-readbale text file to store measured efficiencies
   TString reslog = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString(".txt");

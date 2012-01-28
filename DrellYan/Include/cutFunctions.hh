@@ -23,4 +23,4 @@ bool passID(const mithep::TElectron *electron);
 
 bool isTag(const mithep::TElectron *electron, ULong_t trigger);
 
-TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, TriggerConstantSet trigSet);
+TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, const TriggerSelection &trigSet);

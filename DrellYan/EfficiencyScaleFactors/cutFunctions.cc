@@ -86,9 +86,12 @@ bool isTag(const mithep::TElectron *electron, ULong_t trigger){
 
 // -------------------------------------------------------------------
 
-TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, TriggerConstantSet trigSet){
+TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, const TriggerSelection &trigSet){
 
   TString label = "";
+
+  assert ( trigSet.isDefined() );
+  label+= trigSet.triggerSetName();
 
   if(sample == DATA)
     label += "data";
@@ -96,9 +99,6 @@ TString getLabel(int sample, int effType, int method,  int etBinning, int etaBin
     label += "mc";
   else
     assert(0);
-
-  assert ( trigSet != TrigSet_UNDEFINED );
-  label+= TriggerSetName(trigSet);
 
   if( effType == GSF )
     label += "_gsf";

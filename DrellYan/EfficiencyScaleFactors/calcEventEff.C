@@ -31,12 +31,14 @@
 #include "../Include/TEventInfo.hh"
 #include "../Include/TDielectron.hh"
 #include "../Include/TElectron.hh"
+#include "../Include/TriggerSelection.hh"
+#include "../Include/cutFunctions.hh"
 
 using namespace mithep;
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
-void fillEfficiencyConstants();
+void fillEfficiencyConstants( const TriggerSelection &triggerSet );
 void fillOneEfficiency(const TString filename, double *eff, double *effArr, int etaRange);
 
 Bool_t matchedToGeneratorLevel(const TGenInfo *gen, const TDielectron *dielectron);
@@ -75,6 +77,9 @@ const bool savePlots = false;
 
 // File names for efficiency measurements from tag and probe
 TString          dirTag;
+
+/*
+  retire static file definitions
 const TString effDataGsfFile = "efficiency_TnP_data_gsf_fit-fit_bins-et5-eta2.root";
 const TString effMcGsfFile   = "efficiency_TnP_mc_gsf_count-count_bins-et5-eta2.root";
 
@@ -83,27 +88,36 @@ const TString effMcIdFile    = "efficiency_TnP_mc_id_count-count_bins-et5-eta2.r
 
 const TString effDataHltFile = "efficiency_TnP_data_hlt_count-count_bins-et5-eta2.root";
 const TString effMcHltFile   = "efficiency_TnP_mc_hlt_count-count_bins-et5-eta2.root";
+*/
+
+// Define the method used to obtain the efficiencies
+const int dataGsfEffMethod = FITnFIT;
+const int mcGsfEffMethod   = COUNTnCOUNT;
+const int dataIdEffMethod  = FITnFIT;
+const int mcIdEffMethod    = COUNTnCOUNT;
+const int dataHltEffMethod = COUNTnCOUNT;
+const int mcHltEffMethod   = COUNTnCOUNT;
 
 // Declaration of arrays into which efficiencies will be loaded
-// from the files above. Generally, doing things through global variables
-// like this is not great.
-const int etBinning = ETBINS5;
-const int etBins = nEtBins5;
+const int etBinning = DYTools::ETBINS5;
+const int etBinCount = DYTools::nEtBins5;
+const double *etBinLimits= DYTools::etBinLimits5;
+const int etaBinning = DYTools::ETABINS2;
 // Reconstruction
-double GsfBarrelDataEff   [etBins], GsfBarrelDataEffErr[etBins];
-double GsfEndcapDataEff   [etBins], GsfEndcapDataEffErr[etBins];
-double GsfBarrelMcEff     [etBins], GsfBarrelMcEffErr  [etBins];
-double GsfEndcapMcEff     [etBins], GsfEndcapMcEffErr  [etBins];
+double GsfBarrelDataEff   [etBinCount], GsfBarrelDataEffErr[etBinCount];
+double GsfEndcapDataEff   [etBinCount], GsfEndcapDataEffErr[etBinCount];
+double GsfBarrelMcEff     [etBinCount], GsfBarrelMcEffErr  [etBinCount];
+double GsfEndcapMcEff     [etBinCount], GsfEndcapMcEffErr  [etBinCount];
 // Identification
-double IdBarrelDataEff   [etBins], IdBarrelDataEffErr[etBins];
-double IdEndcapDataEff   [etBins], IdEndcapDataEffErr[etBins];
-double IdBarrelMcEff     [etBins], IdBarrelMcEffErr  [etBins];
-double IdEndcapMcEff     [etBins], IdEndcapMcEffErr  [etBins];
+double IdBarrelDataEff   [etBinCount], IdBarrelDataEffErr[etBinCount];
+double IdEndcapDataEff   [etBinCount], IdEndcapDataEffErr[etBinCount];
+double IdBarrelMcEff     [etBinCount], IdBarrelMcEffErr  [etBinCount];
+double IdEndcapMcEff     [etBinCount], IdEndcapMcEffErr  [etBinCount];
 // HLT trigger
-double HltBarrelDataEff   [etBins], HltBarrelDataEffErr[etBins];
-double HltEndcapDataEff   [etBins], HltEndcapDataEffErr[etBins];
-double HltBarrelMcEff     [etBins], HltBarrelMcEffErr  [etBins];
-double HltEndcapMcEff     [etBins], HltEndcapMcEffErr  [etBins];
+double HltBarrelDataEff   [etBinCount], HltBarrelDataEffErr[etBinCount];
+double HltEndcapDataEff   [etBinCount], HltEndcapDataEffErr[etBinCount];
+double HltBarrelMcEff     [etBinCount], HltBarrelMcEffErr  [etBinCount];
+double HltEndcapMcEff     [etBinCount], HltEndcapMcEffErr  [etBinCount];
 
 // Global variables
 const int nexp = 100;
@@ -124,15 +138,23 @@ double ro_M_E_hlt[nexp];
 
 //=== MAIN MACRO =================================================================================================
 
-void calcEventEff(const TString input)
+void calcEventEff(const TString input, TString triggerSetString)
 {
-
-  printf("Et binning is %d\n", etBins);
 
   gBenchmark->Start("calcEventEff");
   
+   // fast check
+  TriggerConstantSet triggerSet=DetermineTriggerSet(triggerSetString);  
+  assert ( triggerSet != TrigSet_UNDEFINED );
+ 
+  printf("Et bin count is %d\n", etBinCount);
+  if (etaBinning!=ETABINS2) {
+    std::cout << "this code assumes that eta regions are only (barrel,endcap)\n";
+    throw 1;
+  }
+
   CPlot::sOutDir = "plots";
-  
+
   vector<TString> fnamev;   // file names   
   vector<TString> labelv;   // legend label
   vector<Int_t>   colorv;   // color in plots
@@ -168,16 +190,19 @@ void calcEventEff(const TString input)
   }
   ifs.close();
 
+  // Construct the trigger object
+  TriggerSelection triggers(triggerSet, false, 0); // we work with MC files
+
   // Read efficiency constants from ROOT files
   // This has to be done AFTER configuration file is parsed
-  fillEfficiencyConstants();
+  fillEfficiencyConstants( triggers );
 
   TH1F *hScale = new TH1F("hScale", "", 150, 0.0, 1.5);
   TH1F *hScaleGsf = new TH1F("hScaleGsf", "", 150, 0.0, 1.5);
   TH1F *hScaleId  = new TH1F("hScaleId" , "", 150, 0.0, 1.5);
   TH1F *hScaleHlt = new TH1F("hScaleHlt", "", 150, 0.0, 1.5);
 
-  TH1F *hZpeakEt = new TH1F("hZpeakEt", "", nEtBins5, etBinLimits5);
+  TH1F *hZpeakEt = new TH1F("hZpeakEt", "", etBinCount, etBinLimits);
   vector<TH1F*> hLeadingEtV;
   vector<TH1F*> hTrailingEtV;
   vector<TH1F*> hElectronEtV;
@@ -195,13 +220,13 @@ void calcEventEff(const TString input)
     hScaleHltV.push_back(new TH1F(base+TString("_hlt"),base+TString("_hlt"),150,0.0,1.5));
     base = "hLeadingEt_";
     base += i;
-    hLeadingEtV.push_back(new TH1F(base,base,nEtBins5, etBinLimits5));
+    hLeadingEtV.push_back(new TH1F(base,base,etBinCount, etBinLimits));
     base = "hTrailingEt_";
     base += i;
-    hTrailingEtV.push_back(new TH1F(base,base,nEtBins5, etBinLimits5));
+    hTrailingEtV.push_back(new TH1F(base,base,etBinCount, etBinLimits));
     base = "hElectronEt_";
     base += i;
-    hElectronEtV.push_back(new TH1F(base,base,nEtBins5, etBinLimits5));
+    hElectronEtV.push_back(new TH1F(base,base,etBinCount, etBinLimits));
   }
 
   // Create Gaussian-distributed random offsets for each pseudo-experiment
@@ -240,6 +265,7 @@ void calcEventEff(const TString input)
   
   
   int eventsInNtuple = 0;
+  double weightedEventsInNtuple = 0;
   int eventsAfterTrigger = 0;
   int totalCand = 0;
   int totalCandInMassWindow = 0;
@@ -283,13 +309,15 @@ void calcEventEff(const TString input)
     eventTree->SetBranchAddress("Gen",&gen);                  TBranch *genBr = eventTree->GetBranch("Gen");
 
     // loop over events    
-    eventsInNtuple += scale * eventTree->GetEntries();
+    eventsInNtuple         += eventTree->GetEntries();
+    weightedEventsInNtuple += scale * eventTree->GetEntries();
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
 //       for(UInt_t ientry=0; ientry<100000; ientry++) { // This is for faster turn-around in testing
       
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
-
+      
+      /* old trigger defs
       // For EPS2011 for both data and MC (starting from Summer11 production)
       // we use an OR of the twi triggers below. Both are unpresecaled.
       ULong_t eventTriggerBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL 
@@ -298,9 +326,12 @@ void calcEventEff(const TString input)
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
       ULong_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+      */
+      ULong_t eventTriggerBit = triggers.getEventTriggerBit(info->runNum);
+      ULong_t leadingTriggerObjectBit  = triggers.getLeadingTriggerObjectBit(info->runNum);
+      ULong_t trailingTriggerObjectBit = triggers.getTrailingTriggerObjectBit(info->runNum);
       
-      if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
-
+      if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...
       eventsAfterTrigger++;
       
       // loop through dielectrons
@@ -473,7 +504,7 @@ void calcEventEff(const TString input)
   // Store constants in the file
   TString outputDir(TString("../root_files/constants/")+dirTag);
   gSystem->mkdir(outputDir,kTRUE);
-  TString sfConstFileName(outputDir+TString("/scale_factors.root"));
+  TString sfConstFileName(outputDir+TString("/scale_factors_") + triggers.triggerSetName() + TString(".root"));
 
   TFile fa(sfConstFileName, "recreate");
   scaleV.Write("scaleFactorArray");
@@ -481,8 +512,9 @@ void calcEventEff(const TString input)
   fa.Close();
 
   printf("Total events in ntuple                                       %15d\n",eventsInNtuple);
+  printf("    number of weighted events in ntuple                      %17.1lf\n",weightedEventsInNtuple);
   printf("    events after event level trigger cut                     %15d\n",eventsAfterTrigger);
-  printf("\nTotal candidates (no cuts)                                   %15d\n",totalCand);
+  printf("\nTotal candidates (no cuts)                                 %15d\n",totalCand);
   printf("        candidates in 15-600 mass window                     %15d\n",totalCandInMassWindow);
   printf("        candidates with eta 0-1.4442, 1.566-2.5              %15d\n",totalCandInEtaAcceptance);
   printf("        candidates, both electrons above 10 GeV              %15d\n",totalCandEtAbove10GeV);
@@ -633,7 +665,7 @@ double findRecoScaleFactor(const TElectron *ele){
 
   double result = 0;
 
-  // Assume 5 ET and 2 eta bins
+  // Assume 2 eta bins
   int etBin = findEtBin(ele->scEt, etBinning);
 
   if( etBin == -1){
@@ -657,7 +689,7 @@ double findIdScaleFactor  (const TElectron *ele){
  
   double result = 0;
 
-  // Assume 5 ET and 2 eta bins
+  // Assume 2 eta bins
   int etBin = findEtBin(ele->scEt, etBinning);
 
   if( etBin == -1){
@@ -681,7 +713,7 @@ double findHltScaleFactor (const TElectron *ele){
 
   double result = 0;
 
-  // Assume 5 ET and 2 eta bins
+  // Assume 2 eta bins
   int etBin = findEtBin(ele->scEt, etBinning);
 
   if( etBin == -1){
@@ -719,7 +751,7 @@ double findRecoScaleFactorSmeared(const TElectron *ele, int iexp){
 
   double result = 0;
 
-  // Assume 5 ET and 2 eta bins
+  // Assume 2 eta bins
   int etBin = findEtBin(ele->scEt, etBinning);
 
   if( etBin == -1){
@@ -752,7 +784,7 @@ double findIdScaleFactorSmeared  (const TElectron *ele, int iexp){
  
   double result = 0;
 
-  // Assume 5 ET and 2 eta bins
+  // Assume 2 eta bins
   int etBin = findEtBin(ele->scEt, etBinning);
 
   if( etBin == -1){
@@ -780,7 +812,7 @@ double findHltScaleFactorSmeared (const TElectron *ele, int iexp){
 
   double result = 0;
 
-  // Assume 5 ET and 2 eta bins
+  // Assume 2 eta bins
   int etBin = findEtBin(ele->scEt, etBinning);
 
   if( etBin == -1){
@@ -935,55 +967,55 @@ void drawEventScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle,
 void drawEfficiencies(){
 
   // Make grpahs
-  double x[nEtBins5];
-  double dx[nEtBins5];
-  for(int i=0; i<nEtBins5; i++){
-    x[i]  = (etBinLimits5[i] + etBinLimits5[i+1])/2.0;
-    dx[i] = (etBinLimits5[i+1] - etBinLimits5[i])/2.0;
+  double x[etBinCount];
+  double dx[etBinCount];
+  for(int i=0; i<etBinCount; i++){
+    x[i]  = 0.5*(etBinLimits[i] + etBinLimits[i+1]);
+    dx[i] = 0.5*(etBinLimits[i+1] - etBinLimits[i]);
   }
 
   // Graphs for SC->GSF efficiency
   TGraphErrors *grGsfBarrelDataEff 
-//     = new TGraphAsymmErrors(nEtBins5, x,  GsfBarrelDataEff, dx, dx, 
+//     = new TGraphAsymmErrors(etBinCount, x,  GsfBarrelDataEff, dx, dx, 
 // 		       GsfBarrelDataEffErr, GsfBarrelDataEffErrPos);
-    = new TGraphErrors(nEtBins5, x,  GsfBarrelDataEff, dx, GsfBarrelDataEffErr);
+    = new TGraphErrors(etBinCount, x,  GsfBarrelDataEff, dx, GsfBarrelDataEffErr);
   
   TGraphErrors *grGsfEndcapDataEff 
-//     = new TGraphAsymmErrors(nEtBins5, x,  GsfEndcapDataEff, dx, dx,
+//     = new TGraphAsymmErrors(etBinCount, x,  GsfEndcapDataEff, dx, dx,
 // 		       GsfEndcapDataEffErr, GsfEndcapDataEffErrPos);
-    = new TGraphErrors(nEtBins5, x,  GsfEndcapDataEff, dx, GsfEndcapDataEffErr);
+    = new TGraphErrors(etBinCount, x,  GsfEndcapDataEff, dx, GsfEndcapDataEffErr);
   
   TGraphErrors *grGsfBarrelMcEff 
-    = new TGraphErrors(nEtBins5, x,  GsfBarrelMcEff, dx, GsfBarrelMcEffErr);
+    = new TGraphErrors(etBinCount, x,  GsfBarrelMcEff, dx, GsfBarrelMcEffErr);
   
   TGraphErrors *grGsfEndcapMcEff 
-    = new TGraphErrors(nEtBins5, x,  GsfEndcapMcEff, dx, GsfEndcapMcEffErr);
+    = new TGraphErrors(etBinCount, x,  GsfEndcapMcEff, dx, GsfEndcapMcEffErr);
   
   // Graphs for GSF->IDed efficiency
   TGraphErrors *grIdBarrelDataEff 
-    = new TGraphErrors(nEtBins5, x,  IdBarrelDataEff, dx, IdBarrelDataEffErr);
+    = new TGraphErrors(etBinCount, x,  IdBarrelDataEff, dx, IdBarrelDataEffErr);
   
   TGraphErrors *grIdEndcapDataEff 
-    = new TGraphErrors(nEtBins5, x,  IdEndcapDataEff, dx, IdEndcapDataEffErr);
+    = new TGraphErrors(etBinCount, x,  IdEndcapDataEff, dx, IdEndcapDataEffErr);
   
   TGraphErrors *grIdBarrelMcEff 
-    = new TGraphErrors(nEtBins5, x,  IdBarrelMcEff, dx, IdBarrelMcEffErr);
+    = new TGraphErrors(etBinCount, x,  IdBarrelMcEff, dx, IdBarrelMcEffErr);
   
   TGraphErrors *grIdEndcapMcEff 
-    = new TGraphErrors(nEtBins5, x,  IdEndcapMcEff, dx, IdEndcapMcEffErr);
+    = new TGraphErrors(etBinCount, x,  IdEndcapMcEff, dx, IdEndcapMcEffErr);
   
   // Graphs for IDed->HLT efficiency
   TGraphErrors *grHltBarrelDataEff 
-    = new TGraphErrors(nEtBins5, x,  HltBarrelDataEff, dx, HltBarrelDataEffErr);
+    = new TGraphErrors(etBinCount, x,  HltBarrelDataEff, dx, HltBarrelDataEffErr);
   
   TGraphErrors *grHltEndcapDataEff 
-    = new TGraphErrors(nEtBins5, x,  HltEndcapDataEff, dx, HltEndcapDataEffErr);
+    = new TGraphErrors(etBinCount, x,  HltEndcapDataEff, dx, HltEndcapDataEffErr);
   
   TGraphErrors *grHltBarrelMcEff 
-    = new TGraphErrors(nEtBins5, x,  HltBarrelMcEff, dx, HltBarrelMcEffErr);
+    = new TGraphErrors(etBinCount, x,  HltBarrelMcEff, dx, HltBarrelMcEffErr);
   
   TGraphErrors *grHltEndcapMcEff 
-    = new TGraphErrors(nEtBins5, x,  HltEndcapMcEff, dx, HltEndcapMcEffErr);
+    = new TGraphErrors(etBinCount, x,  HltEndcapMcEff, dx, HltEndcapMcEffErr);
   
   // Draw all graphs
   TString plotName;
@@ -1016,23 +1048,23 @@ void drawEfficiencies(){
 
 void drawScaleFactors(){
 
-  double x[nEtBins5];
-  double dx[nEtBins5];
-  double scaleGsfBarrel   [nEtBins5];
-  double scaleGsfBarrelErr[nEtBins5];
-  double scaleGsfEndcap   [nEtBins5];
-  double scaleGsfEndcapErr[nEtBins5];
-  double scaleIdBarrel    [nEtBins5];
-  double scaleIdBarrelErr [nEtBins5];
-  double scaleIdEndcap    [nEtBins5];
-  double scaleIdEndcapErr [nEtBins5];
-  double scaleHltBarrel   [nEtBins5];
-  double scaleHltBarrelErr[nEtBins5];
-  double scaleHltEndcap   [nEtBins5];
-  double scaleHltEndcapErr[nEtBins5];
-  for(int i=0; i<nEtBins5; i++){
-    x[i]  = (etBinLimits5[i] + etBinLimits5[i+1])/2.0;
-    dx[i] = (etBinLimits5[i+1] - etBinLimits5[i])/2.0;
+  double x[etBinCount];
+  double dx[etBinCount];
+  double scaleGsfBarrel   [etBinCount];
+  double scaleGsfBarrelErr[etBinCount];
+  double scaleGsfEndcap   [etBinCount];
+  double scaleGsfEndcapErr[etBinCount];
+  double scaleIdBarrel    [etBinCount];
+  double scaleIdBarrelErr [etBinCount];
+  double scaleIdEndcap    [etBinCount];
+  double scaleIdEndcapErr [etBinCount];
+  double scaleHltBarrel   [etBinCount];
+  double scaleHltBarrelErr[etBinCount];
+  double scaleHltEndcap   [etBinCount];
+  double scaleHltEndcapErr[etBinCount];
+  for(int i=0; i<etBinCount; i++){
+    x[i]  = (etBinLimits[i] + etBinLimits[i+1])/2.0;
+    dx[i] = (etBinLimits[i+1] - etBinLimits[i])/2.0;
     scaleGsfBarrel   [i] = GsfBarrelDataEff[i] / GsfBarrelMcEff[i];
     scaleGsfBarrelErr[i] = errOnRatio( GsfBarrelDataEff[i], GsfBarrelDataEffErr[i], 
 				       GsfBarrelMcEff[i] , GsfBarrelMcEffErr[i]);
@@ -1064,22 +1096,22 @@ void drawScaleFactors(){
 //   scaleHltEndcapErr[0] = 0;
 
   TGraphErrors *grGsfBarrel 
-    = new TGraphErrors(nEtBins5, x, scaleGsfBarrel, dx, scaleGsfBarrelErr);
+    = new TGraphErrors(etBinCount, x, scaleGsfBarrel, dx, scaleGsfBarrelErr);
 
   TGraphErrors *grGsfEndcap 
-    = new TGraphErrors(nEtBins5, x, scaleGsfEndcap, dx, scaleGsfEndcapErr);
+    = new TGraphErrors(etBinCount, x, scaleGsfEndcap, dx, scaleGsfEndcapErr);
 
   TGraphErrors *grIdBarrel 
-    = new TGraphErrors(nEtBins5, x, scaleIdBarrel, dx, scaleIdBarrelErr);
+    = new TGraphErrors(etBinCount, x, scaleIdBarrel, dx, scaleIdBarrelErr);
 
   TGraphErrors *grIdEndcap 
-    = new TGraphErrors(nEtBins5, x, scaleIdEndcap, dx, scaleIdEndcapErr);
+    = new TGraphErrors(etBinCount, x, scaleIdEndcap, dx, scaleIdEndcapErr);
 
   TGraphErrors *grHltBarrel 
-    = new TGraphErrors(nEtBins5, x, scaleHltBarrel, dx, scaleHltBarrelErr);
+    = new TGraphErrors(etBinCount, x, scaleHltBarrel, dx, scaleHltBarrelErr);
 
   TGraphErrors *grHltEndcap 
-    = new TGraphErrors(nEtBins5, x, scaleHltEndcap, dx, scaleHltEndcapErr);
+    = new TGraphErrors(etBinCount, x, scaleHltEndcap, dx, scaleHltEndcapErr);
 
   TString plotName;
   plotName = "plot_scale_gsf_barrel";
@@ -1157,7 +1189,25 @@ void drawEventScaleFactors(TVectorD scaleGsfV, TVectorD scaleGsfErrV,
 // This method reads all ROOT files that have efficiencies from
 // tag and probe in TMatrixD form and converts the matrices into 
 // more simple arrays.
-void fillEfficiencyConstants(){
+void fillEfficiencyConstants(  const TriggerSelection &triggerSet ) {
+  /*
+  TString effDataGsfFile = "efficiency_TnP_data_gsf_fit-fit_bins-et5-eta2.root";
+  TString effMcGsfFile   = "efficiency_TnP_mc_gsf_count-count_bins-et5-eta2.root";
+
+  TString effDataIdFile  = "efficiency_TnP_data_id_fit-fit_bins-et5-eta2.root";
+  TString effMcIdFile    = "efficiency_TnP_mc_id_count-count_bins-et5-eta2.root";
+
+  TString effDataHltFile = "efficiency_TnP_data_hlt_count-count_bins-et5-eta2.root";
+  TString effMcHltFile   = "efficiency_TnP_mc_hlt_count-count_bins-et5-eta2.root";
+  */
+  TString fnStart="efficiency_TnP_";
+  TString fnEnd=".root";
+  TString effDataGsfFile = fnStart + getLabel(DATA,GSF,dataGsfEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
+  TString effMcGsfFile   = fnStart + getLabel(MC  ,GSF,  mcGsfEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
+  TString effDataIdFile  = fnStart + getLabel(DATA, ID, dataIdEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
+  TString effMcIdFile    = fnStart + getLabel(MC  , ID,   mcIdEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
+  TString effDataHltFile = fnStart + getLabel(DATA,HLT,dataHltEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
+  TString effMcHltFile   = fnStart + getLabel(MC  ,HLT,  mcHltEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
 
   // Continue assuming 2 eta bins
   // Last parameter is 0=barrel, 1=endcap

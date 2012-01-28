@@ -15,11 +15,17 @@
 
 enum TriggerConstantSet 
   { TrigSet_UNDEFINED =0,
-    Full2011DatasetTriggers =7,   //  Full2011DatasetTriggers includes all periods (1+2+4=7)
+    Full2011DatasetTriggers =10,   //  includes all periods (1+2+4=7)
     TrigSet_2011A_SingleEG  =1, 
     TrigSet_2011A_DoubleEG  =2,
     TrigSet_2011B_DoubleEG  =4
   };
+
+enum EfficiencyCalcDef { // functionality not implemented
+  EffCalc_UNDEFINED =0,
+  EffCalc_2011Old =1,
+  EffCalc_2011HWW =2,  
+};
 
 const UInt_t cFirstEvent2011B = 175770;
 
@@ -78,11 +84,19 @@ void PrintBits(T n) {
 class TriggerSelection{
   
  public:
-  TriggerSelection(TriggerConstantSet constantsSet, bool isData, int run):
+  TriggerSelection(TriggerConstantSet constantsSet, bool isData, int run, EfficiencyCalcDef effCalc=EffCalc_2011Old):
     _constants(constantsSet),
     _isData(isData),
-    _run(run){};
+    _run(run),
+    _effCalcAlgo(effCalc)
+  {}
 
+  // Access
+  TriggerConstantSet triggerSet() const { return _constants; }
+  bool isDefined() const { return (_constants != TrigSet_UNDEFINED) ? true : false; }
+  TString triggerSetName() const { return TriggerSetName(_constants); }
+
+  // Filtering
   bool validRun(UInt_t run) const {
     if (!_isData) return true;
     bool ok=false;
@@ -90,7 +104,7 @@ class TriggerSelection{
     case Full2011DatasetTriggers: ok=true; break;
     case TrigSet_2011A_SingleEG: if ((run>=160404)  // lower limit is determined by the 1st 2011 events
 				     && (run<=170759)) ok=true; break;
-    case TrigSet_2011A_DoubleEG: if ((run>=170826) && (run< cFirstEvent2011B)) ok=true; break;
+    case TrigSet_2011A_DoubleEG: if ((run>=170826) && (run<cFirstEvent2011B)) ok=true; break;
     case TrigSet_2011B_DoubleEG: if (run>=cFirstEvent2011B) ok=true; break;
     case TrigSet_UNDEFINED: 
     default:
@@ -100,6 +114,7 @@ class TriggerSelection{
   }
 
   bool suitableDataFile(const TString &dataFileName) const {
+    if (!_isData) return true; // no verification for MC samples
     bool ok=false;
     switch(_constants) {
     case Full2011DatasetTriggers: ok=true; break;
@@ -120,16 +135,19 @@ class TriggerSelection{
     return ok;
   }
 
+  // Trigger bits: main analysis
+
   ULong_t getEventTriggerBit(UInt_t run=0) const {
     if (run==0) run=_run;
     ULong_t result = 0;
-    // old remark:
+    // -- old remark:
       // Note: data and MC are the same
       // Note: the trigger
       //     kHLT_Ele17_CaloIdT_Calo_IsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL;
       // is packed into the same bit as the trigger
       //     kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL
       // the difference between the two is only in the name rearrangement
+    // -- end of old remark
     if ( !_isData ) {
       result = (kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL |
 		kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL);
@@ -177,12 +195,14 @@ class TriggerSelection{
     return result;
   };
 
+  // Trigger bits for Tag&Probe analysis
 
   ULong_t getEventTriggerBit_SCtoGSF(UInt_t run) const {
     if (_isData && !validRun(run)) return 0UL;
     ULong_t bits=
 	kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
-	kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17;
+        kHLT_Ele32_CaloIdL_CaloIsoVL_SC17  |                // <--- added from eff_Reco.C
+        kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17;
       //kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
       //kHLT_Ele32_CaloIdL_CaloIsoVL_SC17                     // was defined in eff_Reco.C for 2011A(early)
     return bits;
@@ -191,7 +211,8 @@ class TriggerSelection{
   ULong_t getLeadingTriggerObjectBit_SCtoGSF(int) const { // no check whether the run is ok!
     ULong_t bits=
 	kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
-	kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17_EleObj;
+        kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj   |             //   <--- added from eff_Reco.C
+    	kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17_EleObj;
       //kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
       //kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj                     // was defined in eff_Reco.C for 2011A(early)
     return bits;
@@ -201,10 +222,11 @@ class TriggerSelection{
     if (_isData && !validRun(run)) return 0UL;
     ULong_t bits=
       kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
+      kHLT_Ele32_CaloIdL_CaloIsoVL_SC17 |             // <---- added from eff_IdHlt.C
       kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17;
-    //	kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_Ele17;      <---------- unknown
-      //kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
-      //kHLT_Ele32_CaloIdL_CaloIsoVL_SC17                     // was defined in eff_IdHlt.C for 2011A(early)
+    //	kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_Ele17;      <---------- unknown (Jan 26, 2012)
+    //kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
+    //kHLT_Ele32_CaloIdL_CaloIsoVL_SC17                     // was defined in eff_IdHlt.C for 2011A(early)
     if (_isData && (run>=165088) && (run<=170759)) {
       bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30;
     }
@@ -214,33 +236,32 @@ class TriggerSelection{
   ULong_t getLeadingTriggerObjBit_TagProbe(UInt_t run) const { // no check whether the run is ok!
     ULong_t bits=
       kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
+      kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj  |         // was defined in ieff_idHlt.C
       kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17_EleObj;
-      //kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_Ele17_EleObj;  <------------- unknown
-      //kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
-      //kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj                 // was defined in eff_IdHlt.C for 2011A(early)
+      //kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_Ele17_EleObj;  <------------- unknown (Jan 26, 2012)
+    //kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
+    //kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj                 // was defined in eff_IdHlt.C for 2011A(early)
     if (_isData && (run>=165088) && (run<=170759)) {
       bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
     }
     return bits;
   }
 
-  ULong_t getTrailingTriggerObjBit_TagProbeTight(UInt_t run) const { // no check whether the run is ok!
+  ULong_t getTrailingTriggerObjBit_TagProbe_Tight(UInt_t run) const { // no check whether the run is ok!
     ULong_t bits = 
-      kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj |
-      kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
-    if (_isData && (run>=165088) && (run<=170759)) {
-      bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
-    }
-    return bits;
-  }
-
-  ULong_t getTrailingTriggerObjBit_TagProbeLoose(UInt_t run) const { // no check whether the run is ok!
-    ULong_t bits=
-      kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj |
+      kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj |
       kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
     if (_isData && (run>=165088) && (run<=170759)) {
+      bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
       bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele2Obj;
     }
+    return bits;
+  }
+
+  ULong_t getTrailingTriggerObjBit_TagProbe_Loose(UInt_t) const { // no check whether the run is ok!
+    ULong_t bits=
+      kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj |
+      kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj;
     return bits;
   }
 
@@ -248,6 +269,7 @@ class TriggerSelection{
   TriggerConstantSet  _constants;
   bool                _isData;
   int                 _run;
+  EfficiencyCalcDef   _effCalcAlgo;
 
 };
 

@@ -74,10 +74,6 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
   TriggerConstantSet triggerSet=DetermineTriggerSet(triggerSetString);  
   assert ( triggerSet != TrigSet_UNDEFINED );
 
-  if (triggerSet != Full2011DatasetTriggers) {
-    std::cout << "effIdHlt is not ready for " << triggerSetString << "\n";
-    throw 1;
-  }
 
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
@@ -96,7 +92,10 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
   vector<TString> ntupleFileNames;
   ifstream ifs;
   ifs.open(configFile.Data());
-  assert(ifs.is_open());
+  if (!ifs.is_open()) {
+    std::cout << "tried to open the configuration file <" << configFile << ">\n";
+    assert(ifs.is_open());
+  }
   string line;
   Int_t state=0;
   while(getline(ifs,line)) {
@@ -178,12 +177,12 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
     assert(0);
   printf("Sample: %s\n", sampleTypeString.Data());
 
-  // The label is a string that contains the fields that are passed to
-  // the function below, to be used to name files with the output later.
-  TString label = getLabel(sample, effType, calcMethod, etBinning, etaBinning, triggerSet);
-
   // Construct the trigger object
   TriggerSelection triggers(triggerSet, (sample==DATA)?true:false, 0);
+
+ // The label is a string that contains the fields that are passed to
+  // the function below, to be used to name files with the output later.
+  TString label = getLabel(sample, effType, calcMethod, etBinning, etaBinning, triggers);
 
   //--------------------------------------------------------------------------------------------------------------
   // Main analysis code 
@@ -246,6 +245,9 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
   // opening it just removes complaints about memory resident
   // trees. No events are actually written.
   TFile *selectedEventsFile = new TFile("selectedEventsFile.root","recreate");
+  if (!selectedEventsFile) {
+    assert(0);
+  }
 
   TTree *passTree = new TTree("passTree","passTree");
   Double_t storeMass, storeEt, storeEta;
@@ -262,7 +264,7 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
   double ymax = 800;
   if(nDivisions <4 )
     ymax = nDivisions * 200;
-  TCanvas *c1 = MakeCanvas("c1","c1", 600, ymax);
+  TCanvas *c1 = MakeCanvas("c1","c1", 600, int(ymax));
   c1->Divide(2,nDivisions);
 
   int eventsInNtuple = 0;
@@ -334,17 +336,19 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
       */
 
       ULong_t eventTriggerBit= triggers.getEventTriggerBit_TagProbe(info->runNum);
-      ULong_t tagTriggerObjectBit= triggers.getLeadingTriggerObjectBit_TagProbe(info->runNum);
-      ULong_t probeTriggerObjectBit= 
-	triggers.getTrailingTriggerObjectBit_TagProbeTight(info->runNum) |
-	triggers.getTrailingTriggerObjectBit_TagProbeLoose(info->runNum);
 
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event... 
       eventsAfterTrigger++;
-      
+
+      ULong_t tagTriggerObjectBit= triggers.getLeadingTriggerObjBit_TagProbe(info->runNum);
+      ULong_t probeTriggerObjectBit_Tight= triggers.getTrailingTriggerObjBit_TagProbe_Tight(info->runNum);
+      ULong_t probeTriggerObjectBit_Loose= triggers.getTrailingTriggerObjBit_TagProbe_Loose(info->runNum);
+      ULong_t probeTriggerObjectBit= probeTriggerObjectBit_Tight | probeTriggerObjectBit_Loose;
+
       // loop through dielectrons
       dielectronArr->Clear();
-      dielectronBr->GetEntry(ientry);    
+      dielectronBr->GetEntry(ientry);
+      std::cout << "there are " << dielectronArr->GetEntriesFast() << " events\n";
       for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
 	
 	totalCand++;
