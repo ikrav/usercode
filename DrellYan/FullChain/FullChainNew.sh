@@ -11,33 +11,33 @@ filename_cs='"../config_files/xsecCalc.conf"'
 #Selection
 statusSelection=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: plotDY(\"../config_files/data.conf\")"
+echo "WILL DO: selectEvents1D(\"../config_files/data.conf\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Selection
 rm *.so
-root -b -q -l plotDY.C+\($filename_data\)
+root -b -q -l selectEvents1D.C+\($filename_data\)
 if [ $? != 0 ]; then 
    statusSelection=FAILED
 fi
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: plotDY(\"../config_files/data.conf\")"
+echo "DONE: selectEvents1D(\"../config_files/data.conf\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 
 #PlotSelectDY
 statusPlotSelectDY=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: plotSelectDY.C(\"../config_files/data.conf\")"
+echo "WILL DO: prepareYields1D(\"../config_files/data.conf\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../MassSpectrum
 rm *.so
-root -b -q -l plotSelectDY.C+\($filename_data\)
+root -b -q -l prepareYields1D.C+\($filename_data\)
 if [ $? != 0 ]; then 
    statusPlotSelectDY=FAILED
 fi
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: plotSelectDY.C(\"../config_files/data.conf\")"
+echo "DONE: prepareYields1D(\"../config_files/data.conf\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 
 #SubtractBackground
