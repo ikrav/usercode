@@ -348,7 +348,6 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
       // loop through dielectrons
       dielectronArr->Clear();
       dielectronBr->GetEntry(ientry);
-      std::cout << "there are " << dielectronArr->GetEntriesFast() << " events\n";
       for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
 	
 	totalCand++;
@@ -548,7 +547,8 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
   measureEfficiency(passTree, failTree,
 		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,
 		    useTemplates, templatesFile, resultsRootFile,
-		    NsetBins, isRECO, setBinsType, dirTag);
+		    NsetBins, isRECO, setBinsType, 
+		    dirTag, triggers.triggerSetName());
 
   effOutput.close();
   fitLog.close();

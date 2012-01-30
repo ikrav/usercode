@@ -94,9 +94,9 @@ TString getLabel(int sample, int effType, int method,  int etBinning, int etaBin
   label+= trigSet.triggerSetName();
 
   if(sample == DATA)
-    label += "data";
+    label += "_data";
   else if(sample == MC)
-    label += "mc";
+    label += "_mc";
   else
     assert(0);
 

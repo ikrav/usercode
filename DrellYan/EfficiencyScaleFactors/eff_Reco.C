@@ -544,7 +544,8 @@ void eff_Reco(const TString configFile, TString triggerSetString)
   measureEfficiency(passTree, failTree,
 		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,
 		    useTemplates, templatesFile, resultsRootFile,
-		    NsetBins, isRECO, setBinsType, dirTag);
+		    NsetBins, isRECO, setBinsType,
+		    dirTag, triggers.triggerSetName());
 
   
 

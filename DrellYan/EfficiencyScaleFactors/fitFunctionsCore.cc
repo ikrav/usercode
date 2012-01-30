@@ -285,7 +285,7 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &ef
 }
 
 
-void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, TH1F *templatePass, TH1F *templateFail, bool isRECO, const char* setBinsType, TString dirTag){
+void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, TH1F *templatePass, TH1F *templateFail, bool isRECO, const char* setBinsType, TString dirTag, const TString &picFileExtraTag){
 
     
   RealLimit lims[12];
@@ -504,12 +504,20 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   cutF=cutF.ReplaceAll("____","_");
   cutF=cutF.ReplaceAll("___","_");
   cutF=cutF.ReplaceAll("__","_");
+
+  TString pngFileBase=TString("../root_files/tag_and_probe/") + dirTag + TString("/fit-") + picFileExtraTag;
+  if (isRECO) pngFileBase+="-reco-"; else pngFileBase+="-id-";
+  pngFileBase += cutF;
   
   TCanvas cPass("cPass","cPass");
   framePass->Draw();
   cPass.Update();
+
+  /*
   if (isRECO) cPass.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-reco-"+(std::string)cutF+"-pass.png").c_str());
   else cPass.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-id-"+(std::string)cutF+"-pass.png").c_str());
+  */
+  cPass.Print((pngFileBase + TString("-pass.png")).Data());
 
   failPad->cd();
   failPad->Clear();
@@ -523,8 +531,11 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   TCanvas cFail("cFail","cFail");
   frameFail->Draw();
   cFail.Update();
+  /*
   if (isRECO) cFail.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-reco-"+(std::string)cutF+"-fail.png").c_str());
   else cFail.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-id-"+(std::string)cutF+"-fail.png").c_str());
+  */
+  cPass.Print((pngFileBase + TString("-fail.png")).Data());
 
   // Print fit outcome into fit log
   result->printStream(fitLog,RooPrintable::kValue,RooPrintable::kVerbose);
