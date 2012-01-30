@@ -18,6 +18,7 @@
 #include "../Include/UnfoldingTools.hh"
 #include "../Include/MyTools.hh"        // miscellaneous helper functions
 #include "../Include/DYTools.hh"
+#include "../Include/TriggerSelection.hh"
 // This global constants will be filled from 
 // the configuration file. This is not great C++...
 TString tagDirYields = "";
@@ -40,7 +41,7 @@ const TString fileEscaleErrors("escale_systematics.root");
 
 const TString fileEfficiencyConstants("event_efficiency_constants.root");
 
-const TString fileScaleFactorConstants("scale_factors.root");
+TString fileScaleFactorConstants("scale_factors.root");
 
 const TString fileAcceptanceConstants("acceptance_constants.root");
 
@@ -140,6 +141,7 @@ void calcCrossSection(const TString conf){
   assert(ifs.is_open());
   string line;
   int state = 0;
+  TString triggerSetString;
   while(getline(ifs,line)) {
     if(line[0]=='#') continue;
     if(state==0){
@@ -150,10 +152,22 @@ void calcCrossSection(const TString conf){
       state++;
     }else if(state==2){
       tagDirConstants = TString(line);
+      state++;
+    } else if (state==3) {
+      triggerSetString = TString(line);
       break;
     }
   }
   ifs.close();
+
+  // Construct the trigger object
+  TriggerSelection triggers(triggerSetString, true, 0);
+  assert ( triggers.isDefined() );
+  // update the name of the file with per-event scale factors
+  fileScaleFactorConstants.Insert(fileScaleFactorConstants.Index(".root"),
+				  TString("_") + triggers.triggerSetName());
+  std::cout << "using fileScaleFactorConstants=" << fileScaleFactorConstants << "\n";
+  
 
   TVectorD signalYields(nMassBins);
   TVectorD signalYieldsStatErr(nMassBins);
