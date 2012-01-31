@@ -71,7 +71,8 @@ void  fsrCorrectionSansAcceptance(TVectorD &vin, TVectorD &vinStatErr, TVectorD 
 
 void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
 		    TVectorD &vout, TVectorD &voutStatErr, TVectorD &voutSystErr,
-		    TVectorD &voutNorm, TVectorD &voutNormStatErr, TVectorD &voutNormSystErr);
+		    TVectorD &voutNorm, TVectorD &voutNormStatErr, TVectorD &voutNormSystErr,
+		    const TriggerSelection &triggers);
 
 void  crossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
 		       TVectorD &vout, TVectorD &voutStatErr, TVectorD &voutSystErr,
@@ -255,7 +256,8 @@ void calcCrossSection(const TString conf){
   // Calculate absolute and relative cross-sections
   crossSections(preFsrYields, preFsrYieldsStatErr, preFsrYieldsSystErr,
 		absCrossSection, absCrossSectionStatErr, absCrossSectionSystErr,
-		relCrossSection, relCrossSectionStatErr, relCrossSectionSystErr);
+		relCrossSection, relCrossSectionStatErr, relCrossSectionSystErr,
+		triggers);
 
   // Calculate absolute and relative cross-sections DET (shapes, no Acc, but with FSR)
   crossSectionsDET(preFsrSansAccYields, preFsrSansAccYieldsStatErr, preFsrSansAccYieldsSystErr,
@@ -669,7 +671,8 @@ void  fsrCorrectionSansAcceptance(TVectorD &vin, TVectorD &vinStatErr, TVectorD 
 
 void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
 		    TVectorD &vout, TVectorD &voutStatErr, TVectorD &voutSystErr,
-		    TVectorD &voutNorm, TVectorD &voutNormStatErr, TVectorD &voutNormSystErr)
+		    TVectorD &voutNorm, TVectorD &voutNormStatErr, TVectorD &voutNormSystErr,
+		    const TriggerSelection &triggers)
 {
 
   // Find absolute cross-section
@@ -738,7 +741,9 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   }
   TString outputDir(TString("../root_files/"));
   gSystem->mkdir(outputDir,kTRUE);
-  TString xSecResultFileName(outputDir+TString("/xSec_results.root"));
+  TString xSecResultFileName(outputDir+TString("/xSec_results_") + 
+		   triggers.triggerConditionsName() + TString(".root"));
+  std::cout << "xSecResultFileName= " << xSecResultFileName << "\n";
   TFile fa(xSecResultFileName,"recreate");
   normXSec.Write("normXSec");
   normXSecErr.Write("normXSecErr");
@@ -865,7 +870,9 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   }
   TString outputDir1(TString("../root_files/"));
   gSystem->mkdir(outputDir1,kTRUE);
-  TString xSecResultFileName1(outputDir1+TString("/xSecTh_results.root"));
+  TString xSecResultFileName1(outputDir1+TString("/xSecTh_results_") +
+		      triggers.triggerConditionsName() + TString(".root"));
+  std::cout << "xSecResultFileName1=" << xSecResultFileName1 << "\n";
   TFile fb(xSecResultFileName1,"recreate");
   normXSecTh.Write("XSecTh");
   normXSecThErr.Write("XSecThErr");
