@@ -191,6 +191,7 @@ class TriggerSelection{
       if (run>170759 /*170826*/) yes=true;
       break;
     default:
+      yes=false;
     }
     return yes;
   }
@@ -317,7 +318,7 @@ class TriggerSelection{
     return bits;
   }
 
-  ULong_t getTrailingTriggerObjBit_TagProbe_Loose(UInt_t) const { // no check whether the run is ok!
+  ULong_t getTrailingTriggerObjBit_TagProbe_Loose(UInt_t run) const { // no check whether the run is ok!
    ULong_t bits=
      kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
    if (_isData && (run>=165088) && (run<=170759)) {
