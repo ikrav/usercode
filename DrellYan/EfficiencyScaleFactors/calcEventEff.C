@@ -119,6 +119,21 @@ double HltEndcapDataEff   [etBinCount], HltEndcapDataEffErr[etBinCount];
 double HltBarrelMcEff     [etBinCount], HltBarrelMcEffErr  [etBinCount];
 double HltEndcapMcEff     [etBinCount], HltEndcapMcEffErr  [etBinCount];
 
+// blind invention
+const double runLumiV[3]= { 
+  0.216013 + 0.925760*(170759-130404)/double(173692-130404) + 0.658886*(170054-160404)/double(173692-160404),  // 2011A SingleEG
+  0.925760*(173692-170759)/double(173692-130404) + 0.368037 + 0.658886*(173692-170054)/double(173692-160404),  // 2011A DoubleEG
+  2.511 };
+  
+//DATASET           RECORDED [/fb]   GOOD LUMI [/fb]   JSON
+//-------           --------------   ---------------   ----
+//r11a-del-m10-v1      0.246844         0.216013       /home/ksung/JSON/Cert_160404-163869_7TeV_May10ReReco_Collisions11_JSON_v3.txt
+//r11a-del-pr-v4       0.975637         0.925760       /home/ksung/JSON/Cert_160404-173692_7TeV_PromptReco_Collisions11_JSON.txt
+//r11a-del-a05-v1      0.511590         0.368037       /home/ksung/JSON/Cert_170249-172619_7TeV_ReReco5Aug_Collisions11_JSON_v3.txt
+//r11a-del-o03-v1      0.696819         0.658886       /home/ksung/JSON/Cert_160404-173692_7TeV_PromptReco_Collisions11_JSON.txt
+//r11b-del-pr-v1       2.684            2.511          /home/ksung/JSON/Cert_160404-180252_7TeV_PromptReco_Collisions11_JSON.txt
+
+
 // Global variables
 const int nexp = 100;
 double ro_D_B_reco[nexp];
@@ -191,7 +206,7 @@ void calcEventEff(const TString input, TString triggerSetString)
   ifs.close();
 
   // Construct the trigger object
-  TriggerSelection triggers(triggerSet, false, 0); // we work with MC files
+  TriggerSelection triggers(triggerSetString, false, 0); // we work with MC files
 
   // Read efficiency constants from ROOT files
   // This has to be done AFTER configuration file is parsed
@@ -504,7 +519,7 @@ void calcEventEff(const TString input, TString triggerSetString)
   // Store constants in the file
   TString outputDir(TString("../root_files/constants/")+dirTag);
   gSystem->mkdir(outputDir,kTRUE);
-  TString sfConstFileName(outputDir+TString("/scale_factors_") + triggers.triggerSetName() + TString(".root"));
+  TString sfConstFileName(outputDir+TString("/scale_factors_") + triggers.triggerConditionsName() + TString(".root"));
 
   TFile fa(sfConstFileName, "recreate");
   scaleV.Write("scaleFactorArray");
@@ -1189,7 +1204,7 @@ void drawEventScaleFactors(TVectorD scaleGsfV, TVectorD scaleGsfErrV,
 // This method reads all ROOT files that have efficiencies from
 // tag and probe in TMatrixD form and converts the matrices into 
 // more simple arrays.
-void fillEfficiencyConstants(  const TriggerSelection &triggerSet ) {
+void fillEfficiencyConstants(  const TriggerSelection &triggers ) {
   /*
   TString effDataGsfFile = "efficiency_TnP_data_gsf_fit-fit_bins-et5-eta2.root";
   TString effMcGsfFile   = "efficiency_TnP_mc_gsf_count-count_bins-et5-eta2.root";
@@ -1202,12 +1217,12 @@ void fillEfficiencyConstants(  const TriggerSelection &triggerSet ) {
   */
   TString fnStart="efficiency_TnP_";
   TString fnEnd=".root";
-  TString effDataGsfFile = fnStart + getLabel(DATA,GSF,dataGsfEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
-  TString effMcGsfFile   = fnStart + getLabel(MC  ,GSF,  mcGsfEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
-  TString effDataIdFile  = fnStart + getLabel(DATA, ID, dataIdEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
-  TString effMcIdFile    = fnStart + getLabel(MC  , ID,   mcIdEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
-  TString effDataHltFile = fnStart + getLabel(DATA,HLT,dataHltEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
-  TString effMcHltFile   = fnStart + getLabel(MC  ,HLT,  mcHltEffMethod,etBinning,etaBinning,triggerSet) + fnEnd;
+  TString effDataGsfFile = fnStart + getLabel(DATA,GSF,dataGsfEffMethod,etBinning,etaBinning,triggers) + fnEnd;
+  TString effMcGsfFile   = fnStart + getLabel(MC  ,GSF,  mcGsfEffMethod,etBinning,etaBinning,triggers) + fnEnd;
+  TString effDataIdFile  = fnStart + getLabel(DATA, ID, dataIdEffMethod,etBinning,etaBinning,triggers) + fnEnd;
+  TString effMcIdFile    = fnStart + getLabel(MC  , ID,   mcIdEffMethod,etBinning,etaBinning,triggers) + fnEnd;
+  TString effDataHltFile = fnStart + getLabel(DATA,HLT,dataHltEffMethod,etBinning,etaBinning,triggers) + fnEnd;
+  TString effMcHltFile   = fnStart + getLabel(MC  ,HLT,  mcHltEffMethod,etBinning,etaBinning,triggers) + fnEnd;
 
   // Continue assuming 2 eta bins
   // Last parameter is 0=barrel, 1=endcap
@@ -1221,10 +1236,43 @@ void fillEfficiencyConstants(  const TriggerSelection &triggerSet ) {
   fillOneEfficiency(effMcIdFile, IdBarrelMcEff, IdBarrelMcEffErr, 0);
   fillOneEfficiency(effMcIdFile, IdEndcapMcEff, IdEndcapMcEffErr, 1);
 
-  fillOneEfficiency(effDataHltFile, HltBarrelDataEff, HltBarrelDataEffErr, 0);
-  fillOneEfficiency(effDataHltFile, HltEndcapDataEff, HltEndcapDataEffErr, 1);
   fillOneEfficiency(effMcHltFile, HltBarrelMcEff, HltBarrelMcEffErr, 0);
   fillOneEfficiency(effMcHltFile, HltEndcapMcEff, HltEndcapMcEffErr, 1);
+
+  if ( ! triggers.hltEffMethodIs2011New() ) {
+    fillOneEfficiency(effDataHltFile, HltBarrelDataEff, HltBarrelDataEffErr, 0);
+    fillOneEfficiency(effDataHltFile, HltEndcapDataEff, HltEndcapDataEffErr, 1);
+  }
+  else {
+    std::cout << " loading files for luminosity reweighting for data HLT-efficiency\n";
+    double barrelEff[etBinCount], barrelEffErr[etBinCount];
+    double endcapEff[etBinCount], endcapEffErr[etBinCount];
+    TriggerSelection locTrig(triggers);
+
+    // clear the array
+    for (int i=0; i<etBinCount; ++i) HltBarrelDataEff[i]=0.;
+    for (int i=0; i<etBinCount; ++i) HltBarrelDataEffErr[i]=0.;
+    // iterate over run chunks
+    const double totLumi=runLumiV[0]+runLumiV[1]+runLumiV[2];
+    const double invTotLumi=1/totLumi;
+    for (int lumiIdx=0; lumiIdx<3; ++lumiIdx) {
+      switch(lumiIdx) {
+      case 0: locTrig.triggerSet(TrigSet_2011A_SingleEG); break;
+      case 1: locTrig.triggerSet(TrigSet_2011A_DoubleEG); break;
+      case 2: locTrig.triggerSet(TrigSet_2011B_DoubleEG); break;
+      default:
+	std::cout << "error in the code\n";
+	assert(0);
+      }
+      effDataHltFile = fnStart + getLabel(DATA,HLT,dataHltEffMethod,etBinning,etaBinning,locTrig) + fnEnd;
+      fillOneEfficiency(effDataHltFile, barrelEff, barrelEffErr, 0);
+      for (int i=0; i<etBinCount; ++i) HltBarrelDataEff[i]    += invTotLumi * runLumiV[lumiIdx] * barrelEff[i];
+      for (int i=0; i<etBinCount; ++i) HltBarrelDataEffErr[i] += invTotLumi * runLumiV[lumiIdx] * barrelEffErr[i];
+      fillOneEfficiency(effDataHltFile, endcapEff, endcapEffErr, 1);
+      for (int i=0; i<etBinCount; ++i) HltEndcapDataEff[i]    += invTotLumi * runLumiV[lumiIdx] * endcapEff[i];
+      for (int i=0; i<etBinCount; ++i) HltEndcapDataEffErr[i] += invTotLumi * runLumiV[lumiIdx] * endcapEffErr[i];
+    }
+  }
 
 }
 

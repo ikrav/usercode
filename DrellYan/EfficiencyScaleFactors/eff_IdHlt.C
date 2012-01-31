@@ -12,6 +12,7 @@
 #include <TGraphAsymmErrors.h>
 #include <TClonesArray.h>
 #include <TMatrixD.h>
+#include <TRandom.h>
 #include <iostream>                 // standard I/O
 #include <iomanip>                  // functions to format standard I/O
 #include <fstream>                  // functions for file I/O
@@ -178,7 +179,12 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
   printf("Sample: %s\n", sampleTypeString.Data());
 
   // Construct the trigger object
-  TriggerSelection triggers(triggerSet, (sample==DATA)?true:false, 0);
+  TriggerSelection triggers(triggerSetString, (sample==DATA)?true:false, 0);
+  if (effType==HLT) std::cout << "\tHLT efficiency calculation method " << triggers.hltEffCalcName() << ", triggerSet=" << triggers.triggerSetName() << "\n";
+  else triggers.hltEffCalcMethod(HLTEffCalc_2011Old);
+
+  TRandom *rnd= new TRandom();
+  rnd->SetSeed(0); 
 
  // The label is a string that contains the fields that are passed to
   // the function below, to be used to name files with the output later.
@@ -422,6 +428,17 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
 	  isProbe2     = isHLTProbe2;
 	  isProbePass1 = isHLTProbePass1;
 	  isProbePass2 = isHLTProbePass2;
+	  if (triggers.useRandomTagTnPMethod(info->runNum)) {
+	    if (rnd->Uniform() <= 0.5) {
+	      // tag is 1st electron
+	      if (!isTag1) continue;
+	      isTag2=0; // ignore whether ele2 can be a tag
+	    }
+	    else {
+	      if (!isTag2) continue;
+	      isTag1=0; // ignore whether ele1 can be a tag
+	    }
+	  }
 	}else {
 	  printf("ERROR: unknown efficiency type requested\n");
 	}

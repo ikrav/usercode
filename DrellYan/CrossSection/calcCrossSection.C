@@ -165,7 +165,7 @@ void calcCrossSection(const TString conf){
   assert ( triggers.isDefined() );
   // update the name of the file with per-event scale factors
   fileScaleFactorConstants.Insert(fileScaleFactorConstants.Index(".root"),
-				  TString("_") + triggers.triggerSetName());
+				  TString("_") + triggers.triggerConditionsName());
   std::cout << "using fileScaleFactorConstants=" << fileScaleFactorConstants << "\n";
   
 

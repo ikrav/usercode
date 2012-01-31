@@ -21,10 +21,11 @@ enum TriggerConstantSet
     TrigSet_2011B_DoubleEG  =4
   };
 
-enum EfficiencyCalcDef { // functionality not implemented
-  EffCalc_UNDEFINED =0,
-  EffCalc_2011Old =1,
-  EffCalc_2011HWW =2,  
+enum HLTEfficiencyCalcDef {
+  HLTEffCalc_UNDEFINED =0,
+  HLTEffCalc_2011Old =1,
+  HLTEffCalc_2011New =2,  
+  HLTEffCalc_2011HWW =3 // not implemented
 };
 
 const UInt_t cFirstEvent2011B = 175770;
@@ -57,6 +58,30 @@ TriggerConstantSet DetermineTriggerSet(const TString &str) {
   return ts;
 }
 
+// -----------------------------------------------
+// -----------------------------------------------
+
+TString HLTEfficiencyCalcName(HLTEfficiencyCalcDef ecd) {
+  TString name;
+  switch(ecd) {
+  case HLTEffCalc_UNDEFINED: name="hltEffUndefined"; break;
+  case HLTEffCalc_2011Old: name="hltEffOld"; break;
+  case HLTEffCalc_2011New: name="hltEffNew"; break;
+  case HLTEffCalc_2011HWW: name="hltEffHWW"; break;
+  default: name="<HLTEfficiencyCalcName is unknown>";
+  }
+  return name;
+}
+
+// -----------------------------------------------
+
+HLTEfficiencyCalcDef DetermineHLTEfficiencyCalc(const TString &str) {
+  HLTEfficiencyCalcDef ec=HLTEffCalc_UNDEFINED;
+  if (str.Contains("HWW")) ec=HLTEffCalc_2011HWW;
+  else if (str.Contains("hltEffNew")) ec=HLTEffCalc_2011New;
+  else if (DetermineTriggerSet(str)!=TrigSet_UNDEFINED) ec=HLTEffCalc_2011Old;
+  return ec;
+}
 
 // -----------------------------------------------
 // -----------------------------------------------
@@ -84,24 +109,39 @@ void PrintBits(T n) {
 class TriggerSelection{
   
  public:
-  TriggerSelection(TriggerConstantSet constantsSet, bool isData, int run, EfficiencyCalcDef effCalc=EffCalc_2011Old):
+  TriggerSelection(TriggerConstantSet constantsSet, bool isData, int run, HLTEfficiencyCalcDef hltEffCalc=HLTEffCalc_2011Old):
     _constants(constantsSet),
     _isData(isData),
     _run(run),
-    _effCalcAlgo(effCalc)
+    _hltEffCalcAlgo(hltEffCalc)
   {}
 
   TriggerSelection(const TString& constantsSetString, bool isData, int run):
     _constants(DetermineTriggerSet(constantsSetString)),
     _isData(isData),
     _run(run),
-    _effCalcAlgo(EffCalc_2011Old)
+    _hltEffCalcAlgo(DetermineHLTEfficiencyCalc(constantsSetString))
+  {}
+
+  TriggerSelection(const TriggerSelection &ts) :
+    _constants(ts._constants), _isData(ts._isData), _run(ts._run), _hltEffCalcAlgo(ts._hltEffCalcAlgo)
   {}
 
   // Access
   TriggerConstantSet triggerSet() const { return _constants; }
+  void triggerSet(TriggerConstantSet ts) { _constants=ts; }
+  HLTEfficiencyCalcDef hltEffCalcMethod() const { return _hltEffCalcAlgo; }
+  void hltEffCalcMethod(HLTEfficiencyCalcDef hltEffCalc) {  _hltEffCalcAlgo = hltEffCalc; }
   bool isDefined() const { return (_constants != TrigSet_UNDEFINED) ? true : false; }
+  bool hltEffMethodIsDefined() const { return (_hltEffCalcAlgo != HLTEffCalc_UNDEFINED) ? true : false; }
+  bool hltEffMethodIs2011New() const { return (_hltEffCalcAlgo == HLTEffCalc_2011New) ? true : false; }
+  //bool hltEffMethodIsHWW() const { return (_hltEffCalcAlgo == HLTEffCalc_2011HWW) ? true : false; }
   TString triggerSetName() const { return TriggerSetName(_constants); }
+  TString triggerConditionsName() const { 
+    TString name = TriggerSetName(_constants) + TString("_") + HLTEfficiencyCalcName(_hltEffCalcAlgo); 
+    return name;
+  }
+  TString hltEffCalcName() const { return HLTEfficiencyCalcName(_hltEffCalcAlgo); }
 
   // Filtering
   bool validRun(UInt_t run) const {
@@ -140,6 +180,15 @@ class TriggerSelection{
       assert(0);
     }
     return ok;
+  }
+
+  bool useRandomTagTnPMethod(UInt_t run=0) const {
+    if (!_isData || (_hltEffCalcAlgo==HLTEffCalc_2011Old)) return false;
+    bool yes=false;
+    if (_hltEffCalcAlgo==HLTEffCalc_2011HWW) {
+      if (run>170759 /*170826*/) yes=true;
+    }
+    return yes;
   }
 
   // Trigger bits: main analysis
@@ -243,11 +292,11 @@ class TriggerSelection{
   ULong_t getLeadingTriggerObjBit_TagProbe(UInt_t run) const { // no check whether the run is ok!
     ULong_t bits=
       kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
-      kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj  |         // was defined in ieff_idHlt.C
       kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17_EleObj;
       //kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_Ele17_EleObj;  <------------- unknown (Jan 26, 2012)
     //kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
     //kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj                 // was defined in eff_IdHlt.C for 2011A(early)
+    if (!useRandomTagTnPMethod(run)) bits |= kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj;   // was defined in ieff_idHlt.C
     if (_isData && (run>=165088) && (run<=170759)) {
       bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
     }
@@ -276,7 +325,7 @@ class TriggerSelection{
   TriggerConstantSet  _constants;
   bool                _isData;
   int                 _run;
-  EfficiencyCalcDef   _effCalcAlgo;
+  HLTEfficiencyCalcDef   _hltEffCalcAlgo;
 
 };
 

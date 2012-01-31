@@ -104,8 +104,10 @@ TString getLabel(int sample, int effType, int method,  int etBinning, int etaBin
     label += "_gsf";
   else if( effType == ID )
     label += "_id";
-  else if(effType == HLT )
-    label += "_hlt";
+  else if(effType == HLT ) {
+    if ((sample==DATA) && trigSet.hltEffMethodIs2011New()) label += "_hlt2011new";
+    else label += "_hlt";
+  }
   else
     assert(0);
 
