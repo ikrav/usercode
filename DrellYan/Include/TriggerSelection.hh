@@ -296,12 +296,12 @@ class TriggerSelection{
 
   ULong_t getLeadingTriggerObjBit_TagProbe(UInt_t run) const { // no check whether the run is ok!
     ULong_t bits=
-      kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
-      kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17_EleObj;
+      kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj;
+      //kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17_EleObj;
       //kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_Ele17_EleObj;  <------------- unknown (Jan 26, 2012)
     //kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
     //kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj                 // was defined in eff_IdHlt.C for 2011A(early)
-    if (!useRandomTagTnPMethod(run)) bits |= kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj;   // was defined in ieff_idHlt.C
+    //bits |= kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj;   // was defined in ieff_idHlt.C
     if (_isData && (run>=165088) && (run<=170759)) {
       bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
     }
