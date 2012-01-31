@@ -9,7 +9,7 @@
 //
 //  TriggerConstantSet is influenced by the L1 seeding of the trigger
 //  kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL
-//  In runs 170054-170759 it was singleEG (Run2011A), in runs 170826-180252 is was DoubleEG (Run2011A & Run2011B).
+//  In runs 160329-170759 it was singleEG (Run2011A), in runs 170826-180252 is was DoubleEG (Run2011A & Run2011B).
 //
 // -----------------------------------------
 
@@ -185,8 +185,12 @@ class TriggerSelection{
   bool useRandomTagTnPMethod(UInt_t run=0) const {
     if (!_isData || (_hltEffCalcAlgo==HLTEffCalc_2011Old)) return false;
     bool yes=false;
-    if (_hltEffCalcAlgo==HLTEffCalc_2011HWW) {
+    switch ( _hltEffCalcAlgo ) {
+    case HLTEffCalc_2011New:
+    case HLTEffCalc_2011HWW:
       if (run>170759 /*170826*/) yes=true;
+      break;
+    default:
     }
     return yes;
   }
@@ -304,20 +308,22 @@ class TriggerSelection{
   }
 
   ULong_t getTrailingTriggerObjBit_TagProbe_Tight(UInt_t run) const { // no check whether the run is ok!
-    ULong_t bits = 
-      kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj |
-      kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+    ULong_t bits=
+      kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
     if (_isData && (run>=165088) && (run<=170759)) {
+      // kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 is DoubleEG in Fall11 MC
       bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
-      bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele2Obj;
     }
     return bits;
   }
 
   ULong_t getTrailingTriggerObjBit_TagProbe_Loose(UInt_t) const { // no check whether the run is ok!
-    ULong_t bits=
-      kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj |
-      kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj;
+   ULong_t bits=
+     kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+   if (_isData && (run>=165088) && (run<=170759)) {
+      // kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 is DoubleEG in Fall11 MC
+     bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele2Obj;
+    }
     return bits;
   }
 
