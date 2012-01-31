@@ -91,6 +91,13 @@ class TriggerSelection{
     _effCalcAlgo(effCalc)
   {}
 
+  TriggerSelection(const TString& constantsSetString, bool isData, int run):
+    _constants(DetermineTriggerSet(constantsSetString)),
+    _isData(isData),
+    _run(run),
+    _effCalcAlgo(EffCalc_2011Old)
+  {}
+
   // Access
   TriggerConstantSet triggerSet() const { return _constants; }
   bool isDefined() const { return (_constants != TrigSet_UNDEFINED) ? true : false; }
