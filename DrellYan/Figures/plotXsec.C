@@ -30,15 +30,19 @@
 #include "../Include/DYTools.hh"
 #include "../Include/UnfoldingTools.hh"
 #include "../Include/MyTools.hh"        // miscellaneous helper functions
-void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2);
-void readTh(TVectorD &vTh, TVectorD &vThErr);
+#include "../Include/TriggerSelection.hh"
+
+void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelection &triggers);
+void readTh(TVectorD &vTh, TVectorD &vThErr, const TriggerSelection &triggers);
 const int nMassBinTh=518;
+
 // Forward declarations
 //void setHistAttributes(bool doIt, TH1F *hist, int fillColor, int lineColor,	Width_t lineWidth);
 
 // Main function
 
 void plotXsec(){
+  TriggerSelection triggers("Full2011_hltEffNew",true,0);
   TVectorD xSec(DYTools::nMassBins);
   TVectorD xSecErr(DYTools::nMassBins);
   TVectorD xSecErrSyst(DYTools::nMassBins);
@@ -54,7 +58,7 @@ void plotXsec(){
 //-----------------------------------------------------------------
 // Read data
 //-----------------------------------------------------------------
-readData(xSec, xSecErr, xSecErrSyst);
+  readData(xSec, xSecErr, xSecErrSyst, triggers);
 
   // Create a canvas with pads
   TCanvas *c1 = MakeCanvas("c1","c1",600,600);
@@ -72,7 +76,7 @@ readData(xSec, xSecErr, xSecErrSyst);
   Double_t x1[n1], x2[n2],  x3[n2], ex1[n1], ex2[n2], ex3[n2] ;
   Double_t y1[n1], y2[n2],  y3[n2], ey1[n1], ey2[n2], ey3[n2];
 ////  printf("Bin  MeanMass  Width        Xsec         ErrXsec\n");
-  Int_t i1=-1, i2=0;
+  //Int_t i1=-1, i2=0;
   for (int iL=0; iL < n1; iL++ )
   {
       x1[iL]=(BinLimitsForXsec[iL+1]+BinLimitsForXsec[iL])/2;
@@ -98,7 +102,7 @@ readData(xSec, xSecErr, xSecErrSyst);
 ////     if (i > 10  && i < 330) continue;
 ////     cout <<"i= "<<i <<" mxl= "<<mass_xlow4[i] << endl;
   }
-  readTh(xSecTh, xSecThErr);
+  readTh(xSecTh, xSecThErr, triggers);
   for (int iL2=0; iL2 < n2; iL2++ )
   {   
       x3[iL2]=(mass_xlow4[iL2+1]+mass_xlow4[iL2])/2;
@@ -175,10 +179,16 @@ readData(xSec, xSecErr, xSecErrSyst);
 }
 
 
-void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2){
+void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelection &triggers){
 
-  printf("Load data yields\n"); fflush(stdout);
-  TFile fileXsecResult   (TString("../root_files/xSec_results.root"));
+  //printf("Load data yields\n"); fflush(stdout);
+  std::cout << "Load data yields" << std::endl;
+  TString xSecResultFileName(TString("../root_files/xSec_results_") + 
+		   triggers.triggerConditionsName() + TString(".root"));
+  std::cout << "xSecResultFileName= " << xSecResultFileName << "\n";
+
+  //TFile fileXsecResult   (TString("../root_files/xSec_results.root"));
+  TFile fileXsecResult   (xSecResultFileName);
   TVectorD xSec          = *(TVectorD *)fileXsecResult.FindObjectAny("normXSecByBin");
   TVectorD xSecErr1      = *(TVectorD *)fileXsecResult.FindObjectAny("normXSecErrByBin");
   TVectorD xSecErr2      = *(TVectorD *)fileXsecResult.FindObjectAny("normXSecErrByBinSyst");
@@ -202,10 +212,17 @@ void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2){
   fileXsecResult.Close();
   return;
 }
-void readTh(TVectorD &v, TVectorD &vErr){
+void readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers){
 
-  printf("Load data yields\n"); fflush(stdout);
-  TFile fileXsecTh   (TString("../root_files/xSecTh_results.root"));
+  //printf("Load data yields\n"); fflush(stdout);
+  //TFile fileXsecTh   (TString("../root_files/xSecTh_results.root"));
+
+  TString xSecThResultFileName(TString("../root_files/xSecTh_results_") +
+		      triggers.triggerConditionsName() + TString(".root"));
+  std::cout << "Load theory predictions\n";
+  std::cout << "xSecThResultFileName=" << xSecThResultFileName << std::endl;
+
+  TFile fileXsecTh   (xSecThResultFileName);
   TVectorD xSecTh          = *(TVectorD *)fileXsecTh.FindObjectAny("XSecTh");
   TVectorD xSecThErr      = *(TVectorD *)fileXsecTh.FindObjectAny("XSecThErr");
 
