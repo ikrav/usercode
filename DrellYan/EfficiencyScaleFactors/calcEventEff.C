@@ -119,20 +119,8 @@ double HltEndcapDataEff   [etBinCount], HltEndcapDataEffErr[etBinCount];
 double HltBarrelMcEff     [etBinCount], HltBarrelMcEffErr  [etBinCount];
 double HltEndcapMcEff     [etBinCount], HltEndcapMcEffErr  [etBinCount];
 
-// blind invention
-const double runLumiV[3]= { 
-  0.216013 + 0.925760*(170759-130404)/double(173692-130404) + 0.658886*(170054-160404)/double(173692-160404),  // 2011A SingleEG
-  0.925760*(173692-170759)/double(173692-130404) + 0.368037 + 0.658886*(173692-170054)/double(173692-160404),  // 2011A DoubleEG
-  2.511 };
-  
-//DATASET           RECORDED [/fb]   GOOD LUMI [/fb]   JSON
-//-------           --------------   ---------------   ----
-//r11a-del-m10-v1      0.246844         0.216013       /home/ksung/JSON/Cert_160404-163869_7TeV_May10ReReco_Collisions11_JSON_v3.txt
-//r11a-del-pr-v4       0.975637         0.925760       /home/ksung/JSON/Cert_160404-173692_7TeV_PromptReco_Collisions11_JSON.txt
-//r11a-del-a05-v1      0.511590         0.368037       /home/ksung/JSON/Cert_170249-172619_7TeV_ReReco5Aug_Collisions11_JSON_v3.txt
-//r11a-del-o03-v1      0.696819         0.658886       /home/ksung/JSON/Cert_160404-173692_7TeV_PromptReco_Collisions11_JSON.txt
-//r11b-del-pr-v1       2.684            2.511          /home/ksung/JSON/Cert_160404-180252_7TeV_PromptReco_Collisions11_JSON.txt
-
+// Get the values from TriggerSelection.hh
+const double *runLumiV = luminositiesInRunSections;
 
 // Global variables
 const int nexp = 100;

@@ -346,9 +346,9 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event... 
       eventsAfterTrigger++;
 
-      ULong_t tagTriggerObjectBit= triggers.getLeadingTriggerObjBit_TagProbe(info->runNum);
-      ULong_t probeTriggerObjectBit_Tight= triggers.getTrailingTriggerObjBit_TagProbe_Tight(info->runNum);
-      ULong_t probeTriggerObjectBit_Loose= triggers.getTrailingTriggerObjBit_TagProbe_Loose(info->runNum);
+      ULong_t tagTriggerObjectBit= triggers.getTagTriggerObjBit(info->runNum);
+      ULong_t probeTriggerObjectBit_Tight= triggers.getProbeTriggerObjBit_Tight(info->runNum);
+      ULong_t probeTriggerObjectBit_Loose= triggers.getProbeTriggerObjBit_Loose(info->runNum);
       ULong_t probeTriggerObjectBit= probeTriggerObjectBit_Tight | probeTriggerObjectBit_Loose;
 
       // loop through dielectrons

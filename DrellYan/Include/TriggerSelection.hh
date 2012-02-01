@@ -9,7 +9,8 @@
 //
 //  TriggerConstantSet is influenced by the L1 seeding of the trigger
 //  kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL
-//  In runs 160329-170759 it was singleEG (Run2011A), in runs 170826-180252 is was DoubleEG (Run2011A & Run2011B).
+//  In runs 160329-170759 it was SingleEG (Run2011A), in runs 170826-175770 (Run2011A) 
+//  and 175832- (Run2011B) it was DoubleEG
 //
 // -----------------------------------------
 
@@ -28,7 +29,15 @@ enum HLTEfficiencyCalcDef {
   HLTEffCalc_2011HWW =3 // not implemented
 };
 
-const UInt_t cFirstEvent2011B = 175770;
+// run number constants, used in triggerSelection.validRun(runNo)
+const UInt_t cFirstEvent2011ASingleEG = 160329;
+const UInt_t cLastEvent2011ASingleEG =  170759;
+const UInt_t cFirstEvent2011ADoubleEG = 170826;
+const UInt_t cLastEvent2011ADoubleEG = 175770;
+const UInt_t cFirstEvent2011B = 175832;
+
+// Recorded luminosities in run sections 2011A_SingleEG, 2011A_DoubleEG, 2011B_DoubleEG
+const double luminositiesInRunSections[3] = { 1.146, 1.027, 2.445 }; 
 
 // -----------------------------------------------
 //           TriggerConstantSet conversions
@@ -149,9 +158,8 @@ class TriggerSelection{
     bool ok=false;
     switch(_constants) {
     case Full2011DatasetTriggers: ok=true; break;
-    case TrigSet_2011A_SingleEG: if ((run>=160404)  // lower limit is determined by the 1st 2011 events
-				     && (run<=170759)) ok=true; break;
-    case TrigSet_2011A_DoubleEG: if ((run>=170826) && (run<cFirstEvent2011B)) ok=true; break;
+    case TrigSet_2011A_SingleEG: if ((run>=cFirstEvent2011ASingleEG) && (run<=cLastEvent2011ASingleEG)) ok=true; break;
+    case TrigSet_2011A_DoubleEG: if ((run>=cFirstEvent2011ADoubleEG) && (run<=cLastEvent2011ADoubleEG)) ok=true; break;
     case TrigSet_2011B_DoubleEG: if (run>=cFirstEvent2011B) ok=true; break;
     case TrigSet_UNDEFINED: 
     default:
@@ -166,8 +174,9 @@ class TriggerSelection{
     switch(_constants) {
     case Full2011DatasetTriggers: ok=true; break;
     case TrigSet_2011A_SingleEG:  
-      ok=dataFileName.Contains("r11a-"); 
-      break; // all 4 r11a-* files contain such events
+      ok=( dataFileName.Contains("r11a-") && 
+	  !dataFileName.Contains("r11a-del-o03")); 
+      break; // first 3 r11a-* files contain such events
     case TrigSet_2011A_DoubleEG:  
       ok=(dataFileName.Contains("r11a-del-a05") || 
 	  dataFileName.Contains("r11a-del-o03")) ? true:false;
@@ -182,13 +191,13 @@ class TriggerSelection{
     return ok;
   }
 
-  bool useRandomTagTnPMethod(UInt_t run=0) const {
+  bool useRandomTagTnPMethod(UInt_t run) const {
     if (!_isData || (_hltEffCalcAlgo==HLTEffCalc_2011Old)) return false;
     bool yes=false;
     switch ( _hltEffCalcAlgo ) {
     case HLTEffCalc_2011New:
     case HLTEffCalc_2011HWW:
-      if (run>170759 /*170826*/) yes=true;
+      if (run>=cFirstEvent2011ADoubleEG) yes=true;
       break;
     default:
       yes=false;
@@ -198,7 +207,7 @@ class TriggerSelection{
 
   // Trigger bits: main analysis
 
-  ULong_t getEventTriggerBit(UInt_t run=0) const {
+  ULong_t getEventTriggerBit(UInt_t run) const {
     if (run==0) run=_run;
     ULong_t result = 0;
     // -- old remark:
@@ -224,7 +233,7 @@ class TriggerSelection{
     return result;
   };
 
-  ULong_t getLeadingTriggerObjectBit(UInt_t run=0) const { // no check whether the run is ok!
+  ULong_t getLeadingTriggerObjectBit(UInt_t run) const { // no check whether the run is ok!
     if (run==0) run=_run;
     ULong_t result = 0;
     if (!_isData) {
@@ -240,7 +249,7 @@ class TriggerSelection{
     return result;
   };
 
-  ULong_t getTrailingTriggerObjectBit(UInt_t run=0) const { // no check whether the run is ok!
+  ULong_t getTrailingTriggerObjectBit(UInt_t run) const { // no check whether the run is ok!
     if (run==0) run=_run;
     ULong_t result = 0;
     if (!_isData) {
@@ -294,7 +303,7 @@ class TriggerSelection{
     return bits;
   }
 
-  ULong_t getLeadingTriggerObjBit_TagProbe(UInt_t run) const { // no check whether the run is ok!
+  ULong_t getTagTriggerObjBit(UInt_t run) const { // no check whether the run is ok!
     ULong_t bits=
       kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj;
       //kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17_EleObj;
@@ -308,7 +317,7 @@ class TriggerSelection{
     return bits;
   }
 
-  ULong_t getTrailingTriggerObjBit_TagProbe_Tight(UInt_t run) const { // no check whether the run is ok!
+  ULong_t getProbeTriggerObjBit_Tight(UInt_t run) const { // no check whether the run is ok!
     ULong_t bits=
       kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
     if (_isData && (run>=165088) && (run<=170759)) {
@@ -318,7 +327,7 @@ class TriggerSelection{
     return bits;
   }
 
-  ULong_t getTrailingTriggerObjBit_TagProbe_Loose(UInt_t run) const { // no check whether the run is ok!
+  ULong_t getProbeTriggerObjBit_Loose(UInt_t run) const { // no check whether the run is ok!
    ULong_t bits=
      kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
    if (_isData && (run>=165088) && (run<=170759)) {
