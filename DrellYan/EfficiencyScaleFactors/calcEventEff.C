@@ -1224,18 +1224,29 @@ void fillEfficiencyConstants(  const TriggerSelection &triggers ) {
   fillOneEfficiency(effMcIdFile, IdBarrelMcEff, IdBarrelMcEffErr, 0);
   fillOneEfficiency(effMcIdFile, IdEndcapMcEff, IdEndcapMcEffErr, 1);
 
-  fillOneEfficiency(effMcHltFile, HltBarrelMcEff, HltBarrelMcEffErr, 0);
-  fillOneEfficiency(effMcHltFile, HltEndcapMcEff, HltEndcapMcEffErr, 1);
-
   if ( ! triggers.hltEffMethodIs2011New() ) {
+    std::cout << "here 1\n";
+    fillOneEfficiency(effMcHltFile, HltBarrelMcEff, HltBarrelMcEffErr, 0);
+    fillOneEfficiency(effMcHltFile, HltEndcapMcEff, HltEndcapMcEffErr, 1);
+
     fillOneEfficiency(effDataHltFile, HltBarrelDataEff, HltBarrelDataEffErr, 0);
     fillOneEfficiency(effDataHltFile, HltEndcapDataEff, HltEndcapDataEffErr, 1);
   }
   else {
+    TriggerSelection locTrig(triggers);
+
+    if ( triggers.triggerSet() == Full2011DatasetTriggers ) {
+      // all 3 sequences yield the same result
+      locTrig.triggerSet(TrigSet_2011A_SingleEG);
+    }
+
+    effMcHltFile   = fnStart + getLabel(MC  ,HLT,  mcHltEffMethod,etBinning,etaBinning,locTrig) + fnEnd;
+    fillOneEfficiency(effMcHltFile, HltBarrelMcEff, HltBarrelMcEffErr, 0);
+    fillOneEfficiency(effMcHltFile, HltEndcapMcEff, HltEndcapMcEffErr, 1);
+
     std::cout << " loading files for luminosity reweighting for data HLT-efficiency\n";
     double barrelEff[etBinCount], barrelEffErr[etBinCount];
     double endcapEff[etBinCount], endcapEffErr[etBinCount];
-    TriggerSelection locTrig(triggers);
 
     // clear the array
     for (int i=0; i<etBinCount; ++i) HltBarrelDataEff[i]=0.;
