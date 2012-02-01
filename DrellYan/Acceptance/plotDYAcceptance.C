@@ -149,10 +149,10 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   TFile fweights("../root_files/fewz/weights_stepwise_prec10-5_fine12.root");
   if( !fweights.IsOpen() ) assert(0);
   for(int i=0; i<DYTools::nMassBins; i++){
-    TString hname = TString::Format("weight_%02d",i+1);
-    weights[i] = (TH2D*)fweights.Get(hname);
-    hname = TString::Format("h_weighterror_%02d",i+1);
-    weightErrors[i] = (TH2D*)fweights.Get(hname);
+    TString hname_loc = TString::Format("weight_%02d",i+1);
+    weights[i] = (TH2D*)fweights.Get(hname_loc);
+    hname_loc = TString::Format("h_weighterror_%02d",i+1);
+    weightErrors[i] = (TH2D*)fweights.Get(hname_loc);
   }
 
   //
