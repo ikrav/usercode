@@ -29,6 +29,7 @@
 #include "../Include/TEventInfo.hh"
 #include "../Include/TGenInfo.hh"
 #include "../Include/TDielectron.hh"   
+#include "../Include/TriggerSelection.hh"
 
 // Helper functions for Electron ID selection
 #include "../Include/EleIDCuts.hh"
@@ -166,6 +167,7 @@ void plotDYEfficiency(const TString input)
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
 
+      /*
       // For EPS2011 for both data and MC (starting from Summer11 production)
       // we use an OR of the twi triggers below. Both are unpresecaled.
       ULong_t eventTriggerBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL 
@@ -174,7 +176,15 @@ void plotDYEfficiency(const TString input)
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
       ULong_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+      */
       
+      const bool isData=kFALSE;
+      TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
+      TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
+      ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(info->runNum);
+      ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(info->runNum);
+      ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(info->runNum);
+
       // The A_FSR starting point: gen level quantities
       // The FSR subscript means we work with post-FSR generator level quantities
       double et1 = gen->pt_1;
