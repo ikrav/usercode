@@ -39,7 +39,7 @@ void TheoryErrors(const TString input)
   // Settings 
   //==============================================================================================================
   
-  Bool_t doSave  = false;    // save plots?
+  //Bool_t doSave  = false;    // save plots?
   TString format = "png";   // output file format
   
   vector<TString> fnamev;   // file names   
@@ -50,8 +50,8 @@ void TheoryErrors(const TString input)
   vector<Double_t> lumiv;
   TString          dirTag;
 
-  Double_t massLow  = DYTools::massBinLimits[0];
-  Double_t massHigh = DYTools::massBinLimits[nMassBins];
+  //Double_t massLow  = DYTools::massBinLimits[0];
+  //Double_t massHigh = DYTools::massBinLimits[nMassBins];
   
   ifstream ifs;
   ifs.open(input.Data());
@@ -81,8 +81,8 @@ void TheoryErrors(const TString input)
   }
   ifs.close();
   
-  const Double_t kGAP_LOW  = 1.4442;
-  const Double_t kGAP_HIGH = 1.566;
+  //const Double_t kGAP_LOW  = 1.4442;
+  //const Double_t kGAP_HIGH = 1.566;
   
   //--------------------------------------------------------------------------------------------------------------
   // Positive and negative errors on acceptance
