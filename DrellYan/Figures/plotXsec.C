@@ -161,10 +161,10 @@ void plotXsec(){
    lumiText->SetTextSize(0.04);
    lumiText->SetTextAlign(33);
    lumiText->SetNDC();
-   lumiText->SetText(0.91, 0.90, "1.1 fb^{-1} at #sqrt{s} = 7 TeV");
+   lumiText->SetText(0.91, 0.90, "4.6 fb^{-1} at #sqrt{s} = 7 TeV");
 
    TLegend *leg = new TLegend(.20,.20,.60,.30);
-   leg->AddEntry(gr1,"Data ee 1.1 fb^{-1} 2011 ");
+   leg->AddEntry(gr1,"Data ee 4.6 fb^{-1} 2011 ");
    leg->AddEntry(gr2,"NNLO, FEWZ+MSTW08");
    leg->SetTextSize(0.03);
    leg->SetFillColor(0);
