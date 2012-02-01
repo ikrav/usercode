@@ -497,9 +497,9 @@ void selectEvents1D(const TString conf)
 	bool isData = (isam == 0 && hasData);
 	TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
 	TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
-	ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit();
-	ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit();
-	ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit();
+	ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(info->runNum);
+	ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(info->runNum);
+	ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(info->runNum);
 	if(isam==0) {
 	  nProcessedEvents++;
 	  for(UInt_t ibit=0; ibit<32; ibit++) {

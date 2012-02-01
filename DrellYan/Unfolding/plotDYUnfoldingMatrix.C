@@ -290,9 +290,9 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
       const bool isData=kFALSE;
       TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
       TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
-      ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit();
-      ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit();
-      ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit();
+      ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(info->runNum);
+      ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(info->runNum);
+      ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(info->runNum);
 
       
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
