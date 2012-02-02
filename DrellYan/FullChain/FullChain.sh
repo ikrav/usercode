@@ -429,8 +429,8 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../CrossSection
 rm -f *.so
 echo
-checkFile CrossSection.C
-root -b -q -l CrossSection.C+\($filename_cs\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${timeStamp}.out
+checkFile calcCrossSection.C
+root -b -q -l calcCrossSection.C+\($filename_cs\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${timeStamp}.out
 if [ $? != 0 ]; then 
    statusCrossSection=FAILED
    skipAll
