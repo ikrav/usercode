@@ -276,8 +276,8 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Unfolding
 rm -f *.so
 echo
-checkFile auxScriptSyst_2Studyuce.C
-root -b -q -l auxScriptSyst_2Studyuce.C     | tee ${logDir}/out${timeStamp}-05-auxScriptSyst_2Study-unfolding.log
+checkFile auxScriptSyst_2Study.C
+root -b -q -l auxScriptSyst_2Study.C     | tee ${logDir}/out${timeStamp}-05-auxScriptSyst_2Study-unfolding.log
 if [ $? != 0 ]; then 
    statusUnfoldingSyst_2Study=FAILED
    skipAll
@@ -531,8 +531,8 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../CrossSection
 rm -f *.so
 echo
-checkFile CrossSection.C
-root -b -q -l CrossSection.C+\($filename_cs\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${timeStamp}.out
+checkFile calcCrossSection.C
+root -b -q -l calcCrossSection.C+\($filename_cs\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${timeStamp}.out
 if [ $? != 0 ]; then 
    statusCrossSection=FAILED
    skipAll
