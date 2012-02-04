@@ -535,7 +535,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   if (isRECO) cFail.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-reco-"+(std::string)cutF+"-fail.png").c_str());
   else cFail.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-id-"+(std::string)cutF+"-fail.png").c_str());
   */
-  cPass.Print((pngFileBase + TString("-fail.png")).Data());
+  cFail.Print((pngFileBase + TString("-fail.png")).Data());
 
   // Print fit outcome into fit log
   result->printStream(fitLog,RooPrintable::kValue,RooPrintable::kVerbose);
