@@ -281,7 +281,7 @@ void plotDYFSRCorrections(const TString input)
   plotCorrection.SetLogx();
   plotCorrection.AddGraph((TGraph*)correctionGraph,"PE",600,kFullDotMedium,1); 
 //   plotCorrection.SetYRange(0,0.8);
-  plotCorrection.SetXRange(10,700.0);
+  plotCorrection.SetXRange(10,1600.0);
   correctionGraph->GetYaxis()->SetTitleOffset(1.0);
   correctionGraph->GetXaxis()->SetMoreLogLabels();
   correctionGraph->GetXaxis()->SetNoExponent();
