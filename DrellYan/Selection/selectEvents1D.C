@@ -286,9 +286,9 @@ void selectEvents1D(const TString conf)
     sprintf(hname,"hPFJetEta_%i",isam);    hPFJetEtav.push_back(new TH1F(hname,"",40,-5,5));        hPFJetEtav[isam]->Sumw2();
     sprintf(hname,"hPFJetPhi_%i",isam);    hPFJetPhiv.push_back(new TH1F(hname,"",20,-3.2,3.2));    hPFJetPhiv[isam]->Sumw2();
     
-    sprintf(hname,"hNPV_%i",isam);           hNPVv.push_back(new TH1F(hname,"",15,-0.5,14.5));            hNPVv[isam]->Sumw2();
+    sprintf(hname,"hNPV_%i",isam);           hNPVv.push_back(new TH1F(hname,"",55,-0.5,54.5));            hNPVv[isam]->Sumw2();
 //     sprintf(hname,"hNGoodPV_%i",isam);       hNGoodPVv.push_back(new TH1F(hname,"",15,-0.5,14.5));        hNGoodPVv[isam]->Sumw2();
-    sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());       hNGoodPVv.push_back(new TH1F(hname,"",15,-0.5,14.5));        hNGoodPVv[isam]->Sumw2();
+    sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());       hNGoodPVv.push_back(new TH1F(hname,"",55,-0.5,54.5));        hNGoodPVv[isam]->Sumw2();
     sprintf(hname,"hGoodPVNTracks_%i",isam); hGoodPVNTracksv.push_back(new TH1F(hname,"",50,-0.5,149.5)); hGoodPVNTracksv[isam]->Sumw2();
     sprintf(hname,"hGoodPVChi2_%i",isam);    hGoodPVChi2v.push_back(new TH1F(hname,"",50,0,300));         hGoodPVChi2v[isam]->Sumw2();
     sprintf(hname,"hGoodPVNdof_%i",isam);    hGoodPVNdofv.push_back(new TH1F(hname,"",50,-0.5,299.5));    hGoodPVNdofv[isam]->Sumw2();
