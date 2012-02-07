@@ -127,12 +127,13 @@ namespace DYTools {
   // ------------- 2011 and 2010 content is below ---------------
 
   // Systematics modes for unfolding and acceptance 
-  enum {NORMAL, RESOLUTION_STUDY, FSR_STUDY};
+  typedef enum {NORMAL, RESOLUTION_STUDY, FSR_STUDY} TSystematicsStudy_t;
 
   // Tag and probe fitting constants
-  enum {COUNTnCOUNT, COUNTnFIT, FITnFIT};
-  enum {GSF, ID, HLT};
+  typedef enum {COUNTnCOUNT, COUNTnFIT, FITnFIT} TTnPMethod_t;
+  typedef enum {GSF, ID, HLT} TEfficiencyKind_t;
  
+
   //
   // Define mass binning
   //
@@ -201,7 +202,7 @@ namespace DYTools {
   //
   // Define Et and Eta binning
   //
-  enum {ETBINS1, ETBINS5};
+  typedef enum {ETBINS1, ETBINS5} TEtBinSet_t;
   const int nEtBins1 = 1;
   const double etBinLimits1[nEtBins1 + 1] = 
     {10, 500};
@@ -254,7 +255,7 @@ namespace DYTools {
     return result;
   };
 
-  enum {ETABINS1, ETABINS2};
+  typedef enum {ETABINS1, ETABINS2} TEtaBinSet_t;
   const int nEtaBins1 = 1;
   const double etaBinLimits1[nEtBins1 + 1] = 
     {0, 2.5000001};
@@ -312,7 +313,7 @@ namespace DYTools {
   // Triggers vs run numbers
   //
   enum { UNDEF, REL38X, REL39X};
-  enum { DATA, MC};
+  typedef enum { DATA, MC} TDataKind_t;
 
   // The commented out code below is not valid on 2011 data since
   // bit constants have changed in EWKAnaDefs.hh
@@ -504,6 +505,9 @@ namespace DYTools {
   }
 
 }
+
+// ------------------------------------------------------------------
+
 
 #endif
 
