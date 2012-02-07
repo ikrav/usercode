@@ -91,11 +91,13 @@ TString getLabel(int sample, int effType, int method,  int etBinning, int etaBin
   TString label = "";
 
   assert ( trigSet.isDefined() );
-  label+= trigSet.triggerSetName();
+  if (sample != -1111) {
+    label+= trigSet.triggerSetName();
+  }
 
   if(sample == DATA)
     label += "_data";
-  else if(sample == MC)
+  else if((sample == MC) || (sample == -1111))
     label += "_mc";
   else
     assert(0);
@@ -111,14 +113,16 @@ TString getLabel(int sample, int effType, int method,  int etBinning, int etaBin
   else
     assert(0);
 
-  if(method == COUNTnCOUNT)
-    label += "_count-count";
-  else if( method == COUNTnFIT ) 
-    label += "_count-fit";
-  else if( method == FITnFIT ) 
-    label += "_fit-fit";
-  else
-    assert(0);
+  if (sample != -1111) {
+    if(method == COUNTnCOUNT)
+      label += "_count-count";
+    else if( method == COUNTnFIT ) 
+      label += "_count-fit";
+    else if( method == FITnFIT ) 
+      label += "_fit-fit";
+    else
+      assert(0);
+  }
 
   label += "_bins-et";
   label += getNEtBins(etBinning);
