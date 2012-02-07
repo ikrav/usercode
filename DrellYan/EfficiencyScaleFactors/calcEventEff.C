@@ -71,6 +71,8 @@ void drawEventScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle,
 
 double errOnRatio(double a, double da, double b, double db);
 
+void PrintEffInfoLines(const char *msg, int effKind, int effMethod, int binCount, const double *eff, const double *effErr);
+
 //=== Constants ==========================
 
 const bool savePlots = false;
@@ -144,17 +146,23 @@ double ro_M_E_hlt[nexp];
 void calcEventEff(const TString input, TString triggerSetString)
 {
 
-  gBenchmark->Start("calcEventEff");
-  
-   // fast check
+  // fast check
   TriggerConstantSet triggerSet=DetermineTriggerSet(triggerSetString);  
   assert ( triggerSet != TrigSet_UNDEFINED );
- 
+
+  // check variables
   printf("Et bin count is %d\n", etBinCount);
   if (etaBinning!=ETABINS2) {
     std::cout << "this code assumes that eta regions are only (barrel,endcap)\n";
     throw 1;
   }
+
+//  ---------------------------------
+//         Normal execution
+//  ---------------------------------
+
+  gBenchmark->Start("calcEventEff");
+  
 
   CPlot::sOutDir = "plots";
 
@@ -316,7 +324,7 @@ void calcEventEff(const TString input, TString triggerSetString)
     weightedEventsInNtuple += scale * eventTree->GetEntries();
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
 //       for(UInt_t ientry=0; ientry<100000; ientry++) { // This is for faster turn-around in testing
-      
+      //if (ientry>100000) break;
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
       
@@ -1142,6 +1150,8 @@ double errOnRatio(double a, double da, double b, double db){
   return result;
 }
 
+// -------------------------------------------------------------------------
+
 void drawEventScaleFactors(TVectorD scaleGsfV, TVectorD scaleGsfErrV,
 			   TVectorD scaleIdV , TVectorD scaleIdErrV ,
 			   TVectorD scaleHltV, TVectorD scaleHltErrV,
@@ -1203,6 +1213,7 @@ void fillEfficiencyConstants(  const TriggerSelection &triggers ) {
   TString effDataHltFile = "efficiency_TnP_data_hlt_count-count_bins-et5-eta2.root";
   TString effMcHltFile   = "efficiency_TnP_mc_hlt_count-count_bins-et5-eta2.root";
   */
+
   TString fnStart="efficiency_TnP_";
   TString fnEnd=".root";
   TString effDataGsfFile = fnStart + getLabel(DATA,GSF,dataGsfEffMethod,etBinning,etaBinning,triggers) + fnEnd;
@@ -1214,66 +1225,117 @@ void fillEfficiencyConstants(  const TriggerSelection &triggers ) {
 
   // Continue assuming 2 eta bins
   // Last parameter is 0=barrel, 1=endcap
-  fillOneEfficiency(effDataGsfFile, GsfBarrelDataEff, GsfBarrelDataEffErr, 0);
-  fillOneEfficiency(effDataGsfFile, GsfEndcapDataEff, GsfEndcapDataEffErr, 1);
-  fillOneEfficiency(effMcGsfFile, GsfBarrelMcEff, GsfBarrelMcEffErr, 0);
-  fillOneEfficiency(effMcGsfFile, GsfEndcapMcEff, GsfEndcapMcEffErr, 1);
 
-  fillOneEfficiency(effDataIdFile, IdBarrelDataEff, IdBarrelDataEffErr, 0);
-  fillOneEfficiency(effDataIdFile, IdEndcapDataEff, IdEndcapDataEffErr, 1);
-  fillOneEfficiency(effMcIdFile, IdBarrelMcEff, IdBarrelMcEffErr, 0);
-  fillOneEfficiency(effMcIdFile, IdEndcapMcEff, IdEndcapMcEffErr, 1);
-
-  if ( ! triggers.hltEffMethodIs2011New() ) {
+  if ( ! triggers.hltEffMethodIs2011New() || 
+       (triggers.triggerSet() != Full2011DatasetTriggers) ) {
     std::cout << "here 1\n";
-    fillOneEfficiency(effMcHltFile, HltBarrelMcEff, HltBarrelMcEffErr, 0);
-    fillOneEfficiency(effMcHltFile, HltEndcapMcEff, HltEndcapMcEffErr, 1);
+    fillOneEfficiency(effDataGsfFile, GsfBarrelDataEff, GsfBarrelDataEffErr, 0);
+    fillOneEfficiency(effDataGsfFile, GsfEndcapDataEff, GsfEndcapDataEffErr, 1);
+    fillOneEfficiency(effMcGsfFile, GsfBarrelMcEff, GsfBarrelMcEffErr, 0);
+    fillOneEfficiency(effMcGsfFile, GsfEndcapMcEff, GsfEndcapMcEffErr, 1);
+
+    fillOneEfficiency(effDataIdFile, IdBarrelDataEff, IdBarrelDataEffErr, 0);
+    fillOneEfficiency(effDataIdFile, IdEndcapDataEff, IdEndcapDataEffErr, 1);
+    fillOneEfficiency(effMcIdFile, IdBarrelMcEff, IdBarrelMcEffErr, 0);
+    fillOneEfficiency(effMcIdFile, IdEndcapMcEff, IdEndcapMcEffErr, 1);
 
     fillOneEfficiency(effDataHltFile, HltBarrelDataEff, HltBarrelDataEffErr, 0);
     fillOneEfficiency(effDataHltFile, HltEndcapDataEff, HltEndcapDataEffErr, 1);
+    fillOneEfficiency(effMcHltFile, HltBarrelMcEff, HltBarrelMcEffErr, 0);
+    fillOneEfficiency(effMcHltFile, HltEndcapMcEff, HltEndcapMcEffErr, 1);
   }
   else {
+
+    const int printLoadedEffs=0;
     TriggerSelection locTrig(triggers);
 
-    if ( triggers.triggerSet() == Full2011DatasetTriggers ) {
-      // all 3 sequences yield the same result
-      locTrig.triggerSet(TrigSet_2011A_SingleEG);
-    }
-
+    effMcGsfFile   = fnStart + getLabel(MC  ,GSF,  mcGsfEffMethod,etBinning,etaBinning,locTrig) + fnEnd;
+    effMcIdFile    = fnStart + getLabel(MC  , ID,   mcIdEffMethod,etBinning,etaBinning,locTrig) + fnEnd;
     effMcHltFile   = fnStart + getLabel(MC  ,HLT,  mcHltEffMethod,etBinning,etaBinning,locTrig) + fnEnd;
+    fillOneEfficiency(effMcGsfFile, GsfBarrelMcEff, GsfBarrelMcEffErr, 0);
+    fillOneEfficiency(effMcGsfFile, GsfEndcapMcEff, GsfEndcapMcEffErr, 1);
+    fillOneEfficiency(effMcIdFile ,  IdBarrelMcEff,  IdBarrelMcEffErr, 0);
+    fillOneEfficiency(effMcIdFile ,  IdEndcapMcEff,  IdEndcapMcEffErr, 1);
     fillOneEfficiency(effMcHltFile, HltBarrelMcEff, HltBarrelMcEffErr, 0);
     fillOneEfficiency(effMcHltFile, HltEndcapMcEff, HltEndcapMcEffErr, 1);
 
-    std::cout << " loading files for luminosity reweighting for data HLT-efficiency\n";
-    double barrelEff[etBinCount], barrelEffErr[etBinCount];
-    double endcapEff[etBinCount], endcapEffErr[etBinCount];
+    if (printLoadedEffs) PrintEffInfoLines("data MC barrel",GSF,mcGsfEffMethod,etBinCount,GsfBarrelMcEff,GsfBarrelMcEffErr);
+    if (printLoadedEffs) PrintEffInfoLines("data MC endcap",GSF,mcGsfEffMethod,etBinCount,GsfEndcapMcEff,GsfEndcapMcEffErr);
 
-    // clear the array
-    for (int i=0; i<etBinCount; ++i) HltBarrelDataEff[i]=0.;
-    for (int i=0; i<etBinCount; ++i) HltBarrelDataEffErr[i]=0.;
-    // iterate over run chunks
-    const double totLumi=runLumiV[0]+runLumiV[1]+runLumiV[2];
-    const double invTotLumi=1/totLumi;
-    for (int lumiIdx=0; lumiIdx<3; ++lumiIdx) {
-      switch(lumiIdx) {
-      case 0: locTrig.triggerSet(TrigSet_2011A_SingleEG); break;
-      case 1: locTrig.triggerSet(TrigSet_2011A_DoubleEG); break;
-      case 2: locTrig.triggerSet(TrigSet_2011B_DoubleEG); break;
+    std::cout << " loading files for luminosity reweighting of data efficiencies\n";
+    //double barrelEff[etBinCount], barrelEffErr[etBinCount];
+    //double endcapEff[etBinCount], endcapEffErr[etBinCount];
+    double tmpEff[etBinCount], tmpEffErr[etBinCount];
+
+    for (unsigned int iEffKind=0; iEffKind<3; ++iEffKind) {
+      double *effBarrel, *effBarrelErr;
+      double *effEndcap, *effEndcapErr;
+      int effKind, effMethod;
+      switch(iEffKind) {
+      case 0: 
+	effBarrel=GsfBarrelDataEff; effBarrelErr=GsfBarrelDataEffErr;
+	effEndcap=GsfEndcapDataEff; effEndcapErr=GsfEndcapDataEffErr;
+	effKind=GSF; 
+	effMethod=dataGsfEffMethod;
+	break;
+      case 1:
+	effBarrel=IdBarrelDataEff; effBarrelErr=IdBarrelDataEffErr;
+	effEndcap=IdEndcapDataEff; effEndcapErr=IdEndcapDataEffErr;
+	effKind=ID;
+	effMethod=dataIdEffMethod;
+	break;
+      case 2:
+	effBarrel=HltBarrelDataEff; effBarrelErr=HltBarrelDataEffErr;
+	effEndcap=HltEndcapDataEff; effEndcapErr=HltEndcapDataEffErr;
+	effKind=HLT;
+	effMethod=dataHltEffMethod;
+	break;
       default:
-	std::cout << "error in the code\n";
-	assert(0);
+	std::cout << "error in effKind loop\n"; throw 2;
       }
-      effDataHltFile = fnStart + getLabel(DATA,HLT,dataHltEffMethod,etBinning,etaBinning,locTrig) + fnEnd;
-      fillOneEfficiency(effDataHltFile, barrelEff, barrelEffErr, 0);
-      for (int i=0; i<etBinCount; ++i) HltBarrelDataEff[i]    += invTotLumi * runLumiV[lumiIdx] * barrelEff[i];
-      for (int i=0; i<etBinCount; ++i) HltBarrelDataEffErr[i] += invTotLumi * runLumiV[lumiIdx] * barrelEffErr[i];
-      fillOneEfficiency(effDataHltFile, endcapEff, endcapEffErr, 1);
-      for (int i=0; i<etBinCount; ++i) HltEndcapDataEff[i]    += invTotLumi * runLumiV[lumiIdx] * endcapEff[i];
-      for (int i=0; i<etBinCount; ++i) HltEndcapDataEffErr[i] += invTotLumi * runLumiV[lumiIdx] * endcapEffErr[i];
+      // clear the array
+      //for (int i=0; i<etBinCount; ++i) effBarrel[i]=0.;
+      //for (int i=0; i<etBinCount; ++i) effBarrelErr[i]=0.;
+      //for (int i=0; i<etBinCount; ++i) effEndcap[i]=0.;
+      //for (int i=0; i<etBinCount; ++i) effEndcapErr[i]=0.;
+
+      // iterate over run chunks
+      const double totLumi=runLumiV[0]+runLumiV[1]+runLumiV[2];
+      const double invTotLumi=1/totLumi;
+      for (int lumiIdx=0; lumiIdx<3; ++lumiIdx) {
+	switch(lumiIdx) {
+	case 0: locTrig.triggerSet(TrigSet_2011A_SingleEG); break;
+	case 1: locTrig.triggerSet(TrigSet_2011A_DoubleEG); break;
+	case 2: locTrig.triggerSet(TrigSet_2011B_DoubleEG); break;
+	default:
+	  std::cout << "error in the lumiIdx loop\n";
+	  assert(0);
+	}
+	TString effDataFile = fnStart + getLabel(DATA,effKind,effMethod,etBinning,etaBinning,locTrig) + fnEnd;
+	// barrel
+	for (int i=0; i<etBinCount; ++i) tmpEff[i]=0.;
+	for (int i=0; i<etBinCount; ++i) tmpEffErr[i]=0.;
+	fillOneEfficiency(effDataFile, tmpEff, tmpEffErr, 0);
+	for (int i=0; i<etBinCount; ++i) effBarrel[i]    += invTotLumi * runLumiV[lumiIdx] * tmpEff[i];
+	for (int i=0; i<etBinCount; ++i) effBarrelErr[i] += invTotLumi * runLumiV[lumiIdx] * tmpEffErr[i];
+	if (printLoadedEffs) std::cout << "lumi triggerSetName: " << locTrig.triggerSetName() << "\n";
+	if (printLoadedEffs) PrintEffInfoLines("data barrel: ",effKind,effMethod,etBinCount,tmpEff,tmpEffErr);
+
+	// endcap
+	for (int i=0; i<etBinCount; ++i) tmpEff[i]=0.;
+	for (int i=0; i<etBinCount; ++i) tmpEffErr[i]=0.;
+	fillOneEfficiency(effDataFile, tmpEff, tmpEffErr, 1);
+	for (int i=0; i<etBinCount; ++i) effEndcap[i]    += invTotLumi * runLumiV[lumiIdx] * tmpEff[i];
+	for (int i=0; i<etBinCount; ++i) effEndcapErr[i] += invTotLumi * runLumiV[lumiIdx] * tmpEffErr[i];
+	if (printLoadedEffs) PrintEffInfoLines("data endcap: ",effKind,effMethod,etBinCount,tmpEff,tmpEffErr);
+      }
+      if (printLoadedEffs) PrintEffInfoLines("average data barrel: ",effKind,effMethod,etBinCount,effBarrel,effBarrelErr);
+      if (printLoadedEffs) PrintEffInfoLines("average data endcap: ",effKind,effMethod,etBinCount,effEndcap,effEndcapErr);
     }
   }
-
 }
+
+// -------------------------------------------------------------------------
 
 void fillOneEfficiency(const TString filename, double *eff, double *effErr, int etaRange){
 
@@ -1308,3 +1370,19 @@ void fillOneEfficiency(const TString filename, double *eff, double *effErr, int 
   f.Close();
 
 }
+
+
+// -------------------------------------------------------------------------
+
+void PrintEffInfoLines(const char *msg, int effKind, int effMethod, int binCount, const double *eff, const double *effErr) {
+  std::cout << "PrintEffInfoLines(" << ((msg) ? msg : "<null>") << ", effKind=" << effKind << ", effMethod=" << effMethod << ", binCount=" << binCount << "\n";
+  for (int i=0; i<binCount; i++) {
+    printf("  i=%d  eff=%6.4lf effErr=%8.6e\n",i,eff[i],effErr[i]);
+  }
+  std::cout << std::endl;
+  return;
+}
+
+
+// -------------------------------------------------------------------------
+
