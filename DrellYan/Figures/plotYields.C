@@ -195,7 +195,7 @@ void plotYields(const TString conf = "data.conf", bool plotRatio = true){
   lumiText->SetTextSize(0.04);
   lumiText->SetTextAlign(33);
   lumiText->SetNDC();
-  lumiText->SetText(0.91, 0.90, "4.6 fb^{-1} at #sqrt{s} = 7 TeV");
+  lumiText->SetText(0.91, 0.90, "4.7 fb^{-1} at #sqrt{s} = 7 TeV");
 
   // Put together the legend
   
