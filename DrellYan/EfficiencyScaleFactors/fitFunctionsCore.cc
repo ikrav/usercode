@@ -26,6 +26,8 @@ struct RealLimit
 
 void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, int NsetBins, bool isRECO, const char* setBinsType, TString dirTag){
   
+  // meaningless check, saving from compiler complaints
+  if (dirTag.Length() && 0) std::cout << "fitMass : dirTag=" << dirTag << "\n";
 
   RealLimit lims[19];
 
