@@ -31,7 +31,7 @@ force_rebuild_include_files=0
 
 ## controlling your work
 # catch-all flag
-do_all_steps=0
+do_all_steps=1
 
 # main procedures: calculate and make plots
 do_calcs=0
