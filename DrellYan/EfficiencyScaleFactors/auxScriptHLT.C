@@ -1,3 +1,5 @@
+// This script will be superceded by evaluateESF.sh
+
 {  // auxScriptAdv allows to turn on/off different calculations
 
   TString triggerSet="Full2011_hltEffNew";

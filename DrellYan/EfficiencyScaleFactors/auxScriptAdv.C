@@ -1,3 +1,6 @@
+// this script will be superceded by evaluateESF.sh
+// functionality is not complete for luminosity weighting
+
 {
   const int calcMCReco=0;
   const int calcMCID  =0;
