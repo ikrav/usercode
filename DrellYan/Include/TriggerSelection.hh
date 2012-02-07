@@ -168,6 +168,26 @@ class TriggerSelection{
     return ok;
   }
 
+  bool validRunRange(UInt_t runNumMin, UInt_t runNumMax) const {
+    if (!_isData) return true;
+    if (runNumMin>runNumMax) {
+      std::cout << "TriggerSelection::validRunRange (runNumMin>runNumMax)\n";
+      throw 2;
+    }
+    UInt_t chkMin=0, chkMax=0;
+    switch(_constants) {
+    case Full2011DatasetTriggers: chkMin=0; chkMax=UInt_t(1e9); break;
+    case TrigSet_2011A_SingleEG: chkMin=cFirstEvent2011ASingleEG; chkMax=cLastEvent2011ASingleEG; break;
+    case TrigSet_2011A_DoubleEG: chkMin=cFirstEvent2011ADoubleEG; chkMax=cLastEvent2011ADoubleEG; break;
+    case TrigSet_2011B_DoubleEG: chkMin=cFirstEvent2011B; chkMax=UInt_t(1e9); break;
+    case TrigSet_UNDEFINED:       
+    default:
+      std::cout << "error in TriggerSelection::validRunRange";
+      throw 2;
+    }
+    return ((runNumMax<chkMin) || (runNumMin>chkMax)) ? false : true;
+  }
+
   bool suitableDataFile(const TString &dataFileName) const {
     if (!_isData) return true; // no verification for MC samples
     bool ok=false;
