@@ -28,6 +28,12 @@ const int seedLast = 1020;
 
 void calcUnfoldingSystematics(const TString conf){
 
+  // check whether it is a calculation
+  if (conf.Contains("_DebugRun_")) {
+    std::cout << "calcUnfoldingSystematics: _DebugRun_ detected. Terminating the script\n";
+    return;
+  }
+
   // First, read the configuration file. The configuration file
   // is the same as the one used for the cross section calculation
   // script, we need to know the location of data yields and

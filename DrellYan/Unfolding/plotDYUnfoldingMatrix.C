@@ -64,6 +64,15 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
 //check mass spectra with reweightFsr = 0.95; 1.00; 1.05  
 //mass value until which do reweighting
 {
+
+  // check whether it is a calculation
+  if (input.Contains("_DebugRun_")) {
+    std::cout << "plotDYUnfoldingMatrix: _DebugRun_ detected. Terminating the script\n";
+    return;
+  }
+
+  // normal calculation
+
   gBenchmark->Start("plotDYUnfoldingMatrix");
 
   if (systematicsMode==DYTools::NORMAL)
@@ -257,6 +266,7 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
   
     // loop over events    
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
+      //if (ientry>10000) break;
 
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
