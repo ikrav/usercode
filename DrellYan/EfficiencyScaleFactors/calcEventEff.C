@@ -146,6 +146,16 @@ double ro_M_E_hlt[nexp];
 void calcEventEff(const TString input, TString triggerSetString)
 {
 
+//  ---------------------------------
+//       Preliminary checks
+//  ---------------------------------
+
+  // verify whether it was a compilation check
+  if (input.Contains("_DebugRun_") || triggerSetString.Contains("_DebugRun_")) {
+    std::cout << "calcEventEff: _DebugRun_ detected. Terminating the script\n";
+    return;
+  }
+
   // fast check
   TriggerConstantSet triggerSet=DetermineTriggerSet(triggerSetString);  
   assert ( triggerSet != TrigSet_UNDEFINED );

@@ -70,14 +70,28 @@ using namespace mithep;
 void eff_Reco(const TString configFile, TString triggerSetString) 
 {
 
-  using namespace mithep; 
- 
-  gBenchmark->Start("eff_Reco");
-  
+  //  ---------------------------------
+  //       Preliminary checks
+  //  ---------------------------------
+
+  // verify whether it was a compilation check
+  if (configFile.Contains("_DebugRun_") || triggerSetString.Contains("_DebugRun_")) {
+    std::cout << "eff_Reco: _DebugRun_ detected. Terminating the script\n";
+    return;
+  }
+
   // fast check
   TriggerConstantSet triggerSet=DetermineTriggerSet(triggerSetString);  
   assert ( triggerSet != TrigSet_UNDEFINED );
 
+  //  ---------------------------------
+  //         Normal execution
+  //  ---------------------------------
+
+  using namespace mithep; 
+ 
+  gBenchmark->Start("eff_Reco");
+  
 
   //--------------------------------------------------------------------------------------------------------------
   // Settings 

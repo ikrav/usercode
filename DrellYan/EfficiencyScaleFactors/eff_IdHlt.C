@@ -69,12 +69,26 @@ const Double_t kGAP_HIGH = 1.566;
 void eff_IdHlt(const TString configFile, TString triggerSetString) 
 {
 
-  gBenchmark->Start("eff_IdHlt");
-  
+  //  ---------------------------------
+  //       Preliminary checks
+  //  ---------------------------------
+
+  // verify whether it was a compilation check
+  if (configFile.Contains("_DebugRun_") || triggerSetString.Contains("_DebugRun_")) {
+    std::cout << "eff_IdHlt: _DebugRun_ detected. Terminating the script\n";
+    return;
+  }
+
   // fast check
   TriggerConstantSet triggerSet=DetermineTriggerSet(triggerSetString);  
   assert ( triggerSet != TrigSet_UNDEFINED );
 
+  //  ---------------------------------
+  //         Normal execution
+  //  ---------------------------------
+
+  gBenchmark->Start("eff_IdHlt");
+  
 
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
