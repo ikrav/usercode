@@ -211,10 +211,7 @@ void eff_Reco(const TString configFile, TString triggerSetString)
   vector<TH1F*> hFailTemplateV;
   if( sample != DATA) {
     // For simulation, we will be saving templates
-    TString labelMC = "";
-    labelMC += label.Data();
-    // For the file name of templates
-    labelMC.Replace(labelMC.Index("count-count_"),12,"");
+    TString labelMC = getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
     TString templatesLabel = tagAndProbeDir + TString("/mass_templates_")+labelMC+TString(".root");
     templatesFile = new TFile(templatesLabel,"recreate");
     for(int i=0; i<getNEtBins(etBinning); i++){
@@ -231,15 +228,7 @@ void eff_Reco(const TString configFile, TString triggerSetString)
     // For data, we will be using templates
     // however, if the request is COUNTnCOUNT, do nothing
     if( calcMethod != COUNTnCOUNT ){
-      TString labelMC = "";
-      labelMC += label.Data();
-      // Find the corresponding label of MC templates. For this,
-      // strip calculation method and replace data with MC in the label
-      labelMC.Replace(labelMC.Index("data"),4,"mc");
-      if( calcMethod == COUNTnFIT)
-	labelMC.Replace(labelMC.Index("count-fit_"),10,"");
-      if( calcMethod == FITnFIT)
-	labelMC.Replace(labelMC.Index("fit-fit_"),8,"");
+      TString labelMC = getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
       TString templatesLabel = tagAndProbeDir+TString("/mass_templates_")+labelMC+TString(".root");
       templatesFile = new TFile(templatesLabel);
       if( ! templatesFile->IsOpen() ) {
