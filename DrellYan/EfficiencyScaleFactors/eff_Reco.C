@@ -62,8 +62,6 @@ using namespace mithep;
 
 //=== COMMON CONSTANTS ===========================================================================================
 
-const int debug=0;
-
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
@@ -328,11 +326,7 @@ void eff_Reco(const TString configFile, TString triggerSetString)
     eventsInNtuple += eventTree->GetEntries();
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
       //for(UInt_t ientry=0; ientry<1000; ientry++) { 
-      if (debug) {
-	if (ientry>100000) break;  // This is for faster turn-around in testing
-	if (ientry%10000==0) std::cout << "ientry=" << ientry << "\n";
-      }
-	
+      //if (ientry>100000) break;  // This is for faster turn-around in testing
       
       if(sample != DATA)
 	genBr->GetEntry(ientry);
@@ -475,8 +469,6 @@ void eff_Reco(const TString configFile, TString triggerSetString)
     delete eleArr;
     delete scArr;
   } // end loop over files
-
-  if (debug) { std::cout << "\n\tthis was a debug run. No fit is done\n\n"; throw 2; }
 
   //
   // Efficiency analysis
