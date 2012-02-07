@@ -294,6 +294,17 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
 
     // Set branch address to structures that will store the info  
     eventTree->SetBranchAddress("Info",&info);                TBranch *infoBr       = eventTree->GetBranch("Info");
+
+    // check whether the file is suitable for the requested run range
+    UInt_t runNumMin = UInt_t(eventTree->GetMinimum("runNum"));
+    UInt_t runNumMax = UInt_t(eventTree->GetMaximum("runNum"));
+    std::cout << "runNumMin=" << runNumMin << ", runNumMax=" << runNumMax << "\n";
+    if (!triggers.validRunRange(runNumMin,runNumMax)) {
+      std::cout << "... file contains uninteresting run range\n";
+      continue;
+    }
+
+    // Define other branches
     eventTree->SetBranchAddress("Dielectron",&dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
     TBranch *genBr = 0;
     if(sample != DATA){

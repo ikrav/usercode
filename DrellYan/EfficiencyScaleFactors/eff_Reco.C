@@ -280,11 +280,6 @@ void eff_Reco(const TString configFile, TString triggerSetString)
   // Loop over files
   for(UInt_t ifile=0; ifile<ntupleFileNames.size(); ifile++){
 
-    if (!triggers.suitableDataFile(ntupleFileNames[ifile])) {
-      std::cout << "... skipping input file " << ntupleFileNames[ifile] << "\n";
-      continue;
-    }
-
     //
     // Access samples and fill histograms
     //  
@@ -307,6 +302,17 @@ void eff_Reco(const TString configFile, TString triggerSetString)
 
     // Set branch address to structures that will store the info  
     eventTree->SetBranchAddress("Info",&info);                TBranch *infoBr       = eventTree->GetBranch("Info");
+
+    // check whether the file is suitable for the requested run range
+    UInt_t runNumMin = UInt_t(eventTree->GetMinimum("runNum"));
+    UInt_t runNumMax = UInt_t(eventTree->GetMaximum("runNum"));
+    std::cout << "runNumMin=" << runNumMin << ", runNumMax=" << runNumMax << "\n";
+    if (!triggers.validRunRange(runNumMin,runNumMax)) {
+      std::cout << "... file contains uninteresting run range\n";
+      continue;
+    }
+    
+    // Define other branches
     eventTree->SetBranchAddress("Photon"  ,&scArr); 
     eventTree->SetBranchAddress("Electron",&eleArr); 
     TBranch *electronBr   = eventTree->GetBranch("Electron");
