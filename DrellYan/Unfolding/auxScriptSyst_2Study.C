@@ -1,3 +1,5 @@
+// The script will be superceded by evaluateUnfoldingSyst.sh
+
 {
 
   //gROOT->ProcessLine(".L plotDYUnfoldingMatrix.C+");
