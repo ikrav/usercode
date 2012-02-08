@@ -55,7 +55,7 @@ noError=1
 
 runPlotDYUnfoldingMatrix() {
   loc_massLimit=-1
-  root -b -q -l rootlogon.C+ plotDYUnfoldingMatrix.C+\(\"${mcConfInputFile}\",${StudyFlag},${RandomSeed},${ReweightFsr},${loc_massLimit}\)
+  root -b -q -l ${LXPLUS_CORRECTION} plotDYUnfoldingMatrix.C+\(\"${mcConfInputFile}\",${StudyFlag},${RandomSeed},${ReweightFsr},${loc_massLimit}\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -75,7 +75,7 @@ runPlotDYUnfoldingMatrix() {
 
 
 runCalcUnfoldingSystematics() {
-  root -b -q -l rootlogon.C+ calcUnfoldingSystematics.C+\(\"${xsecConfInputFile}\"\)
+  root -b -q -l ${LXPLUS_CORRECTION} calcUnfoldingSystematics.C+\(\"${xsecConfInputFile}\"\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -90,6 +90,12 @@ runCalcUnfoldingSystematics() {
 # --------------------------------
 #    Main sequence
 # --------------------------------
+
+#
+#  Compile header files
+#
+root -b -q -l rootlogon.C+
+if [ $? != 0 ] ; then noError=0; fi
 
 # 
 #   Check that the codes compile

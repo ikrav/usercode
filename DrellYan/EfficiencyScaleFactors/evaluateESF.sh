@@ -75,7 +75,7 @@ fi
 # --------------------------------
 
 runEffReco() {
- root -b -q -l rootlogon.C+ eff_Reco.C+\(\"${inpFile}\",\"${triggerSet}\"\)
+ root -b -q -l ${LXPLUS_CORRECTION} eff_Reco.C+\(\"${inpFile}\",\"${triggerSet}\"\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -88,7 +88,7 @@ runEffReco() {
 
 
 runEffIdHlt() {
- root -b -q -l rootlogon.C+ eff_IdHlt.C+\(\"${inpFile}\",\"${triggerSet}\"\)
+ root -b -q -l ${LXPLUS_CORRECTION} eff_IdHlt.C+\(\"${inpFile}\",\"${triggerSet}\"\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -100,7 +100,7 @@ runEffIdHlt() {
 }
 
 runCalcEventEff() {
- root -b -q -l rootlogon.C+ calcEventEff.C+\(\"${mcConfInputFile}\",\"${triggerSet}\"\)
+ root -b -q -l ${LXPLUS_CORRECTION} calcEventEff.C+\(\"${mcConfInputFile}\",\"${triggerSet}\"\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
