@@ -17,9 +17,11 @@ triggerSet="Full2011_hltEffNew"
 tnpFileStart="../config_files/sf"
 
 # the variables below are more persistent
+crossSectionTag="DY_m10+pr+a05+o03+pr_4680pb"
 expectBkgSubtractedFile="../root_files/yields/DY_m10+pr+a05+o03+pr_4680pb/yields_bg-subtracted.root"
 expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics.root"
 expectEfficiencyScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${triggerSet}.root"
+expectAcceptanceSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/acceptance_FSR_systematics.root"
 expectXSecFile="../root_files/xSec_results_${triggerSet}.root"
 expectXSecThFile="../root_files/xSecTh_results_${triggerSet}.root"
 
@@ -56,13 +58,13 @@ do_subtractBackground=0
 do_unfolding=0
 do_unfoldingSyst=0
 do_acceptance=0
-do_acceptanceSyst=0
+do_acceptanceSyst=1
 do_efficiency=0
 do_efficiencyScaleFactors=0
 do_plotFSRCorrections=0
 do_plotFSRCorrectionsSansAcc=0
 do_theoryErrors=0
-do_crossSection=1
+do_crossSection=0
 
 # use logDir="./" if you want that the log files are placed in the directory
 # where the producing script resides
@@ -307,23 +309,30 @@ fi
 if [ ${do_acceptanceSyst} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusAcceptanceSyst=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: plotDYAcceptance(\"${filename_mc}\")"
+echo "WILL DO: evaluateAcceptanceSyst.sh"
 echo "in systematics mode"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Acceptance
 rm -f *.so
 echo
-checkFile auxScriptSyst.C
-root -b -q -l ${LXPLUS_CORRECTION} auxScriptSyst.C       | tee ${logDir}/out${timeStamp}-07-auxScriptSyst-acceptance.log
+checkFile evaluateAcceptanceSyst.sh
+source evaluateAcceptanceSyst.sh | tee ${logDir}/out${timeStamp}-07-evaluateAcceptanceSyst.log
 if [ $? != 0 ]; then 
-#   statusUnfoldingSyst=FAILED         ---- BUG!!!
     statusAcceptanceSyst=FAILED
     noError=0
+else
+# check that there was no crash and the expected file was created
+if [ ! -f ${expectAcceptanceSystematicsFile} ] ; then
+  echo "  ERROR:"
+  echo "  !! expectAcceptanceSystematicsFile=${expectAcceptanceSystematicsFile} not created"
+  echo
+  statusAcceptanceSyst=FAILED
+  noError=0
+fi
 fi 
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: plotDYAcceptance(\"${filename_mc}\")"
-echo "in systematics mode"
+echo "DONE: evaluateAcceptanceSyst.sh"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else
     statusAcceptanceSyst=skipped
@@ -501,9 +510,17 @@ echo "         FSRCorrections:    " $statusPlotDYFSRCorrections
 echo "  FSRCorrectionsSansAcc:    " $statusPlotDYFSRCorrectionsSansAcc
 echo "           TheoryErrors:    " $statusTheoryErrors
 echo "           CrossSection:    " $statusCrossSection
+
+
 if [ ${noError} -eq 0 ] ; then 
   echo
   echo " !! ERROR was detected !!"
   echo
+
+echo
+echo If the script reports linking problems try to uncomment the line 
+echo " #export LXPLUS_CORRECTION=\" rootlogon.C+ \""
+echo
+
 fi
 
