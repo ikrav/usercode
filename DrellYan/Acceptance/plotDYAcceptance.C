@@ -37,6 +37,14 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
 //check mass spectra with reweight = 95%; 100%; 105%  
 //mass value until which do reweighting 
 {
+  // check whether it is a calculation
+  if (input.Contains("_DebugRun_")) {
+    std::cout << "plotDYAcceptance: _DebugRun_ detected. Terminating the script\n";
+    return;
+  }
+
+  // normal calculation
+
   gBenchmark->Start("plotDYAcceptance");
 
   //--------------------------------------------------------------------------------------------------------------
@@ -107,7 +115,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   //
   vector<TH1F*> hZMassv;//, hZMass2v, hZPtv, hZPt2v, hZyv, hZPhiv;  
   
-  UInt_t   nZv = 0;
+  Double_t   nZv = 0;
   TVectorD nEventsv (DYTools::nMassBins);  
   TVectorD nPassv   (DYTools::nMassBins);
   TVectorD accv     (DYTools::nMassBins);
@@ -190,6 +198,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     // loop over events    
     nZv += scale * eventTree->GetEntries();
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
+      //if (ientry>100000) break;
 
       genBr->GetEntry(ientry);
 
