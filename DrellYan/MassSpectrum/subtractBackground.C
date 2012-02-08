@@ -5,9 +5,12 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include "../Include/CSample.hh"  // helper class for organizing input ntuple files
+
 
 void subtractBackground(const TString conf){
 
+  std::cout << "conf=" << conf << "\n";
 
   // Read from configuration file only the location of the root files
   TString inputDir;
@@ -15,21 +18,111 @@ void subtractBackground(const TString conf){
   Bool_t doWeight;
   ifstream ifs;
   ifs.open(conf.Data());
-  assert(ifs.is_open());
+  if (!ifs.is_open()) {
+    std::cout << "failed to open file <" << conf << ">\n";
+    assert(ifs.is_open());
+  }
+
   string line;
+  vector<TString>  snamev;    // sample name (for output file)
+  vector<CSample*> samplev;   // data/MC samples
+  Int_t state=0;
   while(getline(ifs,line)) {
     if(line[0]=='#') continue;
-    stringstream ss1(line); ss1 >> lumi;
-    getline(ifs,line);
-    stringstream ss2(line); ss2 >> doWeight;
-    getline(ifs,line);
-    inputDir = TString(line);
-    break;
+    if(line[0]=='%') { 
+      state++; 
+      continue; 
+    }
+    if(line[0]=='$') {
+      samplev.push_back(new CSample());
+      stringstream ss(line);
+      string chr;
+      string sname;
+      Int_t color;
+      ss >> chr >> sname >> color;
+      string label = line.substr(line.find('@')+1);
+      snamev.push_back(sname);
+      samplev.back()->label = label;
+      samplev.back()->color = color;
+      continue;
+    }
+    
+    if(state==0) {  // general settings
+      stringstream ss1(line); ss1 >> lumi;
+      getline(ifs,line);
+      stringstream ss2(line); ss2 >> doWeight;
+      getline(ifs,line);
+      inputDir = TString(line);
+      getline(ifs,line);
+      // backwards compatibility for the input file
+      if (line.size()>3) {  // escale is defined
+	TString escaleTag_loc=TString(line);
+	getline(ifs,line);
+	// check that it was correct to use this work-around
+	if (line.find('%')!=std::string::npos) {
+	  std::cout << "backwards-compatibility code failure\n";
+	  return;
+	}
+      }
+      TString format_loc = TString(line);
+      
+    } else if(state==1) {  // define data sample
+      string fname;
+      Double_t xsec;
+      string json;
+      stringstream ss(line);
+      ss >> fname >> xsec >> json;
+      samplev.back()->fnamev.push_back(fname);
+      samplev.back()->xsecv.push_back(xsec);
+      samplev.back()->jsonv.push_back(json);
+    
+    } else if(state==2) {  // define MC samples
+      string fname;
+      Double_t xsec;
+      stringstream ss(line);
+      ss >> fname >> xsec;
+      samplev.back()->fnamev.push_back(fname);
+      samplev.back()->xsecv.push_back(xsec);
+    }
   }
+
   ifs.close();
   inputDir.ReplaceAll("selected_events","yields");
+  std::cout << "inputDir=" << inputDir << "\n";
+
+  // check the requested samples
+  //bool zeeMcReq=false; // have it always "true"
+  bool zttMcReq=false;
+  bool qcdMcReq=false;
+  bool ttbarMcReq=false;
+  bool wjetsMcReq=false;
+  bool wwMcReq=false;
+  bool wzMcReq=false;
+  bool zzMcReq=false;
+  for (unsigned int i=0; i<snamev.size(); ++i) {
+    if (snamev[i] == "ttbar") ttbarMcReq=true;
+    else if (snamev[i] == "wjets") wjetsMcReq=true;
+    else if (snamev[i] == "ww") wwMcReq=true;
+    else if (snamev[i] == "wz") wzMcReq=true;
+    else if (snamev[i] == "zz") zzMcReq=true;
+    else if (snamev[i] == "ztt") zttMcReq=true;
+    else if (snamev[i] == "qcd") qcdMcReq=true;
+    //else if (snamev[i] == "zee") zeeMcReq=true;
+  }
+
+  if (!ttbarMcReq) std::cout << "\n\tWarning: ttbar is not requested\n\n";
+  if (!wjetsMcReq) std::cout << "\n\tWarning: wjets is not requested\n\n";
+  if (!wwMcReq) std::cout << "\n\tWarning: ww is not requested\n\n";
+  if (!wzMcReq) std::cout << "\n\tWarning: wz is not requested\n\n";
+  if (!zzMcReq) std::cout << "\n\tWarning: zz is not requested\n\n";
+  if (!zttMcReq) std::cout << "\n\tWarning: ztt is not requested\n\n";
+  if (!qcdMcReq) std::cout << "\n\tWarning: qcd is not requested\n\n";
 
   TFile file(inputDir+TString("/massHist.root"));
+  if (!file.IsOpen()) {
+    std::cout << "failed to open a file <" << inputDir << "/massHist.root>\n";
+    throw 2;
+  }
 
   TH1F *data  = (TH1F*) file.Get("data"); 
   TH1F *zee   = (TH1F*) file.Get("zee");   bool zeeMc = true;
@@ -43,15 +136,15 @@ void subtractBackground(const TString conf){
 
   // Make sure that all MC predictions that are expected according
   // to boolean flags above are present. Data has to be present always.
-  if( !data) return;
-  if( !zee   && zeeMc   ) return;
-  if( !ztt   && zttMc   ) return;
-  if( !qcd   && qcdMc   ) return;
-  if( !ttbar && ttbarMc ) return;
-  if( !wjets && wjetsMc ) return;
-  if( !ww    && wwMc    ) return;
-  if( !wz    && wzMc    ) return;
-  if( !zz    && zzMc    ) return;
+  if( !data) { std::cout << "data is requested but missing\n"; return; }
+  if( !zee   && zeeMc   ) { std::cout << "zeeMc is requested but missing\n"; return; }
+  if( zttMcReq   && !ztt   && zttMc   ) { std::cout << "zttMc is requested but missing\n"; return; }
+  if( qcdMcReq   && !qcd   && qcdMc   ) { std::cout << "qcd is requested but missing\n"; return; }
+  if( ttbarMcReq && !ttbar && ttbarMc ) { std::cout << "ttbar is requested but missing\n"; return; }
+  if( wjetsMcReq && !wjets && wjetsMc ) { std::cout << "wjets is requested but missing\n"; return; }
+  if( wwMcReq    && !ww    && wwMc    ) { std::cout << "ww is requested but missing\n"; return; }
+  if( wzMcReq    && !wz    && wzMc    ) { std::cout << "wz is requested but missing\n"; return; }
+  if( zzMcReq    && !zz    && zzMc    ) { std::cout << "zz is requested but missing\n"; return; }
 
   // Close the file in such a way that TTrees do not disappear
   data->SetDirectory(0);
@@ -280,6 +373,10 @@ void subtractBackground(const TString conf){
 
   // Save sideband-subtracted signal yields
   TFile fileOut(inputDir+TString("/yields_bg-subtracted.root"),"recreate");
+  if (!fileOut.IsOpen()) {
+    std::cout << "failed to create a file <" << inputDir << "/yields_bg-subtracted.root>\n";
+    throw 2;
+  }
   signalYields         .Write("YieldsSignal");
   signalYieldsError    .Write("YieldsSignalErr");
   signalYieldsErrorSyst.Write("YieldsSignalSystErr");
