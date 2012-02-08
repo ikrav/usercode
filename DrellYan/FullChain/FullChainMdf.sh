@@ -1,25 +1,35 @@
 #!/bin/bash
 
-# redirect stderr to stdout. 
-# Note: This redirection makes it impossible to kill the script easily!
-#exec 2>&1
+#
+# If the script reports linking problems try to uncomment the line below.
+# It will make the script to try to precompile and load header libraries
+#
+
+#export LXPLUS_CORRECTION=" rootlogon.C+ "
+
 
 # ------------------  Define some variables
 
 filename_data="../config_files/data.conf"
-filename_mc="../config_files/summer11mc.input"
+filename_mc="../config_files/fall11mc.input"
 filename_cs="../config_files/xsecCalc.conf"
-expectEfficiencyScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${triggerSet}.root"
+triggerSet="Full2011_hltEffNew"
+tnpFileStart="../config_files/sf"
+
+# the variables below are more persistent
+expectBkgSubtractedFile="../root_files/yields/DY_m10+pr+a05+o03+pr_4680pb/yields_bg-subtracted.root"
 expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics.root"
+expectEfficiencyScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${triggerSet}.root"
+expectXSecFile="../root_files/xSec_results_${triggerSet}.root"
+expectXSecThFile="../root_files/xSecTh_results_${triggerSet}.root"
 
 # export some variables
 
 export mainConfInputFile=${filename_data}
 export mcConfInputFile=${filename_mc}
 export xsecConfInputFile=${filename_cs}
-
-export triggerSet="Full2011_hltEffNew"
-export tnpFileStart="../config_files/sf"
+export triggerSet="${triggerSet}"
+export tnpFileStart="${tnpFileStart}"
 
 
 
@@ -40,7 +50,7 @@ do_plots=0
 # individual flags. 
 # Note: all the above flags have to be 0 for these individual flags 
 # to be effective
-do_selection=1
+do_selection=0
 do_plotSelectDY=0
 do_subtractBackground=0
 do_unfolding=0
@@ -52,7 +62,7 @@ do_efficiencyScaleFactors=0
 do_plotFSRCorrections=0
 do_plotFSRCorrectionsSansAcc=0
 do_theoryErrors=0
-do_crossSection=0
+do_crossSection=1
 
 # use logDir="./" if you want that the log files are placed in the directory
 # where the producing script resides
@@ -145,7 +155,7 @@ cd ../Selection
 rm -f *.so
 echo
 checkFile selectEvents1D.C
-root -b -q -l rootlogon.C+ selectEvents1D.C+\(\"$filename_data\"\)           | tee ${logDir}/out${timeStamp}-01-selectEvents1D.log
+root -b -q -l ${LXPLUS_CORRECTION} selectEvents1D.C+\(\"$filename_data\"\)           | tee ${logDir}/out${timeStamp}-01-selectEvents1D.log
 #echo "exit code {$?}"
 if [ $? != 0 ]; then 
    statusSelection=FAILED
@@ -169,7 +179,7 @@ cd ../MassSpectrum
 rm -f *.so
 echo
 checkFile prepareYields1D.C
-root -b -q -l rootlogon.C+ prepareYields1D.C+\(\"$filename_data\"\)       | tee ${logDir}/out${timeStamp}-02-prepareYields1D.log
+root -b -q -l ${LXPLUS_CORRECTION} prepareYields1D.C+\(\"$filename_data\"\)       | tee ${logDir}/out${timeStamp}-02-prepareYields1D.log
 if [ $? != 0 ]; then 
    statusPlotSelectDY=FAILED
    noError=0
@@ -192,10 +202,19 @@ cd ../MassSpectrum
 rm -f *.so
 echo
 checkFile subtractBackground.C
-root -b -q -l rootlogon.C+ subtractBackground.C+\(\"$filename_data\"\)      | tee ${logDir}/out${timeStamp}-03-subtractBackground.log
+root -b -q -l ${LXPLUS_CORRECTION} subtractBackground.C+\(\"$filename_data\"\)      | tee ${logDir}/out${timeStamp}-03-subtractBackground.log
 if [ $? != 0 ]; then 
    statusSubtractBackground=FAILED
    noError=0
+else
+# check that there was no crash and the expected file was created
+if [ ! -f ${expectBkgSubtractedFile} ] ; then
+  echo "  ERROR:"
+  echo "  !! expectBkgSubtractedFile=${expectBkgSubtractedFile} not created"
+  echo
+  statusSubtractBackground=FAILED
+  noError=0
+fi
 fi
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -216,7 +235,7 @@ cd ../Unfolding
 rm -f *.so
 echo
 checkFile plotDYUnfoldingMatrix.C
-root -b -q -l rootlogon.C+ plotDYUnfoldingMatrix.C+\(\"$filename_mc\"\)    | tee ${logDir}/out${timeStamp}-04-plotDYUnfoldingMatrix.log
+root -b -q -l ${LXPLUS_CORRECTION} plotDYUnfoldingMatrix.C+\(\"$filename_mc\"\)    | tee ${logDir}/out${timeStamp}-04-plotDYUnfoldingMatrix.log
 if [ $? != 0 ]; then 
    statusUnfolding=FAILED
    noError=0
@@ -271,7 +290,7 @@ cd ../Acceptance
 rm -f *.so
 echo
 checkFile plotDYAcceptance.C
-root -b -q -l rootlogon.C+ plotDYAcceptance.C+\(\"$filename_mc\"\)       | tee ${logDir}/out${timeStamp}-06-plotDYAcceptance.log
+root -b -q -l ${LXPLUS_CORRECTION} plotDYAcceptance.C+\(\"$filename_mc\"\)       | tee ${logDir}/out${timeStamp}-06-plotDYAcceptance.log
 if [ $? != 0 ]; then 
    statusAcceptance=FAILED
    noError=0
@@ -295,7 +314,7 @@ cd ../Acceptance
 rm -f *.so
 echo
 checkFile auxScriptSyst.C
-root -b -q -l rootlogon.C+ auxScriptSyst.C       | tee ${logDir}/out${timeStamp}-07-auxScriptSyst-acceptance.log
+root -b -q -l ${LXPLUS_CORRECTION} auxScriptSyst.C       | tee ${logDir}/out${timeStamp}-07-auxScriptSyst-acceptance.log
 if [ $? != 0 ]; then 
 #   statusUnfoldingSyst=FAILED         ---- BUG!!!
     statusAcceptanceSyst=FAILED
@@ -320,7 +339,7 @@ cd ../Efficiency
 rm -f *.so
 echo
 checkFile plotDYEfficiency.C
-root -b -q -l rootlogon.C+ plotDYEfficiency.C+\(\"$filename_mc\"\)       | tee ${logDir}/out${timeStamp}-08-plotDYEfficiency.log
+root -b -q -l ${LXPLUS_CORRECTION} plotDYEfficiency.C+\(\"$filename_mc\"\)       | tee ${logDir}/out${timeStamp}-08-plotDYEfficiency.log
 if [ $? != 0 ]; then 
    statusEfficiency=FAILED
    noError=0
@@ -343,7 +362,7 @@ cd ../EfficiencyScaleFactors
 rm -f *.so
 echo
 checkFile evaluateESF.sh
-#source evaluateESF.sh  | tee ${logDir}/out${timeStamp}-09-evaluateESF-efficiencyScaleFactors.log
+source evaluateESF.sh  | tee ${logDir}/out${timeStamp}-09-evaluateESF-efficiencyScaleFactors.log
 if [ $? != 0 ]; then 
    statusEfficiencyScaleFactors=FAILED
    noError=0
@@ -376,7 +395,7 @@ cd ../Fsr
 rm -f *.so
 echo
 checkFile plotDYFSRCorrections.C
-root -b -q -l rootlogon.C+ plotDYFSRCorrections.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-10-plotDYFSRCorrections.log
+root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-10-plotDYFSRCorrections.log
 if [ $? != 0 ]; then 
    statusPlotDYFSRCorrections=FAILED
    noError=0
@@ -399,7 +418,7 @@ cd ../Fsr
 rm -f *.so
 echo
 checkFile plotDYFSRCorrectionsSansAcc.C
-root -b -q -l rootlogon.C+ plotDYFSRCorrectionsSansAcc.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-11-plotDYFSRCorrectionsSansAcc${timeStamp}.out
+root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrectionsSansAcc.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-11-plotDYFSRCorrectionsSansAcc${timeStamp}.out
 if [ $? != 0 ]; then 
    statusPlotDYFSRCorrectionsSansAcc=FAILED
    noError=0
@@ -422,7 +441,7 @@ cd ../Theory
 rm -f *.so
 echo
 checkFile TheoryErrors.C
-root -b -q -l rootlogon.C+ TheoryErrors.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-12-TheoryErrors${timeStamp}.out
+root -b -q -l ${LXPLUS_CORRECTION} TheoryErrors.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-12-TheoryErrors${timeStamp}.out
 if [ $? != 0 ]; then 
    statusTheoryErrors=FAILED
    noError=0
@@ -445,10 +464,18 @@ cd ../CrossSection
 rm -f *.so
 echo
 checkFile calcCrossSection.C
-root -b -q -l rootlogon.C+ calcCrossSection.C+\(\"$filename_cs\"\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${timeStamp}.out
+root -b -q -l ${LXPLUS_CORRECTION} calcCrossSection.C+\(\"$filename_cs\"\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${timeStamp}.out
 if [ $? != 0 ]; then 
    statusCrossSection=FAILED
    noError=0
+# check that there was no crash and the expected file was created
+if [ ! -f ${expectXSecFile} ] || [ ! -f ${expectXSecThFile} ] ; then
+  echo "  ERROR:"
+  echo "  !! expectXSecFile(s) =<${expectXSecFile}>, <${expectXSecThFile}> not created"
+  echo
+  statusCrossSection=FAILED
+  noError=0
+fi
 fi
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
