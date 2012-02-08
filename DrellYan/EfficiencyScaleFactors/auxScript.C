@@ -1,4 +1,4 @@
-{  // auxScriptAdv allows to turn on/off different calculations
+{
 
   TString triggerSet="Full2011_hltEffNew";
   TString mcMainInputFile="../config_files/fall11mc.input"; // used in CalcEventEff.C
@@ -6,7 +6,6 @@
   TString inpFile;
   //mcFileStart="../config_files/sfFall11";
 
-if (0) {
   gROOT->ProcessLine(".L eff_Reco.C+");
   inpFile = mcFileStart + TString("_mc_RECO.conf");
   eff_Reco(inpFile,triggerSet);
@@ -90,7 +89,7 @@ if (0) {
       std::cout<<"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"<<std::endl;  
     }
   }
-}
+
 
   gROOT->ProcessLine(".L calcEventEff.C+");
   calcEventEff(mcMainInputFile,triggerSet);
