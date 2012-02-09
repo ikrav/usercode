@@ -91,23 +91,26 @@ void subtractBackground(const TString conf){
   std::cout << "inputDir=" << inputDir << "\n";
 
   // check the requested samples
+  const bool strictRequest=true;
   //bool zeeMcReq=false; // have it always "true"
-  bool zttMcReq=false;
-  bool qcdMcReq=false;
-  bool ttbarMcReq=false;
-  bool wjetsMcReq=false;
-  bool wwMcReq=false;
-  bool wzMcReq=false;
-  bool zzMcReq=false;
-  for (unsigned int i=0; i<snamev.size(); ++i) {
-    if (snamev[i] == "ttbar") ttbarMcReq=true;
-    else if (snamev[i] == "wjets") wjetsMcReq=true;
-    else if (snamev[i] == "ww") wwMcReq=true;
-    else if (snamev[i] == "wz") wzMcReq=true;
-    else if (snamev[i] == "zz") zzMcReq=true;
-    else if (snamev[i] == "ztt") zttMcReq=true;
-    else if (snamev[i] == "qcd") qcdMcReq=true;
-    //else if (snamev[i] == "zee") zeeMcReq=true;
+  bool zttMcReq=strictRequest;
+  bool qcdMcReq=strictRequest;
+  bool ttbarMcReq=strictRequest;
+  bool wjetsMcReq=strictRequest;
+  bool wwMcReq=strictRequest;
+  bool wzMcReq=strictRequest;
+  bool zzMcReq=strictRequest;
+  if (!strictRequest) {
+    for (unsigned int i=0; i<snamev.size(); ++i) {
+      if (snamev[i] == "ttbar") ttbarMcReq=true;
+      else if (snamev[i] == "wjets") wjetsMcReq=true;
+      else if (snamev[i] == "ww") wwMcReq=true;
+      else if (snamev[i] == "wz") wzMcReq=true;
+      else if (snamev[i] == "zz") zzMcReq=true;
+      else if (snamev[i] == "ztt") zttMcReq=true;
+      else if (snamev[i] == "qcd") qcdMcReq=true;
+      //else if (snamev[i] == "zee") zeeMcReq=true;
+    }
   }
 
   if (!ttbarMcReq) std::cout << "\n\tWarning: ttbar is not requested\n\n";
