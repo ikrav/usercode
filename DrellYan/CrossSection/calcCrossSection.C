@@ -1144,7 +1144,7 @@ void printRelativeSystErrors(){
 		      + systUnfoldRelative[i]*systUnfoldRelative[i]
 		      + systAcceptanceExpRelative*systAcceptanceExpRelative);
     printf("%4.0f-%4.0f &", massBinLimits[i],massBinLimits[i+1]);
-    printf("   $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$  &  $%5.1f$ & $%5.1f",
+    printf("   $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$  &  $%5.1f$ & $%5.1f  $ \\\\" ,
 	   100*systEscaleRelative[i], 
 	   100*systEfficiency[i], 
 	   100*systBackgrRelative[i], 
@@ -1255,11 +1255,12 @@ TVectorD relPostFsrCrossSectionDET, TVectorD relPostFsrCrossSectionStatErrDET)
    mg->Draw("ap");
   TAxis* yax=mg->GetYaxis();
   yax->SetRangeUser(5e-6,2);
-   //mg->GetXaxis()->SetTitle("M_{ee}");
-   //mg->GetYaxis()->SetTitle("R-shape");
-   //mg->SetName("(d#sigma /dM)/ (d#sigma /dM)_{z}");
+   mg->GetXaxis()->SetTitle("M_{ee}");
+   mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dM");
+   mg->GetYaxis()->SetTitleOffset(1.20);
+   //mg->SetName("1/#sigma_z d#sigma /dM");
 
-   TLegend *leg = new TLegend(.50,.45,.90,.85);
+   TLegend *leg = new TLegend(.60,.55,.95,.90);
    leg->AddEntry(gr1,"Pre FSR All Phase Space");
    leg->AddEntry(gr2,"Pre FSR Detector Phase space");
    leg->AddEntry(gr3,"Post FSR All Phase Space");
