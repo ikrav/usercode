@@ -497,9 +497,9 @@ void  efficiencyCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   }
 
   printf("\nEfficiency: Results for the data, yields:\n");
-  printf("                after unfolding          eff. factors,%%    rho(data/mc)        efficiency-corrected       syst-err-eff, %%\n");
+  printf("                after unfolding            eff. factors,%%       rho(data/mc)         efficiency-corrected        syst-err-eff, %%\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %8.1f +- %6.1f +- %5.1f   %5.1f +- %5.1f  %5.3f +- %5.3f   %8.1f +- %7.1f +- %6.1f            %6.1f\n",
+    printf("%4.0f-%4.0f   %8.1f +- %7.1f +- %7.1f   %5.2f +- %5.2f      %4.3f +- %4.3f      %8.1f +- %7.1f +- %7.1f        %4.2f\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vin[i], vinStatErr[i], vinSystErr[i],
 	   efficiencyArray[i]*100, efficiencyErrArray[i]*100, rhoDataMc[i], rhoDataMcErr[i],
@@ -561,9 +561,9 @@ void  acceptanceCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   }
 
   printf("\nAcceptance: Results for the data, yields:\n");
-  printf("                eff-corrected                acc. factors,%%          acceptance-corrected      syst-err-acc%%,   Theory_Err%% \n");
+  printf("                eff-corrected                 acc. factors,%%         acceptance-corrected        syst-err-acc%%,   Theory_Err%% \n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %8.1f +- %7.1f +- %6.1f   %8.3f +- %7.3f  %9.1f +- %8.1f +- %6.1f  %6.2f   %10.2f\n",
+   printf("%4.0f-%4.0f   %8.1f +- %7.1f +- %7.1f   %5.2f +- %5.2f      %9.1f +- %8.1f +- %8.1f        %4.2f     %4.2f\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vin[i], vinStatErr[i], vinSystErr[i],
 	   acceptanceArray[i]*100, acceptanceErrArray[i]*100, 
@@ -608,9 +608,9 @@ void  fsrCorrection(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
   }
 
   printf("\nFsrCorrection: Results for the data, yields:\n");
-  printf("                acc-corrected             fsr. factors            fsr-corrected                  sys-err-fsr\n");
+  printf("                acc-corrected               fsr. factors            fsr-corrected                  sys-err-fsr\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %5.3f +- %5.3f  %8.1f +- %7.1f +- %5.1f      %6.2f\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %4.3f +- %4.3f      %9.1f +- %8.1f +- %8.1f        %5.2f\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vin[i], vinStatErr[i], vinSystErr[i],
 	   fsrCorrectionArray[i], fsrCorrectionErrArray[i], 
@@ -655,9 +655,9 @@ void  fsrCorrectionSansAcceptance(TVectorD &vin, TVectorD &vinStatErr, TVectorD 
 
   printf("\nThis printout below is FSR correction being applied to data without acceptance correction.\n");
   printf("\nFsrCorrectionSansAcceptance: Results for the data, yields:\n");
-  printf("                acc-corrected               fsr. factors             fsr-corrected                  sys-err-fsr\n");
+  printf("                acc-corrected                 fsr. factors             fsr-corrected                  sys-err-fsr\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %5.3f +- %5.3f  %9.1f +- %8.1f +- %6.1f      %6.2f\n",
+    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %4.3f +- %4.3f      %9.1f +- %8.1f +- %8.1f        %5.2f\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vin[i], vinStatErr[i], vinSystErr[i],
 	   fsrCorrectionArray[i], fsrCorrectionErrArray[i], 
@@ -730,7 +730,7 @@ void  crossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr,
     normXSecErrByBinSyst[i]=voutNormSystErr[i]/binw;
     normXSecErrByBin[i]=sqrt(voutNormStatErr[i] * voutNormStatErr[i] + voutNormSystErr[i] * voutNormSystErr[i])/binw;
 
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %9.6f +- %8.6f +- %8.6f  ( %8.6f )  %10.8f +- %10.8f +- %10.8f  ( %10.8f )    \n",
+   printf("%4.0f-%4.0f      %6.1f +- %4.1f +- %4.1f      %1.6f +- %1.6f +- %1.6f  ( %1.6f )     %1.8f +- %1.8f +- %1.8f  ( %1.8f )    \n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -927,7 +927,8 @@ void  crossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSystErr
   printf("\nPre FSR DET shape: :\n");
   printf("                    absolute                      normalized +-stat +-sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %11.6f +- %10.6f +- %10.6f  ( %10.6f )\n",
+   printf("%4.0f-%4.0f      %6.1f +- %4.1f +- %4.1f      %1.6f +- %1.6f +- %1.6f  ( %1.6f )\n",
+//    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %1.6f +- %1.6f +- %1.6f  ( %1.6f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -978,7 +979,7 @@ void  postFsrCrossSections(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vinSys
   printf("\nPost FSR cross sections: :\n");
   printf("                    absolute                     normalized +-stat +-sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %6.1f   %11.6f +- %10.6f +- %10.6f  ( %10.6f )\n",
+   printf("%4.0f-%4.0f      %6.1f +- %4.1f +- %4.1f      %1.6f +- %1.6f +- %1.6f  ( %1.6f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -1033,7 +1034,7 @@ void  postFsrCrossSectionsDET(TVectorD &vin, TVectorD &vinStatErr, TVectorD &vin
   printf("\nPost FSR DET shape: :\n");
   printf("                    absolute                     normalized +-stat +-sys (total)\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %11.6f +- %10.6f +- %10.6f  ( %10.6f )\n",
+   printf("%4.0f-%4.0f      %6.1f +- %4.1f +- %4.1f      %1.6f +- %1.6f +- %1.6f  ( %1.6f )\n",
 	   massBinLimits[i],massBinLimits[i+1],
 	   vout[i], voutStatErr[i], voutSystErr[i],
 	   voutNorm[i], voutNormStatErr[i], voutNormSystErr[i],
@@ -1053,12 +1054,12 @@ void printTableForNotes(TVectorD obs, TVectorD obsErr,
   printf("\n\nLatex table for notes\n");
   printf("               obs-bg                  unfolded                 eff-corrected                acc-corrected              fsr-corrected\n");
   for(int i=0; i<nMassBins; i++){
-    printf("%4.0f-%4.0f &", massBinLimits[i],massBinLimits[i+1]);
-    printf("  $%8.1f \\pm %6.1f$ &", obs[i] , obsErr[i]);
-    printf("  $%8.1f \\pm %6.1f$ &", unf[i] , unfErr[i]);
-    printf("  $%8.1f \\pm %6.1f$ &", ecor[i], ecorErr[i]);
-    printf("  $%9.1f \\pm %8.1f$ &", acor[i], acorErr[i]);
-    printf("  $%9.1f \\pm %8.1f$ \\\\", fcor[i], fcorErr[i]);
+    printf("%4.0f-%4.0f &$", massBinLimits[i],massBinLimits[i+1]);
+    printf(" %8.1f \\pm %6.1f $&$", obs[i] , obsErr[i]);
+    printf(" %8.1f \\pm %6.1f $&$", unf[i] , unfErr[i]);
+    printf(" %8.1f \\pm %6.1f $&$", ecor[i], ecorErr[i]);
+    printf(" %9.1f \\pm %8.1f $&$", acor[i], acorErr[i]);
+    printf(" %9.1f \\pm %8.1f $ \\\\", fcor[i], fcorErr[i]);
     printf("\n");
   }
 
@@ -1112,17 +1113,17 @@ void printAllCorrections(){
     double fsrFactorSansAcc = fsrCorrectionSansAccArray[i];
     double fsrErrSansAcc    = fsrCorrectionSansAccErrArray[i];
 
-    printf("%4.0f-%4.0f &", massBinLimits[i],massBinLimits[i+1]);
-    printf("  $%5.2f \\pm %4.2f$ &", accFactor*100, accErr*100);
+    printf("%4.0f-%4.0f &$", massBinLimits[i],massBinLimits[i+1]);
+    printf(" %5.2f \\pm %4.2f $&$", accFactor*100, accErr*100);
     // For acceptance * efficiency, only acceptance contribution
     // to the error is printed. This is because we are reflecting
     // here MC-related errors. The error on the efficiency
     // is dominated by scale factor errors, related to low 
     // statistics of tag and probe in the data. Those errors
     // are explicitly stated in systematics.
-    printf("  $%5.2f \\pm %4.2f$ &", accEff*100, accErr*100);
-    printf("  $%6.2f \\pm %4.2f$ &", fsrFactor*100, fsrErr*100);
-    printf("  $%6.2f \\pm %4.2f$ &", fsrFactorSansAcc*100, fsrErrSansAcc*100);
+    printf(" %5.2f \\pm %4.2f $&$", accEff*100, accErr*100);
+    printf(" %6.2f \\pm %4.2f $&$", fsrFactor*100, fsrErr*100);
+    printf(" %6.2f \\pm %4.2f $ \\\\", fsrFactorSansAcc*100, fsrErrSansAcc*100);
     printf("\n");
   }
 }
@@ -1143,8 +1144,8 @@ void printRelativeSystErrors(){
 		      + systBackgrRelative[i]*systBackgrRelative[i]
 		      + systUnfoldRelative[i]*systUnfoldRelative[i]
 		      + systAcceptanceExpRelative*systAcceptanceExpRelative);
-    printf("%4.0f-%4.0f &", massBinLimits[i],massBinLimits[i+1]);
-    printf("   $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$ &  $%5.1f$  &  $%5.1f$ & $%5.1f  $ \\\\" ,
+    printf("%4.0f-%4.0f &$", massBinLimits[i],massBinLimits[i+1]);
+    printf("  %5.1f  $&$ %5.1f $&$ %5.1f $&$ %5.1f $&$ %5.1f $&$ %5.1f $&$ %5.1f $ \\\\" ,
 	   100*systEscaleRelative[i], 
 	   100*systEfficiency[i], 
 	   100*systBackgrRelative[i], 
