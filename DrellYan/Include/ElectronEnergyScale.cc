@@ -482,6 +482,82 @@ bool ElectronEnergyScale::setCalibrationSet(CalibrationSet calSet) {
   return ok;
 }
 
+//------------------------------------------------------
+
+TH1F* ElectronEnergyScale::createParamHisto(const TString &namebase, const TString &nameTag, const double *params, const double *paramErrs) const {
+  int includeGap=1;
+  const double gapHi=1.566;
+  const double gapLo=1.4442;
+  TString name=namebase; name+=nameTag;
+
+  int binCount=_nEtaBins+3+2*includeGap;
+  double bins[binCount];
+  double vals[binCount];
+  double valErrs[binCount];
+  for (int i=0; i<binCount; ++i) vals[i]=0;
+  for (int i=0; i<binCount; ++i) valErrs[i]=0;
+
+  bins[0]=-3;
+  int shift=1;
+  for (int i=0; i<_nEtaBins+1; ++i) {
+    int idx=i+shift;
+    bins[idx]=_etaBinLimits[i];
+    vals[idx]=params[i];
+    valErrs[idx]=paramErrs[i];
+    if (includeGap) {
+      if (_etaBinLimits[i]==-1.5) {
+	bins[idx]=-gapHi; 
+	vals[idx]=0; valErrs[idx]=0;
+	bins[idx+1]=-gapLo;
+	vals[idx+1]=params[i]; valErrs[idx+1]=paramErrs[i];
+	shift++;
+      }
+      else if (_etaBinLimits[i]==1.5) {
+	bins[idx]=gapLo;
+	vals[idx]=0; valErrs[idx]=0;
+	bins[idx+1]=gapHi;
+	vals[idx+1]=params[i]; valErrs[idx+1]=paramErrs[i];
+	shift++;
+      }
+    }
+    //std::cout << "idx=" << idx << ", bins[idx]=" << bins[idx] << ", vals[idx]=" << vals[idx] << "\n";
+    //std::cout << "i+shift=" << (i+shift) << ", bins[i+shift]=" << bins[i+shift] << ", vals[i+shift]=" << vals[i+shift] << "\n";
+  }
+  vals[_nEtaBins+shift]=0;
+  valErrs[_nEtaBins+shift]=0;
+  bins[_nEtaBins+shift+1]=3.;
+  TH1F* h=new TH1F(name.Data(),name.Data(), binCount-1, bins);
+  h->SetStats(0);
+  for (int i=0; i<binCount-2; ++i) {
+    h->SetBinContent(i+1,vals[i]);
+    h->SetBinError(i+1,valErrs[i]);
+  }
+  return h;
+}
+
+//------------------------------------------------------
+
+TH1F* ElectronEnergyScale::createScaleHisto(const TString &namebase) const {
+  TH1F* h= createParamHisto(namebase,"Scale",_dataConst,_dataConstErr);
+  if (!h) {
+    std::cout << "error in ElectornEnergyScale::createScaleHisto(" << namebase << ")\n";
+  }
+  return h;
+}
+
+//------------------------------------------------------
+
+TH1F* ElectronEnergyScale::createSmearHisto(const TString &namebase, int parameterNo) const {
+  char buf[10];
+  sprintf(buf,"Smear%d",parameterNo);
+  const double *data=(parameterNo==0) ? _mcConst1 : _mcConst2;
+  const double *dataErr=(parameterNo==0) ? _mcConst1Err : _mcConst2Err;
+  TH1F* h= createParamHisto(namebase,buf,data,dataErr);
+  if (!h) {
+    std::cout << "error in ElectornEnergyScale::createSmearHisto(" << namebase << ", " << parameterNo << ")\n";
+  }
+  return h;
+}
 
 //------------------------------------------------------
 

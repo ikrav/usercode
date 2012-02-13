@@ -101,6 +101,10 @@ public:
   TString calibrationSetName() const { return ElectronEnergyScale::CalibrationSetName(this->_calibrationSet, &this->_inpFileName); }
   TString calibrationSetFunctionName() const { return ElectronEnergyScale::CalibrationSetFunctionName(this->_calibrationSet); }
 
+  TH1F* createScaleHisto(const TString &namebase) const;
+  TH1F* createSmearHisto(const TString &namebase, int parameterNo) const;
+
+
 protected:
   // Internal functions, not for general use
   double getEnergyScaleCorrectionAny(double eta, bool randomize) const;
@@ -111,6 +115,9 @@ protected:
   bool addSmearedWeightAny(TH1F *hMassDestination, int eta1Bin, int eta2Bin, double mass, double weight, bool randomize) const;
   // updated smear (distribution) : smear collection
   void smearDistributionAny(TH1F *destination, int eta1Bin, int eta2Bin, const TH1F *source, bool randomize) const;
+
+  TH1F* createParamHisto(const TString &namebase, const TString &nameTag, const double *params, const double *paramErrs) const;
+
 
 private:
 
