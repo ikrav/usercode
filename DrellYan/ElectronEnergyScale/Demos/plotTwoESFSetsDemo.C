@@ -42,8 +42,8 @@ void plotTwoESFSetsDemo() {
   h2Scale->SetMarkerStyle(20); h2Smear->SetMarkerStyle(20);
 
 
-  CPlot cpScale("cpScale"," ", "|#eta|","data scaling parameter");
-  CPlot cpSmear("cpSmear"," ", "|#eta|","MC smearing pamareter");
+  CPlot cpScale("cpScale"," ", "#eta","data scaling parameter");
+  CPlot cpSmear("cpSmear"," ", "#eta","MC smearing pamareter");
 
   cpScale.AddHist1D(h1Scale, "esf20110901", "LPE", ci1);
   cpScale.AddHist1D(h2Scale, "esf2012", "LPE same", ci2);
