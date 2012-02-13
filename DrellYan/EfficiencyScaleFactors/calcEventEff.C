@@ -1334,7 +1334,10 @@ void fillEfficiencyConstants(  const TriggerSelection &triggers, int correct_MC_
 	for (int i=0; i<etBinCount; ++i) tmpEffErr[i]=0.;
 	fillOneEfficiency(effDataFile, tmpEff, tmpEffErr, 0);
 	for (int i=0; i<etBinCount; ++i) effBarrel[i]    += invTotLumi * runLumiV[lumiIdx] * tmpEff[i];
-	for (int i=0; i<etBinCount; ++i) effBarrelErr[i] += invTotLumi * runLumiV[lumiIdx] * tmpEffErr[i];
+	for (int i=0; i<etBinCount; ++i) {
+	  double dErr=invTotLumi * runLumiV[lumiIdx] * tmpEffErr[i];
+	  effBarrelErr[i] += dErr*dErr;
+	}
 	if (printLoadedEffs) std::cout << "lumi triggerSetName: " << locTrig.triggerSetName() << "\n";
 	if (printLoadedEffs) PrintEffInfoLines("data barrel: ",effKind,effMethod,etBinCount,tmpEff,tmpEffErr);
 
@@ -1343,9 +1346,14 @@ void fillEfficiencyConstants(  const TriggerSelection &triggers, int correct_MC_
 	for (int i=0; i<etBinCount; ++i) tmpEffErr[i]=0.;
 	fillOneEfficiency(effDataFile, tmpEff, tmpEffErr, 1);
 	for (int i=0; i<etBinCount; ++i) effEndcap[i]    += invTotLumi * runLumiV[lumiIdx] * tmpEff[i];
-	for (int i=0; i<etBinCount; ++i) effEndcapErr[i] += invTotLumi * runLumiV[lumiIdx] * tmpEffErr[i];
+	for (int i=0; i<etBinCount; ++i) {
+	  double dErr=invTotLumi * runLumiV[lumiIdx] * tmpEffErr[i];
+	  effEndcapErr[i] += dErr * dErr;
+	}
 	if (printLoadedEffs) PrintEffInfoLines("data endcap: ",effKind,effMethod,etBinCount,tmpEff,tmpEffErr);
       }
+      for (int i=0; i<etBinCount; ++i) effBarrelErr[i]=sqrt(effBarrelErr[i]);
+      for (int i=0; i<etBinCount; ++i) effEndcapErr[i]=sqrt(effEndcapErr[i]);
       if (printLoadedEffs) PrintEffInfoLines("average data barrel: ",effKind,effMethod,etBinCount,effBarrel,effBarrelErr);
       if (printLoadedEffs) PrintEffInfoLines("average data endcap: ",effKind,effMethod,etBinCount,effEndcap,effEndcapErr);
     }
