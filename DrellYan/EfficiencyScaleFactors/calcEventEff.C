@@ -38,7 +38,7 @@ using namespace mithep;
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
-void fillEfficiencyConstants( const TriggerSelection &triggerSet );
+void fillEfficiencyConstants( const TriggerSelection &triggerSet, int correct_MCtrig );
 void fillOneEfficiency(const TString filename, double *eff, double *effArr, int etaRange);
 
 Bool_t matchedToGeneratorLevel(const TGenInfo *gen, const TDielectron *dielectron);
@@ -216,7 +216,7 @@ void calcEventEff(const TString input, TString triggerSetString)
 
   // Read efficiency constants from ROOT files
   // This has to be done AFTER configuration file is parsed
-  fillEfficiencyConstants( triggers );
+  fillEfficiencyConstants( triggers, 0 );
 
   TH1F *hScale = new TH1F("hScale", "", 150, 0.0, 1.5);
   TH1F *hScaleGsf = new TH1F("hScaleGsf", "", 150, 0.0, 1.5);
@@ -284,7 +284,7 @@ void calcEventEff(const TString input, TString triggerSetString)
       systScaleHlt[i][j] = new TH1F(base+TString("_hlt"),base+TString("_hlt"),150,0.0,1.5);
     }
   
-  
+
   int eventsInNtuple = 0;
   double weightedEventsInNtuple = 0;
   int eventsAfterTrigger = 0;
@@ -1212,7 +1212,7 @@ void drawEventScaleFactors(TVectorD scaleGsfV, TVectorD scaleGsfErrV,
 // This method reads all ROOT files that have efficiencies from
 // tag and probe in TMatrixD form and converts the matrices into 
 // more simple arrays.
-void fillEfficiencyConstants(  const TriggerSelection &triggers ) {
+void fillEfficiencyConstants(  const TriggerSelection &triggers, int correct_MC_triggers ) {
   /*
   TString effDataGsfFile = "efficiency_TnP_data_gsf_fit-fit_bins-et5-eta2.root";
   TString effMcGsfFile   = "efficiency_TnP_mc_gsf_count-count_bins-et5-eta2.root";
@@ -1226,12 +1226,15 @@ void fillEfficiencyConstants(  const TriggerSelection &triggers ) {
 
   TString fnStart="efficiency_TnP_";
   TString fnEnd=".root";
+  TriggerSelection *trigLoc=new TriggerSelection(triggers);
+  if (correct_MC_triggers) trigLoc->triggerSet(Full2011DatasetTriggers);
   TString effDataGsfFile = fnStart + getLabel(DATA,GSF,dataGsfEffMethod,etBinning,etaBinning,triggers) + fnEnd;
-  TString effMcGsfFile   = fnStart + getLabel(MC  ,GSF,  mcGsfEffMethod,etBinning,etaBinning,triggers) + fnEnd;
+  TString effMcGsfFile   = fnStart + getLabel(MC  ,GSF,  mcGsfEffMethod,etBinning,etaBinning,*trigLoc) + fnEnd;
   TString effDataIdFile  = fnStart + getLabel(DATA, ID, dataIdEffMethod,etBinning,etaBinning,triggers) + fnEnd;
-  TString effMcIdFile    = fnStart + getLabel(MC  , ID,   mcIdEffMethod,etBinning,etaBinning,triggers) + fnEnd;
+  TString effMcIdFile    = fnStart + getLabel(MC  , ID,   mcIdEffMethod,etBinning,etaBinning,*trigLoc) + fnEnd;
   TString effDataHltFile = fnStart + getLabel(DATA,HLT,dataHltEffMethod,etBinning,etaBinning,triggers) + fnEnd;
-  TString effMcHltFile   = fnStart + getLabel(MC  ,HLT,  mcHltEffMethod,etBinning,etaBinning,triggers) + fnEnd;
+  TString effMcHltFile   = fnStart + getLabel(MC  ,HLT,  mcHltEffMethod,etBinning,etaBinning,*trigLoc) + fnEnd;
+  delete trigLoc;
 
   // Continue assuming 2 eta bins
   // Last parameter is 0=barrel, 1=endcap
@@ -1269,8 +1272,12 @@ void fillEfficiencyConstants(  const TriggerSelection &triggers ) {
     fillOneEfficiency(effMcHltFile, HltBarrelMcEff, HltBarrelMcEffErr, 0);
     fillOneEfficiency(effMcHltFile, HltEndcapMcEff, HltEndcapMcEffErr, 1);
 
-    if (printLoadedEffs) PrintEffInfoLines("data MC barrel",GSF,mcGsfEffMethod,etBinCount,GsfBarrelMcEff,GsfBarrelMcEffErr);
-    if (printLoadedEffs) PrintEffInfoLines("data MC endcap",GSF,mcGsfEffMethod,etBinCount,GsfEndcapMcEff,GsfEndcapMcEffErr);
+    if (printLoadedEffs) PrintEffInfoLines("MC barrel",GSF,mcGsfEffMethod,etBinCount,GsfBarrelMcEff,GsfBarrelMcEffErr);
+    if (printLoadedEffs) PrintEffInfoLines("MC endcap",GSF,mcGsfEffMethod,etBinCount,GsfEndcapMcEff,GsfEndcapMcEffErr);
+    if (printLoadedEffs) PrintEffInfoLines("MC barrel",ID,mcIdEffMethod,etBinCount,IdBarrelMcEff,IdBarrelMcEffErr);
+    if (printLoadedEffs) PrintEffInfoLines("MC endcap",ID,mcIdEffMethod,etBinCount,IdEndcapMcEff,IdEndcapMcEffErr);
+    if (printLoadedEffs) PrintEffInfoLines("MC barrel",HLT,mcHltEffMethod,etBinCount,HltBarrelMcEff,HltBarrelMcEffErr);
+    if (printLoadedEffs) PrintEffInfoLines("MC endcap",HLT,mcHltEffMethod,etBinCount,HltEndcapMcEff,HltEndcapMcEffErr);
 
     std::cout << " loading files for luminosity reweighting of data efficiencies\n";
     //double barrelEff[etBinCount], barrelEffErr[etBinCount];
