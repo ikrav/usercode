@@ -1,11 +1,12 @@
-#include "../../Include/CPlot.hh"
-#include "../../Include/MitStyleRemix.hh"
-#include "../../Include/ElectronEnergyScale.hh"
+#include "../Include/CPlot.hh"
+#include "../Include/MitStyleRemix.hh"
+#include "../Include/ElectronEnergyScale.hh"
 //#include <TCanvas.h>
 //#include <TLegend.h>
 
 void plotTwoESFSetsDemo() {
   CPlot::sOutDir = "plots";
+
 
   ElectronEnergyScale esf1("Date20110901_EPS11_default");
   ElectronEnergyScale esf2("Date20120101_default");
@@ -27,13 +28,13 @@ void plotTwoESFSetsDemo() {
   assert(h1Scale); assert(h1Smear);
   assert(h2Scale); assert(h2Smear);
 
-  int ci1=30; 
+  int ci1=kGreen+2; 
   h1Scale->SetLineColor(ci1); h1Scale->SetMarkerColor(ci1);
   h1Smear->SetLineColor(ci1); h1Smear->SetMarkerColor(ci1);
   h1Scale->SetMarkerStyle(24); h1Smear->SetMarkerStyle(24);
   h1Scale->GetXaxis()->SetTitleOffset(1.100);
   h1Smear->GetXaxis()->SetTitleOffset(1.100);
-  h1Scale->GetYaxis()->SetTitleOffset(1.40);
+  h1Scale->GetYaxis()->SetTitleOffset(1.50);
   h1Smear->GetYaxis()->SetTitleOffset(1.40);
 
   int ci2=46; 
@@ -45,13 +46,13 @@ void plotTwoESFSetsDemo() {
   CPlot cpScale("cpScale"," ", "#eta","data scaling parameter");
   CPlot cpSmear("cpSmear"," ", "#eta","MC smearing pamareter");
 
-  cpScale.AddHist1D(h1Scale, "esf20110901", "LPE", ci1);
-  cpScale.AddHist1D(h2Scale, "esf2012", "LPE same", ci2);
-  cpSmear.AddHist1D(h1Smear, "esf20110901", "LPE", ci1);
-  cpSmear.AddHist1D(h2Smear, "esf2012", "LPE same", ci2);
+  cpScale.AddHist1D(h1Scale, "1.1 fb^{-1} data", "LPE", ci1);
+  cpScale.AddHist1D(h2Scale, "4.7 fb^{-1} data", "LPE same", ci2);
+  cpSmear.AddHist1D(h1Smear, "1.1 fb^{-1} data", "LPE", ci1);
+  cpSmear.AddHist1D(h2Smear, "4.7 fb^{-1} data", "LPE same", ci2);
 
-  cpScale.SetYRange(0.9,1.1);
-  cpSmear.SetYRange(0. ,2.5);
+  cpScale.SetYRange(0.95,1.1);  cpScale.TransLegend(-0.25,0);
+  cpSmear.SetYRange(0. ,2.5);   cpSmear.TransLegend(-0.25,0);
 
   cpScale.Draw(esfCanvas,0,"png",1);
   cpSmear.Draw(esfCanvas,0,"png",2);
