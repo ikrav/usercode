@@ -2,7 +2,26 @@
 #include "CPlot.hh"
 #include <TLatex.h>
 
-CPlot::CPlot()
+CPlot::CPlot():
+fStack(0),
+fName(),
+fTitle(),
+fXTitle(),
+fYTitle(),
+fXmin(0),
+fXmax(0),
+fYmin(0),
+fYmax(0),
+fLogx(0),
+fLogy(0),
+fGridx(0),
+fGridy(0),
+fRebin(1),
+fLeg(0),
+fShowStats(0),
+fStatsX(0.68),
+fStatsY(0.90),
+fRooPlot(0)
 {
   TString name = "plot"; 
   name += sCount;
