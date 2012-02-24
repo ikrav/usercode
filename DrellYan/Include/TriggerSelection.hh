@@ -171,6 +171,8 @@ class TriggerSelection{
   // Access
   TriggerConstantSet triggerSet() const { return _constants; }
   void triggerSet(TriggerConstantSet ts) { _constants=ts; }
+  bool actOnData() const { return _isData; }
+  void actOnData(bool act_on_data) { _isData = act_on_data; }
   HLTEfficiencyCalcDef hltEffCalcMethod() const { return _hltEffCalcAlgo; }
   void hltEffCalcMethod(HLTEfficiencyCalcDef hltEffCalc) {  _hltEffCalcAlgo = hltEffCalc; }
   bool isDefined() const { return (_constants != TrigSet_UNDEFINED) ? true : false; }
@@ -401,7 +403,7 @@ class TriggerSelection{
  private:
   TriggerConstantSet  _constants;
   bool                _isData;
-  int                 _run;
+  int                 _run;             // this is an obsolete data member
   HLTEfficiencyCalcDef   _hltEffCalcAlgo;
 
 };
