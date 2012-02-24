@@ -801,7 +801,8 @@ void ElectronEnergyScale::print() const {
   printf("     eta-bin      Escale-const      MC-const-1");
   if ( _mcConst2 ) printf("          MC-const-2");
   if ( _mcConst3 ) printf("          MC-const-3");
-  if ( _mcConst4 ) printf("          MC-const-4");
+  if ( _mcConst4 ) printf("          MC-const-4"); 
+  if (_randomizedStudy) printf("          Random Escale-const");
   printf("\n");
   printf("                              %16s    %16s    %16s   %16s\n",
 	 _mcConst1Name.Data(), _mcConst2Name.Data(), _mcConst3Name.Data(), _mcConst4Name.Data());
@@ -818,6 +819,8 @@ void ElectronEnergyScale::print() const {
       printf("   %3.1e+- %3.1e", _mcConst3[i], _mcConst3Err[i]);
     if( _mcConst4 != 0 )
       printf("   %3.1e+- %3.1e", _mcConst4[i], _mcConst4Err[i]);
+    if (_randomizedStudy)
+      printf("     %6.4f",(_dataConstRandomized) ? _dataConstRandomized[i]  : 0.);
     printf("\n");
   }
   printf("\n");
