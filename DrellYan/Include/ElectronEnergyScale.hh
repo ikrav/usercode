@@ -32,6 +32,8 @@ public:
   bool initializeAllConstants();
   bool initializeExtraSmearingFunction();
   bool isInitialized() const { return _isInitialized; }
+  bool randomizedStudy() const { return _randomizedStudy; }
+  void randomizedStudy(bool doRandomizedStudy) { _randomizedStudy=doRandomizedStudy; }
   bool isScaleRandomized() const { return _energyScaleCorrectionRandomizationDone; }
   bool isSmearRandomized() const { return _smearingWidthRandomizationDone; }
 
@@ -73,7 +75,7 @@ public:
   // Several functions for systematic studies. These
   // randomize constants for energy scale corrections
   // within their errors.
-  void   randomizeEnergyScaleCorrections(int seed);
+  int   randomizeEnergyScaleCorrections(int seed);
   double getEnergyScaleCorrectionRandomized(double eta) const;
 
   void   randomizeSmearingWidth(int seed);
@@ -104,9 +106,10 @@ public:
   TH1F* createScaleHisto(const TString &namebase) const;
   TH1F* createSmearHisto(const TString &namebase, int parameterNo) const;
 
-
-protected:
+  //protected: 
   // Internal functions, not for general use
+public: // made public to be able to check whether the randomized value is different from non-randomized
+
   double getEnergyScaleCorrectionAny(double eta, bool randomize) const;
 
   // old-style smear (event shift)
@@ -116,14 +119,15 @@ protected:
   // updated smear (distribution) : smear collection
   void smearDistributionAny(TH1F *destination, int eta1Bin, int eta2Bin, const TH1F *source, bool randomize) const;
 
+protected:
   TH1F* createParamHisto(const TString &namebase, const TString &nameTag, const double *params, const double *paramErrs) const;
-
 
 private:
 
   CalibrationSet     _calibrationSet;
   TString            _inpFileName;
   bool               _isInitialized;
+  bool               _randomizedStudy;
 
   // The data structure assumes the following:
   //  - the binning is in eta only

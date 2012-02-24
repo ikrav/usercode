@@ -14,6 +14,7 @@ ElectronEnergyScale::ElectronEnergyScale(CalibrationSet calibrationSet):
   _calibrationSet(calibrationSet),
   _inpFileName(),
   _isInitialized(false),
+  _randomizedStudy(false),
   _energyScaleCorrectionRandomizationDone(false),
   _smearingWidthRandomizationDone(false)
 {
@@ -26,6 +27,7 @@ ElectronEnergyScale::ElectronEnergyScale(const TString &escaleTagName):
   _calibrationSet(UNDEFINED),
   _inpFileName(),
   _isInitialized(false),
+  _randomizedStudy(false),
   _energyScaleCorrectionRandomizationDone(false),
   _smearingWidthRandomizationDone(false)
 {
@@ -56,6 +58,18 @@ void ElectronEnergyScale::clear() {
 void ElectronEnergyScale::init(const TString &stringWithEScaleTagName) {
   this->clear();
   this->init(ElectronEnergyScale::DetermineCalibrationSet(stringWithEScaleTagName,&_inpFileName));
+  if (this->isInitialized()) {
+    Ssiz_t pos=stringWithEScaleTagName.Index("RANDOMIZE");
+    _randomizedStudy=(pos>=0);
+    if (_randomizedStudy) {
+      int shift=stringWithEScaleTagName.Contains("RANDOMIZED") ? 10:9;
+      //std::cout << "seed from <" << (stringWithEScaleTagName.Data()+pos+shift) << ">\n";
+      int seed=atoi(stringWithEScaleTagName.Data()+pos+shift);
+      std::cout << "randomization with seed=" << seed << "\n";
+      int res=this->randomizeEnergyScaleCorrections(seed);
+      if (!res) _isInitialized=false;
+    }
+  }
   return;
 }
 
@@ -133,6 +147,7 @@ bool ElectronEnergyScale::assignConstants(const std::vector<string> &lines, int 
   _etaBinLimits = new double[_nEtaBins+1];
   _dataConst = new double[_nEtaBins];
   _dataConstErr = new double[_nEtaBins];
+  _dataConstRandomized = new double[_nEtaBins];
   _nMCConstants=1;
   _mcConst1 = new double[_nEtaBins];
   _mcConst2 = 0;
@@ -146,8 +161,10 @@ bool ElectronEnergyScale::assignConstants(const std::vector<string> &lines, int 
 
   assert(_etaBinLimits); 
   assert(_dataConst); assert(_dataConstErr);
+  assert(_dataConstRandomized);
   assert(_mcConst1); assert(_mcConst1Err);
   int res=ElectronEnergyScale::AssignConstants(lines,_nEtaBins,_etaBinLimits,_dataConst,_dataConstErr,_mcConst1,_mcConst1Err,debug);
+  for (int i=0; i<_nEtaBins; ++i) _dataConstRandomized[i]=0;
   if (!res) std::cout << "failed in this->assignConstants(lines)\n";
   return res;
 }
@@ -443,23 +460,23 @@ bool ElectronEnergyScale::initializeExtraSmearingFunction(){
 
 //------------------------------------------------------
 
-void   ElectronEnergyScale::randomizeEnergyScaleCorrections(int seed){
+int   ElectronEnergyScale::randomizeEnergyScaleCorrections(int seed){
 
   if( !_isInitialized ){
     printf("ElectronEnergyScale ERROR: the object is not properly initialized\n");
-    return;
+    return 0;
   }
 
   TRandom rand;
   rand.SetSeed(seed);
   _energyScaleCorrectionRandomizationDone = true;
-  if (_calibrationSet==UNCORRECTED) return;
+  if (_calibrationSet==UNCORRECTED) return 1;
 
   for(int i=0; i<_nEtaBins; i++){
     _dataConstRandomized[i] = _dataConst[i] + rand.Gaus(0.0,_dataConstErr[i]);
   }
 
-  return;
+  return 1;
 }
 
 //------------------------------------------------------
@@ -481,6 +498,7 @@ bool ElectronEnergyScale::setCalibrationSet(CalibrationSet calSet) {
   }
   return ok;
 }
+
 
 //------------------------------------------------------
 
@@ -564,7 +582,7 @@ TH1F* ElectronEnergyScale::createSmearHisto(const TString &namebase, int paramet
 double ElectronEnergyScale::getEnergyScaleCorrection(double eta) const {
 
   double result = 1.0;
-  bool randomize = false;
+  bool randomize = _randomizedStudy;
   if (_calibrationSet != UNCORRECTED) {
     result = getEnergyScaleCorrectionAny(eta,randomize);
   }
@@ -660,7 +678,7 @@ void ElectronEnergyScale::randomizeSmearingWidth(int seed){
 
 double ElectronEnergyScale::generateMCSmear(double eta1, double eta2) const {
   
-  bool randomize = false;
+  bool randomize = false; // this is not foreseen to be flagged by _randomizedStudy!!
   if (_calibrationSet == UNCORRECTED) return 0.0;
 
   double result = generateMCSmearAny(eta1, eta2, randomize);
@@ -840,16 +858,18 @@ ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet
   }
   else if (escaleTagName.Contains("File")) {
     if (escaleTagName.Contains("File_Gauss") ||
-	escaleTagName.Contains("FileGauss")) {      
-      Ssiz_t pos=escaleTagName.Index("File");
-      while ((pos<escaleTagName.Length()) && (escaleTagName[pos]!=' ')) pos++;
-      while ((pos<escaleTagName.Length()) && (escaleTagName[pos]==' ')) pos++;
-      if ((pos==escaleTagName.Length()) || (escaleTagName[pos]=='\n')) {
+	escaleTagName.Contains("FileGauss")) {
+      std::string tmp=escaleTagName.Data();
+      size_t pos1=tmp.find("File");
+      pos1=tmp.find_first_of(' ',pos1+1); pos1=tmp.find_first_not_of(" \t\n",pos1+1); // skip File* and spaces
+      size_t pos2=tmp.find_first_of(" \n\t",pos1+1);
+      if ((pos1==std::string::npos) || (pos2==std::string::npos)) {
 	std::cout << "since escaleTagName contains 'FileGauss', the keyword has to be followed by a file name\n";
       }
       else {
 	calibrationSet = ElectronEnergyScale::CalSet_File_Gauss;
-	fileName=escaleTagName(pos,escaleTagName.Length()-pos);
+	fileName=tmp.substr(pos1,pos2-pos1);
+	//std::cout << "fileName=<" << fileName << ">\n";
       }
     }
   }
