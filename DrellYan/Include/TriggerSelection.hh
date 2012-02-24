@@ -188,29 +188,6 @@ class TriggerSelection{
     return ((runNumMax<chkMin) || (runNumMin>chkMax)) ? false : true;
   }
 
-  bool suitableDataFile(const TString &dataFileName) const {
-    if (!_isData) return true; // no verification for MC samples
-    bool ok=false;
-    switch(_constants) {
-    case Full2011DatasetTriggers: ok=true; break;
-    case TrigSet_2011A_SingleEG:  
-      ok=( dataFileName.Contains("r11a-") && 
-	  !dataFileName.Contains("r11a-del-o03")); 
-      break; // first 3 r11a-* files contain such events
-    case TrigSet_2011A_DoubleEG:  
-      ok=(dataFileName.Contains("r11a-del-a05") || 
-	  dataFileName.Contains("r11a-del-o03")) ? true:false;
-      break;
-    case TrigSet_2011B_DoubleEG:
-      ok=dataFileName.Contains("r11b-");
-      break;
-    default:
-      std::cout << "unable to verify the file <" << dataFileName << ">\n";
-      assert(0);
-    }
-    return ok;
-  }
-
   bool useRandomTagTnPMethod(UInt_t run) const {
     // For "new" MC use only random tag and probe since Fall11 MC is DoubleEG 
     // for the signal trigger.
