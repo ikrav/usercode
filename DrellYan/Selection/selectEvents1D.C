@@ -75,10 +75,17 @@ void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron,
 
 //=== MAIN MACRO =================================================================================================
 
-void selectEvents1D(const TString conf) 
+void selectEvents1D(const TString conf, const TString triggerSetString="Full2011DatasetTriggers") 
 {  
   gBenchmark->Start("selectEvents1D");
 
+  // fast check
+  TriggerConstantSet triggerSet=DetermineTriggerSet(triggerSetString);  
+  assert ( triggerSet != TrigSet_UNDEFINED );
+ 
+  // Construct the trigger object
+  TriggerSelection requiredTriggers(triggerSetString, true, 0);
+  assert(requiredTriggers.isDefined());
   
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
@@ -494,9 +501,10 @@ void selectEvents1D(const TString conf)
         if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
         
 	// Configure the object for trigger matching	
-	bool isData = (isam == 0 && hasData);
-	TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
-	TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
+	bool isData = ((isam == 0) && hasData);
+	//TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
+	//TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
+	requiredTriggers.actOnData(isData);
 	ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(info->runNum);
 	ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(info->runNum);
 	ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(info->runNum);
