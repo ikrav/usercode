@@ -4,6 +4,7 @@
 #include "../Include/EWKAnaDefs.hh"
 #include <TString.h>
 #include <iostream>
+#include <sstream>
 
 // -----------------------------------------
 //
@@ -112,6 +113,37 @@ void PrintBits(T n) {
 }
 
 // -----------------------------------------------
+
+template<class T>
+std::string PrintBitsToStdString(T n, const char *msg=NULL, int compact=0) {
+  std::stringstream ss(std::stringstream::in | std::stringstream::out);
+  if (compact) {
+    if (msg) ss << msg;
+  }
+  else {
+    ss << "PrintBits(";
+    if (msg) ss << msg << ", ";
+    ss << n << ") = ";
+  }
+  int first=1;
+  for (unsigned int i=0; i<8*sizeof(T); ++i) {
+    T t=(T(1)<<i);
+    if ((t&n) != 0) {
+      if (first) first=0; 
+      else {
+	if (compact) ss << "_";
+	else ss << ", ";
+      }
+      ss << i;
+    }
+  }
+  if (!compact) ss << "\n";
+  std::string str;
+  getline(ss,str);
+  return str;
+}
+
+// -----------------------------------------------
 // -----------------------------------------------
 // -----------------------------------------------
 
@@ -207,6 +239,24 @@ class TriggerSelection{
       yes=false;
     }
     return yes;
+  }
+
+  // hand-made catch-all event trigger
+  ULong_t getCombinedEventTriggerBit() {
+    bool keepIsData=_isData;
+    ULong_t bits=0UL;
+    _isData=false;
+    bits |= this->getEventTriggerBit(0);
+    bits |= this->getEventTriggerBit_SCtoGSF(0);
+    bits |= this->getEventTriggerBit_TagProbe(0);
+    _isData=true;
+    bits |= this->getEventTriggerBit(150000+1);
+    bits |= this->getEventTriggerBit(170054+1);
+    bits |= this->getEventTriggerBit_SCtoGSF(0);
+    bits |= this->getEventTriggerBit_TagProbe(0);
+    bits |= this->getEventTriggerBit_TagProbe(165088+1);
+    _isData=keepIsData;
+    return bits;
   }
 
   // Trigger bits: main analysis
