@@ -81,6 +81,8 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
     std::cout<<"Running script in the RESOLUTION_STUDY mode"<<std::endl;
   else if (systematicsMode==DYTools::FSR_STUDY)
     std::cout<<"Running script in the FSR_STUDY mode"<<std::endl;
+  else if (systematicsMode==DYTools::ESCALE_STUDY)
+    std::cout<<"Running script in the ESCALE_STUDY mode"<<std::endl;
   else { 
     std::cout<<"requested mode not recognized"<<std::endl;
     assert(0);
@@ -165,6 +167,13 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
     escale.randomizeSmearingWidth(seed);
     for(int i=0; i<escale._nEtaBins; i++)
       shift[i] = gRandom->Gaus(0,1);
+  }
+
+  // prepare tools for ESCALE_STUDY
+  TH1F *shapeWeights=NULL;
+  if (systematicsMode==DYTools::ESCALE_STUDY) {
+    TFile fshape("shape_weights.root");
+    shapeWeights = (TH1F*)fshape.Get("weights");
   }
 
   //  
@@ -374,9 +383,11 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
 	  cout << "ERROR: binning problem" << endl;
 
 	int ibinRec = DYTools::findMassBin(massResmeared);
+	double shape_weight = (shapeWeights && (ibinRec!=-1)) ? 
+	  shapeWeights->GetBinContent(ibinRec) : 1.0;
 	if(ibinRec != -1 && ibinRec < yieldsMcRec.GetNoElements()){
 	    yieldsMcRec[ibinRec] += reweight * scale * gen->weight;
-	    DetCorrFactorNumerator(ibinRec) += reweight * scale * gen->weight;
+	    DetCorrFactorNumerator(ibinRec) += reweight * scale * gen->weight * shape_weight;
           }
 
 	else if(ibinRec >= yieldsMcRec.GetNoElements())
@@ -384,7 +395,7 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
 	
 	if( ibinRec != -1 && ibinRec < yieldsMcRec.GetNoElements() 
 	    && ibinFsr != -1 && ibinFsr < yieldsMcRec.GetNoElements() ){
-          DetMigration(ibinFsr,ibinRec) += reweight * scale * gen->weight;
+          DetMigration(ibinFsr,ibinRec) += reweight * scale * gen->weight * shape_weight;
 	}
 	
         Bool_t isB1 = (fabs(dielectron->scEta_1)<kGAP_LOW);
