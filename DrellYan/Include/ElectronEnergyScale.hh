@@ -15,7 +15,9 @@ public:
     UNCORRECTED,
     Date20110901_EPS11_default,
     Date20120101_default,
-    CalSet_File_Gauss
+    CalSet_File_Gauss,
+    CalSet_File_BreitWigner,
+    CalSet_File_Voigt
   };
 
   // Constructor
@@ -27,11 +29,11 @@ public:
   void clear();
 
   // Initialization
-  void init(CalibrationSet calSet);
-  void init(const TString &stringWithEScaleTagName);
-  bool initializeAllConstants();
+  void init(CalibrationSet calSet, int debug=0);
+  void init(const TString &stringWithEScaleTagName, int debug=0);
+  bool initializeAllConstants(int debug=0);
   bool initializeExtraSmearingFunction();
-  bool isInitialized() const { return _isInitialized; }
+  bool isInitialized() const;
   bool randomizedStudy() const { return _randomizedStudy; }
   void randomizedStudy(bool doRandomizedStudy) { _randomizedStudy=doRandomizedStudy; }
   bool isScaleRandomized() const { return _energyScaleCorrectionRandomizationDone; }
@@ -40,6 +42,7 @@ public:
   bool loadInputFile(const TString &fileName, int debug=0);
   bool assignConstants(const std::vector<string> &lines, int debug=0);
   static bool AssignConstants(const std::vector<string> &lines, int count, double *eta, double *scale, double *scaleErr, double *smear, double *smearErr, int debug=0);
+  static bool AssignConstants2(const std::vector<string> &lines, int count, const char *parameterNameStart, double *par, double *parErr, int debug=0);
 
   // Access
   CalibrationSet getCalibrationSet() const { return _calibrationSet; }
@@ -97,6 +100,7 @@ public:
 
   // Useful functions
   static CalibrationSet DetermineCalibrationSet(const TString &escaleTagName, TString *inputFileName=NULL);  // TString -> CalibrationSet
+  static TString ExtractFileName(const TString &escaleTagName);
   static TString CalibrationSetName(CalibrationSet escaleTag, const TString *fileName);   // CalibrationSet -> TString
   static TString CalibrationSetFunctionName(CalibrationSet escaleTag); // name of the calibrating function
 

@@ -55,9 +55,9 @@ void ElectronEnergyScale::clear() {
 
 //------------------------------------------------------
 
-void ElectronEnergyScale::init(const TString &stringWithEScaleTagName) {
+void ElectronEnergyScale::init(const TString &stringWithEScaleTagName, int debug) {
   this->clear();
-  this->init(ElectronEnergyScale::DetermineCalibrationSet(stringWithEScaleTagName,&_inpFileName));
+  this->init(ElectronEnergyScale::DetermineCalibrationSet(stringWithEScaleTagName,&_inpFileName),debug);
   if (this->isInitialized()) {
     Ssiz_t pos=stringWithEScaleTagName.Index("RANDOMIZE");
     _randomizedStudy=(pos>=0);
@@ -75,7 +75,7 @@ void ElectronEnergyScale::init(const TString &stringWithEScaleTagName) {
 
 //------------------------------------------------------
 
-void ElectronEnergyScale::init(CalibrationSet calSet) {
+void ElectronEnergyScale::init(CalibrationSet calSet, int debug) {
   _calibrationSet=calSet;
   _isInitialized = false;
    
@@ -84,7 +84,7 @@ void ElectronEnergyScale::init(CalibrationSet calSet) {
 
   std::cout << "_calibrationSet=" << ElectronEnergyScale::CalibrationSetName(_calibrationSet,&_inpFileName) << "\n";
 
-  if( !initializeAllConstants()) {
+  if( !initializeAllConstants(debug)) {
     std::cout << "failed to initialize\n";
     return;
   }
@@ -114,6 +114,35 @@ bool ElectronEnergyScale::loadInputFile(const TString &fileName, int debug) {
   }
   fin.close();
   if (debug) { std::cout << "from <" << fileName << "> loaded "; PrintVec("loaded ",lines,1); }
+  // check that the file contains the model we expect
+  int ok=0;
+  std::string modelFile;
+  for (unsigned int i=0; i<lines.size(); ++i) {
+    size_t pos=lines[i].find("fit model");
+    if (pos != std::string::npos) {
+      size_t pos1=lines[i].find(')',pos);
+      if (pos1 == std::string::npos) {
+	std::cout << "cannot verify model defined in a file: not the right structure\n";
+	throw 2;
+      }
+      std::string model=lines[i].substr(pos+10,pos1-pos-10);
+      std::transform(model.begin(), model.end(), model.begin(),
+               (int(*)(int)) std::tolower);
+      if ((model.find("gauss")!=std::string::npos) && 
+	  (_calibrationSet==CalSet_File_Gauss)) ok=1;
+      else if ((model.find("voigt")!=std::string::npos) &&
+	       (_calibrationSet==CalSet_File_Voigt)) ok=1;
+      else if ((model.find("breitwigner")!=std::string::npos) &&
+	       (_calibrationSet==CalSet_File_BreitWigner)) ok=1;
+      modelFile=model;
+      break;
+    }
+  }
+  if (!ok) {
+    std::cout << "The object is readied for <" << this->calibrationSetName() << ">, while the file contains model=<" << modelFile << ">\n";
+    throw 2;
+  }
+  // assign constants
   bool res=assignConstants(lines,debug);
   if (!res) std::cout << "error from loadInputFile(" << fileName << ")\n";
   return res;
@@ -165,6 +194,20 @@ bool ElectronEnergyScale::assignConstants(const std::vector<string> &lines, int 
   assert(_mcConst1); assert(_mcConst1Err);
   int res=ElectronEnergyScale::AssignConstants(lines,_nEtaBins,_etaBinLimits,_dataConst,_dataConstErr,_mcConst1,_mcConst1Err,debug);
   for (int i=0; i<_nEtaBins; ++i) _dataConstRandomized[i]=0;
+
+  if (res) {
+    switch(_calibrationSet) {
+    case CalSet_File_Voigt: 
+      _mcConst2 = new double[_nEtaBins];
+      _mcConst2Err = new double[_nEtaBins];
+      _mcConst2Name = "gamma";
+      res=ElectronEnergyScale::AssignConstants2(lines,_nEtaBins,"gamma_",_mcConst2,_mcConst2Err,debug);
+      break;
+    default:
+      res=res; // dummy to prevent compiler complaints;
+    }
+  }
+
   if (!res) std::cout << "failed in this->assignConstants(lines)\n";
   return res;
 }
@@ -244,10 +287,63 @@ bool ElectronEnergyScale::AssignConstants(const std::vector<string> &lines, int 
   }
   return true;
 }
+//------------------------------------------------------
+
+bool ElectronEnergyScale::AssignConstants2(const std::vector<string> &lines, int count, const char *parameterNameStart, double *par, double *parErr, int debug) {
+  int etaDivCount=0;
+  for (unsigned int i=0; !etaDivCount && (i<lines.size()); ++i) {
+    if (lines[i].find("EtaDivisionCount")!=std::string::npos) {
+      etaDivCount=atoi(lines[i].c_str()+lines[i].find('=')+1);
+    }
+  }
+  // check etaDivCount count
+  if ((etaDivCount!=count) && (etaDivCount*2!=count)) {
+    std::cout << "assignConstants2: got lines with etaDivCount=" << etaDivCount << ", while allocation states count=" << count << "\n";
+    return 0;
+  }
+
+  // Assign parameter constants
+  double *d,*derr;
+  for (unsigned int i=0; i<lines.size(); ++i) {
+    d=NULL; derr=NULL;
+    if (lines[i].find(parameterNameStart)!=std::string::npos) {
+      d=par; derr=parErr;
+    }
+    if (d) {
+      if (lines[i].find('_') == std::string::npos) {
+	std::cout << "line <" << lines[i] << "> contains parameterNameStart=<" << parameterNameStart << ">, but has no '_'\n";
+	return false;
+      }
+      std::stringstream ss(lines[i].c_str() + lines[i].find('_') + 1);
+      int idx;
+      double val,valErr;
+      ss >> idx >> val >> valErr;
+      if (etaDivCount==count) {
+	d[idx]=val; derr[idx]=valErr;
+      }
+      else if (etaDivCount*2==count) {
+	d[etaDivCount-idx-1]=val;
+	derr[etaDivCount-idx-1]=valErr;
+	d[etaDivCount+idx]=val;
+	derr[etaDivCount+idx]=valErr;
+      }
+      else assert(0);
+    }
+  }
+  if (debug) {
+    std::cout << "got \n";
+    for (unsigned int i=0; i<lines.size(); ++i) std::cout << "--> " << lines[i] << "\n";
+    std::cout << "derived \n";
+    for (int i=0; i<count; ++i) {
+      std::cout << parameterNameStart << i << "  " << par[i] << " " << parErr[i] << "\n";
+    }
+  }
+  return true;
+}
 
 //------------------------------------------------------
 
-bool ElectronEnergyScale::initializeAllConstants(){
+bool ElectronEnergyScale::initializeAllConstants(int debug){
   
   bool success = true;
   int nEtaBins1=0;
@@ -258,7 +354,10 @@ bool ElectronEnergyScale::initializeAllConstants(){
   case UNCORRECTED: nEtaBins1=1; break;
   case Date20110901_EPS11_default: nEtaBins1=12; break;
   case Date20120101_default: nEtaBins1=12; break;
-  case CalSet_File_Gauss: nEtaBins1=-1; break;
+  case CalSet_File_Gauss: 
+  case CalSet_File_Voigt:
+  case CalSet_File_BreitWigner:
+    nEtaBins1=-1; break;
   default:
     std::cout << "ElectronEnergyScale::initializeAllConstants: is not ready for the _calibrationSet= " << ElectronEnergyScale::CalibrationSetName(_calibrationSet,&_inpFileName) << " (" << int(_calibrationSet) << ")\n";
     return false;
@@ -398,15 +497,16 @@ bool ElectronEnergyScale::initializeAllConstants(){
   }
     break;
 
-  case CalSet_File_Gauss: {
+  case CalSet_File_Gauss: 
+  case CalSet_File_Voigt:
+  case CalSet_File_BreitWigner: {
     if (_inpFileName.Length()==0) {
-      std::cout << "ElectronEnergyScale::initializeAllConstants. Calibration set CalSet_File_Gauss requires input file to be set\n";
+      std::cout << "ElectronEnergyScale::initializeAllConstants. Calibration set " << ElectronEnergyScale::CalibrationSetName(_calibrationSet,&_inpFileName) << " requires input file to be set\n";
       assert(0);
     }
-    int debug=0;
     success = loadInputFile(_inpFileName,debug);
-    break;
   }
+    break;
 
   default:
     std::cout << "ElectronEnergyScale::initializeAllConstants: is not ready for the _calibrationSet= " << ElectronEnergyScale::CalibrationSetName(_calibrationSet,&_inpFileName) << " (" << int(_calibrationSet) << ") [3]\n";
@@ -449,6 +549,29 @@ bool ElectronEnergyScale::initializeExtraSmearingFunction(){
 	smearingFunctionGrid[i][j]->SetParameters(1.0/(sij*sqrt(8*atan(1))),0.0,sij);
       }
 	break;
+      case CalSet_File_BreitWigner: {
+	if(_mcConst1 == 0) continue;
+	smearingFunctionGrid[i][j] = new TF1(fname, "TMath::BreitWigner(x,[0],[1])", -10, 10);
+	smearingFunctionGrid[i][j]->SetNpx(500);
+	const double si = _mcConst1[i];
+	const double sj = _mcConst1[j];
+	const double sij=sqrt(si*si+sj*sj);
+	smearingFunctionGrid[i][j]->SetParameters(0.,sij);
+      }
+	break;
+      case CalSet_File_Voigt: {
+	if((_mcConst1 == 0) || (_mcConst2 == 0)) continue;
+	smearingFunctionGrid[i][j] = new TF1(fname, "TMath::Voigt(x,[0],[1])", -10, 10);
+	smearingFunctionGrid[i][j]->SetNpx(500);
+	const double si = _mcConst1[i];
+	const double sj = _mcConst1[j];
+	const double sij=sqrt(si*si+sj*sj);
+	const double gammai = _mcConst2[i];
+	const double gammaj = _mcConst2[j];
+	const double gammaij = sqrt(gammai*gammai + gammaj*gammaj);
+	smearingFunctionGrid[i][j]->SetParameters(sij,gammaij);
+      }
+	break;
       default:
 	success = false;
       }
@@ -456,6 +579,25 @@ bool ElectronEnergyScale::initializeExtraSmearingFunction(){
   } // end outer loop over eta bins
 
   return success;
+}
+
+//------------------------------------------------------
+
+bool ElectronEnergyScale::isInitialized() const {
+  bool yes=_isInitialized;
+  if (yes) {
+    switch(_calibrationSet) {
+    case UNDEFINED: yes=false; break;
+    case CalSet_File_Gauss:
+    case CalSet_File_BreitWigner:
+    case CalSet_File_Voigt:
+      if (_inpFileName.Length()==0) yes=false;
+      break;
+    default:
+      yes=true;
+    }
+  }
+  return yes;
 }
 
 //------------------------------------------------------
@@ -669,6 +811,7 @@ void ElectronEnergyScale::randomizeSmearingWidth(int seed){
   default:
     // This place should be never reached. This is just a sanity check.
     printf("ElectronEnergyScale ERROR: failed to created randomized smearing function\n");
+    throw 1;
   }
 
   return;
@@ -729,7 +872,10 @@ double ElectronEnergyScale::generateMCSmearAny(double eta1, double eta2, bool ra
       count++;
     }
   }
-  if(count != 2) printf("ElectronEnergyScale: Smear function ERROR\n");
+  if(count != 2) {
+    printf("ElectronEnergyScale: Smear function ERROR\n");
+    throw 1;
+  }
  
   if( !randomize)
     result = smearingFunctionGrid[ibin][jbin]->GetRandom();
@@ -831,6 +977,29 @@ void ElectronEnergyScale::print() const {
 //------------------------------------------------------
 //------------------------------------------------------
 
+TString ElectronEnergyScale::ExtractFileName(const TString &escaleTagName) {
+  TString fname;
+  if (escaleTagName.Contains("File")) {
+    std::string tmp=escaleTagName.Data();
+    size_t pos1=tmp.find("File");
+    pos1=tmp.find_first_of(' ',pos1+1); pos1=tmp.find_first_not_of(" \t\n",pos1+1); // skip File* and spaces
+    size_t pos2=tmp.find_first_of(" \n\t",pos1+1);
+    if (pos2==std::string::npos) pos2=tmp.size(); // should be -1, but +1 is a correction for the case when the string terminates with the file name only
+    if ((pos1==std::string::npos) || (pos2==std::string::npos)) {
+      std::cout << "ElectronEnergyScale::ExtractFileName: since escaleTagName contains 'File', the keyword has to be followed by a file name\n";
+      std::cout << "  escaleTagName=<" << escaleTagName << ">\n";
+      throw 3;
+    }
+    else {
+      fname=tmp.substr(pos1,pos2-pos1);
+      //std::cout << "fileName=<" << fileName << ">\n";
+    }
+  }
+  return fname;
+}
+
+//------------------------------------------------------
+
 ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet(const TString &escaleTagName_orig, TString *inputFileName) {
   ElectronEnergyScale::CalibrationSet calibrationSet  = ElectronEnergyScale::UNDEFINED;
   TString fileName;
@@ -862,23 +1031,29 @@ ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet
   else if (escaleTagName.Contains("File")) {
     if (escaleTagName.Contains("File_Gauss") ||
 	escaleTagName.Contains("FileGauss")) {
-      std::string tmp=escaleTagName.Data();
-      size_t pos1=tmp.find("File");
-      pos1=tmp.find_first_of(' ',pos1+1); pos1=tmp.find_first_not_of(" \t\n",pos1+1); // skip File* and spaces
-      size_t pos2=tmp.find_first_of(" \n\t",pos1+1);
-      if ((pos1==std::string::npos) || (pos2==std::string::npos)) {
-	std::cout << "since escaleTagName contains 'FileGauss', the keyword has to be followed by a file name\n";
-      }
-      else {
+      fileName=ExtractFileName(escaleTagName);
+      if (fileName.Length()>0) {
 	calibrationSet = ElectronEnergyScale::CalSet_File_Gauss;
-	fileName=tmp.substr(pos1,pos2-pos1);
-	//std::cout << "fileName=<" << fileName << ">\n";
+      }
+    }
+    else if (escaleTagName.Contains("File_Voigt") ||
+	     escaleTagName.Contains("FileVoigt")) {
+      fileName=ExtractFileName(escaleTagName);
+      if (fileName.Length()>0) {
+	calibrationSet = ElectronEnergyScale::CalSet_File_Voigt;
+      }
+    }
+    else if (escaleTagName.Contains("File_BreitWigner") ||
+	     escaleTagName.Contains("FileBreitWigner")) {
+      fileName=ExtractFileName(escaleTagName);
+      if (fileName.Length()>0) {
+	calibrationSet = ElectronEnergyScale::CalSet_File_BreitWigner;
       }
     }
   }
   else{
     printf("Failed to match escale calibration. Tag: >>%s<<\n", escaleTagName.Data());
-    assert(0); 
+    throw 2;
   }
     
   if (fileName.Length()) {
@@ -905,6 +1080,16 @@ TString ElectronEnergyScale::CalibrationSetName(ElectronEnergyScale::Calibration
     if (fileName) name+=(*fileName);
     name+=")";
     break;
+  case ElectronEnergyScale::CalSet_File_Voigt: 
+    name="FileVoigt(";
+    if (fileName) name+=(*fileName);
+    name+=")";
+    break;
+  case ElectronEnergyScale::CalSet_File_BreitWigner: 
+    name="FileBreitWigner(";
+    if (fileName) name+=(*fileName);
+    name+=")";
+    break;
   default:
     name="CalibrationSetName_undetermined";
   }
@@ -921,6 +1106,8 @@ TString ElectronEnergyScale::CalibrationSetFunctionName(ElectronEnergyScale::Cal
   case ElectronEnergyScale::Date20110901_EPS11_default: break; // Gauss
   case ElectronEnergyScale::Date20120101_default: break; // Gauss
   case ElectronEnergyScale::CalSet_File_Gauss: break; // Gauss
+  case ElectronEnergyScale::CalSet_File_Voigt: name="Voigt"; break;
+  case ElectronEnergyScale::CalSet_File_BreitWigner: name="BreitWigner"; break;
   default:
     name="CalibrationSetFunctionName_undetermined";
   }
