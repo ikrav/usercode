@@ -127,7 +127,8 @@ namespace DYTools {
   // ------------- 2011 and 2010 content is below ---------------
 
   // Systematics modes for unfolding and acceptance 
-  typedef enum {NORMAL, RESOLUTION_STUDY, FSR_STUDY} TSystematicsStudy_t;
+  typedef enum {NORMAL, RESOLUTION_STUDY, FSR_STUDY, ESCALE_STUDY }
+    TSystematicsStudy_t;
 
   // Tag and probe fitting constants
   typedef enum {COUNTnCOUNT, COUNTnFIT, FITnFIT} TTnPMethod_t;
