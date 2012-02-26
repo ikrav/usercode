@@ -6,6 +6,7 @@
 #include "../Include/ElectronEnergyScale.hh"
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 #include "MyTools.hh"
 
 //------------------------------------------------------
