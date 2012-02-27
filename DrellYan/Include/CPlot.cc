@@ -97,7 +97,9 @@ void CPlot::AddHist1D(TH1F *h, TString drawopt, int color, int linesty, int fill
   fItems.push_back(item);
 }
 
-void CPlot::AddHist1D(TH1F *h, TString label, TString drawopt, int color, int linesty, int fillsty)
+
+
+void CPlot::AddHist1D(TH1F *h, TString label, TString drawopt, int color, int linesty, int fillsty, int legendSymbolLP)
 {
   if(!h)
     return;
@@ -107,7 +109,8 @@ void CPlot::AddHist1D(TH1F *h, TString label, TString drawopt, int color, int li
   else
     fLeg->SetY1(fLeg->GetY1()-0.06);
  
-  if(drawopt.CompareTo("E",TString::kIgnoreCase)==0) {
+  if ((drawopt.CompareTo("E",TString::kIgnoreCase)==0) ||
+      legendSymbolLP) {
     //fLeg->AddEntry(h,label,"P");
     fLeg->AddEntry(h,label,"PL");
   } else {
