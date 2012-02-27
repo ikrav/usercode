@@ -64,8 +64,8 @@ public:
   void Draw(TCanvas *c, bool doSave=false, TString format="png", int subpad=0);
   
   // Adding a 1D histogram to the plot
-  void AddHist1D(TH1F *h, TString drawopt="", int color=kBlack, int linesty=1, int fillsty=0);    
-  void AddHist1D(TH1F *h, TString label, TString drawopt, int color=kBlack, int linesty=1, int fillsty=0);
+  void AddHist1D(TH1F *h, TString drawopt="", int color=kBlack, int linesty=1, int fillsty=0);
+  void AddHist1D(TH1F *h, TString label, TString drawopt, int color=kBlack, int linesty=1, int fillsty=0, int legendSymbolLP=0);
   void AddHist1D(TFile *f, TString histName, TString drawopt="", int color=kBlack, int linesty=1, int fillsty=0);
   void AddHist1D(TFile *f, TString histName, TString label, TString drawopt, int color=kBlack, int linesty=1, int fillsty=0);
   
