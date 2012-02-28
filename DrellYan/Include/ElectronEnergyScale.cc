@@ -1053,8 +1053,8 @@ ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet
     }
   }
   else{
-    printf("Failed to match escale calibration. Tag: >>%s<<\n", escaleTagName.Data());
-    throw 2;
+    //printf("Failed to match escale calibration. Tag: >>%s<<\n", escaleTagName.Data());
+    return ElectronEnergyScale::UNDEFINED;
   }
     
   if (fileName.Length()) {
