@@ -105,32 +105,51 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
 
   ifstream ifs;
   ifs.open(input.Data());
+  if (!ifs.is_open()) std::cout << "failed to open a file <" << input.Data() << ">\n";
   assert(ifs.is_open());
   string line;
   Int_t state=0;
-  const int inputFileMustContainEScaleDefinition = 0;
-  ElectronEnergyScale escale((inputFileMustContainEScaleDefinition) ? 
+  const int inputFileMayContainEScaleDefinition = 1;
+  int expectEscaleLine=1;
+  ElectronEnergyScale escale((inputFileMayContainEScaleDefinition) ? 
 	  ElectronEnergyScale::UNDEFINED : // read electron energy scale from the file
 	  ElectronEnergyScale::Date20120101_default);
   while(getline(ifs,line)) {
     if(line[0]=='#') continue;
     if(state == 0){
       dirTag = TString(line);
-      if (inputFileMustContainEScaleDefinition) {
-	// try to determine whether the input file was updated
-	getline(ifs,line);
-	escale.init(TString(line.c_str()));
-	if (!escale.isInitialized()) {
-	  std::cout << "\n\tInput file error: verify that the file has format\n";
-	  std::cout << "\tLine1: directory\n";
-	  std::cout << "\tLine2: electron energy scale correction name (NEW from 2012 Jan 21)\n";
-	  std::cout << "\tLine3: file_name.root xsect color linesty label\n";
-	  return;
-	}
-      }
       state++;
       continue;
     }else{
+      if (inputFileMayContainEScaleDefinition && expectEscaleLine) {
+	expectEscaleLine=0;
+	// try to determine whether the input file was updated
+	if (ElectronEnergyScale::DetermineCalibrationSet(line.c_str()) !=
+	    ElectronEnergyScale::UNDEFINED) {
+	  std::cout << "got it ok: <" << line << ">" << std::endl;
+	  escale.init(TString(line.c_str()));
+	  if (!escale.isInitialized()) {
+	    std::cout << "code error\n";
+	    return;
+	  }
+	  // continue reading the file
+	  getline(ifs,line);
+	}
+	else {
+	  std::cout << "\n";
+	  std::cout << "\n\tInput file does not contain electron energy scale. The expected file format:\n";
+	  std::cout << "\tLine1: directory\n";
+	  std::cout << "\tLine2: electron energy scale correction name (NEW from 2012 Jan 21)\n";
+	  std::cout << "\tLine3: file_name.root xsect color linesty label\n";
+	  std::cout << "using the default set\n\n";
+	  escale.init("Date20120101_default");
+	  if (!escale.isInitialized()) {
+	    std::cout << "failed to correct the behavior\n";
+	    return;
+	  }
+	}
+	std::cout << "energy scale corrections: " << escale.calibrationSetName() << "\n";
+      }
       string fname;
       Int_t color, linesty;
       stringstream ss(line);
@@ -172,8 +191,14 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
   // prepare tools for ESCALE_STUDY
   TH1F *shapeWeights=NULL;
   if (systematicsMode==DYTools::ESCALE_STUDY) {
-    TFile fshape("shape_weights.root");
+    TString shapeFName=TString("../root_files/yields/") + dirTag + TString("/shape_weights.root");
+    TFile fshape(shapeFName);
+    if (!fshape.IsOpen()) {
+      std::cout << "failed to open a file <" << shapeFName << ">\n";
+      throw 2;
+    }
     shapeWeights = (TH1F*)fshape.Get("weights");
+    shapeWeights->SetDirectory(0);
   }
 
   //  
@@ -496,6 +521,9 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
     unfoldingConstFileName = outputDir+TString("/unfolding_constants_reweight_");
     unfoldingConstFileName += int(100*reweightFsr);
     unfoldingConstFileName += ".root";
+  }
+  if(systematicsMode==DYTools::ESCALE_STUDY){
+    unfoldingConstFileName = outputDir+TString("/unfolding_constants_escale_study.root");
   }
   TFile fConst(unfoldingConstFileName, "recreate" );
   DetResponse             .Write("DetResponse");
