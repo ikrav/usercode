@@ -81,8 +81,8 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
     std::cout<<"Running script in the RESOLUTION_STUDY mode"<<std::endl;
   else if (systematicsMode==DYTools::FSR_STUDY)
     std::cout<<"Running script in the FSR_STUDY mode"<<std::endl;
-  else if (systematicsMode==DYTools::ESCALE_STUDY)
-    std::cout<<"Running script in the ESCALE_STUDY mode"<<std::endl;
+  else if (systematicsMode==DYTools::ESCALE_RESIDUAL) 
+    std::cout << "Running script in the ESCALE_RESIDUAL mode\n";
   else { 
     std::cout<<"requested mode not recognized"<<std::endl;
     assert(0);
@@ -175,6 +175,7 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
   // Main analysis code 
   //==============================================================================================================
 
+
   TRandom random;
   // The random seeds are needed only if we are running this script in systematics mode
   int seed = randomSeed;
@@ -189,9 +190,9 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
       shift[i] = gRandom->Gaus(0,1);
   }
 
-  // prepare tools for ESCALE_STUDY
+  // prepare tools for ESCALE_RESIDUAL
   TH1F *shapeWeights=NULL;
-  if (systematicsMode==DYTools::ESCALE_STUDY) {
+  if (systematicsMode==DYTools::ESCALE_RESIDUAL) {
     TString shapeFName=TString("../root_files/yields/") + dirTag + TString("/shape_weights.root");
     std::cout << "Obtaining shape_weights.root from <" << shapeFName << ">\n";
     TFile fshape(shapeFName);
@@ -201,6 +202,8 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
     }
     shapeWeights = (TH1F*)fshape.Get("weights");
     shapeWeights->SetDirectory(0);
+    dirTag += TString("_escale_residual");
+    std::cout << "changing dirTag to <" << dirTag << ">\n";
   }
 
   //  
@@ -524,9 +527,7 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
     unfoldingConstFileName += int(100*reweightFsr);
     unfoldingConstFileName += ".root";
   }
-  if(systematicsMode==DYTools::ESCALE_STUDY){
-    unfoldingConstFileName = outputDir+TString("/unfolding_constants_escale_study.root");
-  }
+
   TFile fConst(unfoldingConstFileName, "recreate" );
   DetResponse             .Write("DetResponse");
   DetInvertedResponse     .Write("DetInvertedResponse");
@@ -688,7 +689,9 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
   plotCorrFactor.Draw(c11);
 
   if (saveMadePlots) {
-    TString name=outputDir + TString("/unfolding_plots.root");
+    TString plotPath=TString("../root_files/plots/") + dirTag; 
+    TString name=plotPath + TString("/unfolding_plots.root");
+    gSystem->mkdir(plotPath,true);
     TFile* fplots = TFile::Open(name,"RECREATE");
     for (unsigned int i=0; i<canvasV.size(); ++i) {
       canvasV[i]->Write();
