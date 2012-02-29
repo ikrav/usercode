@@ -4,20 +4,25 @@
 #include <TString.h>
 #include <TVectorD.h>
 
+// all functions return three possible values:
+//  -1 : the needed file could not be opened
+//   1 : all checked ok. Calculation is done
+//   0 : inconsistent binning detected
+
 namespace unfolding{
 
-  void  unfold(TVectorD &vin, TVectorD &vout, TString unfoldingConstFileName);
+  int  unfold(TVectorD &vin, TVectorD &vout, TString unfoldingConstFileName);
 
-  void  propagateErrorThroughUnfolding(TVectorD &errorIn, 
+  int  propagateErrorThroughUnfolding(TVectorD &errorIn, 
 					TVectorD &errorPropagated,
 					TString unfoldingConstFileName);
   
-  void calculateTotalUnfoldingSystError(TVectorD &yieldsBeforeUnfolding, 
+  int calculateTotalUnfoldingSystError(TVectorD &yieldsBeforeUnfolding, 
 				   TVectorD &systUnfolding, 
 					TString fullUnfoldingConstFileName,
 					TString extraUnfoldingErrorsFileName);
 
-  bool checkBinningConsistency(TString fileName);
+  int checkBinningConsistency(TString fileName);
 
 }
 
