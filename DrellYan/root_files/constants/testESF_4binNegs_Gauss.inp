@@ -1,0 +1,25 @@
+! g_esfWorkCase=13 (4 bins on each eta side)
+! g_esfWorkCaseShortName= 4binNegs
+! g_esfFitModel=1 (fit model Gauss)
+scaling sqrt
+! bins  -2.50 -2.00 -1.50 -1.00 0.00 1.00 1.50 2.00 2.50
+MCOverData=34888.074903
+EtaDivisionCount=8
+ScalingFactorsCount=8
+SmearingFactorsCount=8
+scale_0      1.01215  -0.00028865
+scale_1     0.989197 -0.000268143
+scale_2      1.01866 -0.000187371
+scale_3      1.00632 -6.71744e-05
+scale_4      1.00415 -8.85248e-05
+scale_5      1.01803   -0.0001642
+scale_6     0.989371 -0.000272228
+scale_7      1.01291 -0.000303899
+smear_0       1.9514   -0.0223611
+smear_1      1.55844   -0.0265411
+smear_2       1.0658   -0.0204294
+smear_3     0.494241   -0.0152487
+smear_4     0.483131    -0.015502
+smear_5      1.03429   -0.0209775
+smear_6      1.49554    -0.027265
+smear_7        2.033    -0.021691
