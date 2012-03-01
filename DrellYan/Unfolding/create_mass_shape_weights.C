@@ -111,12 +111,15 @@ void create_mass_shape_weights(TString dataSelectionTag="DY_m10+pr+a05+o03+pr_46
 
   f.Close();
 
-  TString outPath=TString("../root_files/constants/") + dataSelectionTag;
-  gSystem->mkdir(outPath,true);
-  TString fname=outPath + TString("/shape_weights.root");
-  TFile f2(fname,"recreate");
-  weights->Write();
-  f2.Close();
-  std::cout << "File <" << fname << "> created\n";
+  for (int i=0; i<2; ++i) {
+    TString outPath=TString("../root_files/constants/") + dataSelectionTag;
+    if (i==1) outPath=TString("../root_files/yields/") + dataSelectionTag;
+    gSystem->mkdir(outPath,true);
+    TString fname=outPath + TString("/shape_weights.root");
+    TFile f2(fname,"recreate");
+    weights->Write();
+    f2.Close();
+    std::cout << "File <" << fname << "> created (copy " << (i+1) << ")\n";
+  }
   return;
 }
