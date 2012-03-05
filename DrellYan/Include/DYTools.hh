@@ -2,7 +2,7 @@
 #define DYTools
 
 #include <iostream>
-
+#include <math.h>
 #include <TEfficiency.h>
 
 #include "EWKAnaDefs.hh"
@@ -144,42 +144,44 @@ namespace DYTools {
     {15,20,30,40,50,60,76,86,96,106,120,150,200,600}; // 13 bins
 
   // 2011 mass binning
-  const int nMassBins = 40;
-  const double massBinLimits[nMassBins+1] = 
+  const int nMassBins2011 = 40;
+  const double massBinLimits2011[nMassBins2011+1] = 
     {15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 64, 68, 72, 76, 
      81, 86, 91, 96, 101, 106, 110, 115, 120, 126, 133, 141, 
      150, 160, 171, 185, 200, 220, 243, 273, 320, 380, 440, 
      510, 600, 1000, 1500}; // 40 bins
 
+  const int nMassBinsLumi = 9;
+  const double massBinLimitsLumi[nMassBinsLumi+1] = 
+    {15,20,30,40,50,60,120,150,200,600}; // 9 bins with Z-peak region singled-out
+
   const double etMinLead  = 20;
   const double etMinTrail = 10;
 
-  int findMassBin(double mass){
-    
+  int findMassBin(double mass, int nMassBinsLoc, const double *massBinLimitsLoc){  
+
     int result =-1;
-    for(int ibin=0; ibin < nMassBins; ibin++){
-      if( mass >= massBinLimits[ibin] && mass < massBinLimits[ibin+1]) {
+    for(int ibin=0; ibin < nMassBinsLoc; ibin++){
+      if( mass >= massBinLimitsLoc[ibin] && mass < massBinLimitsLoc[ibin+1]) {
 	result = ibin;
 	break;
       }
     }
-    
     return result;
+
   };
 
-  int findMassBin13(double mass){
-    
-    int result =-1;
-    for(int ibin=0; ibin < nMassBins13; ibin++){
-      if( mass >= massBinLimits13[ibin] && mass < massBinLimits13[ibin+1]) {
-	result = ibin;
-	break;
-      }
-    }
-    
-    return result;
-  };
-  
+  int findMassBin2011(double mass) { return findMassBin(mass,nMassBins2011,massBinLimits2011); }
+  int findMassBin13(double mass) { return findMassBin(mass,nMassBins13,massBinLimits13); }
+  int findMassBinLumi(double mass) { return findMassBin(mass,nMassBinsLumi,massBinLimitsLumi); }
+
+  // Define a particular choice of mass binning
+  const int nMassBins=nMassBinsLumi;
+  const double *massBinLimits=massBinLimitsLumi;
+
+  int findMassBin(double mass) { return findMassBin(mass,nMassBins,massBinLimits); }
+
+
   //
   // Define single electron Pt binning
   //
@@ -511,4 +513,5 @@ namespace DYTools {
 
 
 #endif
+
 
