@@ -312,6 +312,14 @@ namespace DYTools {
   };
 
 
+  // Primary vertices 
+
+  //const int nPVBinCount=7;
+  //const double nPVLimits[nPVBinCount+1] = { 0., 5., 10., 15., 20., 25., 30., 100. };
+  const int nPVBinCount=11;
+  const double nPVLimits[nPVBinCount+1] = { 1., 3., 5., 7., 9., 11., 13., 15., 17., 21., 25., 40. };
+
+
   // 
   // Triggers vs run numbers
   //
