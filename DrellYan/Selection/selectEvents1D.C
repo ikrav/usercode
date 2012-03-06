@@ -385,7 +385,8 @@ void selectEvents1D(const TString conf, const TString triggerSetString="Full2011
     TTree *outTree = new TTree("Events","Events");
     ZeeData data;
     outTree->Branch("Events", &data.runNum, 
-"runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F");
+"runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nGoodPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F");
+    //"runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F");
     
     //
     // loop through files
@@ -435,7 +436,22 @@ void selectEvents1D(const TString conf, const TString triggerSetString="Full2011
       Double_t weight = 1;
       if(lumi>0) {
         Double_t xsec = samp->xsecv[ifile];
-	if(xsec>0) { 
+	if(xsec>0) {
+	  // if this is a spec.skim file, rescale xsec
+	  TTree *descrTree=(TTree*)infile->Get("Description");
+	  if (descrTree) {
+	    UInt_t origNumEntries=0;
+	    descrTree->SetBranchAddress("origNumEntries",&origNumEntries);
+	    descrTree->GetEntry(0);
+	    if (origNumEntries>0) {
+	      Double_t factor=eventTree->GetEntries()/double(origNumEntries);
+	      std::cout << " -> rescaling xsec by " << factor << " due to skimming\n";
+	      xsec*=factor;
+	    }
+	    delete descrTree;
+	  }
+	  else std::cout << "descrTree not found\n";
+	  // proceed
 	  if(doWeight) { weight = lumi*xsec/(Double_t)eventTree->GetEntries(); } 
 	  else         { maxEvents = (UInt_t)(lumi*xsec); } 
 	}       
@@ -444,6 +460,7 @@ void selectEvents1D(const TString conf, const TString triggerSetString="Full2011
         cout << "Not enough events for " << lumi << " pb^-1 in file: " << samp->fnamev[ifile];
         return;
       }
+      std::cout << " --> weight = " << weight << "\n";
       samp->weightv.push_back(weight);
      
       // loop through events
@@ -707,6 +724,7 @@ void selectEvents1D(const TString conf, const TString triggerSetString="Full2011
             }
           }
           hNGoodPVv[isam]->Fill(nGoodPV,weight);
+	  data.nGoodPV=nGoodPV;
 	  
 	  // fill ntuple data
 	  double weightSave = weight;
