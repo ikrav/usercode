@@ -223,7 +223,9 @@ void plotDYEfficiency(const TString input)
 	  if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
 	  nGoodPV++;
 	}
-	if ((nGoodPV>=0) && (nGoodPV<=nEventsZPeakPURaw.GetNoElements())) nEventsZPeakPURaw[nGoodPV] += scale * gen->weight;
+	if (nGoodPV>0) {
+           if (nGoodPV<=nEventsZPeakPURaw.GetNoElements()) 
+	        nEventsZPeakPURaw[nGoodPV] += scale * gen->weight;
 	iPUBin=DYTools::findMassBin(double(nGoodPV),DYTools::nPVBinCount,DYTools::nPVLimits);
 	//std::cout << "iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
 	if ((iPUBin!=-1) && (iPUBin < nEventsZPeakPU.GetNoElements())) {
@@ -232,6 +234,7 @@ void plotDYEfficiency(const TString input)
 	else {
 	  std::cout << "error in PU bin indexing iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
 	}
+      //} else std::cout << "nGoodPV=" << nGoodPV << "\n";
       }
 
       // Use post-FSR generator level mass for binning
