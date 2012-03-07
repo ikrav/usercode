@@ -5,7 +5,8 @@
 #include "../Include/ElectronEnergyScale.hh"
 #include "../Include/ZeeData.hh"
 
-#define selectedEventDataIsTObject
+//#define selectedEventDataIsTObject
+
 // -------------------------------------------------------------------------
 // -------------------------------------------------------------------------
 
@@ -42,19 +43,24 @@ public:
     runNum(0), evtNum(0), lumiSec(0), weight(1.), mass(0.), scEta_1(0.), scEta_2(0.), nPV(1), nGoodPV(1) 
   { this->assign(z); }
   
+
+  int firstIsInBarrel() const { return (fabs(scEta_1)<1.4442) ? 1:0; }
+  int secondIsInBarrel() const { return (fabs(scEta_2)<1.4442) ? 1:0; }
+
   void assign(const ZeeData &z) {
     runNum=z.runNum; evtNum=z.evtNum; lumiSec=z.lumiSec;
     weight=z.weight;
     mass=z.mass;
-    scEta_1=z.scEta_1; scEta_2=z.scEta_2;
+    if (z.scEt_1 > z.scEt_2) { scEta_1=z.scEta_1; scEta_2=z.scEta_2; }
+    else { scEta_1=z.scEta_2; scEta_2=z.scEta_1; }
     nPV=z.nPV; nGoodPV=z.nGoodPV;
   }
 
   int massInsideRange(double mass_min, double mass_max) const { return ((mass>=mass_min) && (mass<=mass_max)) ? 1:0; }
 
   int massInsideRange(double mass_min, double mass_max, const ElectronEnergyScale &escale, int applySmear) const {
-    smearMass(escale,applySmear);
-    return massInsideRange(mass_min,mass_max);
+    double smeared_mass=smearMass(escale,applySmear);
+    return ((smeared_mass>=mass_min) && (smeared_mass<=mass_max)) ? 1:0;
   }
 
   double smearMass(const ElectronEnergyScale &escale, int applySmear) const { 
