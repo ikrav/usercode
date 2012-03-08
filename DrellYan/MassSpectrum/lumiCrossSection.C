@@ -27,19 +27,30 @@
 // 
 // rebinLuminosity=2 -- use 5 data taking periods (built-in)
 // rebinLuminosity=0 -- use luminosity as given in the file (experimental!)
-// rebinLuminosity=1 -- load luminosity file (run_luminosity.root) 
+// rebinLuminosity=1 -- load luminosity file (e.g. run_luminosity.root) 
 //          and bunch the run-ranges according to what is 
 //          luminosityBlockSize value
+// rebinLuminosity=3 -- load luminosity file, bin according to the run range
+//          the width is controlled by runRangeWidth
 //
 
-const char *luminosityFileName="run_luminosity.root"; // path will be prepended
-//const char *luminosityFileName="run_luminosity150.root"; // path will be prepended
+// run_luminosity*root  path is changed to "./"
+
+//const char *luminosityFileName="run_luminosity_ver1.root"; // incorrect, yet working root file
+//const char *luminosityFileName="run_luminosity.root"; // path will be prepended
+const char *luminosityFileName="run_luminosity150.root"; // path will be prepended
 const double luminosityBlockSize=150;
-const int rebinLuminosity=2;  // set to 1 for run_luminosity.root
+const int rebinLuminosity=0;  // set to 1 for run_luminosity.root
 //const char *luminosityFileName="run_luminosity5.root"; // path will be prepended   
 //const double luminosityBlockSize=1500;
-const int xAxisIsRunRanges=1; 
+
 const int runRangeWidth=1000;
+
+
+//  A correction to make largest luminosity version
+//  to appear first in the list
+const int swapLumiMethods=1; 
+
 
 //const int xAxisLumiIn_fm=1;
 
@@ -375,7 +386,8 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
       LumiInfo_t lumiTmp(0,200000, totalLuminosity); lumiInfoV.push_back(lumiTmp);  // catch all
     }
     else {
-      TString lumiBlockInfoFile=constantsDir + TString("/") + TString(luminosityFileName);
+      //TString lumiBlockInfoFile=constantsDir + TString("/") + TString(luminosityFileName);
+      TString lumiBlockInfoFile=TString("./") + TString(luminosityFileName);
       if (!PrepareLuminosity(lumiVersion,lumiInfoV,lumiBlockInfoFile,luminosityBlockSize,lumiSectionCount,&lumiSections)) {
 	std::cout << "failed to prepare lumiInfoV for version=" << lumiVersion << "\n";
 	return;
@@ -462,6 +474,7 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
 	    {
 	    dataZCount++;                          // count Z candidates in data
 	    sumPU += dataV[i].nGoodPV;
+	    if (dataV[i].nGoodPV>40) std::cout << "data event has " << dataV[i].nGoodPV << "a good primary vertices\n";
 	    int idx=hMCSignalEff->FindBin(dataV[i].nGoodPV);
 	    if (idx==0) std::cout << "idx=0 for goodPV=" << dataV[i].nGoodPV << "\n";
 	    if ((idx==-1) || (idx>hMCSignalEff->GetNbinsX())) {
@@ -602,11 +615,16 @@ void PrintVecs(const char *msg, const std::vector<TString> &names, const vector<
 // ---------------------------------------------------------------------
 
 int PrepareLuminosity(int version, std::vector<LumiInfo_t> &luminosity, const TString &fname, double dLumi, int &lumiSectionCount, double **lumiSections ) {
+  if (swapLumiMethods) { 
+    if (version==1) version=2;
+    else if (version==2) version=1;
+  }
   luminosity.clear();
   lumiSectionCount=0;
   if (*lumiSections) delete *lumiSections;
 
-  TVectorD runNumMin,runNumMax, lumiWeights;
+  TVector runNumMin,runNumMax;
+  TVectorD lumiWeights;
   if (rebinLuminosity!=2) {
     TFile f(fname);
     if (!f.IsOpen()) {
@@ -679,7 +697,7 @@ int PrepareLuminosity(int version, std::vector<LumiInfo_t> &luminosity, const TS
       lumiBins.push_back(lumi);
     }
   }
-  else {
+  else if (rebinLuminosity==1) {
     const int n=runNumMin.GetNoElements();
     for (int i=0; i<runNumMin.GetNoElements(); ++i) {
       if (start) { info.runNumMin=UInt_t(runNumMin[i]); start=0; }
@@ -703,6 +721,31 @@ int PrepareLuminosity(int version, std::vector<LumiInfo_t> &luminosity, const TS
       lumiBins.push_back(lumi);
     }
   }
+  else if (rebinLuminosity==3) {
+    const int n=runNumMin.GetNoElements();
+    UInt_t runMin=UInt_t(runNumMin[0]);
+    dLumi=0; lumi=0;
+    for (int i=0; i<n; ++i) {
+      UInt_t runMax=UInt_t(runNumMax[i]);
+      if (( runMax>= (runMin/runRangeWidth)*runRangeWidth+runRangeWidth ) ||
+	  ( i == n-1 )) {
+	info.assign(runMin, runMax-1, dLumi);
+	luminosity.push_back(info);
+	lumi+=dLumi;
+	lumiBins.push_back(lumi);
+	dLumi=lumiWeights[i];
+	runMin=runMax;
+      }
+      else {
+	dLumi+=lumiWeights[i];
+      }
+    }
+  }
+  else {
+    std::cout << "unclear value for rebinLuminosity=" << rebinLuminosity << "\n";
+    return 0;
+  }
+
   // create the array
   lumiSectionCount=lumiBins.size()-1;
   *lumiSections=new double[lumiBins.size()];
@@ -837,21 +880,26 @@ void MakePlots(const char *title, const char *name1, std::vector<TH1F*> &data1, 
 
   //sprintf(xlabel2,"%s",xlabel);
   int scale_is_large=((rebinLuminosity==2) || ( TString(luminosityFileName) == TString("run_luminosity5.root") )) ? 1:0;
+  if (rebinLuminosity==3) scale_is_large=2;
   switch(plot_set) {
   case 1:
     sprintf(ylabel, "#sigma");
     sprintf(ylabel2, "#font[12]{L_{block}}");
     ymin1=800; ymax1=1600;
     ymin2=0; ymax2=1.5*luminosityBlockSize;
-    if (scale_is_large) { ymax2=3000; }
+    switch (scale_is_large) { 
+    case 1: ymax2=3000; break;
+    case 2: ymax2=1000; break;
+    }
     break;
   case 2:
     sprintf(ylabel , "N_{Z}");
     sprintf(ylabel2, "N_{Z} - N_{bkgr}");
     ymin1=20000; ymax1=55000;
     ymin2=20000; ymax2=55000;
-    if (scale_is_large) {
-      ymax1=600000; ymax2=ymax1;
+    switch (scale_is_large) {
+    case 1: ymax1=600000; ymax2=ymax1; break;
+    case 2: ymax1=200000; ymax2=ymax1; break;
     }
     //TGaxis::SetMaxDigits(3);
     break;
@@ -877,8 +925,14 @@ void MakePlots(const char *title, const char *name1, std::vector<TH1F*> &data1, 
 
 
   std::vector<TString> labels;
-  labels.push_back("lumiNoCorr");
+  if (swapLumiMethods) {
   labels.push_back("lumiCorrV2");
+  labels.push_back("lumiNoCorr");
+  }
+  else {
+    labels.push_back("lumiNoCorr");
+    labels.push_back("lumiCorrV2");
+  }
   labels.push_back("lumiCorrV3");
   labels.push_back("lumiCorrPix");
 
