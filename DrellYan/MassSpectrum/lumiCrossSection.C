@@ -38,6 +38,8 @@ const double luminosityBlockSize=150;
 const int rebinLuminosity=2;  // set to 1 for run_luminosity.root
 //const char *luminosityFileName="run_luminosity5.root"; // path will be prepended   
 //const double luminosityBlockSize=1500;
+const int xAxisIsRunRanges=1; 
+const int runRangeWidth=1000;
 
 //const int xAxisLumiIn_fm=1;
 
@@ -649,7 +651,7 @@ int PrepareLuminosity(int version, std::vector<LumiInfo_t> &luminosity, const TS
   if (rebinLuminosity==0) {
     lumi=0.;
     for (int i=0; i<runNumMin.GetNoElements(); ++i) {
-      info.assign(runNumMin[i], runNumMax[i], lumiWeights[i]);
+      info.assign(UInt_t(runNumMin[i]), UInt_t(runNumMax[i]), lumiWeights[i]);
       luminosity.push_back(info);
       lumi += lumiWeights[i];
       lumiBins.push_back(lumi);
@@ -834,20 +836,21 @@ void MakePlots(const char *title, const char *name1, std::vector<TH1F*> &data1, 
   sprintf(xlabel, "#int#font[12]{L}dt [pb^{-1}]");
 
   //sprintf(xlabel2,"%s",xlabel);
+  int scale_is_large=((rebinLuminosity==2) || ( TString(luminosityFileName) == TString("run_luminosity5.root") )) ? 1:0;
   switch(plot_set) {
   case 1:
     sprintf(ylabel, "#sigma");
     sprintf(ylabel2, "#font[12]{L_{block}}");
     ymin1=800; ymax1=1600;
     ymin2=0; ymax2=1.5*luminosityBlockSize;
-    if (rebinLuminosity==2) { ymax2=3000; }
+    if (scale_is_large) { ymax2=3000; }
     break;
   case 2:
     sprintf(ylabel , "N_{Z}");
     sprintf(ylabel2, "N_{Z} - N_{bkgr}");
     ymin1=20000; ymax1=55000;
     ymin2=20000; ymax2=55000;
-    if (rebinLuminosity==2) {
+    if (scale_is_large) {
       ymax1=600000; ymax2=ymax1;
     }
     //TGaxis::SetMaxDigits(3);
