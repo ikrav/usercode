@@ -86,6 +86,15 @@ public:
   LumiInfo_t(UInt_t run_min, UInt_t run_max, double lumi_weight) : runNumMin(run_min), runNumMax(run_max), lumiWeight(lumi_weight) {}
   LumiInfo_t(const LumiInfo_t &a) : runNumMin(a.runNumMin), runNumMax(a.runNumMax), lumiWeight(a.lumiWeight) {}
 
+  void assign(UInt_t run_min, UInt_t run_max, double weight) { 
+    runNumMin=run_min; runNumMax=run_max; lumiWeight=weight;
+  }
+
+  void assign(const LumiInfo_t &a) {
+    runNumMin=a.runNumMin; runNumMax=a.runNumMax;
+    lumiWeight=a.lumiWeight;
+  }
+
   int insideRange(UInt_t run) { return ((run>=runNumMin) && (run<=runNumMax)) ? 1:0; }
 
   friend std::ostream& operator<<(std::ostream& out, const LumiInfo_t &a) {
