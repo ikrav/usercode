@@ -22,10 +22,20 @@
 #include "../Include/MitStyleRemix.hh"
 #include "../Include/CPlot.hh"
 
+
+// Possible various combinations of the switches
+// 
+// rebinLuminosity=2 -- use 5 data taking periods (built-in)
+// rebinLuminosity=0 -- use luminosity as given in the file (experimental!)
+// rebinLuminosity=1 -- load luminosity file (run_luminosity.root) 
+//          and bunch the run-ranges according to what is 
+//          luminosityBlockSize value
+//
+
 const char *luminosityFileName="run_luminosity.root"; // path will be prepended
 //const char *luminosityFileName="run_luminosity150.root"; // path will be prepended
 const double luminosityBlockSize=150;
-const int rebinLuminosity=1;  // set to 1 for run_luminosity.root
+const int rebinLuminosity=2;  // set to 1 for run_luminosity.root
 //const char *luminosityFileName="run_luminosity5.root"; // path will be prepended   
 //const double luminosityBlockSize=1500;
 
@@ -286,6 +296,11 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
     TVectorD nEventsZPeakPURaw, nPassZPeakPURaw;
     nEventsZPeakPURaw.Read("nEventsZPeakPURawArray");
     nPassZPeakPURaw.Read("nPassZPeakPURawArray");
+    if ((nEventsZPeakPURaw.GetNoElements()==0) ||
+	(nPassZPeakPURaw.GetNoElements()==0)) {
+      std::cout << "nEventsZPeakPURawArray[" << nEventsZPeakPURaw.GetNoElements() << ", nPassZPeakPURawArray[" << nPassZPeakPURaw.GetNoElements() << "]\n";
+      return;
+    }
 
     TH1F *hMCSignalTotal=new TH1F("hMCSignalTotal","",DYTools::nPVBinCount,DYTools::nPVLimits);
     hMCSignalTotal->Sumw2();
@@ -589,36 +604,38 @@ int PrepareLuminosity(int version, std::vector<LumiInfo_t> &luminosity, const TS
   lumiSectionCount=0;
   if (*lumiSections) delete *lumiSections;
 
-  TFile f(fname);
-  if (!f.IsOpen()) {
-    std::cout << "failed to open a file <" << fname << ">\n";
-    return 0;
-  }
   TVectorD runNumMin,runNumMax, lumiWeights;
-  runNumMin.Read("runMin");
-  runNumMax.Read("runMax");
-  switch(version) {
-  case 1: lumiWeights.Read("lumiNoCorr"); break;
-  case 2: lumiWeights.Read("lumiCorrV2"); break;
-  case 3: lumiWeights.Read("lumiCorrV3"); break;
-  case 4: lumiWeights.Read("lumiCorrPix");break;
-  default:
-    std::cout << "PrepareLuminosity does not know version=" << version << "\n";
-    return 0;
+  if (rebinLuminosity!=2) {
+    TFile f(fname);
+    if (!f.IsOpen()) {
+      std::cout << "failed to open a file <" << fname << ">\n";
+      return 0;
   }
-  f.Close();
-  const int n=runNumMin.GetNoElements();
-  if ((n!=runNumMax.GetNoElements()) || (n!=lumiWeights.GetNoElements())) {
-    std::cout << "count mismatch : runNumMin[" << runNumMin.GetNoElements() << "], runNumMax[" << runNumMax.GetNoElements() << "], lumiWeight[" << lumiWeights.GetNoElements() << "]\n";
-    return 0;
-  }
-
-  if (1) {
-    std::cout << "\nRaw luminositied :\n";
-    for (int i=0; i<runNumMin.GetNoElements(); ++i) {
-      std::cout << " run " << runNumMin[i] << " -- " << runNumMax[i] << "    "  << lumiWeights[i] << "\n";
+    runNumMin.Read("runMin");
+    runNumMax.Read("runMax");
+    switch(version) {
+    case 1: lumiWeights.Read("lumiNoCorr"); break;
+    case 2: lumiWeights.Read("lumiCorrV2"); break;
+    case 3: lumiWeights.Read("lumiCorrV3"); break;
+    case 4: lumiWeights.Read("lumiCorrPix");break;
+    default:
+      std::cout << "PrepareLuminosity does not know version=" << version << "\n";
+      return 0;
     }
-    std::cout << "\n";
+    f.Close();
+    const int n=runNumMin.GetNoElements();
+    if ((n==0) || (n!=runNumMax.GetNoElements()) || (n!=lumiWeights.GetNoElements())) {
+      std::cout << "count mismatch : runNumMin[" << runNumMin.GetNoElements() << "], runNumMax[" << runNumMax.GetNoElements() << "], lumiWeight[" << lumiWeights.GetNoElements() << "]\n";
+      return 0;
+    }
+
+    if (1) {
+      std::cout << "\nRaw luminosities :\n";
+      for (int i=0; i<runNumMin.GetNoElements(); ++i) {
+	std::cout << " run " << runNumMin[i] << " -- " << runNumMax[i] << "    "  << lumiWeights[i] << "\n";
+      }
+      std::cout << "\n";
+    }
   }
   
   const double tolerance=0.1*dLumi;
@@ -629,26 +646,60 @@ int PrepareLuminosity(int version, std::vector<LumiInfo_t> &luminosity, const TS
   std::vector<double> lumiBins;
   lumiBins.push_back(0.);
   lumiChunk=0;
-  for (int i=0; i<n; ++i) {
-    if (start) { info.runNumMin=UInt_t(runNumMin[i]); start=0; }
-    double lumiChunk1 = lumiChunk + lumiWeights[i];
-    int nextChunkIsLarge=((i<n-1) && (lumiWeights[i+1]>dLumi)) ? 1:0;
-    int nextChunkIsGood=((i<n-1) && (lumiChunk1 + lumiWeights[i+1] < dLumi)) ? 1:0;
-    if (!rebinLuminosity || ( lumiChunk1 > dLumi) || (( lumiChunk1 > dLumi-tolerance) && !nextChunkIsGood) || nextChunkIsLarge ) {
-      info.runNumMax=UInt_t(runNumMax[i]); start=1; lumiChunk=0.;
-      info.lumiWeight=lumiChunk1;
+  if (rebinLuminosity==0) {
+    lumi=0.;
+    for (int i=0; i<runNumMin.GetNoElements(); ++i) {
+      info.assign(runNumMin[i], runNumMax[i], lumiWeights[i]);
       luminosity.push_back(info);
-      lumi += lumiChunk1;
+      lumi += lumiWeights[i];
       lumiBins.push_back(lumi);
     }
-    else lumiChunk=lumiChunk1;
   }
-  if (start!=1) {
-    info.runNumMax=UInt_t(runNumMax[n-1]);
-    info.lumiWeight=lumiChunk;
-    luminosity.push_back(info);
-    lumi += lumiChunk;
-    lumiBins.push_back(lumi);
+  else if (rebinLuminosity==2) {
+    const char *line1="0 160405 163869       204.124       219.13       217.196       214.995";
+    const char *line2="1 165088 167913       884.97       949.633       936.575       953.26";
+    const char *line3="2 170249 172619       191.145       203.078       199.382       203.619";
+    const char *line4="3 172620 173692       640.639       688.585       674.813       698.526";
+    const char *line5="4 175832 180252       2573.89       2730.69       2636.96       2712.5";
+    std::vector<std::string> lines;
+    lines.push_back(line1); lines.push_back(line2); 
+    lines.push_back(line3); lines.push_back(line4);
+    lines.push_back(line5);
+    int idx,runMin,runMax;
+    double lumiW[4];
+    lumi=0.;
+    for (unsigned int i=0; i<lines.size(); ++i) {
+      stringstream ss(lines[i]);
+      ss >> idx >> runMin >> runMax >> lumiW[0] >> lumiW[1] >> lumiW[2] >> lumiW[3];
+      info.assign(runMin,runMax,lumiW[version-1]);
+      luminosity.push_back(info);
+      lumi += lumiW[version-1];
+      lumiBins.push_back(lumi);
+    }
+  }
+  else {
+    const int n=runNumMin.GetNoElements();
+    for (int i=0; i<runNumMin.GetNoElements(); ++i) {
+      if (start) { info.runNumMin=UInt_t(runNumMin[i]); start=0; }
+      double lumiChunk1 = lumiChunk + lumiWeights[i];
+      int nextChunkIsLarge=((i<n-1) && (lumiWeights[i+1]>dLumi)) ? 1:0;
+      int nextChunkIsGood=((i<n-1) && (lumiChunk1 + lumiWeights[i+1] < dLumi)) ? 1:0;
+      if (!rebinLuminosity || ( lumiChunk1 > dLumi) || (( lumiChunk1 > dLumi-tolerance) && !nextChunkIsGood) || nextChunkIsLarge ) {
+	info.runNumMax=UInt_t(runNumMax[i]); start=1; lumiChunk=0.;
+	info.lumiWeight=lumiChunk1;
+	luminosity.push_back(info);
+	lumi += lumiChunk1;
+	lumiBins.push_back(lumi);
+      }
+      else lumiChunk=lumiChunk1;
+    }
+    if (start!=1) {
+      info.runNumMax=UInt_t(runNumMax[n-1]);
+      info.lumiWeight=lumiChunk;
+      luminosity.push_back(info);
+      lumi += lumiChunk;
+      lumiBins.push_back(lumi);
+    }
   }
   // create the array
   lumiSectionCount=lumiBins.size()-1;
@@ -789,12 +840,16 @@ void MakePlots(const char *title, const char *name1, std::vector<TH1F*> &data1, 
     sprintf(ylabel2, "#font[12]{L_{block}}");
     ymin1=800; ymax1=1600;
     ymin2=0; ymax2=1.5*luminosityBlockSize;
+    if (rebinLuminosity==2) { ymax2=3000; }
     break;
   case 2:
     sprintf(ylabel , "N_{Z}");
     sprintf(ylabel2, "N_{Z} - N_{bkgr}");
     ymin1=20000; ymax1=55000;
     ymin2=20000; ymax2=55000;
+    if (rebinLuminosity==2) {
+      ymax1=600000; ymax2=ymax1;
+    }
     //TGaxis::SetMaxDigits(3);
     break;
   case 3:
