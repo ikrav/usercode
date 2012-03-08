@@ -234,7 +234,8 @@ void plotDYEfficiency(const TString input)
 	else {
 	  std::cout << "error in PU bin indexing iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
 	}
-      //} else std::cout << "nGoodPV=" << nGoodPV << "\n";
+      } 
+	//else std::cout << "nGoodPV=" << nGoodPV << "\n";
       }
 
       // Use post-FSR generator level mass for binning
@@ -300,7 +301,7 @@ void plotDYEfficiency(const TString input)
 // 		 dielectron->scEta_1, dielectron->scEta_2);
 	
 	// Accumulate numerator for efficiency calculations
-	if ((nGoodPV>=0) && (iPUBin!=-1)) { // -1 may also indicate that the mass was not in Z-peak range
+	if ((nGoodPV>0) && (iPUBin!=-1)) { // -1 may also indicate that the mass was not in Z-peak range
 	  if ((nGoodPV>=0) && (nGoodPV<=nEventsZPeakPURaw.GetNoElements())) nPassZPeakPURaw[nGoodPV] += scale * gen->weight;
 	  if (iPUBin < nPassZPeakPU.GetNoElements()) {
 	    nPassZPeakPU[iPUBin] += scale * gen->weight;
