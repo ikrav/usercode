@@ -44,12 +44,17 @@ const int rebinLuminosity=0;  // set to 1 for run_luminosity.root
 //const char *luminosityFileName="run_luminosity5.root"; // path will be prepended   
 //const double luminosityBlockSize=1500;
 
-const int runRangeWidth=1000;
+const int runRangeWidth=2000;
 
 
 //  A correction to make largest luminosity version
 //  to appear first in the list
 const int swapLumiMethods=1; 
+
+
+// We have no Zs after run about 179890
+const int bruteForceCorrectionForLumi=1;
+const UInt_t bruteForceCutOff=179890;
 
 
 //const int xAxisLumiIn_fm=1;
@@ -339,13 +344,15 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
     delete hMCSignalTotal;
     fa.Close();
   }
-  if (0) {
+  if (1) {
     TCanvas *cx= new TCanvas("ctestEff","ctestEff",600,600);
     hMCSignalEff->GetXaxis()->SetTitle("number of good vertices");
     hMCSignalEff->GetYaxis()->SetTitle("efficiency");
+    PrepareHistoStyle(hMCSignalEff,kBlack);
     hMCSignalEff->DrawCopy();
     cx->Update();
-    cx->SaveAs("canvas_efficiencyPU.png");
+    cx->SaveAs("canvas_efficiencyPU.pdf");
+    return;
   }
 
 
@@ -669,6 +676,7 @@ int PrepareLuminosity(int version, std::vector<LumiInfo_t> &luminosity, const TS
   if (rebinLuminosity==0) {
     lumi=0.;
     for (int i=0; i<runNumMin.GetNoElements(); ++i) {
+      if (bruteForceCorrectionForLumi && (UInt_t(runNumMin[i])>=bruteForceCutOff)) continue;
       info.assign(UInt_t(runNumMin[i]), UInt_t(runNumMax[i]), lumiWeights[i]);
       luminosity.push_back(info);
       lumi += lumiWeights[i];
@@ -851,8 +859,8 @@ int LoadEffScaleFactors(const TString &fname, TVectorD &rho_recoId_barrel, TVect
     cpB.Draw(c,false,".png",1);
     cpE.Draw(c,false,".png",2);
     c->Update();
-    c->SaveAs("canvas_effScaleFactors.png");
-
+    c->SaveAs("canvas_effScaleFactors.pdf");
+    return 0;
   }
 
   rho_recoId_barrel.ResizeTo(rho_reco_barrel);
