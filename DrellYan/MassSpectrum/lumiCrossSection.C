@@ -385,7 +385,7 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
   //std::vector<TH1F*> hMCLumiSigmaPerLumiV;
   std::vector<TH1F*> hLumiZCountV, hLumiSignalCountV, hLumiNbkgrFracV;
   std::vector<TH1F*> hLumiAvgPUV;
-  std::vector<TH1F*> hLumiAvgEffV, hLumiAvgRhoV;
+  std::vector<TH1F*> hLumiAvgEffV, hLumiAvgRhoV, hLumiAvgRhoEffV;
   std::vector<TH1F*> hLumiLumiV;
 
   for (int lumiVersion=1; lumiVersion<=4; ++lumiVersion) {
@@ -455,6 +455,11 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
     PrepareHistoStyle(hAvgRho,colorV[lumiVersion],marker[lumiVersion]);
     hLumiAvgRhoV.push_back(hAvgRho);
 
+    sprintf(buf,"hAvgRhoEff_%d",lumiVersion);
+    TH1F *hAvgRhoEff=new TH1F(buf,"",lumiSectionCount,lumiSections);
+    PrepareHistoStyle(hAvgRhoEff,colorV[lumiVersion],marker[lumiVersion]);
+    hLumiAvgRhoEffV.push_back(hAvgRhoEff);
+
     sprintf(buf,"hLumi_%d",lumiVersion);
     TH1F *hLumi=new TH1F(buf,"",lumiSectionCount,lumiSections);
     PrepareHistoStyle(hLumi,colorV[lumiVersion],marker[lumiVersion]);
@@ -480,6 +485,7 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
       double dataZCount=0, bkgrZCount=0;
       double sumEff=0;  // sum of efficiencies for the average
       double sumRho=0; // sum of eff. scale factors for the average
+      double sumRhoEff=0; // sum of (eff * rho) for the average
       double sumPU=0; // sum of the number of vertices
       for (unsigned int i=0; i<dataV.size(); ++i) {
 	if (excludeJuly2011runs && lumiJuly2011.insideRange(dataV[i].runNum)) continue;
@@ -505,6 +511,7 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
 	    rho_factor *= (dataV[i].secondIsInBarrel()) ? 
 	      rhoBarrel[arr_idx] : rhoEndcap[arr_idx];
 	    sumRho += rho_factor;
+	    sumRhoEff += (rho_factor * hMCSignalEff->GetBinContent(idx));
 	  }
 	}
       }
@@ -557,8 +564,9 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
       double Nsignal=dataZCount-bkgrZCount;
       double avgEff=sumEff/dataZCount;
       double avgRho=sumRho/dataZCount;
-      double sigma=Nsignal/( lumi.lumiWeight * avgEff * avgRho * factor_acceptance * factor_fsr );
-      double sigmaMC= mcSignalZv.back()/ ( lumi.lumiWeight * avgEff * avgRho * factor_acceptance * factor_fsr );
+      double avgRhoEff=sumRhoEff/dataZCount;
+      double sigma=Nsignal/( lumi.lumiWeight * avgRhoEff * factor_acceptance * factor_fsr );
+      double sigmaMC= mcSignalZv.back()/ ( lumi.lumiWeight * avgRhoEff * factor_acceptance * factor_fsr );
       double xLumi=sumLumi + 0.5* lumi.lumiWeight;
       //if (xAxisLumiIn_fm) xLumi *= 0.001;
       double avgPU=sumPU/dataZCount;
@@ -572,9 +580,10 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
       hAvgPU->Fill( xLumi, avgPU );
       hAvgEff->Fill( xLumi, avgEff );
       hAvgRho->Fill( xLumi, avgRho );
+      hAvgRhoEff->Fill( xLumi, avgRhoEff );
       hLumi->Fill( xLumi, lumi.lumiWeight );
       sumLumi += lumi.lumiWeight;
-      std::cout << "sumLumi=" << sumLumi << ", lumiWeight=" << lumi.lumiWeight << ", dataZCount=" << dataZCount << ", bkgrZCount=" << bkgrZCount << ", avgEff=" << avgEff << ", sigma=" << sigma << ", sigmaMC=" << sigmaMC << "\n";
+      std::cout << "sumLumi=" << sumLumi << ", lumiWeight=" << lumi.lumiWeight << ", dataZCount=" << dataZCount << ", bkgrZCount=" << bkgrZCount << ", avgRhoEff=" << avgRhoEff << ", sigma=" << sigma << ", sigmaMC=" << sigmaMC << "\n";
     }
   
     vector<vector<double>*> numbersV;
@@ -603,7 +612,9 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
   the_set=3;
   MakePlots("AvgEff","AvgEff", hLumiAvgEffV, "AvgRho",hLumiAvgRhoV, colorV, 1, the_set);
   the_set=4;
-  MakePlots("avgPU","avgPU", hLumiAvgPUV,  "avgPU", hLumiAvgPUV, colorV, 0, the_set);
+  MakePlots("avgPU","avgPU", hLumiAvgPUV,  "dummy", hLumiAvgPUV, colorV, 0, the_set);
+  the_set=5;
+  MakePlots("avgRhoEff","avgRhoEff", hLumiAvgRhoEffV,  "dummy", hLumiAvgPUV, colorV, 0, the_set);
 
   gBenchmark->Show("lumiCrossSection");
   return;
@@ -794,6 +805,23 @@ int ConvertVecsToHistos(const std::vector<TVectorD*> &vecs, int binCount, const 
 
 // ---------------------------------------------------------------------
 
+int ConvertVecsToHistos(const std::vector<TVectorD*> &vecs, const std::vector<TVectorD*> &vecErrs, int binCount, const double *binLimits, std::vector<TH1F*> &histos, const std::vector<TString> &names) {
+  histos.reserve(vecs.size());
+  for (unsigned int veci=0; veci<vecs.size(); ++veci) {
+    const TVectorD *vec=vecs[veci];
+    const TVectorD *vecErr=vecErrs[veci];
+    TH1F* h=new TH1F(names[veci],"",binCount,binLimits);
+    histos.push_back(h);
+    for (int i=0; i<vec->GetNoElements(); ++i) {
+      h->SetBinContent(i+1,(*vec)[i]);
+      h->SetBinError(i+1, (*vecErr)[i]);
+    }
+  }
+  return 1;
+}
+
+// ---------------------------------------------------------------------
+
 int LoadEffScaleFactors(const TString &fname, TVectorD &rho_barrel, TVectorD &rho_endcap) {
   //int res=1;
 
@@ -807,12 +835,12 @@ int LoadEffScaleFactors(const TString &fname, TVectorD &rho_barrel, TVectorD &rh
   TVectorD rho_hlt_barrel = *(TVectorD*)fEffScaleFactors.Get("rho_hlt_barrel");
   TVectorD rho_hlt_endcap = *(TVectorD*)fEffScaleFactors.Get("rho_hlt_endcap");
 
-  //TVectorD rho_reco_barrel_err = *(TVectorD*)fEffScaleFactors.Get("rho_reco_barrel_Err");
-  //TVectorD rho_reco_endcap_err = *(TVectorD*)fEffScaleFactors.Get("rho_reco_endcap_Err");
-  //TVectorD rho_id_barrel_err = *(TVectorD*)fEffScaleFactors.Get("rho_id_barrel_Err");
-  //TVectorD rho_id_endcap_err = *(TVectorD*)fEffScaleFactors.Get("rho_id_endcap_Err");
-  //TVectorD rho_hlt_barrel_err = *(TVectorD*)fEffScaleFactors.Get("rho_hlt_barrel_Err");
-  //TVectorD rho_hlt_endcap_err = *(TVectorD*)fEffScaleFactors.Get("rho_hlt_endcap_Err");
+  TVectorD rho_reco_barrel_err = *(TVectorD*)fEffScaleFactors.Get("rho_reco_barrel_Err");
+  TVectorD rho_reco_endcap_err = *(TVectorD*)fEffScaleFactors.Get("rho_reco_endcap_Err");
+  TVectorD rho_id_barrel_err = *(TVectorD*)fEffScaleFactors.Get("rho_id_barrel_Err");
+  TVectorD rho_id_endcap_err = *(TVectorD*)fEffScaleFactors.Get("rho_id_endcap_Err");
+  TVectorD rho_hlt_barrel_err = *(TVectorD*)fEffScaleFactors.Get("rho_hlt_barrel_Err");
+  TVectorD rho_hlt_endcap_err = *(TVectorD*)fEffScaleFactors.Get("rho_hlt_endcap_Err");
 
   if (0) {
     std::cout << "rho factors\n";
@@ -835,16 +863,31 @@ int LoadEffScaleFactors(const TString &fname, TVectorD &rho_barrel, TVectorD &rh
   if (1) {
     std::vector<TH1F*> histos;
     std::vector<TVectorD*> vecs;
+    std::vector<TVectorD*> vecErrs;
     std::vector<TString> names;
     std::vector<TString> labels;
-    vecs.reserve(6); names.reserve(6); labels.reserve(6);
+    vecs.reserve(6); vecErrs.reserve(6); names.reserve(6); labels.reserve(6);
     vecs.push_back(&rho_reco_barrel); names.push_back("reco_barrel"); labels.push_back("reco");
     vecs.push_back(&rho_id_barrel); names.push_back("id_barrel"); labels.push_back("id");
     vecs.push_back(&rho_hlt_barrel); names.push_back("hlt_barrel"); labels.push_back("hlt");
     vecs.push_back(&rho_reco_endcap); names.push_back("reco_endcap"); labels.push_back("reco");
     vecs.push_back(&rho_id_endcap); names.push_back("id_endcap"); labels.push_back("id");
     vecs.push_back(&rho_hlt_endcap); names.push_back("hlt_endcap"); labels.push_back("hlt");
-    ConvertVecsToHistos(vecs,DYTools::nPVBinCount,DYTools::nPVLimits, histos, names);
+
+    vecErrs.push_back(&rho_reco_barrel_err);
+    vecErrs.push_back(&rho_id_barrel_err);
+    vecErrs.push_back(&rho_hlt_barrel_err); 
+    vecErrs.push_back(&rho_reco_endcap_err);
+    vecErrs.push_back(&rho_id_endcap_err); 
+    vecErrs.push_back(&rho_hlt_endcap_err); 
+    if (1) {
+      // no errors
+      ConvertVecsToHistos(vecs,DYTools::nPVBinCount,DYTools::nPVLimits, histos, names); 
+    }
+    else {
+      // with errors
+      ConvertVecsToHistos(vecs,vecErrs,DYTools::nPVBinCount,DYTools::nPVLimits, histos, names);
+    }
 
     int color[3];
     int markers[3];
@@ -862,8 +905,8 @@ int LoadEffScaleFactors(const TString &fname, TVectorD &rho_barrel, TVectorD &rh
       PrepareHistoStyle(histos[i],color[i-3],markers[i-3]);
       cpE.AddHist1D(histos[i],labels[i],"LP",color[i-3],1,0,1);
     }
-    cpB.SetLegend(0.2,0.2,0.4,0.4);
-    cpE.SetLegend(0.2,0.2,0.4,0.4);
+    cpB.SetLegend(0.2,0.2,0.45,0.4);
+    cpE.SetLegend(0.2,0.2,0.45,0.4);
     cpB.Draw(c,false,".png",1);
     cpE.Draw(c,false,".png",2);
     c->Update();
@@ -930,6 +973,12 @@ void MakePlots(const char *title, const char *name1, std::vector<TH1F*> &data1, 
     sprintf(ylabel, "<PU>");
     //sprintf(ylabel2, "#sigma");
     ymin1=0; ymax1=30;
+    ymin2=800; ymax2=1600;
+    break;
+  case 5:
+    sprintf(ylabel, "<#epsilon#rho>");
+    //sprintf(ylabel2, "#sigma");
+    ymin1=0.3; ymax1=0.7;
     ymin2=800; ymax2=1600;
     break;
   default:
