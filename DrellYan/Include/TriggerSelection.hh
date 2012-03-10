@@ -15,6 +15,8 @@
 //
 // -----------------------------------------
 
+const int excludeJuly2011BadRuns=1;
+
 enum TriggerConstantSet 
   { TrigSet_UNDEFINED =0,
     Full2011DatasetTriggers =10,   //  includes all periods (1+2+4=7)
@@ -189,6 +191,7 @@ class TriggerSelection{
   // Filtering
   bool validRun(UInt_t run) const {
     if (!_isData) return true;
+    if (excludeJuly2011BadRuns && (run>=171050) && (run<=171578)) return false;
     bool ok=false;
     switch(_constants) {
     case Full2011DatasetTriggers: ok=true; break;
