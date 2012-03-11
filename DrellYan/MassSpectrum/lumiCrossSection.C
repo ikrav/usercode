@@ -60,7 +60,7 @@ const UInt_t bruteForceCutOff=179890;
 // specify whether rho_vs_pu.root should be taken from a local directory
 const int localRhoVsPUFile=0;
 
-//const int xAxisLumiIn_fm=1;
+const int xAxis_in_RR=0;  // works for rebinLuminosity=0
 
 // ---------------------------------------------------------------------
 
@@ -490,10 +490,10 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
       for (unsigned int i=0; i<dataV.size(); ++i) {
 	if (excludeJuly2011runs && lumiJuly2011.insideRange(dataV[i].runNum)) continue;
 	if (lumi.insideRange(dataV[i].runNum)) {
-	  hPVData->Fill(dataV[i].nGoodPV, dataV[i].weight);
 	  if (dataV[i].massInsideRange(60,120) && 
 	      dataV[i].nGoodPV)  // at least 1 good vertex
 	    {
+	    hPVData->Fill(dataV[i].nGoodPV, dataV[i].weight);
 	    dataZCount++;                          // count Z candidates in data
 	    sumPU += dataV[i].nGoodPV;
 	    if (dataV[i].nGoodPV>40) std::cout << "data event has " << dataV[i].nGoodPV << "a good primary vertices\n";
@@ -568,8 +568,8 @@ void lumiCrossSection(TString conf = "../config_files/data.conf") {
       double sigma=Nsignal/( lumi.lumiWeight * avgRhoEff * factor_acceptance * factor_fsr );
       double sigmaMC= mcSignalZv.back()/ ( lumi.lumiWeight * avgRhoEff * factor_acceptance * factor_fsr );
       double xLumi=sumLumi + 0.5* lumi.lumiWeight;
-      //if (xAxisLumiIn_fm) xLumi *= 0.001;
       double avgPU=sumPU/dataZCount;
+      if ((rebinLuminosity==0) && xAxis_in_RR) xLumi=0.5*(lumi.runNumMin+lumi.runNumMax);
       hSigma->Fill( xLumi, sigma );
       hMCSigma->Fill( xLumi, sigmaMC );
       //hSigmaPerLumi->Fill( sumLumi + 0.5* lumi.lumiWeight, sigma/lumi.lumiWeight );
@@ -696,12 +696,14 @@ int PrepareLuminosity(int version, std::vector<LumiInfo_t> &luminosity, const TS
   lumiChunk=0;
   if (rebinLuminosity==0) {
     lumi=0.;
+    if (xAxis_in_RR) lumiBins[0]=runNumMin[0];
     for (int i=0; i<runNumMin.GetNoElements(); ++i) {
       if (bruteForceCorrectionForLumi && (UInt_t(runNumMin[i])>=bruteForceCutOff)) continue;
       info.assign(UInt_t(runNumMin[i]), UInt_t(runNumMax[i]), lumiWeights[i]);
       luminosity.push_back(info);
       lumi += lumiWeights[i];
-      lumiBins.push_back(lumi);
+      if (xAxis_in_RR) lumiBins.push_back(runNumMax[i]);
+      else lumiBins.push_back(lumi);
     }
   }
   else if (rebinLuminosity==2) {
