@@ -41,7 +41,7 @@
 //const char *luminosityFileName="run_luminosity150.root"; // path will be prepended
 const double luminosityBlockSize=150;
 const int rebinLuminosity=0;  // set to 1 for run_luminosity.root
-const char *luminosityFileName="run_luminosity5.root"; // path will be prepended   
+const char *luminosityFileName="run_luminosity5_ik.root"; // path will be prepended   
 //const double luminosityBlockSize=1500;
 
 const int runRangeWidth=2000;
@@ -59,7 +59,7 @@ const UInt_t bruteForceCutOff=179890;
 // specify whether rho_vs_pu.root should be taken from a local directory
 const int localRhoVsPUFile=0;
 
-//const int xAxisLumiIn_fm=1;
+const int xAxis_in_RR=0;
 
 // ---------------------------------------------------------------------
 
@@ -264,7 +264,7 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
 
   // load efficiency scale factors as a function of PU
   TVectorD rhoBarrel, rhoEndcap;
-  TString rhoVsPU_path= (localRhoVsPUFile) ? TString("./") : constantsDir;
+  TString rhoVsPU_path= (localRhoVsPUFile) ? TString(".") : constantsDir;
   if (!LoadEffScaleFactors(TString(rhoVsPU_path + TString("/rho_vs_pu.root")),rhoBarrel,rhoEndcap)) return;
 
 
@@ -388,6 +388,7 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
   std::vector<TH1F*> hLumiLumiV;
 
   std::vector<std::vector<TH1F*>*> hLumiZCountPUVV;
+  std::vector<std::vector<TH1F*>*> hLumiZMCCountPUVV;
   std::vector<std::vector<TH1F*>*> hLumiNbkgrPUVV;
   std::vector<std::vector<TH1F*>*> hLumiSignalPUVV;
   std::vector<std::vector<TH1F*>*> hLumiNbkgrFracPUVV;
@@ -395,6 +396,7 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
   std::vector<std::vector<TH1F*>*> hLumiAvgRhoPUVV;
   std::vector<std::vector<TH1F*>*> hLumiAvgRhoEffPUVV;
   std::vector<std::vector<TH1F*>*> hLumiSigmaPUVV;
+  std::vector<std::vector<TH1F*>*> hLumiSigmaNormPUVV; // sigma * Nobs/Nobs[PU]
 
   for (int lumiVersion=1; lumiVersion<=4; ++lumiVersion) {
     //if (lumiVersion>2) break;
@@ -480,6 +482,8 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
 
     std::vector<TH1F*>* hZCountPUV=new std::vector<TH1F*>();
     hLumiZCountPUVV.push_back(hZCountPUV);
+    std::vector<TH1F*>* hZMCCountPUV=new std::vector<TH1F*>();
+    hLumiZMCCountPUVV.push_back(hZMCCountPUV);
     std::vector<TH1F*>* hNbkgrPUV=new std::vector<TH1F*>();
     hLumiNbkgrPUVV.push_back(hNbkgrPUV);
     std::vector<TH1F*>* hSignalPUV=new std::vector<TH1F*>();
@@ -494,6 +498,8 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
     hLumiAvgRhoEffPUVV.push_back(hAvgRhoEffPUV);
     std::vector<TH1F*>* hSigmaPUV=new std::vector<TH1F*>();
     hLumiSigmaPUVV.push_back(hSigmaPUV);
+    std::vector<TH1F*>* hSigmaNormPUV=new std::vector<TH1F*>();
+    hLumiSigmaNormPUVV.push_back(hSigmaNormPUV);
  
 
     std::vector<double> dataZv, mcSignalZv, mcBkgrZv; 
@@ -511,6 +517,8 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
       // prepare container for sigma[PU] calculations
       sprintf(buf,"hZCountPU_lv%d_%u_%u",lumiVersion,lumi.runNumMin,lumi.runNumMax);
       TH1F* hZCountPU=new TH1F(buf,buf,DYTools::nPVBinCount,DYTools::nPVLimits);
+      sprintf(buf,"hZMCCountPU_lv%d_%u_%u",lumiVersion,lumi.runNumMin,lumi.runNumMax);
+      TH1F* hZMCCountPU=new TH1F(buf,buf,DYTools::nPVBinCount,DYTools::nPVLimits);
       sprintf(buf,"hNbkgrPU_lv%d_%u_%u",lumiVersion,lumi.runNumMin,lumi.runNumMax);
       TH1F* hNbkgrPU=new TH1F(buf,buf,DYTools::nPVBinCount,DYTools::nPVLimits);
       sprintf(buf,"hSumEffPU_lv%d_%u_%u",lumiVersion,lumi.runNumMin,lumi.runNumMax);
@@ -531,6 +539,7 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
       for (unsigned int i=0; i<dataV.size(); ++i) {
 	if (excludeJuly2011runs && lumiJuly2011.insideRange(dataV[i].runNum)) continue;
 	if (lumi.insideRange(dataV[i].runNum)) {
+	  if (dataV[i].nGoodPV>40) std::cout << "\n\n\t\tdata event has " << dataV[i].nGoodPV << "a good primary vertices\n\n\n";
 	  if (dataV[i].massInsideRange(60,120) && 
 	      dataV[i].nGoodPV)  // at least 1 good vertex
 	  {
@@ -600,6 +609,7 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
 	      const double full_weight= eventWeight * puWeight * lumiReweight;
 	      Nbkgr+=full_weight;
 	      if ( snamev[isam] != "zee" ) hNbkgrPU->Fill( it->nGoodPV, full_weight );
+	      else hZMCCountPU->Fill( it->nGoodPV, full_weight );
 	    }
 	  }
 	}
@@ -617,7 +627,7 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
       double sigma=Nsignal/( lumi.lumiWeight * avgRhoEff * factor_acceptance * factor_fsr );
       double sigmaMC= mcSignalZv.back()/ ( lumi.lumiWeight * avgRhoEff * factor_acceptance * factor_fsr );
       double xLumi=sumLumi + 0.5* lumi.lumiWeight;
-      //if (xAxisLumiIn_fm) xLumi *= 0.001;
+      if (xAxis_in_RR) xLumi=0.5*(lumi.runNumMin+lumi.runNumMax);
       double avgPU=sumPU/dataZCount;
       hSigma->Fill( xLumi, sigma );
       hMCSigma->Fill( xLumi, sigmaMC );
@@ -653,10 +663,10 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
       sprintf(buf,"hAvgEffPU_lv%d_%u_%u",lumiVersion,lumi.runNumMin,lumi.runNumMax);
       TH1F *hAvgEffPU= (TH1F*)hSumEffPU->Clone(buf);
       hAvgEffPU->SetTitle(buf);
-      hAvgEffPU->Divide(hNSignalPU);
+      hAvgEffPU->Divide(hZCountPU);
       sprintf(buf,"hAvgRhoPU_lv%d_%u_%u",lumiVersion,lumi.runNumMin,lumi.runNumMax);
       TH1F *hAvgRhoPU= (TH1F*)hSumRhoPU->Clone(buf);
-      hAvgRhoPU->Divide(hNSignalPU);
+      hAvgRhoPU->Divide(hZCountPU);
       sprintf(buf,"hAvgRhoEffPU_lv%d_%u_%u",lumiVersion,lumi.runNumMin,lumi.runNumMax);
       TH1F *hAvgRhoEffPU= (TH1F*)hSumRhoEffPU->Clone(buf);
       hAvgRhoEffPU->SetTitle(buf);
@@ -668,8 +678,16 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
       hSigmaPU->Scale(1/ ( lumi.lumiWeight * factor_acceptance * factor_fsr ) );
       hSigmaPU->Divide(hAvgRhoEffPU);
 
-      hSigmaPUV->push_back(hSigmaPU);     
+      sprintf(buf,"hSigmaNormPU_lv%d_%u_%u",lumiVersion,lumi.runNumMin,lumi.runNumMax);
+      TH1F *hSigmaNormPU= (TH1F*)hSigmaPU->Clone(buf);
+      hSigmaNormPU->SetTitle(buf);
+      hSigmaNormPU->Scale( dataZCount );
+      hSigmaNormPU->Divide(hZCountPU);
+
+      hSigmaPUV->push_back(hSigmaPU);
+      hSigmaNormPUV->push_back(hSigmaNormPU);
       hZCountPUV->push_back(hZCountPU);
+      hZMCCountPUV->push_back(hZMCCountPU);
       hNbkgrPUV->push_back(hNbkgrPU);
       hSignalPUV->push_back(hNSignalPU);
       hNbkgrFracPUV->push_back(hNbkgrFracPU);
@@ -716,11 +734,13 @@ void lumiCrossSectionPU(TString conf = "../config_files/data.conf") {
   WriteToDir(f,"Nobs" ,hLumiZCountPUVV);
   WriteToDir(f,"Nbkgr",hLumiNbkgrPUVV);
   WriteToDir(f,"Nsignal",hLumiSignalPUVV);
+  WriteToDir(f,"NMCsignal",hLumiZMCCountPUVV);
   WriteToDir(f,"NbkgrFrac",hLumiNbkgrFracPUVV);
   WriteToDir(f,"AvgEff",hLumiAvgEffPUVV);
   WriteToDir(f,"AvgRho",hLumiAvgRhoPUVV);
   WriteToDir(f,"AvgRhoEff",hLumiAvgRhoEffPUVV);
   WriteToDir(f,"CrossSection",hLumiSigmaPUVV);
+  WriteToDir(f,"NormCrossSection",hLumiSigmaNormPUVV);
   f->Close();
   delete f;
 
@@ -804,12 +824,14 @@ int PrepareLuminosity(int version, std::vector<LumiInfo_t> &luminosity, const TS
   lumiChunk=0;
   if (rebinLuminosity==0) {
     lumi=0.;
+    if (xAxis_in_RR) lumiBins[0]=runNumMin[0];
     for (int i=0; i<runNumMin.GetNoElements(); ++i) {
       if (bruteForceCorrectionForLumi && (UInt_t(runNumMin[i])>=bruteForceCutOff)) continue;
       info.assign(UInt_t(runNumMin[i]), UInt_t(runNumMax[i]), lumiWeights[i]);
       luminosity.push_back(info);
       lumi += lumiWeights[i];
-      lumiBins.push_back(lumi);
+      if (xAxis_in_RR) lumiBins.push_back(runNumMax[i]);
+      else lumiBins.push_back(lumi);
     }
   }
   else if (rebinLuminosity==2) {
@@ -836,46 +858,60 @@ int PrepareLuminosity(int version, std::vector<LumiInfo_t> &luminosity, const TS
   }
   else if (rebinLuminosity==1) {
     const int n=runNumMin.GetNoElements();
+    if (xAxis_in_RR) lumiBins[0]=runNumMin[0];
     for (int i=0; i<runNumMin.GetNoElements(); ++i) {
       if (start) { info.runNumMin=UInt_t(runNumMin[i]); start=0; }
       double lumiChunk1 = lumiChunk + lumiWeights[i];
       int nextChunkIsLarge=((i<n-1) && (lumiWeights[i+1]>dLumi)) ? 1:0;
       int nextChunkIsGood=((i<n-1) && (lumiChunk1 + lumiWeights[i+1] < dLumi)) ? 1:0;
+      int done=0;
+      if (bruteForceCorrectionForLumi && (i<n-1) && (UInt_t(runNumMin[i+1])>bruteForceCutOff)) { 
+	done=1; 
+	nextChunkIsLarge=1; 
+      }
       if (!rebinLuminosity || ( lumiChunk1 > dLumi) || (( lumiChunk1 > dLumi-tolerance) && !nextChunkIsGood) || nextChunkIsLarge ) {
 	info.runNumMax=UInt_t(runNumMax[i]); start=1; lumiChunk=0.;
 	info.lumiWeight=lumiChunk1;
 	luminosity.push_back(info);
 	lumi += lumiChunk1;
-	lumiBins.push_back(lumi);
+	if (xAxis_in_RR) lumiBins.push_back(runNumMax[i]);
+	else lumiBins.push_back(lumi);
       }
       else lumiChunk=lumiChunk1;
+      if (done) break;
     }
     if (start!=1) {
       info.runNumMax=UInt_t(runNumMax[n-1]);
       info.lumiWeight=lumiChunk;
       luminosity.push_back(info);
       lumi += lumiChunk;
-      lumiBins.push_back(lumi);
+      if (xAxis_in_RR) lumiBins.push_back(runNumMax[n-1]);
+      else lumiBins.push_back(lumi);
     }
   }
   else if (rebinLuminosity==3) {
     const int n=runNumMin.GetNoElements();
     UInt_t runMin=UInt_t(runNumMin[0]);
     dLumi=0; lumi=0;
+    if (xAxis_in_RR) lumiBins[0]=runNumMin[0];
     for (int i=0; i<n; ++i) {
       UInt_t runMax=UInt_t(runNumMax[i]);
+      int done= (i==n-1) ? 1:0;
+      if (bruteForceCorrectionForLumi && (UInt_t(runNumMin[i])>bruteForceCutOff)) done=1;
       if (( runMax>= (runMin/runRangeWidth)*runRangeWidth+runRangeWidth ) ||
-	  ( i == n-1 )) {
+	  done ) {
 	info.assign(runMin, runMax-1, dLumi);
 	luminosity.push_back(info);
 	lumi+=dLumi;
-	lumiBins.push_back(lumi);
+	if (xAxis_in_RR) lumiBins.push_back(runNumMax[i]);
+	else lumiBins.push_back(lumi);
 	dLumi=lumiWeights[i];
 	runMin=runMax;
       }
       else {
 	dLumi+=lumiWeights[i];
       }
+      if (done) break;
     }
   }
   else {
@@ -969,7 +1005,7 @@ int LoadEffScaleFactors(const TString &fname, TVectorD &rho_barrel, TVectorD &rh
     return 0;
   }
 
-  if (1) {
+  if (0) {
     std::vector<TH1F*> histos;
     std::vector<TVectorD*> vecs;
     std::vector<TVectorD*> vecErrs;
@@ -1054,7 +1090,7 @@ void MakePlots(const char *title, const char *name1, std::vector<TH1F*> &data1, 
     sprintf(ylabel, "#sigma");
     sprintf(ylabel2, "#font[12]{L_{block}}");
     ymin1=800; ymax1=1600;
-    ymin2=0; ymax2=1.5*luminosityBlockSize;
+    ymin2=100; ymax2=2*luminosityBlockSize;
     switch (scale_is_large) { 
     case 1: ymax2=3000; break;
     case 2: ymax2=1000; break;
@@ -1095,6 +1131,9 @@ void MakePlots(const char *title, const char *name1, std::vector<TH1F*> &data1, 
     sprintf(ylabel2, "variable 2");
     ymin1=0; ymax1=160000;
     ymin2=0; ymax2=5000;
+  }
+  if (xAxis_in_RR) {
+    TGaxis::SetMaxDigits(6);
   }
 
 
