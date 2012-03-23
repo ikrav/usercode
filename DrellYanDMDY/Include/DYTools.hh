@@ -36,6 +36,12 @@ namespace DYTools {
       result += nYBins[i];
     return result;
   }
+ int getYBinsMax(){
+    int nYBMax=nYBins[0];
+    for (int i=1; i<nMassBins2D; i++)
+      if (nYBins[i]>nYBMax) nYBMax=nYBins[i];
+    return nYBMax;
+  }
   // Bin limits in rapidity for particular mass slice
   double *getYBinLimits2D(int massBin){
     double *result = 0;
