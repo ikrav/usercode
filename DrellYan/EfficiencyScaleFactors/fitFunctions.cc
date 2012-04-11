@@ -204,7 +204,7 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f    %10.0f  %10.0f\n",
 	     limitsEt[i], limitsEt[i+1],
 	     limitsEta[j], limitsEta[j+1],
-	     effCount*100, effErrLowCount*100, effErrHighCount*100,
+	     effCount*100, effErrHighCount*100, effErrLowCount*100,
 	     probesPass, probesFail);
       effOutput << strOut;
       canvas->cd(1 + 2*(i + j*nEt) + 0);
@@ -291,7 +291,7 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
       }
             
 
-      sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f        %10.0f  %10.0f\n",
+      sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f    %10.0f  %10.0f\n",
 	      limitsEt[i], limitsEt[i+1],
 	      limitsEta[j], limitsEta[j+1],
 	      efficiency*100, efficiencyErrHi*100, efficiencyErrLo*100,
