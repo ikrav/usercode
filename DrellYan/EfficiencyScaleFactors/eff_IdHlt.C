@@ -573,7 +573,7 @@ void eff_IdHlt(const TString configFile, TString triggerSetString)
 
   int NsetBins=120;
   bool isRECO=0;
-  const char* setBinsType="fft";
+  const char* setBinsType="cache";
 
   measureEfficiency(passTree, failTree,
 		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,
