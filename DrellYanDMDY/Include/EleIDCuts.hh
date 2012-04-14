@@ -5,6 +5,7 @@
 #include "TElectron.hh"
 #include "TDielectron.hh"
 #include <cassert>
+#include <iostream>
 
 /*
  * [0] WP95
@@ -329,4 +330,27 @@ Bool_t passSmurf(const mithep::TElectron *electron)
   
   return kTRUE;
 }
+
+//
+// Define electron IDs
+//
+
+typedef enum { _EleID_Smurf2011 } TEleID_t;
+TEleID_t electronID=_EleID_Smurf2011;
+
+//
+// Generic passEleID function
+//
+
+template<class EleObj_t>
+Bool_t passEleID(const EleObj_t *electron) {
+  Bool_t pass=kFALSE;
+  switch(electronID) {
+  case _EleID_Smurf2011: pass=passSmurf(electron); break;
+  default:
+    std::cout << "passID: ElectronID is not prepared\n";
+  }
+  return pass;
+}
+
 #endif
