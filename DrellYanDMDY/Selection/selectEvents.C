@@ -71,10 +71,19 @@ void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron,
 
 //=== MAIN MACRO =================================================================================================
 
-void selectEvents(const TString conf) 
+void selectEvents(const TString conf, const TString triggerSetString="Full2011DatasetTriggers", int debugMode=0) 
 {  
   gBenchmark->Start("selectEvents");
 
+  // fast check
+  TriggerConstantSet triggerSet=DetermineTriggerSet(triggerSetString);  
+  assert ( triggerSet != TrigSet_UNDEFINED );
+
+  // Construct the trigger object
+  TriggerSelection requiredTriggers(triggerSetString, true, 0);
+  assert(requiredTriggers.isDefined());
+
+  if (debugMode) std::cout << "\n\n\tDEBUG MODE is ON\n\n";
   
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
@@ -294,7 +303,9 @@ void selectEvents(const TString conf)
     TTree *outTree = new TTree("Events","Events");
     ZeeData data;
     outTree->Branch("Events", &data.runNum, 
-"runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F");
+"runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nGoodPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F"
+    //"runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F"
+		    );
     
     //
     // loop through files
@@ -354,7 +365,8 @@ void selectEvents(const TString conf)
      
       // loop through events
       Double_t nsel=0, nselvar=0;
-      for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {       
+      for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
+	if (debugMode && (ientry>100000)) break; // debug option
 	if(ientry >= maxEvents) break;
 	
 	infoBr->GetEntry(ientry);
@@ -408,11 +420,12 @@ void selectEvents(const TString conf)
 
 	// Configure the object for trigger matching	
 	bool isData = (isam == 0 && hasData);
-	TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
-	TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
-	ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit();
-	ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit();
-	ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit();
+	//TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
+	//TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
+	requiredTriggers.actOnData(isData);
+	ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(info->runNum);
+	ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(info->runNum);
+	ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(info->runNum);
 	// Apply trigger cut at the event level        	
         if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
 
@@ -518,6 +531,7 @@ void selectEvents(const TString conf)
             nGoodPV++;
           }
           hNGoodPVv[isam]->Fill(nGoodPV,weight);
+	  data.nGoodPV=nGoodPV;
 	  
 	  // fill ntuple data
 	  double weightSave = weight;
