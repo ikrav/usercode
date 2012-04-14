@@ -105,6 +105,16 @@ void PrintVec(const char *msg, const std::vector<T>& vec, int prneol=0) {
   if (prneol) std::cout << "\n";
 }
 
+// ----------------------------------------------------------
+
+template<class T>
+void ClearVec(std::vector<T*> &vec) {
+  for (unsigned int i=0; i<vec.size(); ++i) if (vec[i]) delete vec[i];
+  vec.clear();
+}
+
 //------------------------------------------------------------------------------------------------------------------------
+
+
 
 #endif
