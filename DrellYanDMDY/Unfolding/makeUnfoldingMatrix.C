@@ -66,7 +66,7 @@ void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TEr
 				   TMatrixD &TinvErr);
 //=== MAIN MACRO =================================================================================================
 
-void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NORMAL, int randomSeed = 1, double reweightFsr = 1.0, double massLimit = -1.0)
+void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NORMAL, int randomSeed = 1, double reweightFsr = 1.0, double massLimit = -1.0, int debugMode=0)
 //systematicsMode 0 (NORMAL) - no systematic calc
 //1 (RESOLUTION_STUDY) - systematic due to smearing, 2 (FSR_STUDY) - systematics due to FSR, reweighting
 //check mass spectra with reweightFsr = 0.95; 1.00; 1.05  
@@ -85,6 +85,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
     assert(0);
   }
 
+  if (debugMode) std::cout << "\n\n\tDEBUG MODE is ON\n\n";
+  
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
   //==============================================================================================================
@@ -131,11 +133,13 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   }
   ifs.close();
   
-  ElectronEnergyScale::CalibrationSet calibrationSet 
-    = ElectronEnergyScale::UNDEFINED;
-  if( escaleTag == TString("Date20110901_EPS11_default")){
-    calibrationSet = ElectronEnergyScale::Date20110901_EPS11_default;
-  }else{
+  // 
+  // Set up energy scale corrections
+  //
+  ElectronEnergyScale escale(escaleTag);
+  escale.print();
+
+  if( !escale.isInitialized()) {
     printf("Failed to match escale calibration. Tag: >>%s<<\n", escaleTag.Data());
     assert(0);
   }
@@ -225,11 +229,6 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
     }
   }
 
-  // 
-  // Set up energy scale corrections
-  //
-  ElectronEnergyScale escale(calibrationSet);
-  escale.print();
 
   //
   // Access samples and fill histograms
@@ -266,8 +265,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
     eventTree->SetBranchAddress("Dielectron",&dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
   
     // loop over events    
-    //for(UInt_t ientry=0; ientry<100000; ientry++) {
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
+      if (debugMode && (ientry>100000)) break;
 
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
@@ -454,7 +453,7 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 
   // Find inverted response matrix
   TMatrixD DetInvertedResponse = DetResponse;
-  Double_t det;
+  //Double_t det;
 //   DetInvertedResponse.Invert(&det);
   TMatrixD DetInvertedResponseErr(DetInvertedResponse.GetNrows(), DetInvertedResponse.GetNcols());
 //   calculateInvertedMatrixErrors(DetResponse, DetResponseErrPos, DetResponseErrNeg, DetInvertedResponseErr);
