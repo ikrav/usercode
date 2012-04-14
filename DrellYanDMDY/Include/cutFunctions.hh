@@ -9,6 +9,7 @@
 #include "TPhoton.hh"
 #include "DYTools.hh"
 #include "EleIDCuts.hh"
+#include "TriggerSelection.hh"
 
 #endif
 
@@ -20,6 +21,6 @@ Bool_t scMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TPho
 
 bool passID(const mithep::TElectron *electron);
 
-bool isTag(const mithep::TElectron *electron, UInt_t trigger);
+bool isTag(const mithep::TElectron *electron, ULong_t trigger);
 
-TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning);
+TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, const TriggerSelection &trigSet);
