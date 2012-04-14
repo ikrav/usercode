@@ -21,6 +21,7 @@ debugMode=0
 # the variables below are more persistent
 crossSectionTag="DY_m10+pr+a05+o03+pr_4680pb"
 expectSelectedEventsFile="../root_files/selected_events/${crossSectionTag}/ntuples/zee_select.root"
+expectSelectedEventsFile2="../root_files/selected_events/${crossSectionTag}/npv.root"
 expectBkgSubtractedFile="../root_files/yields/${crossSectionTag}/yields_bg-subtracted.root"
 expectUnfoldingFile="../root_files/constants/${crossSectionTag}/unfolding_constants.root"
 expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics.root"
@@ -47,13 +48,13 @@ force_rebuild_include_files=0
 
 ## controlling your work
 # catch-all flag
-do_all_steps=0
+do_all_steps=1
 
 # individual flags. 
 # Note: all the above flags have to be 0 for these individual flags 
 # to be effective
-do_selection=0
-do_prepareYields=0
+do_selection=1
+do_prepareYields=1
 do_subtractBackground=0
 do_unfolding=1
 do_unfoldingSyst=0
@@ -109,26 +110,29 @@ fi
 checkFile() { 
   if [ $? != 0 ] || [ ${noError} -eq 0 ] ; then 
       noError=0
-      echo "error present before checking for the file ${__fname}"
+      echo "error present before checking for the file(s) $@"
       return
   fi
 
-  __fname="$1"    # double underscore not to mess a possible variable with the same name in the script
+  # double underscore not to mess a possible variable with the same name in the script
+  for __fname in $@ ; do
 # if "-f" does not work (check plain file), 
 # one can use -e (name exists), but then directory will return 'true' as well
 # 2. else... echo ".. ok" can be removed
-  if [ ${#__fname} -gt 0 ] && [ ! -f ${__fname} ] ; then 
-      echo "file ${__fname} is missing"
-      noError=0
-  else
-      echo "file ${__fname} checked ok"
+  if [ ${#__fname} -gt 0 ] ; then 
+      if [ ! -f ${__fname} ] ; then 
+	  echo "file ${__fname} is missing"
+	  noError=0
+      else
+	  echo "file <${__fname}> checked ok"
+      fi
   fi
+  done
 }
 
 get_status() {
+    checkFile $@
     RUN_STATUS="OK"
-    checkFile $1
-    if [ ${#2} -gt 0 ] && [ ${noError} -eq 1 ] ; then checkFile $2; fi
     if [ ${noError} -eq 0 ] ; then 
        RUN_STATUS="FAILED"
     fi
@@ -171,11 +175,11 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "WILL DO: selectEvents(\"${filename_data}\",\"${triggerSet}\",debug=${debugMode})"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Selection
-rm -f *.so ${expectSelectedEventsFile}
+rm -f *.so ${expectSelectedEventsFile} ${expectSelectedEventsFile2}
 echo
 checkFile selectEvents.C
 root -b -q -l ${LXPLUS_CORRECTION} selectEvents.C+\(\"$filename_data\",\"$triggerSet\",${debugMode}\)           | tee ${logDir}/out${timeStamp}-01-selectEvents.log
-get_status ${expectedSelectedEventsFile}
+get_status ${expectSelectedEventsFile} ${expectSelectedEventsFile2}
 statusSelection=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -194,7 +198,7 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../YieldsAndBackgrounds
 rm -f *.so ${expectYieldsFile}
 echo
-checkFile prepareYields.C
+checkFile prepareYields.C ${expectSelectedEventsFile} ${expectSelectedEventsFile2}
 root -b -q -l ${LXPLUS_CORRECTION} prepareYields.C+\(\"$filename_data\"\)       | tee ${logDir}/out${timeStamp}-02-prepareYields.log
 get_status ${expectYieldsFile}
 statusPrepareYields=$RUN_STATUS
