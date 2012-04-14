@@ -12,16 +12,16 @@ namespace unfolding {
 //-----------------------------------------------------------------
 // Function that executes unfolding
 //-----------------------------------------------------------------
-  void  unfold(TVectorD &vin, TVectorD &vout, TString unfoldingConstFileName)
+  int  unfold(TVectorD &vin, TVectorD &vout, TString unfoldingConstFileName)
   {
     
     // Read unfolding constants
-    printf("unfold: Load constants\n"); fflush(stdout);
+    printf("unfold: Load constants from <%s>\n",unfoldingConstFileName.Data()); fflush(stdout);
     
-    if(!checkBinningConsistency(unfoldingConstFileName))
-      assert(0);
+    int res=checkBinningConsistency(unfoldingConstFileName);
+    if (res!=1) return res;
     
-    TFile fileConstants(unfoldingConstFileName);
+    TFile fileConstants(unfoldingConstFileName); // file had to exist to reach this point
     TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
     TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
     TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
@@ -38,22 +38,22 @@ namespace unfolding {
     }
     
     fileConstants.Close();
-    return;
+    return 1;
   }
 
 //-----------------------------------------------------------------
 // Function that propagates systematic errors through unfolding
 //-----------------------------------------------------------------
-  void  propagateErrorThroughUnfolding(TVectorD &errorIn, 
+ int  propagateErrorThroughUnfolding(TVectorD &errorIn, 
 					TVectorD &errorPropagated,
 					TString unfoldingConstFileName)
   {
 
     // Read unfolding constants
-    printf("unfold: Load constants\n"); fflush(stdout);
+    printf("propagateErrorThroughUnfolding: Load constants from <%s>\n",unfoldingConstFileName.Data()); fflush(stdout);
     
-    if(!checkBinningConsistency(unfoldingConstFileName))
-      assert(0);
+    int res=checkBinningConsistency(unfoldingConstFileName);
+    if (res!=1) return res;
 
     TFile fileConstants(unfoldingConstFileName);
     TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
@@ -72,17 +72,19 @@ namespace unfolding {
     }
     
     fileConstants.Close();
-    return;
+    return 1;
   }
 
+  // ------------------------------------------
+
   // This function adds together all pieces of unfolding systematics
-  void calculateTotalUnfoldingSystError(TVectorD &yieldsBeforeUnfolding, 
+  int calculateTotalUnfoldingSystError(TVectorD &yieldsBeforeUnfolding, 
 				   TVectorD &systUnfolding, 
 				   TString fullUnfoldingConstFileName,
 				   TString extraUnfoldingErrorsFileName){
 
-    if(!checkBinningConsistency(fullUnfoldingConstFileName))
-      assert(0);
+    int res=checkBinningConsistency(fullUnfoldingConstFileName);
+    if (res!=1) return res;
 
     TFile fileConstants(fullUnfoldingConstFileName);
     TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
@@ -110,7 +112,7 @@ namespace unfolding {
     if( ! fileExtraUnfoldingErrors.IsOpen()){
       printf("ERROR: required file with unfolding errors %s is not found!\n",
 	     extraUnfoldingErrorsFileName.Data());
-      assert(0);
+      return -1;
     }
     TVectorD systOtherSourcesPercent 
       = *(TVectorD *)fileExtraUnfoldingErrors.FindObjectAny("unfoldingSystPercent");
@@ -125,6 +127,7 @@ namespace unfolding {
     TVectorD systOtherSources(nBins);
     for(int i=0; i<nBins; i++){
       systOtherSources[i] = (systOtherSourcesPercent[i]/100.0) * yieldsAfterUnfolding[i];
+
     }
 
     // Add all pieces of unfolding systematics together
@@ -134,13 +137,17 @@ namespace unfolding {
     }
     fileExtraUnfoldingErrors.Close();
     fileConstants.Close();
+    return 1;
   }
 
-  bool checkBinningConsistency(TString fileName){
+  // ------------------------------------------
 
-    bool result = true;
+  int checkBinningConsistency(TString fileName){
+
+    int result = 1;
 
     TFile fileConstants(fileName);
+    if (!fileConstants.IsOpen()) return -1;
     TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
     TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
     TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
@@ -159,7 +166,7 @@ namespace unfolding {
     fileConstants.Close();
     if( !checkResult ){
       printf("unfold: ERROR: inconsistent binning in the inputs\n");
-      result = false;
+      result = 0;
     }else
       printf("unfold: Binning in the inputs is consistent\n");
     
