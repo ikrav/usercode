@@ -2,12 +2,14 @@
 #define DYTools
 
 #include <iostream>
-
+#include <math.h>
+#include <assert.h>
 #include <TEfficiency.h>
 
 #include "EWKAnaDefs.hh"
 #include "TElectron.hh"
 #include "TDielectron.hh"
+
 
 namespace DYTools {
 
@@ -36,7 +38,8 @@ namespace DYTools {
       result += nYBins[i];
     return result;
   }
- int getYBinsMax(){
+  // Largest number of Ybins
+  int getYBinsMax(){
     int nYBMax=nYBins[0];
     for (int i=1; i<nMassBins2D; i++)
       if (nYBins[i]>nYBMax) nYBMax=nYBins[i];
@@ -133,12 +136,14 @@ namespace DYTools {
   // ------------- 2011 and 2010 content is below ---------------
 
   // Systematics modes for unfolding and acceptance 
-  enum {NORMAL, RESOLUTION_STUDY, FSR_STUDY};
+  typedef enum {NORMAL, RESOLUTION_STUDY, FSR_STUDY, ESCALE_RESIDUAL, ESCALE_STUDY }
+    TSystematicsStudy_t;
 
   // Tag and probe fitting constants
-  enum {COUNTnCOUNT, COUNTnFIT, FITnFIT};
-  enum {GSF, ID, HLT};
+  typedef enum {COUNTnCOUNT, COUNTnFIT, FITnFIT} TTnPMethod_t;
+  typedef enum {GSF, ID, HLT} TEfficiencyKind_t;
  
+
   //
   // Define mass binning
   //
@@ -148,42 +153,52 @@ namespace DYTools {
     {15,20,30,40,50,60,76,86,96,106,120,150,200,600}; // 13 bins
 
   // 2011 mass binning
-  const int nMassBins = 40;
-  const double massBinLimits[nMassBins+1] = 
+  const int nMassBins2011 = 40;
+  const double massBinLimits2011[nMassBins2011+1] = 
     {15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 64, 68, 72, 76, 
      81, 86, 91, 96, 101, 106, 110, 115, 120, 126, 133, 141, 
      150, 160, 171, 185, 200, 220, 243, 273, 320, 380, 440, 
      510, 600, 1000, 1500}; // 40 bins
 
+  const int nMassBinsLumi = 9;
+  const double massBinLimitsLumi[nMassBinsLumi+1] = 
+    {15,20,30,40,50,60,120,150,200,600}; // 9 bins with Z-peak region singled-out
+
   const double etMinLead  = 20;
   const double etMinTrail = 10;
 
-  int findMassBin(double mass){
-    
+  int findMassBin(double mass, int nMassBinsLoc, const double *massBinLimitsLoc){  
+
     int result =-1;
-    for(int ibin=0; ibin < nMassBins; ibin++){
-      if( mass >= massBinLimits[ibin] && mass < massBinLimits[ibin+1]) {
+    for(int ibin=0; ibin < nMassBinsLoc; ibin++){
+      if( mass >= massBinLimitsLoc[ibin] && mass < massBinLimitsLoc[ibin+1]) {
 	result = ibin;
 	break;
       }
     }
-    
     return result;
+
   };
 
-  int findMassBin13(double mass){
-    
-    int result =-1;
-    for(int ibin=0; ibin < nMassBins13; ibin++){
-      if( mass >= massBinLimits13[ibin] && mass < massBinLimits13[ibin+1]) {
-	result = ibin;
-	break;
-      }
-    }
-    
-    return result;
-  };
-  
+  int findMassBin2011(double mass) { return findMassBin(mass,nMassBins2011,massBinLimits2011); }
+  int findMassBin13(double mass) { return findMassBin(mass,nMassBins13,massBinLimits13); }
+  int findMassBinLumi(double mass) { return findMassBin(mass,nMassBinsLumi,massBinLimitsLumi); }
+
+// Declare mass binnings
+  typedef enum { _MassBins_Undefined, _MassBins_2010, _MassBins_2011, _MassBins_2011_Lumi, _MassBins_2011_2D } TMassBinning_t;
+
+
+  // Declare mass binning
+  const int study2D=1;
+  //DYTools::TMassBinning_t massBinningSet=(study2D) ? _MassBins_2011_2D : _MassBins_2011;
+  const int nMassBins=(study2D) ? nMassBins2D : nMassBins2011;
+  const double *massBinLimits=(study2D) ? massBinLimits2D : massBinLimits2011;
+
+
+  // find mass bin idx
+  int findMassBin(double mass) { return findMassBin(mass,nMassBins,massBinLimits); }
+
+
   //
   // Define single electron Pt binning
   //
@@ -207,7 +222,7 @@ namespace DYTools {
   //
   // Define Et and Eta binning
   //
-  enum {ETBINS1, ETBINS5};
+  typedef enum {ETBINS1, ETBINS5} TEtBinSet_t;
   const int nEtBins1 = 1;
   const double etBinLimits1[nEtBins1 + 1] = 
     {10, 500};
@@ -260,7 +275,7 @@ namespace DYTools {
     return result;
   };
 
-  enum {ETABINS1, ETABINS2};
+  typedef enum {ETABINS1, ETABINS2} TEtaBinSet_t;
   const int nEtaBins1 = 1;
   const double etaBinLimits1[nEtBins1 + 1] = 
     {0, 2.5000001};
@@ -314,39 +329,22 @@ namespace DYTools {
   };
 
 
+  // Primary vertices 
+
+  //const int nPVBinCount=7;
+  //const double nPVLimits[nPVBinCount+1] = { 0., 5., 10., 15., 20., 25., 30., 100. };
+  const int nPVBinCount=11;
+  const double nPVLimits[nPVBinCount+1] = { 0.5, 2.5, 4.5, 6.5, 8.5, 10.5, 12.5, 14.5, 16.5, 20.5, 24.5, 40.5 };
+  //  1., 3., 5., 7., 9., 11., 13., 15., 17., 21., 25., 40. };
+
+  int findPUBin(int nPV) { return findMassBin(double(nPV),nPVBinCount,nPVLimits); }
+
   // 
   // Triggers vs run numbers
   //
   enum { UNDEF, REL38X, REL39X};
-  enum { DATA, MC};
+  typedef enum { DATA, MC} TDataKind_t;
 
-  // The commented out code below is not valid on 2011 data since
-  // bit constants have changed in EWKAnaDefs.hh
-//   UInt_t triggerBits(int sample, int runNum){
-    
-//     // Just "a" trigger
-//     UInt_t trigger = kHLT_Ele17_SW_L1R; 
-
-//     if( sample == DATA) {
-//       // Triggers as in WW analysis
-//       // Actually there are no runs below 136K that we presently use
-//       if((runNum >= 132440) && (runNum <= 137028)) trigger = kHLT_Photon10_L1R;
-//       //
-//       if((runNum >= 136033) && (runNum <= 139980)) trigger = kHLT_Ele10_LW_L1R;
-//       if((runNum >= 140058) && (runNum <= 141882)) trigger = kHLT_Ele15_SW_L1R;
-//       if((runNum >= 141956) && (runNum <= 144114)) trigger = kHLT_Ele15_SW_CaloEleId_L1R; 
-//       if((runNum >= 146428) && (runNum <= 147116)) trigger = kHLT_Ele17_SW_CaloEleId_L1R;
-//       if((runNum >= 147196) && (runNum <= 148058)) trigger = kHLT_Ele17_SW_TightEleId_L1R;
-//       if((runNum >= 148819) && (runNum <= 149442)) trigger = kHLT_Ele17_SW_TighterEleIdIsol_L1R;
-//     } else if( sample == F10MC ) {
-//       trigger = kHLT_Ele17_SW_CaloEleId_L1R;
-//     } else if( sample == W11MC ) {
-//       trigger = kHLT_Ele17_SW_CaloEleId_L1R;
-//     }else
-//       std::cout << "DYTools:: Unknown sample" << std::endl;
-   
-//     return trigger;
-//   }
 
   //
   // Repackage TDielectron->TElectron
@@ -386,6 +384,7 @@ namespace DYTools {
       ele-> partnerDeltaCot     = dielectron-> partnerDeltaCot_1    ;     
       ele-> partnerDist         = dielectron-> partnerDist_1        ;         
 //       ele->ellhID               = dielectron->ellhID_1 ;
+      ele->mva                  = dielectron->mva_1                 ;
 
       ele-> q                   = dielectron-> q_1                  ;                 
       ele-> hltMatchBits        = dielectron-> hltMatchBits_1       ;       
@@ -424,6 +423,7 @@ namespace DYTools {
       ele-> partnerDeltaCot     = dielectron-> partnerDeltaCot_2    ;     
       ele-> partnerDist         = dielectron-> partnerDist_2        ;         
 //       ele->ellhID               = dielectron->ellhID_2 ;
+      ele->mva                  = dielectron->mva_2                 ;
 
       ele-> q                   = dielectron-> q_2                  ;                 
       ele-> hltMatchBits        = dielectron-> hltMatchBits_2       ;       
@@ -509,5 +509,9 @@ namespace DYTools {
 
 }
 
+// ------------------------------------------------------------------
+
+
 #endif
+
 
