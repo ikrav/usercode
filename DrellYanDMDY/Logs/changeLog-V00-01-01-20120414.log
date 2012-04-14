@@ -1,0 +1,86 @@
+April 14, 2012
+andriusj
+
+Changes in version V00-01-01 wrt to V00-01-00
+
+Bug fix:
+Selection/selectEvents.C claims that ZeeData contains field nGoodPV,
+while definition of ZeeData does not declare it
+
+
+Include/
+	ZeeData.hh  -- added field nGoodPV
+
+FullChain/
+	FullChain.sh  -- minor fixes and improvements
+
+
+Changes in version V00-01-00 wrt to V00-00-00
+
+Main objective: update to 1D Include files
+
+
+Include/
+	CPlot.cc	-- bug fixes and some enhancements (1D ver.1.5)
+	CPlot.hh	-- bug fixes and some enhancements (1D ver.1.3)
+
+	CRectangle --- unchanged (contains empty class ElectronEnergyScale)
+
+	CSample.hh	-- unchanged
+
+	DYTools.hh    --- named enum types, choice of mass binning, PU ranges (1D ver.1.14 plus enhancements)
+
+	EWKAnaDefs.hh  -- unchanged
+
+	EleIDCuts.hh   --- unchanged
+
+	ElectronEnergyScale.cc     --- updated to current 1D ver.1.11, fixed CalibrationSetName(TString)
+	ElectronEnergyScale.hh     --- updated to current 1D ver.1.11
+
+	EtaEtaMass.hh   -- unchanged
+
+	JsonParser.cc   -- unchanged
+	JsonParser.hh	-- unchanged
+
+	MitStyleRemix.cc  -- unchanged
+	MitStyleRemix.hh  -- unchanged
+
+	MyTools.hh   -- added ClearVec (1D ver.1.5)
+
+	rootlogon.C  -- updated
+
+	TDielectron.hh
+	TElectron.hh
+	TEventInfo.hh
+	TGenInfo.hh
+	TJet.hh
+	TMuon.hh
+	TPhoton.hh
+	TVertex.hh   -- unchanged
+
+	TriggerSelection.hh  -- updated to current 1D ver.1.15 
+
+	UnfoldingTools.hh  -- improved error reporting (1D ver.1.2)
+
+	ZeeData.hh   -- unchanged
+
+	cutFunctions.hh  -- unchanged
+
+	fitFunctions.hh  -- unchanged
+
+	fitFunctionsCore.hh  -- unchanged
+
+
+FullChain/
+	FullChain.sh  -- added
+
+
+Selection/
+	selectEvents.C  -- updated to properly use TriggerSelection.hh
+
+
+Unfolding/
+	
+	UnfoldingTools.C -- improved error reporting (1D ver.1.3)
+
+	makeUnfoldingMatrix.C  -- corrected for escale, contains plotting bug, needs update to TriggerSelection.hh
