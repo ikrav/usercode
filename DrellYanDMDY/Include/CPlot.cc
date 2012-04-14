@@ -2,7 +2,26 @@
 #include "CPlot.hh"
 #include <TLatex.h>
 
-CPlot::CPlot()
+CPlot::CPlot():
+fStack(0),
+fName(),
+fTitle(),
+fXTitle(),
+fYTitle(),
+fXmin(0),
+fXmax(0),
+fYmin(0),
+fYmax(0),
+fLogx(0),
+fLogy(0),
+fGridx(0),
+fGridy(0),
+fRebin(1),
+fLeg(0),
+fShowStats(0),
+fStatsX(0.68),
+fStatsY(0.90),
+fRooPlot(0)
 {
   TString name = "plot"; 
   name += sCount;
@@ -78,7 +97,9 @@ void CPlot::AddHist1D(TH1F *h, TString drawopt, int color, int linesty, int fill
   fItems.push_back(item);
 }
 
-void CPlot::AddHist1D(TH1F *h, TString label, TString drawopt, int color, int linesty, int fillsty)
+
+
+void CPlot::AddHist1D(TH1F *h, TString label, TString drawopt, int color, int linesty, int fillsty, int legendSymbolLP)
 {
   if(!h)
     return;
@@ -88,7 +109,8 @@ void CPlot::AddHist1D(TH1F *h, TString label, TString drawopt, int color, int li
   else
     fLeg->SetY1(fLeg->GetY1()-0.06);
  
-  if(drawopt.CompareTo("E",TString::kIgnoreCase)==0) {
+  if ((drawopt.CompareTo("E",TString::kIgnoreCase)==0) ||
+      legendSymbolLP) {
     //fLeg->AddEntry(h,label,"P");
     fLeg->AddEntry(h,label,"PL");
   } else {
@@ -597,7 +619,8 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
       TH1F *h = vHists[i];              
       h->SetLineWidth(2);
       char opt[100];
-      sprintf(opt,"same%s",vHistOpts[i].Data());    
+      sprintf(opt,"same %s",vHistOpts[i].Data());    
+      //std::cout << "drawing option=" << opt << "\n";
       h->Draw(opt);
     }
   }  
@@ -790,8 +813,8 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
   if(doSave) {
     gSystem->mkdir(sOutDir,true);
     TString outname = sOutDir+TString("/")+fName+TString(".");
-//     cout << "Check sOutDir in Draw: " << sOutDir << endl;
-//     cout << "Saving to " << outname << endl;
+    cout << "Check sOutDir in Draw: " << sOutDir << endl;
+    cout << "Saving to " << outname << endl;
     if(format.CompareTo("all",TString::kIgnoreCase)==0) {
       c->SaveAs(outname+TString("png"));
       c->SaveAs(outname+TString("eps"));
