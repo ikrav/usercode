@@ -9,6 +9,7 @@ struct ZeeData
   UInt_t  nTracks0;                        // number of reconstructed tracks in event
   UInt_t  nCaloTowers0;                    // number of reconstructed calorimeter towers in event
   UInt_t  nPV;                             // number of valid reconstructed primary vertices in event                                          
+  UInt_t  nGoodPV;                         // number of good PVs
   UInt_t  nJets;                           // number of jets (with some requirements)
   Float_t caloMEx, caloMEy, caloSumET;     // calorimeter MET 
   Float_t tcMEx, tcMEy, tcSumET;           // track-corrected MET
