@@ -10,9 +10,9 @@
 # ------------------  Define some variables
 
 filename_data="../config_files/data.conf"
-filename_data="../config_files/data_evtTrig.conf"
+#filename_data="../config_files/data_evtTrig.conf"
 filename_mc="../config_files/fall11mc.input"
-filename_mc="../config_files/fall11mc_evtTrig.input"
+#filename_mc="../config_files/fall11mc_evtTrig.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffNew"
 tnpFileStart="../config_files/sf"
