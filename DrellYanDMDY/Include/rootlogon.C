@@ -1,6 +1,6 @@
 {  
 
-// Load "MIT Style" plotting
+  // Load "MIT Style" plotting
   gROOT->Macro("../Include/CPlot.cc+");
   gROOT->Macro("../Include/MitStyleRemix.cc+");
 
@@ -25,5 +25,10 @@
   gROOT->ProcessLine(".L ../Include/EtaEtaMass.hh+");
 
   gROOT->ProcessLine(".L ../Unfolding/UnfoldingTools.C+");
+
+  gROOT->ProcessLine(".L ../Include/plotFunctions.hh+");
+  gROOT->ProcessLine(".L ../YieldsAndBackgrounds/plotFunctionsPrepareYields.C+");
+  gROOT->ProcessLine(".L ../YieldsAndBackgrounds/plotFunctionsSubtractBackground.C+");
+  gROOT->ProcessLine(".L ../Acceptance/plotFunctionsAcceptance.C+");
 
 }
