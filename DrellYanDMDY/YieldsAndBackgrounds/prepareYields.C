@@ -10,13 +10,18 @@
 #include <TTree.h>                  // class to access ntuples
 #include <TCanvas.h>                // class for drawing
 #include <TH1F.h>                   // 1D histograms
+#include <THStack.h>
 #include <TBenchmark.h>             // class to track macro running statistics
 #include <TVector3.h>               // 3D vector class
 #include <TArrayD.h>
 #include <TVectorD.h>
+#include <TMatrixD.h>
 #include <TLorentzVector.h>         // 4-vector class
 #include <TRandom.h>
 #include <TDatime.h>                // time stamp
+
+#include <TLatex.h> 
+
 #include <vector>                   // STL vector class
 #include <iostream>                 // standard I/O
 #include <iomanip>                  // functions to format standard I/O
@@ -27,7 +32,7 @@
 #include "../Include/CPlot.hh"          // helper class for plots
 #include "../Include/MitStyleRemix.hh"  // style settings for drawing
 #include "../Include/MyTools.hh"        // miscellaneous helper functions
-#include "../Include/CSample.hh"        // helper class for organizing input ntuple files
+#include "../Include/CSample.hh"        // helper class for organizing input ntuple files    
 
 // define structures to read in ntuple
 #include "../Include/ZeeData.hh"
@@ -35,14 +40,24 @@
 #include "../Include/ElectronEnergyScale.hh"        // energy scale correction
 
 #include "../Include/DYTools.hh"
+#include "../Include/plotFunctions.hh"
 
 #endif
 
 // Forward declarations
-void drawRapidityInMassSlices(vector<TMatrixD*> &yields, 
-			      vector<TMatrixD*> &yieldsSumw2,
-			      vector<TString>   &sampleTags,
-			      int nhist, TCanvas *canvas);
+/*
+void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString> snamev, TH1F* hMassDibosons, bool hasData, 
+                   bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext,  bool actualBinning);
+
+void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vector<CSample*> samplev, vector<TString> snamev, bool hasData, 
+                   bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext);
+
+void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
+                    vector<CSample*> samplev, vector<TString> snamev, 
+                    bool hasData, double dataOverMc, double* dataOverMcEachBin, bool normEachBin=1, bool singleCanvas=0);
+void SomeHistAttributes (TH1F* hist, TString samplename);
+*/
+//void SaveCanvas(TCanvas* canv, TString canvName);
 
 //=== MAIN MACRO =================================================================================================
 
@@ -236,9 +251,6 @@ void prepareYields(const TString conf  = "data_plot.conf")
     hPVThis->Scale( hPVData->GetSumOfWeights()/hPVThis->GetSumOfWeights());
     TH1F *puWeights = (TH1F*)hPVData->Clone("puWeights");
     puWeights->Divide(hPVThis);
-//     for(int i=1; i<=puWeights->GetNbinsX(); i++)
-//       printf(" %f    %f    %f\n",puWeights->GetBinCenter(i),puWeights->GetBinContent(i),puWeights->GetBinError(i));
-
     // Get the TTree and set branch address
     eventTree = (TTree*)infile->Get("Events"); assert(eventTree); 
     eventTree->SetBranchAddress("Events",&data);
@@ -291,7 +303,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
   //==============================================================================================================
 
   // Buffers for labels and comments
-  char ylabel[100];   // y-axis label
+  //char ylabel[100];   // y-axis label
   char lumitext[50];
   if(lumi>0) {
     if(lumi<1) { sprintf(lumitext,"#int#font[12]{L}dt = %.0f nb^{-1}",1000.*lumi); }
@@ -338,6 +350,14 @@ void prepareYields(const TString conf  = "data_plot.conf")
     totalMCMass->Integral(totalMCMass->FindBin(massNormMin+0.001),
 			  totalMCMass->FindBin(massNormMax-0.001));
   printf("data to MC extra correction from Z peak normalization: %f\n",dataOverMc);
+
+  double dataOverMcEachBin[nMassBins2D+1];
+  for (int i=0; i<nMassBins2D; i++)
+    {
+      dataOverMcEachBin[i] = hMassv[0]->Integral(hMassv[0]->FindBin(massBinLimits2D[i]+0.001),hMassv[0]->FindBin(massBinLimits2D[i+1]-0.001)) /
+      totalMCMass->Integral(totalMCMass->FindBin(massBinLimits2D[i]+0.001),totalMCMass->FindBin(massBinLimits2D[i+1]-0.001));
+      printf("data to MC %i bin norm: %f\n",i,dataOverMcEachBin[i]);
+    }
   
   // Rescale all MC samples. This is not totally proper for fake lepton
   // backgrounds, but ok for backgrounds with true leptons, and those are dominant
@@ -350,111 +370,20 @@ void prepareYields(const TString conf  = "data_plot.conf")
   //
   // Draw mass spectrum without rapidity binning
   //
-  // First, draw the histograms with fine binning.
-  TCanvas *c1 = MakeCanvas("c1","c1",canw,canh);
-  sprintf(ylabel,"Events / %.1f GeV/c^{2}",hMassv[0]->GetBinWidth(1));
-  CPlot plotMass("mass","","m(e^{+}e^{-}) [GeV/c^{2}]",ylabel);
-  plotMass.SetLogx();
-  if(hasData) { plotMass.AddHist1D(hMassv[0],samplev[0]->label,"E"); }
-  // Do not draw separately dibosons, but draw the merged histogram if needed
-  if(mergeDibosons)
-    plotMass.AddToStack(hMassDibosons, labelDibosons, colorDibosons);
-  for(UInt_t isam=1; isam<samplev.size(); isam++){
-    if( !(mergeDibosons && (snamev[isam]=="ww" || snamev[isam]=="wz" || snamev[isam]=="zz")))
-      plotMass.AddToStack(hMassv[isam],samplev[isam]->label,samplev[isam]->color);
-  }
-  plotMass.SetLegend(0.75,0.55,0.98,0.9);
-  if(lumi>0) plotMass.AddTextBox(lumitext,0.21,0.85,0.41,0.8,0);
-  if(hasData){
-    hMassv[0]->GetXaxis()->SetMoreLogLabels();
-    hMassv[0]->GetXaxis()->SetNoExponent();
-  }
-  plotMass.SetLogy();
-  plotMass.SetLogx();
-  plotMass.Draw(c1);
-  plotMass.SetYRange(1.0,300000);  
-  plotMass.Draw(c1,kFALSE,format);
 
-  // Second, draw with the mass binning used in the analysis
-  TCanvas *c2 = MakeCanvas("c2","c2",canw,canh);
-  CPlot plotMassBins("mass","","m(e^{+}e^{-}) [GeV/c^{2}]","Events");
-  plotMassBins.SetLogx();
-  if(hasData) { plotMassBins.AddHist1D(hMassBinsv[0],samplev[0]->label,"E"); }
-  // Do not draw separately dibosons, but draw the merged histogram if needed
-  if(mergeDibosons)
-    plotMassBins.AddToStack(hMassDibosons, labelDibosons, colorDibosons);
-  for(UInt_t isam=1; isam<samplev.size(); isam++){
-    if( !(mergeDibosons && (snamev[isam]=="ww" || snamev[isam]=="wz" || snamev[isam]=="zz")))
-      plotMassBins.AddToStack(hMassBinsv[isam],samplev[isam]->label,samplev[isam]->color);
-  }
-  plotMassBins.SetLegend(0.75,0.55,0.98,0.9);
-  if(lumi>0) plotMassBins.AddTextBox(lumitext,0.21,0.85,0.41,0.8,0);
-  if(hasData){
-    hMassBinsv[0]->GetXaxis()->SetMoreLogLabels();
-    hMassBinsv[0]->GetXaxis()->SetNoExponent();
-  }
-  plotMassBins.SetLogy();
-  plotMassBins.SetLogx();
-  plotMassBins.Draw(c2);
-  plotMassBins.SetYRange(1.0,2000000);  
-  plotMassBins.Draw(c2,kFALSE,format);
- 
-  //
-  // Draw flattened distribution
-  //
-  // Create the histograms from the yields arrays
-  int flatIndexMax = DYTools::getNumberOf2DBins();
-  TH1F *hFlattened[samplev.size()];
-  for(UInt_t isam=0; isam < samplev.size(); isam++){
-    sprintf(hname, "hFlattanedMass_%i", isam);
-    hFlattened[isam] = new TH1F(hname,"",flatIndexMax, 0.0, 1.0*flatIndexMax);
-    TMatrixD *thisSampleYields = yields.at(isam);
-    TMatrixD *thisSampleYieldsSumw2 = yieldsSumw2.at(isam);
-    for(int im = 0; im < DYTools::nMassBins2D; im++){
-      for(int iy = 0; iy < DYTools::nYBins[im]; iy++){
-	int iflat = findIndexFlat(im, iy);
-	hFlattened[isam]->SetBinContent(iflat, (*thisSampleYields)(im,iy) );
-	hFlattened[isam]->SetBinError(iflat, sqrt((*thisSampleYieldsSumw2)(im,iy)) );
-      }
-    }
-  }
-  // Merge dibosons
-  TH1F *hFlattenedDibosons = (TH1F*)hFlattened[1]->Clone("hFlattenedDibosons");
-  hFlattenedDibosons->Reset();
-  for(UInt_t isam=0; isam<samplev.size(); isam++) {
-    if( snamev[isam] == "ww" || snamev[isam] == "wz" || snamev[isam] == "zz"){
-      hFlattenedDibosons->Add(hFlattened[isam]);
-    }
-  }
+  // First, draw the mass histograms with fine mass binning
+  DrawMassPeak(hMassv, samplev, snamev, hMassDibosons, hasData, mergeDibosons, labelDibosons, colorDibosons, lumi, lumitext, 0);
 
-  // Draw the flattened figure.
-  TCanvas *c3 = MakeCanvas("c3","c3",canw,canh);
-  CPlot plotFlattened("mass","","m(e^{+}e^{-}) [GeV/c^{2}]","Events");
-  if(hasData) { plotFlattened.AddHist1D(hFlattened[0],samplev[0]->label,"E"); }
-  // Do not draw separately dibosons, but draw the merged histogram if needed
-  if(mergeDibosons)
-    plotFlattened.AddToStack(hFlattenedDibosons, labelDibosons, colorDibosons);
-  for(UInt_t isam=1; isam<samplev.size(); isam++){
-    if( !(mergeDibosons && (snamev[isam]=="ww" || snamev[isam]=="wz" || snamev[isam]=="zz")))
-      plotFlattened.AddToStack(hFlattened[isam],samplev[isam]->label,samplev[isam]->color);
-  }
-  plotFlattened.SetLegend(0.75,0.55,0.98,0.9);
-  if(lumi>0) plotFlattened.AddTextBox(lumitext,0.21,0.85,0.41,0.8,0);
-  if(hasData){
-    hFlattened[0]->GetXaxis()->SetMoreLogLabels();
-    hFlattened[0]->GetXaxis()->SetNoExponent();
-  }
-  plotFlattened.SetLogy();
-  plotFlattened.Draw(c3);
-  plotFlattened.SetYRange(1.0,200000);  
-  plotFlattened.Draw(c3,kFALSE,format);
+  // Second, draw the mass histograms with the mass binning used in the analysis
+  DrawMassPeak(hMassBinsv, samplev, snamev, hMassBinsDibosons, hasData, mergeDibosons, labelDibosons, colorDibosons, lumi, lumitext, 1);
 
-  //
-  // Draw rapidity in mass slices
-  //
+  // Draw the flattened figure (Y histograms for different mass regions)
+  DrawFlattened(yields, yieldsSumw2, samplev, snamev, hasData, mergeDibosons, labelDibosons, colorDibosons, lumi, lumitext);
 
-  TCanvas *c4 = MakeCanvas("c4","c4",canw,canh);
-  drawRapidityInMassSlices(yields, yieldsSumw2, sampleTags, DYTools::nMassBins2D, c4);
+  // Draw rapidity in mass slices 
+  
+  Draw6Canvases(yields, yieldsSumw2, samplev, snamev, hasData, dataOverMc, dataOverMcEachBin, 1, 0);
+  Draw6Canvases(yields, yieldsSumw2, samplev, snamev, hasData, dataOverMc, dataOverMcEachBin, 1, 1);
 
   //--------------------------------------------------------------------------------------------------------------
   // Save the results
@@ -532,6 +461,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
   double totalSignalMCError   [DYTools::nMassBins2D];
   double totalBg     [DYTools::nMassBins2D];
   double totalBgError[DYTools::nMassBins2D];
+
   for( int im=0; im<DYTools::nMassBins2D; im++){
     totalData         [im] = 0;
     totalSignalMC     [im] = 0;
@@ -570,117 +500,3 @@ void prepareYields(const TString conf  = "data_plot.conf")
   gBenchmark->Show("prepareYields");      
 }
 
-void drawRapidityInMassSlices(vector<TMatrixD*> &yields, 
-			      vector<TMatrixD*> &yieldsSumw2,
-			      vector<TString>   &sampleTags,
-			      int nhist, TCanvas *canvas){
-
-  if(nhist != 7){
-    printf("ERROR: this function can draw only 6 histograms on one canvas\n");
-    printf("       after underflow is dropped\n");
-    printf("       Drawing is aborted\n");
-    return;
-  }
-
-  // Create rapidity histograms for data and total MC,
-  // drop underflow bin.
-  TH1F *histData[6];
-  TH1F *histTotalMC[6];
-  char hname[100];
-  for(int im=0; im<6; im++){ // Loop over mass slices
-    // Start from 1, ignoring 0=underflow
-    int iMassBin = im + 1;
-    sprintf(hname,"rapidity_data_for_massbin_%i",iMassBin);
-    histData[im] = new TH1F(hname,"",nYBins[iMassBin], DYTools::yRangeMin, DYTools::yRangeMax);
-    sprintf(hname,"rapidity_mc_for_massbin_%i",iMassBin);
-    histTotalMC[im] = new TH1F(hname,"",nYBins[iMassBin], DYTools::yRangeMin, DYTools::yRangeMax);
-    for(UInt_t isam = 0; isam < yields.size(); isam++){ // Loop over samples
-      TMatrixD *thisSampleYields      = yields.at(isam);
-      TMatrixD *thisSampleYieldsSumw2 = yieldsSumw2.at(isam);
-      for(int iy = 0; iy < DYTools::nYBins[iMassBin]; iy++){ // Loop over rapidity bins
-	// In the code below, we are being careful with indices:
-	//   the content bins in the histogram start from 1, while the rapidity
-	//   bin index in the yields arrays start from zero.
-	if(sampleTags.at(isam) == TString("data") ){
-	  histData[im]->SetBinContent(iy+1, 
-				      histData[im]->GetBinContent(iy+1)
-				      + (*thisSampleYields)(iMassBin,iy) );
-	  double oldError = histData[im]->GetBinError(iy+1);
-	  histData[im]->SetBinError(iy+1,
-				   sqrt( oldError*oldError 
-					 + (*thisSampleYieldsSumw2)(iMassBin,iy)) );
-	} else {
-	  histTotalMC[im]->SetBinContent(iy+1, 
-					histTotalMC[im]->GetBinContent(iy+1)
-					+ (*thisSampleYields)(iMassBin,iy) );
-	  double oldError = histTotalMC[im]->GetBinError(iy+1);
-	  histTotalMC[im]->SetBinError(iy+1,
-				      sqrt( oldError*oldError 
-					    + (*thisSampleYieldsSumw2)(iMassBin,iy)) );
-	}
-      } // End loop over rapidity bins
-    } // End loop over samples
-  } // End loop over mass slices
-
-  canvas->cd();
-  
-  double topCanvasMargin = 0.1;
-  double bottomCanvasMargin = 0.1;
-  const int nPadRows = 3;
-  const int nPadCols = 2;
-  double plotsize = (1.0 - topCanvasMargin - bottomCanvasMargin)/nPadRows;
-
-  TPad *pads[6];
-  for(int irow = 0; irow < nPadRows; irow++){
-    for(int icol = 0; icol < nPadCols; icol++){
-      int padindex = icol*nPadRows + irow;
-      TString padname = "pad_";
-      padname += padindex;
-      double xlow = icol*0.5;
-      double xhigh = (icol+1)*0.5;
-      double ylow = bottomCanvasMargin + plotsize * irow;
-      if( irow == 0 ) 
-	ylow = 0;
-      double yhigh = bottomCanvasMargin + plotsize * (irow + 1);
-      if( irow == nPadRows - 1)
-	yhigh = 1.0;
-      pads[padindex] = new TPad(padname,padname,xlow,ylow,xhigh,yhigh);
-      if(irow != 0)
-	pads[padindex]->SetBottomMargin(0);
-      else
-	pads[padindex]->SetBottomMargin(bottomCanvasMargin/(plotsize+bottomCanvasMargin));
-      if(irow != nPadRows - 1)
-	pads[padindex]->SetTopMargin(0);
-      else
-	pads[padindex]->SetTopMargin(topCanvasMargin/(plotsize+topCanvasMargin));
-    }
-  }
-
-  printf("Draw slices\n");
-  for(int irow = 0; irow < nPadRows; irow++){
-    for(int icol = 0; icol < nPadCols; icol++){
-      int padindex = icol*nPadRows + irow;
-      canvas->cd();
-      pads[padindex]->Draw();
-      pads[padindex]->cd();
-      //
-      double lsize = 0.1; //font size
-      if(irow != 0 && irow != nPadRows - 1)
- 	lsize = lsize * (bottomCanvasMargin+plotsize)/plotsize;
-      histData[padindex]->GetYaxis()->SetLabelSize(lsize);
-      histData[padindex]->GetYaxis()->SetNdivisions(505);
-      histTotalMC[padindex]->SetLineWidth(2);
-      // 
-      if(irow == 0){
-	histData[padindex]->GetXaxis()->SetLabelSize(lsize);
-	histData[padindex]->GetXaxis()->SetTitle("rapidity");
-	histData[padindex]->GetXaxis()->SetTitleSize(0.15);
-	histData[padindex]->GetXaxis()->SetTitleOffset(0.8);
-      }      
-      histData[padindex]->SetMarkerSize(0.8);
-      histData[padindex]->Draw("pe");
-      histTotalMC[padindex]->Draw("hist,same");
-    }
-  }
-
-}
