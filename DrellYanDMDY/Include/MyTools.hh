@@ -3,6 +3,9 @@
 
 #include <TGraphAsymmErrors.h>
 #include <TH1F.h>
+#include "TCanvas.h"
+#include "TString.h"
+#include "TSystem.h" 
 #include <iostream>
 
 //#include "RooStats/FeldmanCousins.h"
@@ -105,6 +108,25 @@ void PrintVec(const char *msg, const std::vector<T>& vec, int prneol=0) {
   if (prneol) std::cout << "\n";
 }
 
+//------------------------------------------------------------------------------------------------------------------------
+
+void SaveCanvas(TCanvas* canv, TString canvName)
+{        
+  gSystem->mkdir("plots",kTRUE);
+  gSystem->mkdir("plots/png",kTRUE);
+  gSystem->mkdir("plots/pdf",kTRUE);
+  gSystem->mkdir("plots/root",kTRUE);
+
+  TString saveName="plots/png/";
+  saveName+=canvName;
+  saveName+=".png";
+  canv->SaveAs(saveName);
+  saveName.ReplaceAll("png","pdf");
+  canv->SaveAs(saveName);
+  saveName.ReplaceAll("pdf","root");
+  canv->SaveAs(saveName);
+  return;
+}
 // ----------------------------------------------------------
 
 template<class T>
@@ -114,7 +136,5 @@ void ClearVec(std::vector<T*> &vec) {
 }
 
 //------------------------------------------------------------------------------------------------------------------------
-
-
 
 #endif
