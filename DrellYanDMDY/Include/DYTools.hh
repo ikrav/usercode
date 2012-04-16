@@ -10,11 +10,13 @@
 #include "TElectron.hh"
 #include "TDielectron.hh"
 
-
 namespace DYTools {
 
   // Constants that define binning in mass and rapidity
   // Note: bin zero is underflow, overflow is neglected
+  const Double_t kGAP_LOW  = 1.4442;
+  const Double_t kGAP_HIGH = 1.566;
+
   const int nMassBins2D = 7;
   const double massBinLimits2D[nMassBins2D+1] = 
     {0, // first bin is underflow
@@ -38,6 +40,7 @@ namespace DYTools {
       result += nYBins[i];
     return result;
   }
+
   // Largest number of Ybins
   int getYBinsMax(){
     int nYBMax=nYBins[0];
@@ -136,8 +139,7 @@ namespace DYTools {
   // ------------- 2011 and 2010 content is below ---------------
 
   // Systematics modes for unfolding and acceptance 
-  typedef enum {NORMAL, RESOLUTION_STUDY, FSR_STUDY, ESCALE_RESIDUAL, ESCALE_STUDY }
-    TSystematicsStudy_t;
+  typedef enum {NORMAL, RESOLUTION_STUDY, FSR_STUDY, ESCALE_RESIDUAL, ESCALE_STUDY };
 
   // Tag and probe fitting constants
   typedef enum {COUNTnCOUNT, COUNTnFIT, FITnFIT} TTnPMethod_t;
@@ -346,6 +348,34 @@ namespace DYTools {
   typedef enum { DATA, MC} TDataKind_t;
 
 
+  // The commented out code below is not valid on 2011 data since
+  // bit constants have changed in EWKAnaDefs.hh
+//   UInt_t triggerBits(int sample, int runNum){
+    
+//     // Just "a" trigger
+//     UInt_t trigger = kHLT_Ele17_SW_L1R; 
+
+//     if( sample == DATA) {
+//       // Triggers as in WW analysis
+//       // Actually there are no runs below 136K that we presently use
+//       if((runNum >= 132440) && (runNum <= 137028)) trigger = kHLT_Photon10_L1R;
+//       //
+//       if((runNum >= 136033) && (runNum <= 139980)) trigger = kHLT_Ele10_LW_L1R;
+//       if((runNum >= 140058) && (runNum <= 141882)) trigger = kHLT_Ele15_SW_L1R;
+//       if((runNum >= 141956) && (runNum <= 144114)) trigger = kHLT_Ele15_SW_CaloEleId_L1R; 
+//       if((runNum >= 146428) && (runNum <= 147116)) trigger = kHLT_Ele17_SW_CaloEleId_L1R;
+//       if((runNum >= 147196) && (runNum <= 148058)) trigger = kHLT_Ele17_SW_TightEleId_L1R;
+//       if((runNum >= 148819) && (runNum <= 149442)) trigger = kHLT_Ele17_SW_TighterEleIdIsol_L1R;
+//     } else if( sample == F10MC ) {
+//       trigger = kHLT_Ele17_SW_CaloEleId_L1R;
+//     } else if( sample == W11MC ) {
+//       trigger = kHLT_Ele17_SW_CaloEleId_L1R;
+//     }else
+//       std::cout << "DYTools:: Unknown sample" << std::endl;
+   
+//     return trigger;
+//   }
+
   //
   // Repackage TDielectron->TElectron
   //
@@ -513,5 +543,3 @@ namespace DYTools {
 
 
 #endif
-
-
