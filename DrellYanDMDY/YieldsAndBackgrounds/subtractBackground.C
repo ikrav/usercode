@@ -289,9 +289,7 @@ TString subtractBackground(const TString conf){
            bkgRatesUsual(i,j)=100.0*totalBackground(i,j)/signalYields(i,j);     
 
 
-
-  TMatrixD bkgRatesPercent=matrDrawBinning(bkgRatesUsual);
-  PlotBkgMatrix(bkgRatesPercent);
+  PlotMatrixVariousBinning(bkgRatesUsual,"bkgRatesPercent","COLZ");
  
   // Save sideband-subtracted signal yields
   TFile fileOut(inputDir+TString("/yields_bg-subtracted.root"),"recreate");
