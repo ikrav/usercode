@@ -28,7 +28,5 @@
 
   gROOT->ProcessLine(".L ../Include/plotFunctions.hh+");
   gROOT->ProcessLine(".L ../YieldsAndBackgrounds/plotFunctionsPrepareYields.C+");
-  gROOT->ProcessLine(".L ../YieldsAndBackgrounds/plotFunctionsSubtractBackground.C+");
-  gROOT->ProcessLine(".L ../Acceptance/plotFunctionsAcceptance.C+");
 
 }
