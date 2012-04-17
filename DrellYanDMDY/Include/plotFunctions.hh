@@ -3,6 +3,8 @@
 #include <TTree.h>                  // class to access ntuples
 #include <TCanvas.h>                // class for drawing
 #include <TH1F.h>                   // 1D histograms
+#include <TH2D.h>                   // 2D histograms
+#include <TStyle.h>                   
 #include <TMatrixD.h>
 #include <TString.h>
 
@@ -11,6 +13,7 @@
 
 #include "../Include/CSample.hh"        // helper class for organizing input ntuple files
 #include "../Include/DYTools.hh"        // helper class for organizing input ntuple files
+#include "../Include/MyTools.hh"        // helper class for organizing input ntuple files
      
 #endif
 
@@ -19,7 +22,8 @@ void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString
                    bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext, bool actualBinning);
 
 //for prepareYields
-void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vector<CSample*> samplev, vector<TString> snamev, bool hasData, bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext);
+void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vector<CSample*> samplev, vector<TString> snamev, bool hasData, 
+                   bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext);
 
 //for prepareYields
 void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
@@ -30,15 +34,53 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
 void SetSomeHistAttributes (TH1F* hist, TString samplename);
 
 //for subtractBackground
-void PlotBkgMatrix(TMatrixD bkgRatesPercent);
+//void PlotBkgMatrix(TMatrixD bkgRatesPercent);
 
 //for acceptance
-void PlotAccMatrix(TMatrixD accv);
+//void PlotAccMatrix(TMatrixD accv);
 
 //for everything
 Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
-TMatrixD matrDrawBinning(TMatrixD matrUsualBinning)
+TMatrixD AdjustMatrixBinning(TMatrixD matrUsualBinning);
+
+void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption)
+{
+//acceptance, bkgRatesPercent, LEGO2,COLZ 
+   TMatrixD matrDraw = AdjustMatrixBinning(matr);
+   gStyle->SetPalette(1);
+
+   TCanvas* canv=new TCanvas(name,name);
+   canv->SetFillColor(0);
+   canv->SetLeftMargin     (0.1);
+   canv->SetRightMargin    (0.1);
+
+   int nM=matr.GetNrows();
+   int nY=matr.GetNcols();
+
+   TH2D* Hist= new TH2D("Hist",name, nM, DYTools::massBinLimits2D, nY, DYTools::yRangeMin, DYTools::yRangeMax);
+   for (int i=0; i<nM; i++)
+     for (int j=0; j<nY; j++)
+       {
+         Hist->SetBinContent(i+1,j+1,matrDraw(i,j));
+       }
+  
+   Hist->SetStats(0);
+
+   Hist->SetTitle(name);
+   TAxis* xAx=Hist->GetXaxis();
+   xAx->SetTitle("mass, GeV");
+   //xAx->SetMoreLogLabels(kTRUE);
+   TAxis* yAx=Hist->GetYaxis();
+   yAx->SetTitle("|Y|");
+   canv->SetLogx();
+
+  Hist->Draw(drawOption);
+  SaveCanvas(canv, name);
+
+}
+
+TMatrixD AdjustMatrixBinning(TMatrixD matrUsualBinning)
 {
   TMatrixD matrOut(DYTools::nMassBins2D,minMutualMultiple());
   for (int i=0; i<DYTools::nMassBins2D; i++)
