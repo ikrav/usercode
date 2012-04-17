@@ -378,7 +378,8 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   plotZMass1.Draw(c);
   SaveCanvas(c, "zmass1");
 
-  PlotAccMatrix(accv);
+  PlotMatrixVariousBinning(accv, "acceptance", "LEGO2");
+  
 
         
   // Store constants in the file
