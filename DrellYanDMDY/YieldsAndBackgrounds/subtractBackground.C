@@ -148,7 +148,7 @@ TString subtractBackground(const TString conf){
               true2eBackgroundError(i,j)=0;
               true2eBackgroundErrorSyst(i,j)=0;
            } 
-         double mSyst;
+         double mSyst=0;
          for (int k=0; k<NSamples; k++)
             {
               TMatrixD aux1(DYTools::nMassBins2D,nYBinsMax);

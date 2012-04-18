@@ -179,7 +179,7 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
 
 
  
-      for (int j=0; j<samplev.size(); j++)
+      for (UInt_t j=0; j<samplev.size(); j++)
       // loop over data, signal MC and background MC samples
         {
 
@@ -220,7 +220,7 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
       SetSomeHistAttributes(ewkHist[i],"ewk");
 
       mcHists[i]->Add(ewkHist[i]);
-      for (int j=1; j<samplev.size(); j++)
+      for (UInt_t j=1; j<samplev.size(); j++)
         {
           if (snamev[j]=="zee") mcHists[i]->Add(allHists[i][j]);
         }
@@ -236,13 +236,13 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
       legend->AddEntry(allHists[1][0],"data","LP");
 
   // Add signal MC first
-  for (int j=1; j<samplev.size(); j++)
+  for (UInt_t j=1; j<samplev.size(); j++)
     {
       if (snamev[j]=="zee") 
 	legend->AddEntry(allHists[1][j],"#gamma*/Z#rightarrow ee","PF");
     }
 
-  for (int j=1; j<samplev.size(); j++)
+  for (UInt_t j=1; j<samplev.size(); j++)
     {
       if (snamev[j]=="zee") ;
 	// Do nothing, already handled signal MC before
@@ -307,7 +307,7 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
 
       if (singleCanvas)
        {
-          double xi,xf,yi,yf;
+          double xi=0,xf=0,yi=0,yf=0;
           if ((i%2)==1) {xi=0.0; xf=0.5;}
           if ((i%2)==0) {xi=0.5; xf=1.0;}
           if (i==1 || i==2) {yi=0.66; yf=1.00;}

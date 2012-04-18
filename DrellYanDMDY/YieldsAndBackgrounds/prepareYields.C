@@ -161,7 +161,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
   //
   // Canvas dimensions
   //
-  Int_t canw=800, canh=600;
+  //Int_t canw=800, canh=600;
   
   
   //--------------------------------------------------------------------------------------------------------------
