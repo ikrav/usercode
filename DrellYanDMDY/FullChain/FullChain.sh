@@ -16,7 +16,7 @@ filename_mc="../config_files/fall11mc.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffNew"
 tnpFileStart="../config_files/sf"
-debugMode=0
+debugMode=1
 
 # the variables below are more persistent
 crossSectionTag="DY_m10+pr+a05+o03+pr_4680pb"
@@ -53,9 +53,9 @@ do_all_steps=1
 # individual flags. 
 # Note: all the above flags have to be 0 for these individual flags 
 # to be effective
-do_selection=1
+do_selection=0
 do_prepareYields=1
-do_subtractBackground=0
+do_subtractBackground=1
 do_unfolding=1
 do_unfoldingSyst=0
 do_acceptance=0
@@ -93,10 +93,10 @@ noError=1
 if [ ${do_all_steps} -eq 1 ] ; then
     do_selection=1
     do_prepareYields=1
-#    do_subtractBackground=1
+    do_subtractBackground=1
     do_unfolding=1
 #    do_unfoldingSyst=1
-#    do_acceptance=1
+    do_acceptance=1
 #    do_acceptanceSyst=1
 #    do_efficiency=1
 #    do_efficiencyScaleFactors=1
