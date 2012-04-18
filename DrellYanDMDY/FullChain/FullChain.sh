@@ -48,17 +48,17 @@ force_rebuild_include_files=0
 
 ## controlling your work
 # catch-all flag
-do_all_steps=1
+do_all_steps=0
 
 # individual flags. 
 # Note: all the above flags have to be 0 for these individual flags 
 # to be effective
 do_selection=0
-do_prepareYields=1
-do_subtractBackground=1
-do_unfolding=1
+do_prepareYields=0
+do_subtractBackground=0
+do_unfolding=0
 do_unfoldingSyst=0
-do_acceptance=0
+do_acceptance=1
 do_acceptanceSyst=0
 do_efficiency=0
 do_efficiencyScaleFactors=0
@@ -216,7 +216,7 @@ statusSubtractBackground=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "WILL DO: subtractBackground.C(\"${filename_data}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-cd ../MassSpectrum
+cd ../YieldsAndBackgrounds
 rm -f *.so ${expectBkgSubtractedFile}
 echo
 checkFile subtractBackground.C
@@ -278,13 +278,15 @@ fi
 if [ ${do_acceptance} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusAcceptance=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: plotDYAcceptance(\"${filename_mc}\")"
+echo "WILL DO: plotDYAcceptance(\"${filename_mc}\",DYTools::NORMAL,1.,-1,debug=${debugMode}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Acceptance
 rm -f *.so
 echo
 checkFile plotDYAcceptance.C
-root -b -q -l ${LXPLUS_CORRECTION} plotDYAcceptance.C+\(\"$filename_mc\"\)       | tee ${logDir}/out${timeStamp}-06-plotDYAcceptance.log
+root -b -q -l ${LXPLUS_CORRECTION} \
+      plotDYAcceptance.C+\(\"$filename_mc\",DYTools::NORMAL,1.,-1,${debugMode}\) \
+    | tee ${logDir}/out${timeStamp}-06-plotDYAcceptance.log
 get_status
 statusAcceptance=$RUN_STATUS
 cd ../FullChain
