@@ -34,7 +34,7 @@
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL, double reweightFsr = 1.0, double massLimit=-1)
+void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL, double reweightFsr = 1.0, double massLimit=-1, int debugMode=0)
 //systematicsMode 0 (NORMAL) - no systematic calc
 //2 (FSR_STUDY) - systematics due to FSR, reweighting
 //check mass spectra with reweight = 95%; 100%; 105%  
@@ -45,6 +45,8 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     std::cout << "plotDYAcceptance: _DebugRun_ detected. Terminating the script\n";
     return;
   }
+
+  if (debugMode) std::cout << "\n\n\tDEBUG MODE is ON\n\n";
 
   // normal calculation
 
@@ -209,7 +211,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     nZv += scale * eventTree->GetEntries();
 
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-      //if (ientry>10000) break;
+      if (debugMode && (ientry>10000)) break;
 
       genBr->GetEntry(ientry);
 
