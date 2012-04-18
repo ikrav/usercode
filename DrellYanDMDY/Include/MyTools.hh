@@ -110,14 +110,14 @@ void PrintVec(const char *msg, const std::vector<T>& vec, int prneol=0) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
-void SaveCanvas(TCanvas* canv, TString canvName)
+void SaveCanvas(TCanvas* canv, const TString &canvName, const TString &destDir="plots")
 {        
-  gSystem->mkdir("plots",kTRUE);
-  gSystem->mkdir("plots/png",kTRUE);
-  gSystem->mkdir("plots/pdf",kTRUE);
-  gSystem->mkdir("plots/root",kTRUE);
+  gSystem->mkdir(destDir,kTRUE);
+  gSystem->mkdir(destDir+TString("/png"),kTRUE);
+  gSystem->mkdir(destDir+TString("/pdf"),kTRUE);
+  gSystem->mkdir(destDir+TString("/root"),kTRUE);
 
-  TString saveName="plots/png/";
+  TString saveName=destDir+TString("/png/");
   saveName+=canvName;
   saveName+=".png";
   canv->SaveAs(saveName);
