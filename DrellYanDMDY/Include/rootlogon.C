@@ -25,8 +25,8 @@
   gROOT->ProcessLine(".L ../Include/EtaEtaMass.hh+");
 
   gROOT->ProcessLine(".L ../Unfolding/UnfoldingTools.C+");
+  //gROOT->ProcessLine(".L ../Include/plotFunctions.cc+");
 
-  gROOT->ProcessLine(".L ../Include/plotFunctions.hh+");
   gROOT->ProcessLine(".L ../YieldsAndBackgrounds/plotFunctionsPrepareYields.C+");
 
 }
