@@ -31,6 +31,7 @@
 #include "../Include/TGenInfo.hh"
 #include "../Include/TDielectron.hh"   
 #include "../Include/TriggerSelection.hh"
+#include "../Include/TVertex.hh"
 
 // Helper functions for Electron ID selection
 #include "../Include/EleIDCuts.hh"
@@ -100,7 +101,7 @@ void plotDYEfficiency(const TString input)
   //
   vector<TH1F*> hZMassv;//, hZMass2v, hZPtv, hZPt2v, hZyv, hZPhiv;  
   
-  UInt_t   nZv = 0;
+  Double_t   nZv = 0;
 
   int nYBinsMax=findMaxYBins();
 
@@ -117,6 +118,10 @@ void plotDYEfficiency(const TString input)
   TMatrixD nPassBEv(DYTools::nMassBins2D,nYBinsMax), effBEv(DYTools::nMassBins2D,nYBinsMax), effErrBEv(DYTools::nMassBins2D,nYBinsMax); 
   TMatrixD nPassEEv(DYTools::nMassBins2D,nYBinsMax), effEEv(DYTools::nMassBins2D,nYBinsMax), effErrEEv(DYTools::nMassBins2D,nYBinsMax);
 
+  TVectorD nEventsZPeakPU(DYTools::nPVBinCount), nPassZPeakPU(DYTools::nPVBinCount);
+  TVectorD nEventsZPeakPURaw(100), nPassZPeakPURaw(100);
+  TVectorD effZPeakPU(DYTools::nPVBinCount), effErrZPeakPU(DYTools::nPVBinCount);
+
   nEventsv   = 0;
   nEventsBBv = 0;
   nEventsBEv = 0;
@@ -126,7 +131,6 @@ void plotDYEfficiency(const TString input)
   nPassBEv = 0;
   nPassEEv = 0;
 
-  
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
     sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,1500)); hZMassv[ifile]->Sumw2();
@@ -137,12 +141,13 @@ void plotDYEfficiency(const TString input)
   //  
   TFile *infile=0;
   TTree *eventTree=0;  
-   
+
   // Data structures to store info from TTrees
   mithep::TEventInfo    *info = new mithep::TEventInfo();
   mithep::TGenInfo *gen  = new mithep::TGenInfo();
   TClonesArray *dielectronArr = new TClonesArray("mithep::TDielectron");
-  
+  TClonesArray *pvArr         = new TClonesArray("mithep::TVertex");
+
   // loop over samples  
   int countMismatch = 0;
 
@@ -170,26 +175,25 @@ void plotDYEfficiency(const TString input)
     eventTree->SetBranchAddress("Info",&info);                TBranch *infoBr       = eventTree->GetBranch("Info");
     eventTree->SetBranchAddress("Gen",&gen);                  TBranch *genBr = eventTree->GetBranch("Gen");
     eventTree->SetBranchAddress("Dielectron",&dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
-  
+    eventTree->SetBranchAddress("PV", &pvArr);                TBranch *pvBr = eventTree->GetBranch("PV");
+
     // loop over events    
     nZv += scale * eventTree->GetEntries();
 
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-      // (ientry>100) break;
+      //if (ientry>100) break;
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
 
-      
-      //// For EPS2011 for both data and MC (starting from Summer11 production)
-      //// we use an OR of the twi triggers below. Both are unpresecaled.
-      //ULong_t eventTriggerBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL 
-      //	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL;
-      //      ULong_t leadingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj
-      //	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
-      //      ULong_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj
-      //	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
-      
-      
+      // For EPS2011 for both data and MC (starting from Summer11 production)
+      // we use an OR of the twi triggers below. Both are unpresecaled.
+      // ULong_t eventTriggerBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL 
+      // | kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL;
+      // ULong_t leadingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj
+      // | kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
+      // ULong_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj
+      // | kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+
       const bool isData=kFALSE;
       TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
       TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
@@ -213,7 +217,36 @@ void plotDYEfficiency(const TString input)
 
       // These events are in acceptance, use them for efficiency denominator
       Bool_t isBGen1 = (fabs(eta1)<DYTools::kGAP_LOW);
-      Bool_t isBGen2 = (fabs(eta2)<DYTools::kGAP_LOW);         
+      Bool_t isBGen2 = (fabs(eta2)<DYTools::kGAP_LOW);
+      // determine number of good vertices
+      pvBr->GetEntry(ientry);
+      int iPUBin=-1;
+      int nGoodPV=-1;
+      if ((gen->mass>=60) && (gen->mass<=120)) {
+	nGoodPV=0;
+	for (Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
+	  const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);
+	  if(pv->nTracksFit                        < 1)  continue;
+	  if(pv->ndof                              < 4)  continue;
+	  if(fabs(pv->z)                           > 24) continue;
+	  if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
+	  nGoodPV++;
+	}
+	if (nGoodPV>0) {
+           if (nGoodPV<=nEventsZPeakPURaw.GetNoElements()) 
+	        nEventsZPeakPURaw[nGoodPV] += scale * gen->weight;
+	iPUBin=DYTools::findMassBin(double(nGoodPV),DYTools::nPVBinCount,DYTools::nPVLimits);
+	//std::cout << "iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
+	if ((iPUBin!=-1) && (iPUBin < nEventsZPeakPU.GetNoElements())) {
+	  nEventsZPeakPU[iPUBin] += scale * gen->weight;
+	}
+	else {
+	  std::cout << "error in PU bin indexing iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
+	}
+      } 
+	//else std::cout << "nGoodPV=" << nGoodPV << "\n";
+      }
+
       // Use post-FSR generator level mass for binning
       int ibinGenM = DYTools::findMassBin2D(gen->mass);
       int ibinGenY = DYTools::findAbsYBin2D(ibinGenM,gen->y);
@@ -225,17 +258,16 @@ void plotDYEfficiency(const TString input)
 	if(isBGen1 && isBGen2)                                  { nEventsBBv(ibinGenM,ibinGenY) += scale * gen->weight; } 
 	else if(!isBGen1 && !isBGen2)                           { nEventsEEv(ibinGenM,ibinGenY) += scale * gen->weight; } 
 	else if((isBGen1 && !isBGen2) || (!isBGen1 && isBGen2)) { nEventsBEv(ibinGenM,ibinGenY) += scale * gen->weight; }
-      }else 
+      }else
         binProblem++;
 
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
 
       // loop through dielectrons
       dielectronArr->Clear();
-      dielectronBr->GetEntry(ientry); 
-   
-      for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
+      dielectronBr->GetEntry(ientry);
 
+      for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
         const mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
 	
 	// Apply selection
@@ -281,6 +313,15 @@ void plotDYEfficiency(const TString input)
 // 		 dielectron->scEta_1, dielectron->scEta_2);
 	
 	// Accumulate numerator for efficiency calculations
+	if ((nGoodPV>0) && (iPUBin!=-1)) { // -1 may also indicate that the mass was not in Z-peak range
+	  if ((nGoodPV>=0) && (nGoodPV<=nEventsZPeakPURaw.GetNoElements())) nPassZPeakPURaw[nGoodPV] += scale * gen->weight;
+	  if (iPUBin < nPassZPeakPU.GetNoElements()) {
+	    nPassZPeakPU[iPUBin] += scale * gen->weight;
+	  }
+	  else {
+	    std::cout << "error in PU bin indexing\n";
+	  }
+	}
 	if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins2D && ibinGenY <= nYBins[ibinGenM]){
 	  nPassv(ibinGenM,ibinGenY) += scale * gen->weight;
 	  if(isB1 && isB2)                            { nPassBBv(ibinGenM,ibinGenY) += scale * gen->weight; } 
@@ -321,6 +362,12 @@ void plotDYEfficiency(const TString input)
       }
     };
 
+  effZPeakPU=0; effErrZPeakPU=0;
+  for (int i=0; i<DYTools::nPVBinCount; ++i) {
+    effZPeakPU[i]= nPassZPeakPU[i]/nEventsZPeakPU[i];
+    effErrZPeakPU[i]= sqrt(effZPeakPU[i]*(1-effZPeakPU[i])/nEventsZPeakPU[i]);
+  }
+
   printf("Sanity check: gen vs reco barrel-endcap assignment mismatches: %d\n",countMismatch);
 
   //--------------------------------------------------------------------------------------------------------------
@@ -343,7 +390,6 @@ void plotDYEfficiency(const TString input)
 
   PlotMatrixVariousBinning(effv, "efficiency", "LEGO2");
 
-      
   // Store constants in the file
   TString outputDir(TString("../root_files/constants/")+dirTag);
   gSystem->mkdir(outputDir,kTRUE);
@@ -352,6 +398,12 @@ void plotDYEfficiency(const TString input)
    TFile fa(effConstFileName,"recreate");
    effv.Write("efficiencyArray");
    effErrv.Write("efficiencyErrArray");
+   effZPeakPU.Write("efficiencyZPeakPUArray");
+   effErrZPeakPU.Write("efficiencyErrZPeakPUArray");
+   nEventsZPeakPU.Write("nEventsZPeakPUArray");
+   nPassZPeakPU.Write("nPassZPeakPUArray");
+   nEventsZPeakPURaw.Write("nEventsZPeakPURawArray");
+   nPassZPeakPURaw.Write("nPassZPeakPURawArray");
    fa.Close();
      
   //--------------------------------------------------------------------------------------------------------------
@@ -364,19 +416,28 @@ void plotDYEfficiency(const TString input)
   //cout << endl; 
   
   //cout << labelv[0] << " file: " << fnamev[0] << endl;
-  //cout << "     Number of generated events: " << nZv << endl;
+  //printf("     Number of generated events: %8.1lf",nZv);
   //printf(" mass bin    preselected      passed     total_Eff        BB-BB_Eff        EB-BB_Eff        EB-EB_Eff   \n");
   //for(int i=0; i<DYTools::nMassBins; i++){
   //  printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
-	//   DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
-	 //  nEventsv[i], nPassv[i],
-	 //  effv[i], effErrv[i],
-	 //  effBBv[i], effErrBBv[i],
-	 //  effBEv[i], effErrBEv[i],
-	 //  effEEv[i], effErrEEv[i]);
+	 //  DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
+	  // nEventsv[i], nPassv[i],
+	  // effv[i], effErrv[i],
+	  // effBBv[i], effErrBBv[i],
+	  // effBEv[i], effErrBEv[i],
+	  // effEEv[i], effErrEEv[i]);
   //}
 
-  //cout << endl;
+  printf("\n\nZ-peak efficiency\n");
+  printf(" PU bin    preselected      passed     total_Eff\n");
+  for(int i=0; i<DYTools::nPVBinCount; i++){
+    printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f\n",
+	   DYTools::nPVLimits[i], DYTools::nPVLimits[i+1],
+	   nEventsZPeakPU[i], nPassZPeakPU[i],
+	   effZPeakPU[i], effErrZPeakPU[i]);
+  }
+
+  cout << endl;
   
   gBenchmark->Show("plotDYEfficiency");
 }
