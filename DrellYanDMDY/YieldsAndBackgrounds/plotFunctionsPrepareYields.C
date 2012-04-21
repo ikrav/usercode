@@ -39,6 +39,8 @@
 
 #endif
 
+// -----------------------------------------------------------
+
 //for prepareYields
 void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString> snamev, TH1F* hMassDibosons, bool hasData, 
                    bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext, bool actualBinning)
@@ -84,6 +86,8 @@ void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString
   plotMass.Draw(c1,kFALSE);
   SaveCanvas(c1, canvName);
 }
+
+// -----------------------------------------------------------
 
 //for prepareYields
 void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vector<CSample*> samplev, vector<TString> snamev, bool hasData, 
@@ -147,6 +151,8 @@ void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vect
   SaveCanvas(c3, "flattened");
 }
 
+// -----------------------------------------------------------
+
 //for prepareYields
 void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
                     vector<CSample*> samplev, vector<TString> snamev, 
@@ -163,17 +169,19 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
   TH1F *ratioHist[nMassBins2D];
   TH1F *ratioClone[nMassBins2D];
   THStack *mcHists[nMassBins2D]; 
+  TString normStr =(normEachBin) ? "normEachBin-" : "normZpeak-";
+  normStr.Append((singleCanvas) ? "sngl-" : "multi-");
 
   for (int i=1; i<nMassBins2D; i++)
   // loop over mass bins starting from 1st (excluding underflow bin)
     {
-      TString stackName="mcStack-";
+      TString stackName="mcStack-" + normStr;
       stackName+=i;
       mcHists[i]=new THStack(stackName,"");
-      TString totalMcName="totalMC-";
+      TString totalMcName="totalMC-" + normStr;
       totalMcName+=i;
       totalMc[i]=new TH1F(totalMcName,"",nYBins[i],yRangeMin,yRangeMax); 
-      TString ewkName="ewk-";
+      TString ewkName="ewk-" + normStr;
       ewkName+=i;
       ewkHist[i]=new TH1F(ewkName,"",nYBins[i],yRangeMin,yRangeMax);
 
@@ -183,7 +191,7 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
       // loop over data, signal MC and background MC samples
         {
 
-          TString histName="hist-";
+          TString histName="hist-" + normStr;
           histName+=i; histName+="-"; histName+=j; 
           allHists[i][j]=new TH1F(histName,"",nYBins[i],yRangeMin,yRangeMax);
           //nYBins, YRangeMin, yRangeMax - from DYTools.hh
@@ -211,7 +219,7 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
                  mcHists[i]->Add(allHists[i][j]);
             }
         }
-      TString ratioHistName="ratioHist-";
+      TString ratioHistName="ratioHist-" + normStr;
       ratioHistName+=i;
       ratioHist[i]=(TH1F*)allHists[i][0]->Clone(ratioHistName);
       ratioHist[i]->Add(totalMc[i],-1);
@@ -348,6 +356,10 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
       pad1[i]->SetTicky();
       pad1[i]->SetFrameLineWidth(2);
       // Have to draw stack to have axes defined
+      // but first ensure all data is visible
+      if (allHists[i][0]->GetMaximum() > mcHists[i]->GetMaximum()) {
+	mcHists[i]->SetMaximum(allHists[i][0]->GetMaximum());
+      }
       mcHists[i]->Draw("hist");
       mcHists[i]->GetXaxis()->SetMoreLogLabels();
       mcHists[i]->GetXaxis()->SetNoExponent();
@@ -413,6 +425,8 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
 
 }
 
+// -----------------------------------------------------------
+
 //for prepareYields
 void SetSomeHistAttributes (TH1F* hist, TString samplename)
 {
@@ -456,3 +470,5 @@ void SetSomeHistAttributes (TH1F* hist, TString samplename)
     }  
   return;  
 }
+
+// -----------------------------------------------------------
