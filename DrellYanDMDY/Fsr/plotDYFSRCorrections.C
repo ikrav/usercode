@@ -307,8 +307,9 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0)
   plotOverlay.Draw(c2);
   SaveCanvas(c2, overlay);
 
-  TString NoverN="N_PosrFsr/N_PreFsr";
+  TString NoverN="N_PosrFsr_over_N_PreFsr";
   NoverN+=addStr;
+  std::cout<<"I'M going to save plots"<<std::endl;
   PlotMatrixVariousBinning(corrv, NoverN, "LEGO2");
 
 
