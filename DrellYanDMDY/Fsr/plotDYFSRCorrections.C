@@ -32,17 +32,14 @@
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDYFSRCorrections(const TString input) 
+void plotDYFSRCorrections(const TString input, bool sansAcc=0) 
 {
   gBenchmark->Start("plotDYFSRCorrections");
 
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
   //==============================================================================================================
-  
-  Bool_t doSave  = false;    // save plots?
-  TString format = "png";   // output file format
-  
+   
   vector<TString> fnamev;   // file names   
   vector<TString> labelv;   // legend label
   vector<Int_t>   colorv;   // color in plots
@@ -121,17 +118,13 @@ void plotDYFSRCorrections(const TString input)
   TH2D *weightErrors[DYTools::nMassBins2011];
 
   TFile fweights("../root_files/fewz/weights_stepwise_prec10-5_fine12.root");
-
-
   if( !fweights.IsOpen() ) assert(0);
-
   for(int i=0; i<DYTools::nMassBins2011; i++){
     TString hname1 = TString::Format("weight_%02d",i+1);
     weights[i] = (TH2D*)fweights.Get(hname1);
     hname1 = TString::Format("h_weighterror_%02d",i+1);
     weightErrors[i] = (TH2D*)fweights.Get(hname1);
   }
-
 
   //
   // Access samples and fill histograms
@@ -141,17 +134,14 @@ void plotDYFSRCorrections(const TString input)
     
   // Data structures to store info from TTrees
   mithep::TGenInfo *gen  = new mithep::TGenInfo();
-  
-  // loop over samples  
-
-  int noReweight=0;
+  int binProblemFEWZ=0;
   int binProblemPreFsr=0;
   int binProblemPostFsr=0;
   int binProblemCorrel=0;
 
-
+  // loop over samples  
   for(UInt_t ifile=0; ifile<fnamev.size(); ifile++) {
- 
+
     // Read input file
     cout << "Processing " << fnamev[ifile] << "..." << endl;
     infile = new TFile(fnamev[ifile]); 
@@ -174,10 +164,19 @@ void plotDYFSRCorrections(const TString input)
   
     // loop over events    
     nZv += scale * eventTree->GetEntries();
-
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-      //if (ientry>1000) break;
+      //if (ientry>100) break;
       genBr->GetEntry(ientry);
+
+      // if sansAcc mode, Discard events that are not in kinematics acceptance
+      if (sansAcc)
+        {
+           if( ! (DYTools::isBarrel(gen->eta_1) || DYTools::isEndcap(gen->eta_1) ) ) continue;
+           if( ! (DYTools::isBarrel(gen->eta_2) || DYTools::isEndcap(gen->eta_2) ) ) continue;
+           // both above 10 GeV and at least one above 20 GeV
+           if( ! (gen->pt_1 > 10 && gen->pt_2 > 10) ) continue;
+           if( ! (gen->pt_1 > 20 || gen->pt_2 > 20) ) continue;
+        }
 
       double mass = gen->vmass;    // pre-FSR
       double massPostFsr = gen->mass;    // post-FSR
@@ -191,7 +190,7 @@ void plotDYFSRCorrections(const TString input)
       // (last bin), use the last bin.
       if(ibinM1D == -1 && mass >= massBinLimits2011[nMassBins2011] )
 	ibinM1D = nMassBins2011-1;
-      int ibinM1DPostFsr = DYTools::findMassBin2011(massPostFsr); 
+      int ibinM1DPostFsr = DYTools::findMassBin2011(massPostFsr);
 
       int ibinM = DYTools::findMassBin(mass);
       // If mass is larger than the highest bin boundary
@@ -200,8 +199,8 @@ void plotDYFSRCorrections(const TString input)
 	ibinM = nMassBins-1;
       int ibinMPostFsr = DYTools::findMassBin(massPostFsr);
 
-      int ibinY = DYTools::findAbsYBin2D(ibinM, y);
-      int ibinYPostFsr = DYTools::findAbsYBin2D(ibinMPostFsr, yPostFsr);
+      int ibinY = DYTools::findAbsYBin2D(ibinM,y);
+      int ibinYPostFsr = DYTools::findAbsYBin2D(ibinMPostFsr,yPostFsr);
 
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity and pt
@@ -223,31 +222,29 @@ void plotDYFSRCorrections(const TString input)
 	      binX = weights[ibinM1D]->GetNbinsX() - 1;
 	  fewz_weight = weights[ibinM1D]->GetBinContent( binX, binY);
 	}else
-          noReweight++;
+          binProblemFEWZ++;
       }
-    //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
+     //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
 
       if(ibinM != -1 && ibinM<nMassBins && ibinY!=-1 && ibinY<nYBins[ibinM])
 	nEventsv(ibinM,ibinY) += scale * gen->weight * fewz_weight;
-      else if(ibinM >= nMassBins)
+      else if(ibinM >= nMassBins || ibinY>=nYBins[ibinM])
         binProblemPreFsr++;
 
-
-      if(ibinMPostFsr != -1 && ibinMPostFsr < nMassBins &&  ibinYPostFsr!=-1 && ibinYPostFsr<nYBins[ibinMPostFsr])
+      if(ibinMPostFsr!=-1 && ibinMPostFsr<nMassBins &&  ibinYPostFsr!=-1 && ibinYPostFsr<nYBins[ibinMPostFsr])
 	nPassv(ibinMPostFsr,ibinYPostFsr) += scale * gen->weight * fewz_weight;
       else if(ibinMPostFsr >= nMassBins || ibinYPostFsr>=nYBins[ibinMPostFsr]) {
 	// Do nothing: post-fsr mass could easily be below the lowest edge of mass range
-// 	cout << "ERROR: binning problem post-FSR, bin=" << ibinPostFsr << "  mass=" << massPostFsr << endl;
         binProblemPostFsr++;
       }
 
       if (ibinM==ibinMPostFsr && ibinY==ibinYPostFsr)
-      {
-      if(ibinM != -1 && ibinM < nMassBins && ibinY!=-1 && ibinY<nYBins[ibinM])
-          nCorrelv(ibinM,ibinY) += scale * gen->weight * fewz_weight;
-      else if(ibinM >= nMassBins || ibinY>=nYBins[ibinM])
-	binProblemCorrel++;
-      }
+        {
+          if(ibinM != -1 && ibinM<nMassBins && ibinY!=-1 && ibinY<nYBins[ibinM])
+            nCorrelv(ibinM,ibinY) += scale * gen->weight * fewz_weight;
+          else if(ibinM >= nMassBins || ibinY>=nYBins[ibinM])
+            binProblemCorrel++;
+        }
 
       hZMassv[ifile]->Fill(mass,scale * gen->weight * fewz_weight);
       hMassPreFsr->Fill(mass, scale*gen->weight * fewz_weight);
@@ -258,24 +255,23 @@ void plotDYFSRCorrections(const TString input)
     infile=0, eventTree=0;
   }
   delete gen;
-  cout << "Error: binning problem FEWZ bins. For " << noReweight << "  events"<< endl;
-  cout << "ERROR: binning problem pre-FSR. For " << binProblemPreFsr << "  events" << endl;
-  cout << "ERROR: binning problem post-FSR. For " << binProblemPostFsr << "  events" << endl;
-  cout << "ERROR: binning problem Correlation. For " << binProblemCorrel << "  events" << endl;
+  cout << "Error: binning problem FEWZ bins, " << binProblemFEWZ <<"  events"<< endl;
+  cout << "ERROR: binning problem, " << binProblemPreFsr<<" events"<< endl;
+  cout << "ERROR: binning problem Correlation, " << binProblemCorrel <<"  events" << endl;
 
   corrv      = 0;
   corrErrv   = 0;
   for(int i=0; i<DYTools::nMassBins; i++)
-    for (int j=0; j<DYTools::nYBins[i]; j++){
-      if(nEventsv(i,j) != 0){
-        corrv(i,j) = nPassv(i,j)/nEventsv(i,j);
-        corrErrv(i,j) = corrv(i,j) * sqrt( 1.0/nPassv(i,j) + 1.0/nEventsv(i,j)- 2*nCorrelv(i,j)/(nPassv(i,j)*nEventsv(i,j)) );
-//        corrErrv[i] = corrv[i] * sqrt( 1.0/nPassv[i] + 1.0/nEventsv[i] );
-//       corrErrv[i] = sqrt(corrv[i]*(1-corrv[i])/nEventsv[i]);
-      }
-    }
-
-
+    for (int j=0; j<DYTools::nYBins[i]; j++)
+      {
+        if(nEventsv(i,j) != 0)
+          {
+            corrv(i,j) = nPassv(i,j)/nEventsv(i,j);
+            corrErrv(i,j) = corrv(i,j) * sqrt( 1.0/nPassv(i,j) + 1.0/nEventsv(i,j)- 2*nCorrelv(i,j)/(nPassv(i,j)*nEventsv(i,j)) );
+            //corrErrv[i] = corrv[i] * sqrt( 1.0/nPassv[i] + 1.0/nEventsv[i] );
+            //corrErrv[i] = sqrt(corrv[i]*(1-corrv[i])/nEventsv[i]);
+          }
+       }
 
   //--------------------------------------------------------------------------------------------------------------
   // Make plots 
@@ -284,6 +280,9 @@ void plotDYFSRCorrections(const TString input)
 
   // string buffers
   char ylabel[50];   // y-axis label
+  TString addStr;
+  if (sansAcc) addStr="_sans_acc";
+  else addStr=""; 
 
   // Z mass
   sprintf(ylabel,"a.u. / %.1f GeV/c^{2}",hZMassv[0]->GetBinWidth(1));
@@ -293,7 +292,9 @@ void plotDYFSRCorrections(const TString input)
   }
   plotZMass1.SetLogy();
   plotZMass1.Draw(c);
-  SaveCanvas(c, "zmass1");
+  TString zmass1="zmass1";
+  zmass1+=addStr;
+  SaveCanvas(c, zmass1);
 
   // Pre FSR vs post-FSR plots
   TCanvas *c2 = MakeCanvas("c2","c2",800,600);
@@ -301,17 +302,23 @@ void plotDYFSRCorrections(const TString input)
   plotOverlay.AddHist1D(hMassPreFsr,"pre-FSR","hist",kBlue); 
   plotOverlay.AddHist1D(hMassPostFsr,"post-FSR","hist",kRed); 
   plotOverlay.SetLogy();
+  TString overlay="overlay";
+  overlay+=addStr;
   plotOverlay.Draw(c2);
-  SaveCanvas(c2, "overlay");
+  SaveCanvas(c2, overlay);
 
-  PlotMatrixVariousBinning(corrv, "N_PosrFsr/N_PreFsr", "LEGO2");
+  TString NoverN="N_PosrFsr/N_PreFsr";
+  NoverN+=addStr;
+  PlotMatrixVariousBinning(corrv, NoverN, "LEGO2");
 
 
-          
   // Store constants in the file
   TString outputDir(TString("../root_files/constants/")+dirTag);
   gSystem->mkdir(outputDir,kTRUE);
-  TString fsrConstFileName(outputDir+TString("/fsr_constants.root"));
+  TString fsr_constants="/fsr_constants";
+  fsr_constants+=addStr;
+  fsr_constants+=".root";
+  TString fsrConstFileName(outputDir+fsr_constants);
 
   TFile fa(fsrConstFileName,"recreate");
   //correctionGraph->Write("CORR_FSR");
