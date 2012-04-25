@@ -32,9 +32,11 @@
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDYFSRCorrections(const TString input, bool sansAcc=0) 
+void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0) 
 {
   gBenchmark->Start("plotDYFSRCorrections");
+
+  if (debugMode) std::cout << "\n\n\tDEBUG MODE is ON\n\n";
 
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
@@ -90,7 +92,8 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0)
   TH1F *hMassPreFsr = new TH1F("hMassPreFsr","",500,0,1500);
   TH1F *hMassPostFsr = new TH1F("hMassPostFsr","",500,0,1500);
   
-  UInt_t   nZv = 0;
+  UInt_t   nZ = 0;
+  Double_t nZweighted=0;
   TMatrixD nEventsv (DYTools::nMassBins,findMaxYBins());  
   TMatrixD nPassv   (DYTools::nMassBins,findMaxYBins());
   TMatrixD nCorrelv  (DYTools::nMassBins,findMaxYBins());
@@ -163,9 +166,10 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0)
     TBranch *genBr = eventTree->GetBranch("Gen");
   
     // loop over events    
-    nZv += scale * eventTree->GetEntries();
+    nZ += eventTree->GetEntries();
+    nZweighted += scale * eventTree->GetEntries();
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-      //if (ientry>100) break;
+	if (debugMode && (ientry>10000)) break; // debug option
       genBr->GetEntry(ientry);
 
       // if sansAcc mode, Discard events that are not in kinematics acceptance
@@ -337,7 +341,10 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0)
   //cout << endl; 
   
   //cout << labelv[0] << " file: " << fnamev[0] << endl;
-  //cout << "     Number of generated events: " << nZv << endl;
+  //cout << "     Number of generated events:    " << nZ << endl;
+  //char buf[30];
+  //sprintf(buf,"%3.1lf",nZweighted);
+  //cout << "     Number of weighted gen.events: " << buf << endl;
   //printf(" mass bin    preselected      passed     FSR correction\n");
   //for(int i=0; i<DYTools::nMassBins; i++){
    // printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f \n",
