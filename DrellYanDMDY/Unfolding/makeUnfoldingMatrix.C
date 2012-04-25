@@ -50,6 +50,9 @@
 
 #include "../Include/ElectronEnergyScale.hh" //extra smearing
 
+  // Trigger info
+#include "../Include/TriggerSelection.hh"
+
 
 #endif
 
@@ -146,6 +149,14 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 
   const Double_t kGAP_LOW  = 1.4442;
   const Double_t kGAP_HIGH = 1.566;
+
+  // For MC the trigger does not depend on run number
+  const bool isData=kFALSE;
+  TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
+  TriggerSelection requiredTriggers(constantsSet, isData, 0);
+  ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(0);
+  ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(0);
+  ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(0);
 
 
   //--------------------------------------------------------------------------------------------------------------
@@ -287,7 +298,7 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
          yieldsMcFsr[iIndexFlatGenPostFsr] += reweight * scale * gen->weight;
       }
 
-
+      /*
       // For EPS2011 for both data and MC (starting from Summer11 production)
       // we use an OR of the twi triggers below. Both are unpresecaled.
       UInt_t eventTriggerBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL 
@@ -296,6 +307,7 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
       UInt_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+      */
       
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
 
@@ -538,10 +550,10 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   plotZMass2.AddGraph(grRec,"reconstructed","PE",kBlue);
   plotZMass2.Draw(d);
 
-//   double xsize = 600;
-//   double ysize = 600;
-  double xsize = 600;
-  double ysize = 400;
+//   int xsize = 600;
+//   int ysize = 600;
+  int xsize = 600;
+  int ysize = 400;
 
   // Create the plot of the response matrix
   TH2F *hResponse = new TH2F("hResponse","",nUnfoldingBins, DYTools::massBinLimits,
