@@ -16,7 +16,7 @@ filename_mc="../config_files/fall11mc.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffNew"
 tnpFileStart="../config_files/sf"
-debugMode=1
+debugMode=0
 
 # the variables below are more persistent
 crossSectionTag="DY_m10+pr+a05+o03+pr_4680pb"
@@ -27,6 +27,8 @@ expectUnfoldingFile="../root_files/constants/${crossSectionTag}/unfolding_consta
 expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics.root"
 expectEfficiencyScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${triggerSet}.root"
 expectAcceptanceSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/acceptance_FSR_systematics.root"
+expectFsrSansAcc0File="../root_files/constants/${crossSectionTag}/fsr_constants.root"
+expectFsrSansAcc1File="../root_files/constants/${crossSectionTag}/fsr_constants_sans_acc.root"
 expectXSecFile="../root_files/xSec_results_${triggerSet}.root"
 expectXSecThFile="../root_files/xSecTh_results_${triggerSet}.root"
 
@@ -58,12 +60,12 @@ do_prepareYields=0
 do_subtractBackground=0
 do_unfolding=0
 do_unfoldingSyst=0
-do_acceptance=1
+do_acceptance=0
 do_acceptanceSyst=0
 do_efficiency=0
 do_efficiencyScaleFactors=0
-do_plotFSRCorrections=0
-do_plotFSRCorrectionsSansAcc=0
+do_plotFSRCorrections=1
+do_plotFSRCorrectionsSansAcc=1
 do_theoryErrors=0
 do_crossSection=0
 
@@ -100,6 +102,8 @@ if [ ${do_all_steps} -eq 1 ] ; then
 #    do_acceptanceSyst=1
 #    do_efficiency=1
 #    do_efficiencyScaleFactors=1
+    do_plotFSRCorrections=1
+    do_plotFSRCorrectionsSansAcc=1
 #    do_theoryErrors=1
 #    do_crossSection=1
 fi
@@ -366,18 +370,18 @@ fi
 if [ ${do_plotFSRCorrections} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusPlotDYFSRCorrections=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: plotDYFSRCorrections(\"${filename_mc}\")"
+echo "WILL DO: plotDYFSRCorrections(\"${filename_mc},sansAcc=0,debug=${debugMode}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Fsr
-rm -f *.so
+rm -f *.so ${expectFsrSansAcc0File}
 echo
 checkFile plotDYFSRCorrections.C
-root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-10-plotDYFSRCorrections.log
-get_status
+root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\",0,${debugMode}\)     | tee ${logDir}/out${timeStamp}-10-plotDYFSRCorrections.log
+get_status ${expectFsrSansAcc0File}
 statusPlotDYFSRCorrections=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: plotDYFSRCorrections(\"${filename_mc}\")"
+echo "DONE: plotDYFSRCorrections(\"${filename_mc}\",sansAcc=0)"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else
     statusPlotDYFSRCorrections=skipped
@@ -387,18 +391,18 @@ fi
 if [ ${do_plotFSRCorrectionsSansAcc} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusPlotDYFSRCorrectionsSansAcc=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: plotDYFSRCorrectionsSansAcc(\"${filename_mc}\")"
+echo "WILL DO: plotDYFSRCorrectionsSansAcc(\"${filename_mc}\",sansAcc=1,debug=${debugMode})"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Fsr
-rm -f *.so
+rm -f *.so ${expectFsrSansAcc1File}
 echo
-checkFile plotDYFSRCorrectionsSansAcc.C
-root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrectionsSansAcc.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-11-plotDYFSRCorrectionsSansAcc${timeStamp}.out
-getStatus
+checkFile plotDYFSRCorrections.C 
+root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\",1,${debugMode}\)     | tee ${logDir}/out${timeStamp}-11-plotDYFSRCorrections-SansAcc${timeStamp}.out
+get_status ${expectFsrSansAcc1File}
 statusPlotDYFSRCorrectionsSansAcc=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: plotDYFSRCorrectionsSansAcc(\"${filename_mc}\")"
+echo "DONE: plotDYFSRCorrectionsSansAcc(\"${filename_mc}\",sansAcc=1)"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else
     statusPlotDYFSRCorrectionsSansAcc=skipped
@@ -415,7 +419,7 @@ rm -f *.so
 echo
 checkFile TheoryErrors.C
 root -b -q -l ${LXPLUS_CORRECTION} TheoryErrors.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-12-TheoryErrors${timeStamp}.out
-getStatus
+get_status
 statusTheoryErrors=RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
