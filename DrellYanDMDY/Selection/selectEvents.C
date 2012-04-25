@@ -269,11 +269,14 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   //
   // Set up event dump to file
   //
+  const int dumpEventsToFile=0;
   ofstream evtfile;
   char evtfname[100];    
   sprintf(evtfname,"%s/events.txt",outputDir.Data());
-  evtfile.open(evtfname);
-  assert(evtfile.is_open());
+  if (dumpEventsToFile) {
+    evtfile.open(evtfname);
+    assert(evtfile.is_open());
+  }
   
   //
   // loop over samples
@@ -510,7 +513,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 	  }
 	  
 	  // event printout
-          if(isam==0)
+          if((isam==0) && evtfile.is_open())
             eventDump(evtfile, dielectron, info->runNum, info->lumiSec, info->evtNum, 
 		      leadingTriggerObjectBit, trailingTriggerObjectBit);
 	  
@@ -575,7 +578,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   delete info;
   delete dielectronArr;
   delete pvArr;
-  evtfile.close();
+  if (evtfile.is_open()) evtfile.close();
 
 
   // Write useful histograms
