@@ -29,6 +29,8 @@
 #include <string>                   // C++ string class
 #include <sstream>                  // class for parsing strings
 
+using namespace std;
+
 #include "../Include/CPlot.hh"          // helper class for plots
 #include "../Include/MitStyleRemix.hh"  // style settings for drawing
 #include "../Include/MyTools.hh"        // miscellaneous helper functions
@@ -49,19 +51,29 @@
 // Helper functions for Electron ID selection
 #include "../Include/EleIDCuts.hh" 
 
-// define structure for output ntuple
-#include "../Include/ZeeData.hh"
-
 #include "../Include/ElectronEnergyScale.hh" //energy scale correction
 #include "../Include/EtaEtaMass.hh" // EtaEtaMassData_t definition
 
+#include "../Include/EventSelector.hh"
+#include "../Include/FEWZ.hh"
+
 #endif
+
+// define structure for output ntuple
+#include "../Include/ZeeData.hh"
+
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 // fill ntuple of selected events
+#ifdef ZeeData_is_TObject
+// Function is defined in fillData
+//void fillData(ZeeData_t *data, const mithep::TEventInfo *info, const mithep::TDielectron *dielectron,
+//              const UInt_t npv, const UInt_t nGoodPV, const UInt_t njets, const Double_t weight);
+#else
 void fillData(ZeeData *data, const mithep::TEventInfo *info, const mithep::TDielectron *dielectron,
-              const UInt_t npv, const UInt_t njets, const Double_t weight);
+              const UInt_t npv, const UInt_t nGoodPV, const UInt_t njets, const Double_t weight);
+#endif
 
 // print event dump
 void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron, 
@@ -191,8 +203,8 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   
   Bool_t hasData = (samplev[0]->fnamev.size()>0);
 
-  const Double_t kGAP_LOW  = 1.4442;
-  const Double_t kGAP_HIGH = 1.566;
+  //const Double_t kGAP_LOW  = 1.4442;
+  //const Double_t kGAP_HIGH = 1.566;
     
   //
   // Canvas dimensions
@@ -239,10 +251,17 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   //
   const bool useFewzWeights = true;
   const bool cutZPT100 = true;
+  FEWZ_t fewz(useFewzWeights,cutZPT100);
+  if (useFewzWeights && !fewz.isInitialized()) {
+    std::cout << "failed to prepare FEWZ correction\n";
+    throw 2;
+  }
+  const int new_fewz_code=1;
+  TH2D *weights[DYTools::nMassBins];   // temporary
+  TH2D *weightErrors[DYTools::nMassBins]; // temporary
+  if (!new_fewz_code) {
   if(cutZPT100)
     cout << "NOTE: in MC, for Z/gamma* PT>100 the FEWZ weights for 80<PT<100 GeV are used!" << endl;
-  TH2D *weights[DYTools::nMassBins];
-  TH2D *weightErrors[DYTools::nMassBins];
   TFile fweights("../root_files/fewz/weights_stepwise_prec10-5_fine12.root");
   if( !fweights.IsOpen() ) assert(0);
   for(int i=0; i<DYTools::nMassBins; i++){
@@ -250,6 +269,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     weights[i] = (TH2D*)fweights.Get(hnames);
     hnames = TString::Format("h_weighterror_%02d",i+1);
     weightErrors[i] = (TH2D*)fweights.Get(hnames);
+  }
   }
 
 
@@ -266,14 +286,18 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   TClonesArray *pvArr         = new TClonesArray("mithep::TVertex");
   EtaEtaMassData_t *eem = new EtaEtaMassData_t();
   
+#ifdef ZeeData_is_TObject
+  ZeeData_t::Class()->IgnoreTObjectStreamer();
+#endif
+
   //
   // Set up event dump to file
   //
-  const int dumpEventsToFile=0;
+  const int dump_events=0;
   ofstream evtfile;
-  char evtfname[100];    
+  char evtfname[100];
   sprintf(evtfname,"%s/events.txt",outputDir.Data());
-  if (dumpEventsToFile) {
+  if (dump_events) {
     evtfile.open(evtfname);
     assert(evtfile.is_open());
   }
@@ -298,18 +322,27 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
       eemTree->Branch("Data","EtaEtaMassData_t",&eem);
     }
 
+    // Define dielectron selector
+    DielectronSelector_t eeSelector(DielectronSelector_t::_selectDefault,
+				    &escale);
+
     //
     // Set up output ntuple file for the sample
     //
     TString outName = ntupDir + TString("/") + snamev[isam] + TString("_select.root");
     TFile *outFile = new TFile(outName,"RECREATE");
     TTree *outTree = new TTree("Events","Events");
-    ZeeData data;
+#ifdef ZeeData_is_TObject
+    ZeeData_t *data=new ZeeData_t();
+    outTree->Branch("Events","ZeeData_t",&data);
+#else
+    ZeeData *data=new ZeeData();
     outTree->Branch("Events", &data.runNum, 
-"runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nGoodPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F"
+    "runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nGoodPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F"
     //"runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F"
-		    );
-    
+    );
+#endif
+
     //
     // loop through files
     //
@@ -355,8 +388,13 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
       Double_t weight = 1;
       if(lumi>0) {
         Double_t xsec = samp->xsecv[ifile];
-	if (xsec>0) {
+	if(xsec>0) { 
 	  // if this is a spec.skim file, rescale xsec
+	  const int new_adjustment_code=1;
+	  if (new_adjustment_code) {
+	  AdjustXSection(infile,xsec,eventTree->GetEntries(),1);
+	  }
+	  else {
 	  TTree *descrTree=(TTree*)infile->Get("Description");
 	  if (descrTree) {
 	    UInt_t origNumEntries=0;
@@ -371,6 +409,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 	  }
 	  else std::cout << "descrTree not found\n";
 	  // proceed
+	  }
 	  if(doWeight) { weight = lumi*xsec/(Double_t)eventTree->GetEntries(); } 
 	  else         { maxEvents = (UInt_t)(lumi*xsec); } 
 	}       
@@ -384,7 +423,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
       // loop through events
       Double_t nsel=0, nselvar=0;
       for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-	if (debugMode && (ientry>100000)) break; // debug option
+	if (debugMode && (ientry>10000)) break; // debug option
 	if(ientry >= maxEvents) break;
 	
 	infoBr->GetEntry(ientry);
@@ -393,7 +432,11 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 
 	// Load FEWZ weights for signal MC
 	double fewz_weight = 1.0;
-	if( snamev[isam] == "zee" ){
+	if(( snamev[isam] == "zee" ) && useFewzWeights) {
+	  if (new_fewz_code) {
+	    fewz_weight=fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
+	  }
+	  else {
 	  int ibinPreFsr = DYTools::findMassBin(gen->vmass);
 	  // If mass is larger than the highest bin boundary
 	  // (last bin), use the last bin.
@@ -429,6 +472,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 // 		   << gen->vmass << endl;
 	    }
 	  }
+	  }
 	}
 
 
@@ -453,9 +497,24 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
         for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
 	  mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
 
+	  const int ee_selection_new_code=1;
+	  if (ee_selection_new_code) {
+	    // Keep the EEM values before any changes
+	    eem->Assign(dielectron->scEta_1,dielectron->scEta_2,dielectron->mass);
+	    if (!eeSelector(dielectron,
+			    (isam==0) ? DielectronSelector_t::_escaleData :
+			      DielectronSelector_t::_escaleNone,
+			    leadingTriggerObjectBit,
+			    trailingTriggerObjectBit)) continue;
+	  
+	    hMass2v[isam]->Fill(dielectron->mass,weight);
+	    hMass3v[isam]->Fill(dielectron->mass,weight);
+	  }
+	  else {
+
           // Exclude ECAL gap region and cut out of acceptance electrons
-          if((fabs(dielectron->scEta_1)>kGAP_LOW) && (fabs(dielectron->scEta_1)<kGAP_HIGH)) continue;
-          if((fabs(dielectron->scEta_2)>kGAP_LOW) && (fabs(dielectron->scEta_2)<kGAP_HIGH)) continue;
+          if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
+          if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
           if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
 
 	  // Keep the EEM values before any changes
@@ -518,6 +577,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 	  
           // loose mass window 
           if( dielectron->mass < 10 ) continue;
+	  } // ee_selection_new_code
 	  
 	  
           /******** We have a Z candidate! HURRAY! ********/
@@ -540,6 +600,11 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 	  pvArr->Clear();
           pvBr->GetEntry(ientry);
           UInt_t nGoodPV=0;
+	  const int new_good_pv_code=1;
+	  if (new_good_pv_code) {
+	    nGoodPV=countGoodVertices(pvArr);
+	  }
+	  else {
           for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
             const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);                  
             if(pv->nTracksFit                        < 1)  continue;
@@ -548,8 +613,8 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
             if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
             nGoodPV++;
           }
+	  }
           hNGoodPVv[isam]->Fill(nGoodPV,weight);
-	  data.nGoodPV=nGoodPV;
 	  
 	  // fill ntuple data
 	  double weightSave = weight;
@@ -561,7 +626,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 	  // Note: we do not need jet count at the moment. It can be found
 	  // by looping over PFJets list if needed. See early 2011 analysis.
 	  int njets = -1;
-	  fillData(&data, info, dielectron, pvArr->GetEntriesFast(), njets, weightSave);
+	  fillData(data, info, dielectron, pvArr->GetEntriesFast(), nGoodPV, njets, weightSave);
 	  outTree->Fill();
 	  if (eemTree) {
 	    eemTree->Fill();
@@ -589,6 +654,8 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
       eemFile->Close();
       delete eemFile;
     }
+
+    eeSelector.printInfo(std::cout);
   }
   delete info;
   delete dielectronArr;
@@ -698,6 +765,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     }
   }
   txtfile.close();
+  cout << "file <" << txtfname << "> created\n";
 
   cout << endl;
   cout << " <> Output saved in " << outputDir << "/" << endl;
@@ -711,13 +779,17 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
+#ifdef ZeeData_is_TObject
+  // the function is defined in ZeeData.hh
+#else
 void fillData(ZeeData *data, const mithep::TEventInfo *info, const mithep::TDielectron *dielectron, 
-              const UInt_t npv, const UInt_t njets, const Double_t weight)
+              const UInt_t npv, const UInt_t nGoodPV, const UInt_t njets, const Double_t weight)
 {
   data->runNum         = info->runNum;
   data->evtNum         = info->evtNum;
   data->lumiSec        = info->lumiSec;
   data->nPV            = npv;
+  data->nGoodPV        = nGoodPV;
   data->nJets          = njets;                                        
   data->pfSumET        = info->pfSumET;
   data->mass           = dielectron->mass;
@@ -742,6 +814,7 @@ void fillData(ZeeData *data, const mithep::TEventInfo *info, const mithep::TDiel
   data->q_2            = dielectron->q_2;
   data->weight         = weight;
 }
+#endif
 
 //--------------------------------------------------------------------------------------------------
 void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron, 
