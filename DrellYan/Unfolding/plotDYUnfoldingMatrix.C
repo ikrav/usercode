@@ -392,13 +392,14 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
 	  smear2 = escale::extraSmearingSigmaShifted(dielectron->scEta_2,shift);
 	}
         double smearTotal = sqrt(smear1*smear1 + smear2*smear2);
+        double massResmeared = dielectron->mass + random.Gaus(0.0,smearTotal);
 	*/
 	/* lines based on new features -- begin */
-	double smearTotal = (systematicsMode == DYTools::RESOLUTION_STUDY) ?
+	double massSmear = (systematicsMode == DYTools::RESOLUTION_STUDY) ?
 	  escale.generateMCSmearRandomized(dielectron->scEta_1,dielectron->scEta_2) :
 	  escale.generateMCSmear(dielectron->scEta_1,dielectron->scEta_2);
+        double massResmeared = dielectron->mass + massSmear;
 	/* lines based on new features -- end */
-        double massResmeared = dielectron->mass + random.Gaus(0.0,smearTotal);
 
 	hZMassv[ifile]->Fill(massResmeared,scale * gen->weight);
 
