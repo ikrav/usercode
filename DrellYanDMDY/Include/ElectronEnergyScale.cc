@@ -525,7 +525,7 @@ bool ElectronEnergyScale::initializeAllConstants(int debug){
 // array of functions, with each pair of (i,j) eta bins for
 // a given dielectron candidate corresponding to its unique
 // smearing function.
-bool ElectronEnergyScale::initializeExtraSmearingFunction(){
+bool ElectronEnergyScale::initializeExtraSmearingFunction(int normalize){
 
   bool success = true;
   // A sanity check. The function that initializes constants
@@ -547,7 +547,8 @@ bool ElectronEnergyScale::initializeExtraSmearingFunction(){
 	double si = _mcConst1[i];
 	double sj = _mcConst1[j];
 	double sij=sqrt(si*si+sj*sj);
-	smearingFunctionGrid[i][j]->SetParameters(1.0/(sij*sqrt(8*atan(1))),0.0,sij);
+	double amp=(normalize) ? 1.0/(sij*sqrt(8*atan(1))) : 1.0;
+	smearingFunctionGrid[i][j]->SetParameters(amp,0.0,sij);
       }
 	break;
       case CalSet_File_BreitWigner: {

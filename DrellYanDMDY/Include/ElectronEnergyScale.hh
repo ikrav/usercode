@@ -32,7 +32,7 @@ public:
   void init(CalibrationSet calSet, int debug=0);
   void init(const TString &stringWithEScaleTagName, int debug=0);
   bool initializeAllConstants(int debug=0);
-  bool initializeExtraSmearingFunction();
+  bool initializeExtraSmearingFunction(int normalize=0);
   bool isInitialized() const;
   bool randomizedStudy() const { return _randomizedStudy; }
   void randomizedStudy(bool doRandomizedStudy) { _randomizedStudy=doRandomizedStudy; }
