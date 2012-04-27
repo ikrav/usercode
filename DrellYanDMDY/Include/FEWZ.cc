@@ -17,6 +17,10 @@ FEWZ_t::FEWZ_t(bool loadWeights, bool do_cutZPT100) : fInitialized(kFALSE), fCut
       hnames = TString::Format("h_weighterror_%02d",i+1);
       weightErrors[i] = (TH2D*)fweights.Get(hnames);
       if (!weights[i] || !weightErrors[i]) ok=kFALSE;
+      else {
+	weights[i]->SetDirectory(0);
+	weightErrors[i]->SetDirectory(0);
+      }
     }
     fInitialized=ok;
   }
