@@ -35,21 +35,26 @@
 
 // Helper functions for Electron ID selection
 #include "../Include/EleIDCuts.hh"
+
+#include "../Include/EventSelector.hh"
+
 #endif
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDYEfficiency(const TString input) 
+void plotDYEfficiency(const TString input, int debugMode=0) 
 {
   gBenchmark->Start("plotDYEfficiency");
+
+  if (debugMode) std::cout << "\n\n\tDEBUG MODE is ON\n\n";
 
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
   //==============================================================================================================
   
-  Bool_t doSave  = false;    // save plots?
+  //Bool_t doSave  = false;    // save plots?
   TString format = "png";   // output file format
   
   vector<TString> fnamev;   // file names   
@@ -105,18 +110,18 @@ void plotDYEfficiency(const TString input)
 
   int nYBinsMax=findMaxYBins();
 
-  TMatrixD nEventsv (DYTools::nMassBins2D,nYBinsMax);  
-  TMatrixD nPassv (DYTools::nMassBins2D,nYBinsMax);  
-  TMatrixD effv (DYTools::nMassBins2D,nYBinsMax);  
-  TMatrixD effErrv (DYTools::nMassBins2D,nYBinsMax);  
+  TMatrixD nEventsv (DYTools::nMassBins,nYBinsMax);  
+  TMatrixD nPassv (DYTools::nMassBins,nYBinsMax);  
+  TMatrixD effv (DYTools::nMassBins,nYBinsMax);  
+  TMatrixD effErrv (DYTools::nMassBins,nYBinsMax);  
 
-  TMatrixD nEventsBBv (DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD nEventsBEv (DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD nEventsEEv (DYTools::nMassBins2D,nYBinsMax);
+  TMatrixD nEventsBBv (DYTools::nMassBins,nYBinsMax);
+  TMatrixD nEventsBEv (DYTools::nMassBins,nYBinsMax);
+  TMatrixD nEventsEEv (DYTools::nMassBins,nYBinsMax);
  
-  TMatrixD nPassBBv(DYTools::nMassBins2D,nYBinsMax), effBBv(DYTools::nMassBins2D,nYBinsMax), effErrBBv(DYTools::nMassBins2D,nYBinsMax); 
-  TMatrixD nPassBEv(DYTools::nMassBins2D,nYBinsMax), effBEv(DYTools::nMassBins2D,nYBinsMax), effErrBEv(DYTools::nMassBins2D,nYBinsMax); 
-  TMatrixD nPassEEv(DYTools::nMassBins2D,nYBinsMax), effEEv(DYTools::nMassBins2D,nYBinsMax), effErrEEv(DYTools::nMassBins2D,nYBinsMax);
+  TMatrixD nPassBBv(DYTools::nMassBins,nYBinsMax), effBBv(DYTools::nMassBins,nYBinsMax), effErrBBv(DYTools::nMassBins,nYBinsMax); 
+  TMatrixD nPassBEv(DYTools::nMassBins,nYBinsMax), effBEv(DYTools::nMassBins,nYBinsMax), effErrBEv(DYTools::nMassBins,nYBinsMax); 
+  TMatrixD nPassEEv(DYTools::nMassBins,nYBinsMax), effEEv(DYTools::nMassBins,nYBinsMax), effErrEEv(DYTools::nMassBins,nYBinsMax);
 
   TVectorD nEventsZPeakPU(DYTools::nPVBinCount), nPassZPeakPU(DYTools::nPVBinCount);
   TVectorD nEventsZPeakPURaw(100), nPassZPeakPURaw(100);
@@ -167,6 +172,7 @@ void plotDYEfficiency(const TString input)
     // Find weight for events for this file
     // The first file in the list comes with weight 1,
     // all subsequent ones are normalized to xsection and luminosity
+    AdjustXSectionForSkim(infile,xsecv[ifile],eventTree->GetEntries(),1);
     lumiv[ifile] = eventTree->GetEntries()/xsecv[ifile];
     double scale = lumiv[0]/lumiv[ifile];
     cout << "       -> sample weight is " << scale << endl;
@@ -181,6 +187,7 @@ void plotDYEfficiency(const TString input)
     nZv += scale * eventTree->GetEntries();
 
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
+      if (debugMode && (ientry>10000)) break;
       //if (ientry>100) break;
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
@@ -212,18 +219,23 @@ void plotDYEfficiency(const TString input)
       if( ! ( ( et1 > DYTools::etMinLead  && et2 > DYTools::etMinTrail)
 	      || ( et1 > DYTools::etMinTrail  && et2 > DYTools::etMinLead) )) continue;
       if((fabs(eta1) >= 2.5)      || (fabs(eta2) >= 2.5))       continue;
-      if((fabs(eta1) >= DYTools::kGAP_LOW) && (fabs(eta1) <= DYTools::kGAP_HIGH)) continue;
-      if((fabs(eta2) >= DYTools::kGAP_LOW) && (fabs(eta2) <= DYTools::kGAP_HIGH)) continue;
+      if((fabs(eta1) >= DYTools::kECAL_GAP_LOW) && (fabs(eta1) <= DYTools::kECAL_GAP_HIGH)) continue;
+      if((fabs(eta2) >= DYTools::kECAL_GAP_LOW) && (fabs(eta2) <= DYTools::kECAL_GAP_HIGH)) continue;
 
       // These events are in acceptance, use them for efficiency denominator
-      Bool_t isBGen1 = (fabs(eta1)<DYTools::kGAP_LOW);
-      Bool_t isBGen2 = (fabs(eta2)<DYTools::kGAP_LOW);
+      Bool_t isBGen1 = (fabs(eta1)<DYTools::kECAL_GAP_LOW);
+      Bool_t isBGen2 = (fabs(eta2)<DYTools::kECAL_GAP_LOW);
       // determine number of good vertices
       pvBr->GetEntry(ientry);
       int iPUBin=-1;
       int nGoodPV=-1;
       if ((gen->mass>=60) && (gen->mass<=120)) {
 	nGoodPV=0;
+	const int new_pv_count_code=1;
+	if (new_pv_count_code) {
+	  nGoodPV=countGoodVertices(pvArr);
+	}
+	else {
 	for (Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
 	  const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);
 	  if(pv->nTracksFit                        < 1)  continue;
@@ -232,27 +244,28 @@ void plotDYEfficiency(const TString input)
 	  if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
 	  nGoodPV++;
 	}
+	}
 	if (nGoodPV>0) {
            if (nGoodPV<=nEventsZPeakPURaw.GetNoElements()) 
 	        nEventsZPeakPURaw[nGoodPV] += scale * gen->weight;
-	iPUBin=DYTools::findMassBin(double(nGoodPV),DYTools::nPVBinCount,DYTools::nPVLimits);
-	//std::cout << "iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
-	if ((iPUBin!=-1) && (iPUBin < nEventsZPeakPU.GetNoElements())) {
-	  nEventsZPeakPU[iPUBin] += scale * gen->weight;
+	   iPUBin=DYTools::findPUBin(nGoodPV);
+	   //std::cout << "iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
+	   if ((iPUBin!=-1) && (iPUBin < nEventsZPeakPU.GetNoElements())) {
+	     nEventsZPeakPU[iPUBin] += scale * gen->weight;
+	   }
+	   else {
+	     std::cout << "error in PU bin indexing iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
+	   }
 	}
-	else {
-	  std::cout << "error in PU bin indexing iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
-	}
-      } 
 	//else std::cout << "nGoodPV=" << nGoodPV << "\n";
       }
 
       // Use post-FSR generator level mass for binning
-      int ibinGenM = DYTools::findMassBin2D(gen->mass);
-      int ibinGenY = DYTools::findAbsYBin2D(ibinGenM,gen->y);
+      int ibinGenM = DYTools::findMassBin(gen->mass);
+      int ibinGenY = DYTools::findAbsYBin(ibinGenM,gen->y);
 
       // Accumulate denominator for efficiency calculations
-      if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins2D && ibinGenY <= nYBins[ibinGenM]){
+      if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= nYBins[ibinGenM]){
 	nEventsv(ibinGenM,ibinGenY) += scale * gen->weight;
 	// Split events barrel/endcap using matched supercluster or particle eta
 	if(isBGen1 && isBGen2)                                  { nEventsBBv(ibinGenM,ibinGenY) += scale * gen->weight; } 
@@ -273,12 +286,12 @@ void plotDYEfficiency(const TString input)
 	// Apply selection
 
 	// Eta cuts
-        if((fabs(dielectron->scEta_1)>DYTools::kGAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kGAP_HIGH)) continue;
-        if((fabs(dielectron->scEta_2)>DYTools::kGAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kGAP_HIGH)) continue;
+        if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
+        if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
 	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
 	
-        Bool_t isB1 = (fabs(dielectron->scEta_1)<DYTools::kGAP_LOW);
-        Bool_t isB2 = (fabs(dielectron->scEta_2)<DYTools::kGAP_LOW);         
+        Bool_t isB1 = (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_LOW);
+        Bool_t isB2 = (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_LOW);         
 
 	if( !( (isB1 == isBGen1 && isB2 == isBGen2 ) 
 	       || (isB1 == isBGen2 && isB2 == isBGen1 ) ) )
@@ -322,7 +335,7 @@ void plotDYEfficiency(const TString input)
 	    std::cout << "error in PU bin indexing\n";
 	  }
 	}
-	if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins2D && ibinGenY <= nYBins[ibinGenM]){
+	if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= nYBins[ibinGenM]){
 	  nPassv(ibinGenM,ibinGenY) += scale * gen->weight;
 	  if(isB1 && isB2)                            { nPassBBv(ibinGenM,ibinGenY) += scale * gen->weight; } 
 	  else if(!isB1 && !isB2)                     { nPassEEv(ibinGenM,ibinGenY) += scale * gen->weight; } 
@@ -345,7 +358,7 @@ void plotDYEfficiency(const TString input)
   effErrBEv = 0;
   effEEv    = 0;
   effErrEEv = 0;
-  for(int i=0; i<DYTools::nMassBins2D; i++)
+  for(int i=0; i<DYTools::nMassBins; i++)
     for(int j=0; j<DYTools::nYBins[i]; j++){
       if(nEventsv(i,j) != 0){
         effv(i,j) = nPassv(i,j)/nEventsv(i,j);
@@ -373,7 +386,18 @@ void plotDYEfficiency(const TString input)
   //--------------------------------------------------------------------------------------------------------------
   // Make plots 
   //==============================================================================================================  
-  TCanvas *c = MakeCanvas("c","c",800,600);
+
+  // destination dir
+  TString outputDir(TString("../root_files/constants/")+dirTag);
+  gSystem->mkdir(outputDir,kTRUE);
+  TString fnamePlots=outputDir + TString("/event_efficiency_plots") + analysisTag + TString(".root");
+  TFile *filePlots=new TFile(fnamePlots,"recreate");
+  if (!filePlots || !filePlots->IsOpen()) {
+    std::cout << "failed to create a file <" << fnamePlots << ">\n";
+    throw 2;
+  }
+
+  TCanvas *c = MakeCanvas("canvEfficiency","canvEfficiency",800,600);
 
   // string buffers
   char ylabel[50];   // y-axis label
@@ -388,12 +412,12 @@ void plotDYEfficiency(const TString input)
   plotZMass1.Draw(c);
   SaveCanvas(c, "zmass1");
 
-  PlotMatrixVariousBinning(effv, "efficiency", "LEGO2");
+  PlotMatrixVariousBinning(effv, "efficiency", "LEGO2", filePlots);
+  filePlots->Close();
 
   // Store constants in the file
-  TString outputDir(TString("../root_files/constants/")+dirTag);
-  gSystem->mkdir(outputDir,kTRUE);
-  TString effConstFileName(outputDir+TString("/event_efficiency_constants.root"));
+  //TString effConstFileName(outputDir+TString("/event_efficiency_constants.root"));
+  TString effConstFileName(outputDir+TString("/event_efficiency_constants") + analysisTag + TString(".root"));
 
    TFile fa(effConstFileName,"recreate");
    effv.Write("efficiencyArray");
