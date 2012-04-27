@@ -35,6 +35,8 @@ TString SystematicsStudyName(DYTools::TSystematicsStudy_t study) {
   case NORMAL: name="NormalRun"; break;
   case RESOLUTION_STUDY: name="ResolutionStudy"; break;
   case FSR_STUDY: name="FSRStudy"; break;
+  case ESCALE_RESIDUAL: name="EScale_residual"; break;
+  case ESCALE_STUDY: name="EScale_study"; break;
   default: name="UNKNOWN_SYSTEMATICS_NAME";
   }
   return name;
