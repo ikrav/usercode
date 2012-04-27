@@ -36,6 +36,7 @@ using namespace std;
 #include "../Include/MyTools.hh"        // miscellaneous helper functions
 #include "../Include/CSample.hh"        // helper class for organizing input ntuple files
 #include "../Include/DYTools.hh"
+#include "../Include/DYToolsUI.hh"
 #include "../Include/TriggerSelection.hh"
 
 // define structures to read in ntuple
@@ -83,7 +84,7 @@ void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron,
 
 //=== MAIN MACRO =================================================================================================
 
-void selectEvents(const TString conf, const TString triggerSetString="Full2011DatasetTriggers", int debugMode=0) 
+void selectEvents(const TString conf, const TString triggerSetString="Full2011DatasetTriggers", DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL, int debugMode=0) 
 {  
   gBenchmark->Start("selectEvents");
 
@@ -96,6 +97,16 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   assert(requiredTriggers.isDefined());
 
   if (debugMode) std::cout << "\n\n\tDEBUG MODE is ON\n\n";
+
+  std::cout << "\n\nRun mode: " << SystematicsStudyName(runMode) << "\n";
+  switch(runMode) {
+  case DYTools::NORMAL:
+  case DYTools::ESCALE_STUDY:
+    break;
+  default:
+    std::cout << "selectEvents is not ready for runMode=" << SystematicsStudyName(runMode) << "\n";
+    throw 2;
+  }
   
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
@@ -184,6 +195,10 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   // 
   // Set up energy scale corrections
   //
+  if (runMode==DYTools::ESCALE_STUDY) { 
+    std::cout << "Since runMode=EScale_Study, changing escaleTag=<" << escaleTag << "> to 'UNCORRECTED'\n";
+    escaleTag="UNCORRECTED";
+  }
   ElectronEnergyScale escale(escaleTag);
   assert(escale.isInitialized());
   escale.print();
@@ -329,7 +344,16 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     //
     // Set up output ntuple file for the sample
     //
-    TString outName = ntupDir + TString("/") + snamev[isam] + TString("_select.root");
+    TString outName = ntupDir + TString("/") + snamev[isam] + analysisTag_USER + TString("_select.root");
+    if (runMode==DYTools::ESCALE_STUDY) {
+      if (isam==0) {
+	outName.Replace(outName.Index("_select."),sizeof("_select."),"_select_uncorrected.");
+      }
+      else {
+	std::cout << "... runMode=EScale_Study, skipping the non-data files\n";
+	break;
+      }
+    }
     TFile *outFile = new TFile(outName,"RECREATE");
     TTree *outTree = new TTree("Events","Events");
 #ifdef ZeeData_is_TObject
@@ -392,7 +416,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 	  // if this is a spec.skim file, rescale xsec
 	  const int new_adjustment_code=1;
 	  if (new_adjustment_code) {
-	  AdjustXSection(infile,xsec,eventTree->GetEntries(),1);
+	  AdjustXSectionForSkim(infile,xsec,eventTree->GetEntries(),1);
 	  }
 	  else {
 	  TTree *descrTree=(TTree*)infile->Get("Description");
@@ -422,6 +446,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
      
       // loop through events
       Double_t nsel=0, nselvar=0;
+      std::cout << "numEntries = " << eventTree->GetEntries() << std::endl;
       for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
 	if (debugMode && (ientry>10000)) break; // debug option
 	if(ientry >= maxEvents) break;
@@ -501,9 +526,25 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 	  if (ee_selection_new_code) {
 	    // Keep the EEM values before any changes
 	    eem->Assign(dielectron->scEta_1,dielectron->scEta_2,dielectron->mass);
+	    
+	    // Determine correction type
+	    DielectronSelector_t::TEScaleCorrection_t escaleCorrType=
+	      DielectronSelector_t::_escaleNone;
+	    if (isam==0) {
+	      switch (runMode) {
+	      case DYTools::NORMAL: 
+		escaleCorrType=DielectronSelector_t::_escaleData;
+		break;
+	      case DYTools::ESCALE_STUDY:
+		escaleCorrType=DielectronSelector_t::_escaleUncorrected;
+		break;
+	      default:
+		std::cout << "does not know what escale to apply for runMode=" << SystematicsStudyName(runMode) << "\n";
+		throw 2;
+	      }
+	    }
 	    if (!eeSelector(dielectron,
-			    (isam==0) ? DielectronSelector_t::_escaleData :
-			      DielectronSelector_t::_escaleNone,
+			    escaleCorrType,
 			    leadingTriggerObjectBit,
 			    trailingTriggerObjectBit)) continue;
 	  
@@ -637,13 +678,14 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 	  nselvar += weight*weight;
       
         }	 
-      }           
+      }
       cout << nsel << " +/- " << sqrt(nselvar) << " events" << endl;
       nSelv[isam]    += nsel;
       nSelVarv[isam] += nselvar;
       delete infile;
       infile=0, eventTree=0;
     }
+    std::cout << "next file" << std::endl;
     outFile->Write();
     delete outTree;
     outFile->Close();        
@@ -655,7 +697,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
       delete eemFile;
     }
 
-    eeSelector.printInfo(std::cout);
+    eeSelector.printCounts(std::cout);
   }
   delete info;
   delete dielectronArr;
@@ -664,7 +706,8 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 
 
   // Write useful histograms
-  TString outNamePV = outputDir + TString("/npv.root");
+  // npv.root
+  TString outNamePV = outputDir + TString("/npv") + analysisTag_USER + TString(".root");
   TFile *outFilePV = new TFile(outNamePV,"RECREATE");
   outFilePV->cd();
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
@@ -675,7 +718,14 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   //--------------------------------------------------------------------------------------------------------------
   // Make plots
   //==============================================================================================================
-  TCanvas *c = MakeCanvas("c","c",canw,canh);
+
+  TString outFNameHistos = outputDir + TString("/selectEvents-") + analysisTag_USER + TString(".root");
+  TFile *outFileHistos = new TFile(outFNameHistos,"RECREATE");
+  outFileHistos->cd();
+  for(UInt_t isam=0; isam<samplev.size(); isam++) hNGoodPVv[isam]->Write();
+
+  TString canvasName="selectEvents" + study2Dstr;
+  TCanvas *c = MakeCanvas(canvasName,canvasName,canw,canh);
 
   printf("Make plots\n");fflush(stdout);
   // string buffers
@@ -719,6 +769,9 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   if( plotMass.GetStack() != NULL)
     plotMass.SetYRange((1e-4)*(plotMass.GetStack()->GetMaximum()),10.*(plotMass.GetStack()->GetMaximum()));  
   plotMass.Draw(c,kFALSE,format);
+
+  c->Write();
+  outFileHistos->Close();
 
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out

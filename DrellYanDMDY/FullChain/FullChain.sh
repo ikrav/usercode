@@ -10,9 +10,9 @@
 # ------------------  Define some variables
 
 filename_data="../config_files/data.conf"
-#filename_data="../config_files/data_evtTrig.conf"
+filename_data="../config_files/data_evtTrig.conf"
 filename_mc="../config_files/fall11mc.input"
-#filename_mc="../config_files/fall11mc_evtTrig.input"
+filename_mc="../config_files/fall11mc_evtTrig.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffNew"
 tnpFileStart="../config_files/sf"
@@ -22,6 +22,7 @@ debugMode=0
 crossSectionTag="DY_m10+pr+a05+o03+pr_4680pb"
 expectSelectedEventsFile="../root_files/selected_events/${crossSectionTag}/ntuples/zee_select.root"
 expectSelectedEventsFile2="../root_files/selected_events/${crossSectionTag}/npv.root"
+expectYieldsFile="../root_files/yields/${crossSectionTag}/yields.root"
 expectBkgSubtractedFile="../root_files/yields/${crossSectionTag}/yields_bg-subtracted.root"
 expectUnfoldingFile="../root_files/constants/${crossSectionTag}/unfolding_constants.root"
 expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics.root"
@@ -51,13 +52,14 @@ force_rebuild_include_files=0
 ## controlling your work
 # catch-all flag
 do_all_steps=0
+do_post_selection_steps=0
 
 # individual flags. 
 # Note: all the above flags have to be 0 for these individual flags 
 # to be effective
 do_selection=0
-do_prepareYields=0
-do_subtractBackground=0
+do_prepareYields=1
+do_subtractBackground=1
 do_unfolding=0
 do_unfoldingSyst=0
 do_acceptance=0
@@ -93,7 +95,11 @@ noError=1
 # -------------  Change individual flags in agreement with superior flags
 
 if [ ${do_all_steps} -eq 1 ] ; then
-    do_selection=1
+  do_selection=1
+  do_post_selection_steps=1
+fi
+
+if [ ${do_post_selection_steps} -eq 1 ] ; then
     do_prepareYields=1
     do_subtractBackground=1
     do_unfolding=1
@@ -176,18 +182,18 @@ root -b -q -l rootlogon.C+              | tee ${logDir}/out${timeStamp}-00-inclu
 if [ ${do_selection} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusSelection=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: selectEvents(\"${filename_data}\",\"${triggerSet}\",debug=${debugMode})"
+echo "WILL DO: selectEvents(\"${filename_data}\",\"${triggerSet}\",NORMAL,debug=${debugMode})"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Selection
 rm -f *.so ${expectSelectedEventsFile} ${expectSelectedEventsFile2}
 echo
 checkFile selectEvents.C
-root -b -q -l ${LXPLUS_CORRECTION} selectEvents.C+\(\"$filename_data\",\"$triggerSet\",${debugMode}\)           | tee ${logDir}/out${timeStamp}-01-selectEvents.log
+root -b -q -l ${LXPLUS_CORRECTION} selectEvents.C+\(\"$filename_data\",DYTools::NORMAL,\"$triggerSet\",${debugMode}\)           | tee ${logDir}/out${timeStamp}-01-selectEvents.log
 get_status ${expectSelectedEventsFile} ${expectSelectedEventsFile2}
 statusSelection=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: selectEvents(\"${filename_data}\",\"${triggerSet}\")"
+echo "DONE: selectEvents(\"${filename_data}\",\"${triggerSet}\",NORMAL)"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else
   statusSelection=skipped
@@ -223,7 +229,7 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../YieldsAndBackgrounds
 rm -f *.so ${expectBkgSubtractedFile}
 echo
-checkFile subtractBackground.C
+checkFile subtractBackground.C ${expectYieldsFile}
 root -b -q -l ${LXPLUS_CORRECTION} subtractBackground.C+\(\"$filename_data\"\)      | tee ${logDir}/out${timeStamp}-03-subtractBackground.log
 get_status ${expectBkgSubractedFile}
 statusSubtractBackground=$RUN_STATUS
