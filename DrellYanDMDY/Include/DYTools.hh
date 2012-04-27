@@ -21,6 +21,7 @@ namespace DYTools {
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
 
   const int study2D=1;
+  const TString analysisTag_USER="";  // extra name to differentiate the analysis files
 
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
@@ -32,6 +33,7 @@ namespace DYTools {
   const double etMinLead  = 20;
   const double etMinTrail = 10;
 
+  const TString strLumiAtECMS="4.7 fb^{-1} at #sqrt{s} = 7 TeV";
 
 
   // Constants that define binning in mass and rapidity
@@ -114,13 +116,16 @@ namespace DYTools {
   typedef enum { _MassBins_Undefined, _MassBins_2010, _MassBins_2011, _MassBins_2011_Lumi, _MassBins_2011_2D } TMassBinning_t;
 
 
-  // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
-  // Declare mass binning for 1D or 2D case
-  // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
-  //DYTools::TMassBinning_t massBinningSet=(study2D) ? _MassBins_2011_2D : _MassBins_2011;
+  // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
+  // Declare mass binning for the analysis (1D and 2D case)
+  // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
+  const DYTools::TMassBinning_t massBinningSet=(study2D) ? _MassBins_2011_2D : _MassBins_2011;
   const int nMassBins=(study2D) ? _nMassBins2D : _nMassBins2011;
   const double *massBinLimits=(study2D) ? _massBinLimits2D : _massBinLimits2011;
   const int *nYBins=(study2D) ? _nYBins2D : _nYBins2011;
+
+  const TString study2Dstr=(study2D) ? "2D" : "1D";
+  const TString analysisTag=study2Dstr + analysisTag_USER;
 
   // some analyses use 1D always
   //const int nMassBins1D=nMassBins2011;
@@ -145,8 +150,8 @@ namespace DYTools {
     int newCode=1;
     if (newCode) {
       result = int( ( y - yRangeMin )* 1.0001*nYBinsThisMassRange/( yRangeMax - yRangeMin ) );
-      double dy=((yRangeMax-yRangeMin)/double(nYBinsThisMassRange));
-      std::cout << "y=" << y << ", dy=" << dy  << ", binIdx=" << result << ", yRange=" << (result*dy) << ".." << (result*dy+dy) << "\n";
+      //double dy=((yRangeMax-yRangeMin)/double(nYBinsThisMassRange));
+      //std::cout << "y=" << y << ", dy=" << dy  << ", binIdx=" << result << ", yRange=" << (result*dy) << ".." << (result*dy+dy) << "\n";
     }
     else {
       // Make the array large enough to accommodate any Y binning
@@ -204,7 +209,7 @@ namespace DYTools {
   }
 
   // Largest number of Ybins
-  int getYBinsMax(){
+  int findMaxYBins(){
     int nYBMax=nYBins[0];
     for (int i=1; i<nMassBins; i++)
       if (nYBins[i]>nYBMax) nYBMax=nYBins[i];
