@@ -136,6 +136,7 @@ public:
   void SetYTitle(TString str)              { fYTitle = str; }              // y-axis title
   void SetXRange(double xmin, double xmax) { fXmin = xmin; fXmax = xmax; } // x-axis range
   void SetYRange(double ymin, double ymax) { fYmin = ymin; fYmax = ymax; } // y-axis range
+  void SetYMin (double ymin) { fYmin = ymin; } // y-axis range minimum value
   void SetLogx(int value=1)                { fLogx = value; }              // toggle logscale x-axis
   void SetLogy(int value=1)                { fLogy = value; }              // toggle logscale y-axis
   void SetGridx(bool value=1)              { fGridx = value; }             // toggle grid lines from x-axis ticks

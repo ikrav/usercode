@@ -566,6 +566,9 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
 	  ymax = h->GetMaximum();
 	  ifirst = vHists.size();
 	}
+	if (fYmin > fYmax*1.001) {
+	  h->GetYaxis()->SetRangeUser(fYmin,ymax);
+	}
       }
       
       vHists.push_back(h);
