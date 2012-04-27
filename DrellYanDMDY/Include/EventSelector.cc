@@ -7,7 +7,8 @@ DielectronSelector_t::DielectronSelector_t(TSelectionType_t set_selection, Elect
   fSelection(set_selection),
   fEScale(escale),
   fTotalCandidates(0), fCandidatesGoodEta(0), fCandidatesGoodEt(0),
-  fCandidatesHLTMatched(0), fCandidatesIDPassed(0), fCandidatesMassAbove10(0)
+  fCandidatesHLTMatched(0), fCandidatesIDPassed(0), 
+  fCandidatesMassAboveMinLimit(0)
 {
 }
 
@@ -18,11 +19,12 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
   fTotalCandidates++;
 
   bool ok=kFALSE;
-  do {
+  // assume 1 iteration loop
+  for (int dummy_iter=0; dummy_iter<1; ++dummy_iter) {
     // Exclude ECAL gap region and cut out of acceptance electrons
-    if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) break;
-    if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) break;
-    if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       break;  // outside eta range? Skip to next event...
+    if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
+    if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
+    if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
   
     fCandidatesGoodEta++;
 
@@ -67,7 +69,7 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
        	  
     // requirements on BOTH electrons
     // For DY ET cuts are asymmetric:
-    if( ! ( (scEt1>20 && scEt2>10) || (scEt1>10 && scEt2>20) ) ) break;
+    if( ! ( (scEt1>20 && scEt2>10) || (scEt1>10 && scEt2>20) ) ) continue;
     
     fCandidatesGoodEt++;
 
@@ -78,7 +80,7 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
 	    dielectron->hltMatchBits_2 & trailingTriggerObjectBit )
 	   ||
 	   (dielectron->hltMatchBits_1 & trailingTriggerObjectBit && 
-	    dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) break;
+	    dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
     
     fCandidatesHLTMatched++;
 
@@ -87,14 +89,15 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
     // The Smurf electron ID package is the same as used in HWW analysis
     // and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
     // with some customization, plus impact parameter cuts dz and dxy
-    if(!passSmurf(dielectron)) break;
+    if(!passSmurf(dielectron)) continue;
 
     fCandidatesIDPassed++;
 
     // loose mass window 
-    if( dielectron->mass < 10 ) break;
+    double minMass= (applyEScale==_escaleUncorrected) ? 5 : 10;
+      if( dielectron->mass < minMass ) continue;
 
-    fCandidatesMassAbove10++;
+    fCandidatesMassAboveMinLimit++;
 
     ok=kTRUE; // selection PASSED
 
@@ -105,22 +108,22 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
 
 // ---------------------------------------------------------------
 
-std::ostream& DielectronSelector_t::printInfo(std::ostream &out) {
+std::ostream& DielectronSelector_t::printCounts(std::ostream &out) {
   char buf[20];
   out << "DielectronSelector (selection=" << DielectronSelector_t::selectionName(fSelection) << ")\n";
   const char *format="%10u";
   sprintf(buf,format,fTotalCandidates);
-  out << "Total number of dielectron candidates " << buf << "\n";
+  out << "Total number of dielectron candidates  " << buf << "\n";
   sprintf(buf,format,fCandidatesGoodEta);
-  out << "Total candidates with good eta        " << buf << "\n";
+  out << "Total candidates with good eta         " << buf << "\n";
   sprintf(buf,format,fCandidatesGoodEt);
-  out << "Total candidates with good Et         " << buf << "\n";
+  out << "Total candidates with good Et          " << buf << "\n";
   sprintf(buf,format,fCandidatesHLTMatched);
-  out << "Total candidates HLT matched          " << buf << "\n";
+  out << "Total candidates HLT matched           " << buf << "\n";
   sprintf(buf,format,fCandidatesIDPassed);
-  out << "Total candidates ID passed            " << buf << "\n";
-  sprintf(buf,format,fCandidatesMassAbove10);
-  out << "Total candidates with mass > 10       " << buf << "\n";
+  out << "Total candidates ID passed             " << buf << "\n";
+  sprintf(buf,format,fCandidatesMassAboveMinLimit);
+  out << "Total candidates with mass above limit " << buf << "\n";
   return out;
 }
 

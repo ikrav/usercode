@@ -19,11 +19,11 @@
 class DielectronSelector_t {
 public:
   typedef enum { _selectNone, _selectDefault } TSelectionType_t;
-  typedef enum { _escaleNone, _escaleData, _escaleMC } TEScaleCorrection_t;
+  typedef enum { _escaleNone, _escaleUncorrected, _escaleData, _escaleMC } TEScaleCorrection_t;
 protected:
   TSelectionType_t fSelection;
   ElectronEnergyScale *fEScale;
-  UInt_t fTotalCandidates, fCandidatesGoodEta, fCandidatesGoodEt, fCandidatesHLTMatched, fCandidatesIDPassed, fCandidatesMassAbove10;
+  UInt_t fTotalCandidates, fCandidatesGoodEta, fCandidatesGoodEt, fCandidatesHLTMatched, fCandidatesIDPassed, fCandidatesMassAboveMinLimit;
 public:
   DielectronSelector_t(TSelectionType_t set_selection, ElectronEnergyScale *escale=NULL);
 
@@ -55,14 +55,14 @@ public:
     return testDielectron(dielectron,applyEScale,leadingTriggerObjectBit,trailingTriggerObjectBit);
   }
 
-  std::ostream& printInfo(std::ostream&);
+  std::ostream& printCounts(std::ostream&);
 };
 
 // -------------------------------------------------
 // -------------------------------------------------
 
 // if this is a spec.skim file, rescale xsec
-int AdjustXSection(TFile *infile, Double_t &xsec, UInt_t numEntries, int verbatim=1) {
+int AdjustXSectionForSkim(TFile *infile, Double_t &xsec, UInt_t numEntries, int verbatim=1) {
   if(xsec>0) { 
     // if this is a spec.skim file, rescale xsec
     TTree *descrTree=(TTree*)infile->Get("Description");
