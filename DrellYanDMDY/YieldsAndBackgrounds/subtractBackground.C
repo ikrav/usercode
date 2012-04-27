@@ -41,7 +41,8 @@ TString subtractBackground(const TString conf){
   ifs.close();
   inputDir.ReplaceAll("selected_events","yields");
 
-  TFile file(inputDir+TString("/yields.root"));
+  // yields.root
+  TFile file(inputDir+TString("/yields") + analysisTag + TString(".root"));
 
   TVectorD* vec=(TVectorD *)file.Get("dummySampleCount");
   Int_t NSamples=vec->GetNoElements();
@@ -49,7 +50,7 @@ TString subtractBackground(const TString conf){
   TMatrixD* yields[NSamples];
   TMatrixD* yieldsSumw2[NSamples];
   //since we have variable binning in rapidity, we have to determine the maximum number of Y-bins to create matrices
-  int nYBinsMax=findMaxYBins();
+  int nYBinsMax=DYTools::findMaxYBins();
   //fill out yields matrices from yields.root file
 
   TString sn[NSamples];
@@ -90,22 +91,22 @@ TString subtractBackground(const TString conf){
     printf("    use MC estimates for fake dielectron backgrounds\n");
 
 
-  TMatrixD observedYields(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD observedYieldsErrorSquared(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD signalYields(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD signalYieldsError(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD signalYieldsErrorSyst(DYTools::nMassBins2D,nYBinsMax);
+  TMatrixD observedYields(DYTools::nMassBins,nYBinsMax);
+  TMatrixD observedYieldsErrorSquared(DYTools::nMassBins,nYBinsMax);
+  TMatrixD signalYields(DYTools::nMassBins,nYBinsMax);
+  TMatrixD signalYieldsError(DYTools::nMassBins,nYBinsMax);
+  TMatrixD signalYieldsErrorSyst(DYTools::nMassBins,nYBinsMax);
 
   // Matrices to store backgrounds
-  TMatrixD true2eBackground(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD true2eBackgroundError(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD true2eBackgroundErrorSyst(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD wzzz(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD wzzzError(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD wzzzErrorSyst(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD fakeEleBackground(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD fakeEleBackgroundError(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD fakeEleBackgroundErrorSyst(DYTools::nMassBins2D,nYBinsMax);
+  TMatrixD true2eBackground(DYTools::nMassBins,nYBinsMax);
+  TMatrixD true2eBackgroundError(DYTools::nMassBins,nYBinsMax);
+  TMatrixD true2eBackgroundErrorSyst(DYTools::nMassBins,nYBinsMax);
+  TMatrixD wzzz(DYTools::nMassBins,nYBinsMax);
+  TMatrixD wzzzError(DYTools::nMassBins,nYBinsMax);
+  TMatrixD wzzzErrorSyst(DYTools::nMassBins,nYBinsMax);
+  TMatrixD fakeEleBackground(DYTools::nMassBins,nYBinsMax);
+  TMatrixD fakeEleBackgroundError(DYTools::nMassBins,nYBinsMax);
+  TMatrixD fakeEleBackgroundErrorSyst(DYTools::nMassBins,nYBinsMax);
 
 
   true2eBackground = 0;
@@ -118,9 +119,9 @@ TString subtractBackground(const TString conf){
   fakeEleBackgroundError = 0;
   fakeEleBackgroundErrorSyst = 0;
   // The total background  
-  TMatrixD totalBackground(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD totalBackgroundError(DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD totalBackgroundErrorSyst(DYTools::nMassBins2D,nYBinsMax);
+  TMatrixD totalBackground(DYTools::nMassBins,nYBinsMax);
+  TMatrixD totalBackgroundError(DYTools::nMassBins,nYBinsMax);
+  TMatrixD totalBackgroundErrorSyst(DYTools::nMassBins,nYBinsMax);
 
 
   // Calculate true dielectron background, which includes
@@ -141,7 +142,7 @@ TString subtractBackground(const TString conf){
   else
     {
 
-       for(int i=0; i<DYTools::nMassBins2D; i++)
+       for(int i=0; i<DYTools::nMassBins; i++)
          for (int j=0; j<DYTools::nYBins[i]; j++)
            {
               true2eBackground(i,j)=0;
@@ -151,11 +152,11 @@ TString subtractBackground(const TString conf){
          double mSyst=0;
          for (int k=0; k<NSamples; k++)
             {
-              TMatrixD aux1(DYTools::nMassBins2D,nYBinsMax);
-              TMatrixD aux2(DYTools::nMassBins2D,nYBinsMax);
-              aux1=yields[k]->GetSub(0,DYTools::nMassBins2D-1,0,nYBinsMax-1);
-              aux2=yieldsSumw2[k]->GetSub(0,DYTools::nMassBins2D-1,0,nYBinsMax-1);
-              for (int i=0; i<DYTools::nMassBins2D; i++)
+              TMatrixD aux1(DYTools::nMassBins,nYBinsMax);
+              TMatrixD aux2(DYTools::nMassBins,nYBinsMax);
+              aux1=yields[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
+              aux2=yieldsSumw2[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
+              for (int i=0; i<DYTools::nMassBins; i++)
                 for (int j=0; j<DYTools::nYBins[i]; j++)
                   {
                     if (sn[k]=="ttbar" || sn[k]=="ztt" || sn[k]=="ww")
@@ -176,7 +177,7 @@ TString subtractBackground(const TString conf){
     }
 
   // Calculate WZ and ZZ backgrounds
-   for(int i=0; i<DYTools::nMassBins2D; i++)
+   for(int i=0; i<DYTools::nMassBins; i++)
      for (int j=0; j<DYTools::nYBins[i]; j++)
        {
           {
@@ -189,11 +190,11 @@ TString subtractBackground(const TString conf){
       {
          if (sn[k]=="zz" || sn[k]=="wz")
            {
-             TMatrixD aux1(DYTools::nMassBins2D,nYBinsMax);
-             TMatrixD aux2(DYTools::nMassBins2D,nYBinsMax);
-             aux1=yields[k]->GetSub(0,DYTools::nMassBins2D-1,0,nYBinsMax-1);
-             aux2=yieldsSumw2[k]->GetSub(0,DYTools::nMassBins2D-1,0,nYBinsMax-1);
-             for (int i=0; i<DYTools::nMassBins2D; i++)
+             TMatrixD aux1(DYTools::nMassBins,nYBinsMax);
+             TMatrixD aux2(DYTools::nMassBins,nYBinsMax);
+             aux1=yields[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
+             aux2=yieldsSumw2[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
+             for (int i=0; i<DYTools::nMassBins; i++)
                for (int j=0; j<DYTools::nYBins[i]; j++)
                  {
                      wzzz(i,j)+=aux1(i,j);
@@ -221,7 +222,7 @@ TString subtractBackground(const TString conf){
        }
     else
       {
-       for(int i=0; i<DYTools::nMassBins2D; i++)
+       for(int i=0; i<DYTools::nMassBins; i++)
          for (int j=0; j<DYTools::nYBins[i]; j++)
            {
               fakeEleBackground(i,j)=0;
@@ -233,11 +234,11 @@ TString subtractBackground(const TString conf){
            {
               if (sn[k]=="qcd" || sn[k]=="wjets")
                  {
-                    TMatrixD aux1(DYTools::nMassBins2D,nYBinsMax);
-                    TMatrixD aux2(DYTools::nMassBins2D,nYBinsMax);
-                    aux1=yields[k]->GetSub(0,DYTools::nMassBins2D-1,0,nYBinsMax-1);
-                    aux2=yieldsSumw2[k]->GetSub(0,DYTools::nMassBins2D-1,0,nYBinsMax-1);
-                    for (int i=0; i<DYTools::nMassBins2D; i++)
+                    TMatrixD aux1(DYTools::nMassBins,nYBinsMax);
+                    TMatrixD aux2(DYTools::nMassBins,nYBinsMax);
+                    aux1=yields[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
+                    aux2=yieldsSumw2[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
+                    for (int i=0; i<DYTools::nMassBins; i++)
                       for (int j=0; j<DYTools::nYBins[i]; j++)
                         {
                            fakeEleBackground(i,j)+=aux1(i,j);
@@ -249,7 +250,7 @@ TString subtractBackground(const TString conf){
       }
 
     // Calculate the total background
-    for (int i=0; i<DYTools::nMassBins2D; i++)
+    for (int i=0; i<DYTools::nMassBins; i++)
       for (int j=0; j<DYTools::nYBins[i]; j++)
         {
            totalBackground(i,j)=true2eBackground(i,j) + wzzz(i,j) + fakeEleBackground(i,j);
@@ -272,7 +273,7 @@ TString subtractBackground(const TString conf){
          {
             observedYields=*yields[k];
             observedYieldsErrorSquared=*yieldsSumw2[k];
-              for (int i=0; i<DYTools::nMassBins2D; i++)
+              for (int i=0; i<DYTools::nMassBins; i++)
                 for (int j=0; j<DYTools::nYBins[i]; j++)
                   {
                        signalYields(i,j) = observedYields(i,j) - totalBackground(i,j);
@@ -283,20 +284,29 @@ TString subtractBackground(const TString conf){
           }
     }
 
-  TMatrixD bkgRatesUsual(DYTools::nMassBins2D,nYBinsMax);
-  for (int i=0; i<DYTools::nMassBins2D; i++)
+  TMatrixD bkgRatesUsual(DYTools::nMassBins,nYBinsMax);
+  for (int i=0; i<DYTools::nMassBins; i++)
       for (int j=0; j<DYTools::nYBins[i]; j++)
            bkgRatesUsual(i,j)=100.0*totalBackground(i,j)/signalYields(i,j);     
 
 
-  PlotMatrixVariousBinning(bkgRatesUsual,"bkgRatesPercent","COLZ");
  
   // Save sideband-subtracted signal yields
-  TFile fileOut(inputDir+TString("/yields_bg-subtracted.root"),"recreate");
+  // inputDir+TString("/yields_bg-subtracted.root")
+  TString outFileName=inputDir + TString("/yields_bg-subtracted") + analysisTag + TString(".root");
+  TFile fileOut(outFileName,"recreate");
   signalYields         .Write("YieldsSignal");
   signalYieldsError    .Write("YieldsSignalErr");
   signalYieldsErrorSyst.Write("YieldsSignalSystErr");
   fileOut.Close();
+
+  TString outFileNamePlots=outFileName;
+  outFileNamePlots.Replace(outFileNamePlots.Index(".root"),sizeof(".root"),"-plots.root");
+  TFile *foutPlots=new TFile(outFileNamePlots,"recreate");
+  PlotMatrixVariousBinning(bkgRatesUsual,"bkgRatesPercent","COLZ",foutPlots);
+  PlotMatrixVariousBinning(signalYields,"signalYields","COLZ",foutPlots);
+  PlotMatrixVariousBinning(signalYieldsError,"signalYieldsError","COLZ",foutPlots);
+  foutPlots->Close();
 
   return "Ok";
 
@@ -304,7 +314,7 @@ TString subtractBackground(const TString conf){
 
 Bool_t checkMatrixSize(TMatrixD m)
 {  
-  if ((m.GetNrows()==DYTools::nMassBins2D) && (m.GetNcols()==DYTools::findMaxYBins()))
+  if ((m.GetNrows()==DYTools::nMassBins) && (m.GetNcols()==DYTools::findMaxYBins()))
   return 1;
   else return 0;
 }

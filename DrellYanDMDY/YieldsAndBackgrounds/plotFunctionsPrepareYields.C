@@ -43,7 +43,7 @@
 
 //for prepareYields
 void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString> snamev, TH1F* hMassDibosons, bool hasData, 
-                   bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext, bool actualBinning)
+		  bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext, bool actualBinning, TFile *histoFile)
 //for "actual binning": hMassv -> hMassBinsv, hMassDibosons -> hMassBinsDibosons
 {
 
@@ -85,19 +85,21 @@ void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString
     }  
   plotMass.Draw(c1,kFALSE);
   SaveCanvas(c1, canvName);
+  if (histoFile) c1->Write();
 }
 
 // -----------------------------------------------------------
 
 //for prepareYields
 void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vector<CSample*> samplev, vector<TString> snamev, bool hasData, 
-                   bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext)
+                   bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext,
+		   TFile *histoFile)
 { 
  //
   // Draw flattened distribution
   //
   // Create the histograms from the yields arrays
-  int flatIndexMax = DYTools::getNumberOf2DBins();
+  int flatIndexMax = DYTools::getTotalNumberOfBins();
   TH1F *hFlattened[samplev.size()];
   for(UInt_t isam=0; isam < samplev.size(); isam++){
     //sprintf(hname, "hFlattanedMass_%i", isam);
@@ -106,7 +108,7 @@ void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vect
     hFlattened[isam] = new TH1F(hname,"",flatIndexMax, 0.0, 1.0*flatIndexMax);
     TMatrixD *thisSampleYields = yields.at(isam);
     TMatrixD *thisSampleYieldsSumw2 = yieldsSumw2.at(isam);
-    for(int im = 0; im < DYTools::nMassBins2D; im++){
+    for(int im = 0; im < DYTools::nMassBins; im++){
       for(int iy = 0; iy < DYTools::nYBins[im]; iy++){
 	int iflat = findIndexFlat(im, iy);
 	hFlattened[isam]->SetBinContent(iflat, (*thisSampleYields)(im,iy) );
@@ -146,9 +148,11 @@ void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vect
   }
   plotFlattened.SetLogy();
   plotFlattened.Draw(c3);
-  plotFlattened.SetYRange(1.0,200000);  
+  //plotFlattened.SetYRange(1.0,200000);  
+  plotFlattened.SetYMin(1.0);
   plotFlattened.Draw(c3,kFALSE);
   SaveCanvas(c3, "flattened");
+  if (histoFile) c3->Write();
 }
 
 // -----------------------------------------------------------
@@ -156,23 +160,25 @@ void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vect
 //for prepareYields
 void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
                     vector<CSample*> samplev, vector<TString> snamev, 
-                    bool hasData, double dataOverMc, double* dataOverMcEachBin, bool normEachBin, bool singleCanvas) 
+		   bool hasData, double dataOverMc, double* dataOverMcEachBin, bool normEachBin, bool singleCanvas,
+		   TFile *histoFile) 
 {
 
   int jStart;
   if (hasData) jStart=0; 
   else jStart=1;
-  TH1F* allHists[nMassBins2D][samplev.size()];
+  TH1F* allHists[nMassBins][samplev.size()];
 
-  TH1F *totalMc[nMassBins2D];
-  TH1F *ewkHist[nMassBins2D];
-  TH1F *ratioHist[nMassBins2D];
-  TH1F *ratioClone[nMassBins2D];
-  THStack *mcHists[nMassBins2D]; 
+  TH1F *totalMc[nMassBins];
+  TH1F *ewkHist[nMassBins];
+  TH1F *ratioHist[nMassBins];
+  TH1F *ratioClone[nMassBins];
+  THStack *mcHists[nMassBins]; 
   TString normStr =(normEachBin) ? "normEachBin-" : "normZpeak-";
   normStr.Append((singleCanvas) ? "sngl-" : "multi-");
+  std::cout << "normStr=" << normStr << "\n";
 
-  for (int i=1; i<nMassBins2D; i++)
+  for (int i=1; i<nMassBins; i++)
   // loop over mass bins starting from 1st (excluding underflow bin)
     {
       TString stackName="mcStack-" + normStr;
@@ -277,15 +283,15 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
   lumiText->SetTextSize(0.05);
   lumiText->SetTextAlign(33);
   lumiText->SetNDC();
-  lumiText->SetText(0.91, 0.90, "4.7 fb^{-1} at #sqrt{s} = 7 TeV");
+  lumiText->SetText(0.91, 0.90, DYTools::strLumiAtECMS);
 
-  TLatex *massLabels[nMassBins2D];
-  for (int i=1; i<nMassBins2D; i++)
+  TLatex *massLabels[nMassBins];
+  for (int i=1; i<nMassBins; i++)
     {
       TString massStr="";
-      massStr+=massBinLimits2D[i];
+      massStr+=massBinLimits[i];
       massStr+="<m<";
-      massStr+=massBinLimits2D[i+1];
+      massStr+=massBinLimits[i+1];
       massStr+=" GeV";
       massLabels[i]=new TLatex();
       massLabels[i]->SetTextFont(42);
@@ -295,36 +301,36 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
       massLabels[i]->SetText(0.91, 0.82, massStr);
     }
 
-  TCanvas* canv[nMassBins2D];
+  TCanvas* canv[nMassBins];
   TString canvName;
   TString canvNames="y-Single-";
   if (normEachBin) canvNames+="norm-each-mass-bin";
   else canvNames+="norm-Z-peak";
-  TCanvas* canvSingle=new TCanvas(canvNames,canvNames,1200,1800);
-  canvSingle->Divide(2,6,0,0);
-  TPad* pad1[nMassBins2D];
-  TPad* pad2[nMassBins2D];
+  TCanvas* canvSingle=(singleCanvas) ? MakeCanvas(canvNames,canvNames,1200,1800) : NULL;
+  if (canvSingle) canvSingle->Divide(2,6,0,0);
+  TPad* pad1[nMassBins];
+  TPad* pad2[nMassBins];
 
   TLine *lineAtOne = new TLine(15.0, 1.0, 1500, 1.0);
   lineAtOne->SetLineStyle(kDashed);
   lineAtOne->SetLineWidth(1);
   lineAtOne->SetLineColor(kBlue);
     
-  for (int i=1; i<nMassBins2D; i++)
-    {
+  for (int i=1; i<nMassBins; i++) {
+    int idx=(i-1)%6+1;
 
       if (singleCanvas)
        {
           double xi=0,xf=0,yi=0,yf=0;
-          if ((i%2)==1) {xi=0.0; xf=0.5;}
-          if ((i%2)==0) {xi=0.5; xf=1.0;}
-          if (i==1 || i==2) {yi=0.66; yf=1.00;}
-          if (i==3 || i==4) {yi=0.33; yf=0.66;}
-          if (i==5 || i==6) {yi=0.00; yf=0.33;}
+          if ((idx%2)==1) {xi=0.0; xf=0.5;}
+          if ((idx%2)==0) {xi=0.5; xf=1.0;}
+          if (idx==1 || idx==2) {yi=0.66; yf=1.00;}
+          if (idx==3 || idx==4) {yi=0.33; yf=0.66;}
+          if (idx==5 || idx==6) {yi=0.00; yf=0.33;}
 
-          pad1[i] = (TPad*)canvSingle->GetPad(2*i-1);
+          pad1[i] = (TPad*)canvSingle->GetPad(2*idx-1);
           pad1[i]->SetPad(xi,yi+0.3*(yf-yi),xf,yf);
-          pad2[i] = (TPad*)canvSingle->GetPad(2*i);
+          pad2[i] = (TPad*)canvSingle->GetPad(2*idx);
           pad2[i]->SetPad(xi,yi,xf,yi+0.28*(yf-yi));
        }
       else
@@ -334,7 +340,7 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
           canvName+="-";
           if (normEachBin) canvName+="norm-each-mass-bin";
           else canvName+="norm-Z-peak";
-          canv[i]=new TCanvas(canvName,canvName,600,600);
+          canv[i]=MakeCanvas(canvName,canvName,600,600);
           canv[i]->Divide(1,2,0,0);
           pad1[i] = (TPad*)canv[i]->GetPad(1);
           pad1[i]->SetPad(0,0.3,1.0,1.0);
@@ -413,16 +419,39 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
       
       if (!singleCanvas)
         {
+	  if (histoFile) canv[i]->Write();
           SaveCanvas(canv[i], canvName);
         }
 
+      if (singleCanvas && ((i==nMassBins-1) || (idx==6)))
+	{
+	  TString name=canvNames;
+	  char buf[20];
+	  if (idx==6) sprintf(buf,"-%d",i/6);
+	  else if (i!=nMassBins-1) sprintf(buf,"-%d",i/6+1);
+	  else buf[0]='\0';
+	  name.Append(buf);
+	  canvSingle->SetName(name);
+	  canvSingle->SetTitle(name);
+	  if (idx!=6) {
+	    for (int pad_i=2*idx+1; pad_i<=12; ++pad_i) {
+	      std::cout << "clearing pad_i=" << pad_i << std::endl;
+	      canvSingle->GetPad(pad_i)->Clear();
+	    }
+	  }
+	  if (histoFile) canvSingle->Write();
+	  SaveCanvas(canvSingle, name);
+	}
+
    }
    
-   if (singleCanvas)
-     {
-       SaveCanvas(canvSingle, canvNames);
-     }
+  //if (singleCanvas)
+  //   {
+  //     if (histoFile) canvSingle->Write();
+  //     SaveCanvas(canvSingle, canvNames);
+  //   }
 
+   HERE("leaving");
 }
 
 // -----------------------------------------------------------

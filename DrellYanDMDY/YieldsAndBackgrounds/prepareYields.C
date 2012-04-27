@@ -180,11 +180,11 @@ void prepareYields(const TString conf  = "data_plot.conf")
 
   char hname[100];
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
-    TMatrixD *yieldsMatrix = new TMatrixD(DYTools::nMassBins2D, maxYBins);
+    TMatrixD *yieldsMatrix = new TMatrixD(DYTools::nMassBins, maxYBins);
     (*yieldsMatrix) = 0;
     yields.push_back(yieldsMatrix);
     //
-    TMatrixD *yieldsSumw2Matrix = new TMatrixD(DYTools::nMassBins2D, maxYBins);
+    TMatrixD *yieldsSumw2Matrix = new TMatrixD(DYTools::nMassBins, maxYBins);
     (*yieldsSumw2Matrix) = 0;
     yieldsSumw2.push_back(yieldsSumw2Matrix);
     //
@@ -195,8 +195,8 @@ void prepareYields(const TString conf  = "data_plot.conf")
     hMassv[isam]->Sumw2();
     sprintf(hname,"hMassBins_%i",isam);  
     hMassBinsv.push_back(new TH1F(hname,"",
-				  DYTools::nMassBins2D, 
-				  DYTools::massBinLimits2D));
+				  DYTools::nMassBins,
+				  DYTools::massBinLimits));
     hMassBinsv[isam]->Sumw2();
 			 
     nSelv.push_back(0);
@@ -204,11 +204,16 @@ void prepareYields(const TString conf  = "data_plot.conf")
   }
   
 
-  ZeeData data;
+#ifdef ZeeData_is_TObject
+  ZeeData_t *data = new ZeeData_t();
+#else
+  ZeeData *data = new ZeeData();
+#endif
   TRandom random;
 
   // Open file with number of PV distributions for pile-up reweighting
-  const TString fnamePV = outputDir+TString("/npv.root");
+  // TString("/npv.root");
+  const TString fnamePV = outputDir+TString("/npv") + analysisTag_USER + TString(".root");
   TFile *pvfile = new TFile(fnamePV);
   assert(pvfile);
   TH1F *hPVData = 0;
@@ -240,7 +245,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     if((isam==0) && !hasData) continue;
     
-    const TString fname = outputDir + TString("/ntuples/") + snamev[isam] + TString("_select.root");
+    const TString fname = outputDir + TString("/ntuples/") + snamev[isam] + analysisTag_USER + TString("_select.root");
     cout << "Processing " << fname << "..." << endl;   
     infile = new TFile(fname);
     assert(infile); 
@@ -261,10 +266,10 @@ void prepareYields(const TString conf  = "data_plot.conf")
 
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
       eventTree->GetEntry(ientry);
-      Double_t weight = data.weight;
+      Double_t weight = data->weight;
       
       // Any extra weight factors:
-      double weightPU = puWeights->GetBinContent( puWeights->FindBin( data.nPV ));
+      double weightPU = puWeights->GetBinContent( puWeights->FindBin( data->nPV ));
       weight *= weightPU;
       
       // If This is MC, add extra smearing to the mass
@@ -273,13 +278,13 @@ void prepareYields(const TString conf  = "data_plot.conf")
       // are not dominant, and in any case we do not have corrections
       // for fake electrons.
       if(isam!=0) {            	    
-	double smearingCorrection = escale.generateMCSmear(data.scEta_1, data.scEta_2);
-	data.mass = data.mass + smearingCorrection;
+	double smearingCorrection = escale.generateMCSmear(data->scEta_1, data->scEta_2);
+	data->mass = data->mass + smearingCorrection;
       }
 
       // Find the 2D bin for this event:
-      int massBin = findMassBin2D(data.mass);
-      int yBin    = findAbsYBin2D(massBin, data.y);
+      int massBin = findMassBin(data->mass);
+      int yBin    = findAbsYBin(massBin, data->y);
 
       if ((massBin==-1) || (yBin==-1)) // out of range
 	continue;
@@ -287,8 +292,8 @@ void prepareYields(const TString conf  = "data_plot.conf")
       (*thisSampleYields)(massBin,yBin) += weight;
       (*thisSampleYieldsSumw2)(massBin,yBin) += weight*weight;
 
-      hMassv[isam]->Fill(data.mass,weight);
-      hMassBinsv[isam]->Fill(data.mass,weight);
+      hMassv[isam]->Fill(data->mass,weight);
+      hMassBinsv[isam]->Fill(data->mass,weight);
 
       nSelv[isam] += weight;
       nSelVarv[isam] += weight*weight;
@@ -326,7 +331,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
     }
   }
 
-  // Additional normalizatoin for MC:
+  // Additional normalization for MC:
   //
   // Ideally, we would normalize all MC samples to data luminosity
   // In practice, however, it is not easy because of two reasons:
@@ -351,11 +356,11 @@ void prepareYields(const TString conf  = "data_plot.conf")
 			  totalMCMass->FindBin(massNormMax-0.001));
   printf("data to MC extra correction from Z peak normalization: %f\n",dataOverMc);
 
-  double dataOverMcEachBin[nMassBins2D+1];
-  for (int i=0; i<nMassBins2D; i++)
+  double dataOverMcEachBin[nMassBins+1];
+  for (int i=0; i<nMassBins; i++)
     {
-      dataOverMcEachBin[i] = hMassv[0]->Integral(hMassv[0]->FindBin(massBinLimits2D[i]+0.001),hMassv[0]->FindBin(massBinLimits2D[i+1]-0.001)) /
-      totalMCMass->Integral(totalMCMass->FindBin(massBinLimits2D[i]+0.001),totalMCMass->FindBin(massBinLimits2D[i+1]-0.001));
+      dataOverMcEachBin[i] = hMassv[0]->Integral(hMassv[0]->FindBin(massBinLimits[i]+0.001),hMassv[0]->FindBin(massBinLimits[i+1]-0.001)) /
+      totalMCMass->Integral(totalMCMass->FindBin(massBinLimits[i]+0.001),totalMCMass->FindBin(massBinLimits[i+1]-0.001));
       printf("data to MC %i bin norm: %f\n",i,dataOverMcEachBin[i]);
     }
   
@@ -366,34 +371,52 @@ void prepareYields(const TString conf  = "data_plot.conf")
     hMassBinsv[isam]->Scale(dataOverMc);
     printf("  MC %s IS RESCALED for plotting\n", snamev[isam].Data());
   }
-  
+
+  //
+  // Prepare outputDir and the plot file
+  //
+
+  TString outputDirYields(outputDir.Data());
+  outputDirYields.ReplaceAll("selected_events","yields");
+  gSystem->mkdir(outputDirYields,kTRUE);
+  TString fNameOutYieldPlots(outputDirYields+TString("/yield_plots") + analysisTag);
+  fNameOutYieldPlots += ".root";
+  TFile *fYieldPlots = new TFile( fNameOutYieldPlots, "recreate" );
+  if (!fYieldPlots) {
+    std::cout << "Failed to create a file <" << fNameOutYieldPlots << ">\n";
+    throw 2;
+  }
+
   //
   // Draw mass spectrum without rapidity binning
   //
 
+
   // First, draw the mass histograms with fine mass binning
-  DrawMassPeak(hMassv, samplev, snamev, hMassDibosons, hasData, mergeDibosons, labelDibosons, colorDibosons, lumi, lumitext, 0);
+  DrawMassPeak(hMassv, samplev, snamev, hMassDibosons, hasData, mergeDibosons, labelDibosons, colorDibosons, lumi, lumitext, 0, fYieldPlots);
 
   // Second, draw the mass histograms with the mass binning used in the analysis
-  DrawMassPeak(hMassBinsv, samplev, snamev, hMassBinsDibosons, hasData, mergeDibosons, labelDibosons, colorDibosons, lumi, lumitext, 1);
+  DrawMassPeak(hMassBinsv, samplev, snamev, hMassBinsDibosons, hasData, mergeDibosons, labelDibosons, colorDibosons, lumi, lumitext, 1, fYieldPlots);
 
   // Draw the flattened figure (Y histograms for different mass regions)
-  DrawFlattened(yields, yieldsSumw2, samplev, snamev, hasData, mergeDibosons, labelDibosons, colorDibosons, lumi, lumitext);
+  DrawFlattened(yields, yieldsSumw2, samplev, snamev, hasData, mergeDibosons, labelDibosons, colorDibosons, lumi, lumitext, fYieldPlots);
 
   // Draw rapidity in mass slices 
   
-  Draw6Canvases(yields, yieldsSumw2, samplev, snamev, hasData, dataOverMc, dataOverMcEachBin, 1, 0);
-  Draw6Canvases(yields, yieldsSumw2, samplev, snamev, hasData, dataOverMc, dataOverMcEachBin, 1, 1);
+  Draw6Canvases(yields, yieldsSumw2, samplev, snamev, hasData, dataOverMc, dataOverMcEachBin, 1, 0, fYieldPlots);
+  Draw6Canvases(yields, yieldsSumw2, samplev, snamev, hasData, dataOverMc, dataOverMcEachBin, 1, 1, fYieldPlots);
+
+  fYieldPlots->Close();
 
   //--------------------------------------------------------------------------------------------------------------
   // Save the results
   //==============================================================================================================
 
   // Pack info into writable objects
-  TVectorD massBinLimits(nMassBins2D+1);
-  TVectorD rapidityBinning(nMassBins2D+1);
-  for(int i=0; i <= nMassBins2D; i++){
-    massBinLimits(i) = DYTools::massBinLimits2D[i];
+  TVectorD massBinLimits(nMassBins+1);
+  TVectorD rapidityBinning(nMassBins+1);
+  for(int i=0; i <= nMassBins; i++){
+    massBinLimits(i) = DYTools::massBinLimits[i];
     rapidityBinning(i) = DYTools::nYBins[i];
   }
   // This dummy object is only needed to convey the number
@@ -403,10 +426,8 @@ void prepareYields(const TString conf  = "data_plot.conf")
   TVectorD dummySampleCount(sampleTags.size());
   dummySampleCount = 0;
 
-  TString outputDirYields(outputDir.Data());
-  outputDirYields.ReplaceAll("selected_events","yields");
   gSystem->mkdir(outputDirYields,kTRUE);
-  TString fNameOutYields(outputDirYields+TString("/yields"));
+  TString fNameOutYields(outputDirYields+TString("/yields") + analysisTag);
   fNameOutYields += ".root";
   TFile fYields( fNameOutYields, "recreate" );
   massBinLimits      .Write("massBinLimits");
@@ -456,13 +477,13 @@ void prepareYields(const TString conf  = "data_plot.conf")
   // Summary printout in mass bins, integrated over rapidity
   //
   // Add yields over rapidity bins
-  double totalData            [DYTools::nMassBins2D];
-  double totalSignalMC        [DYTools::nMassBins2D];
-  double totalSignalMCError   [DYTools::nMassBins2D];
-  double totalBg     [DYTools::nMassBins2D];
-  double totalBgError[DYTools::nMassBins2D];
+  double totalData            [DYTools::nMassBins];
+  double totalSignalMC        [DYTools::nMassBins];
+  double totalSignalMCError   [DYTools::nMassBins];
+  double totalBg     [DYTools::nMassBins];
+  double totalBgError[DYTools::nMassBins];
 
-  for( int im=0; im<DYTools::nMassBins2D; im++){
+  for( int im=0; im<DYTools::nMassBins; im++){
     totalData         [im] = 0;
     totalSignalMC     [im] = 0;
     totalSignalMCError[im] = 0;
@@ -488,9 +509,9 @@ void prepareYields(const TString conf  = "data_plot.conf")
 
   printf("Printout of the data, MC signal and MC backgrounds integrated over rapidity\n");
   printf("     mass bin        data      MC-signal     MC-backgr\n");
-  for(int im = 0; im < DYTools::nMassBins2D; im++){
-    printf("%5.0f-%5.0f GeV: ", DYTools::massBinLimits2D[im],
-	   DYTools::massBinLimits2D[im+1]);
+  for(int im = 0; im < DYTools::nMassBins; im++){
+    printf("%5.0f-%5.0f GeV: ", DYTools::massBinLimits[im],
+	   DYTools::massBinLimits[im+1]);
     printf(" %7.0f", totalData[im]);
     printf(" %9.1f+-%6.1f", totalSignalMC[im], totalSignalMCError[im]);
     printf(" %7.2f+-%5.2f", totalBg[im], totalBgError[im]);

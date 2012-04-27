@@ -28,6 +28,10 @@
 // define classes and constants to read in ntuple
 #include "../Include/EWKAnaDefs.hh"
 #include "../Include/TGenInfo.hh"
+
+#include "../Include/EventSelector.hh"
+#include "../Include/FEWZ.hh"
+
 #endif
 
 //=== FUNCTION DECLARATIONS ======================================================================================
@@ -65,7 +69,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     assert(0);
   }
 
-  Bool_t doSave  = false;    // save plots?
+  //Bool_t doSave  = false;    // save plots?
   TString format = "png";   // output file format
   
   vector<TString> fnamev;   // file names   
@@ -76,8 +80,8 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   vector<Double_t> lumiv;
   TString          dirTag;
 
-  Double_t massLow  = DYTools::massBinLimits2D[0];
-  Double_t massHigh = DYTools::massBinLimits2D[nMassBins2D];
+  Double_t massLow  = DYTools::massBinLimits[0];
+  Double_t massHigh = DYTools::massBinLimits[DYTools::nMassBins];
   
   ifstream ifs;
   ifs.open(input.Data());
@@ -119,25 +123,25 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   // Set up histograms
   //
 
-  int nYBinsMax=findMaxYBins();
+  int nYBinsMax=DYTools::findMaxYBins();
 
 
   vector<TH1F*> hZMassv;//, hZMass2v, hZPtv, hZPt2v, hZyv, hZPhiv;  
   
   Double_t   nZv = 0;
 
-  TMatrixD nEventsv (DYTools::nMassBins2D,nYBinsMax);  
-  TMatrixD nPassv   (DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD accv     (DYTools::nMassBins2D,nYBinsMax);
-  TMatrixD accErrv  (DYTools::nMassBins2D,nYBinsMax);
+  TMatrixD nEventsv (DYTools::nMassBins,nYBinsMax);  
+  TMatrixD nPassv   (DYTools::nMassBins,nYBinsMax);
+  TMatrixD accv     (DYTools::nMassBins,nYBinsMax);
+  TMatrixD accErrv  (DYTools::nMassBins,nYBinsMax);
 
-  TMatrixD nPassBBv(DYTools::nMassBins2D,nYBinsMax), accBBv(DYTools::nMassBins2D,nYBinsMax), accErrBBv(DYTools::nMassBins2D,nYBinsMax); 
-  TMatrixD nPassBEv(DYTools::nMassBins2D,nYBinsMax), accBEv(DYTools::nMassBins2D,nYBinsMax), accErrBEv(DYTools::nMassBins2D,nYBinsMax); 
-  TMatrixD nPassEEv(DYTools::nMassBins2D,nYBinsMax), accEEv(DYTools::nMassBins2D,nYBinsMax), accErrEEv(DYTools::nMassBins2D,nYBinsMax);
+  TMatrixD nPassBBv(DYTools::nMassBins,nYBinsMax), accBBv(DYTools::nMassBins,nYBinsMax), accErrBBv(DYTools::nMassBins,nYBinsMax); 
+  TMatrixD nPassBEv(DYTools::nMassBins,nYBinsMax), accBEv(DYTools::nMassBins,nYBinsMax), accErrBEv(DYTools::nMassBins,nYBinsMax); 
+  TMatrixD nPassEEv(DYTools::nMassBins,nYBinsMax), accEEv(DYTools::nMassBins,nYBinsMax), accErrEEv(DYTools::nMassBins,nYBinsMax);
 
   // Vectors for calculation of errors with weighted sums
-  TMatrixD w2Eventsv (DYTools::nMassBins2D,nYBinsMax);  
-  TMatrixD w2Passv   (DYTools::nMassBins2D,nYBinsMax);
+  TMatrixD w2Eventsv (DYTools::nMassBins,nYBinsMax);  
+  TMatrixD w2Passv   (DYTools::nMassBins,nYBinsMax);
 
 
   nEventsv = 0;
@@ -160,10 +164,17 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   //
   const bool useFewzWeights = true;
   const bool cutZPT100 = true;
+  FEWZ_t fewz(useFewzWeights,cutZPT100);
+  if (useFewzWeights && !fewz.isInitialized()) {
+    std::cout << "failed to prepare FEWZ correction\n";
+    throw 2;
+  }
+  const int new_fewz_code=1;
+  TH2D *weights[DYTools::nMassBins]; // temporary
+  TH2D *weightErrors[DYTools::nMassBins]; // temporary
+  if (!new_fewz_code) {
   if(cutZPT100)
     cout << "NOTE: in MC, for Z/gamma* PT>100 the FEWZ weights for 80<PT<100 GeV are used!" << endl;
-  TH2D *weights[DYTools::nMassBins];
-  TH2D *weightErrors[DYTools::nMassBins];
   TFile fweights("../root_files/fewz/weights_stepwise_prec10-5_fine12.root");
   if( !fweights.IsOpen() ) assert(0);
 
@@ -172,6 +183,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     weights[i] = (TH2D*)fweights.Get(hname_loc);
     hname_loc = TString::Format("h_weighterror_%02d",i+1);
     weightErrors[i] = (TH2D*)fweights.Get(hname_loc);
+  }
   }
 
   //
@@ -198,6 +210,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     // Find weight for events for this file
     // The first file in the list comes with weight 1,
     // all subsequent ones are normalized to xsection and luminosity
+    AdjustXSectionForSkim(infile,xsecv[ifile],eventTree->GetEntries(),1);
     lumiv[ifile] = eventTree->GetEntries()/xsecv[ifile];
     double scale = lumiv[0]/lumiv[ifile];
     //     if(ifile != 0) scale *= 0.87;
@@ -218,7 +231,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       // Which mass is used?
       double massPreFsr = gen->vmass;   // pre-FSR
       double mass = gen->mass;    // post-FSR
-      double yPreFsr = gen->vy;   // pre-FSR
+      //double yPreFsr = gen->vy;   // pre-FSR
       double y = gen->y;    // post-FSR
 
       if ((mass < massLow) || (mass > massHigh)) continue;
@@ -232,11 +245,12 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       
       int ibin = DYTools::findMassBin(mass);
       int ibinPreFsr = DYTools::findMassBin(massPreFsr);
-        //std::cout<<"ibinPreFsr="<<ibinPreFsr<<std::endl;
-      int ibinMass2D = DYTools::findMassBin2D(mass);
-      int ibinMass2DPreFsr = DYTools::findMassBin2D(massPreFsr);
-      int ibinY = DYTools::findAbsYBin2D(ibinMass2D, y);
-      int ibinYPreFsr = DYTools::findAbsYBin2D(ibinMass2DPreFsr, yPreFsr);
+      //std::cout<<"ibinPreFsr="<<ibinPreFsr<<std::endl;
+      int ibinMass = DYTools::findMassBin(mass);
+      //int ibinMassPreFsr = DYTools::findMassBin(massPreFsr);
+      int ibinY = DYTools::findAbsYBin(ibinMass, y);
+      //std::cout << "ibinY=" << ibinY << "\n";
+      //int ibinYPreFsr = DYTools::findAbsYBin(ibinMassPreFsr, yPreFsr);
 
       // If mass is larger than the highest bin boundary
       // (last bin), use the last bin.
@@ -247,6 +261,8 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       double fewz_weight = 1.0;
 
       if(useFewzWeights)
+	if (new_fewz_code) fewz_weight=fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
+	else
         {
 	  if(ibinPreFsr != -1 && ibinPreFsr < DYTools::nMassBins)
             {
@@ -271,34 +287,34 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
           else
 	    //cout << "Error: binning problem" << endl;
             noFewz++;
-      }
+	}
 //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
 
       if(ibin != -1 && ibin < nEventsv.GetNoElements()){
 	double fullWeight = reweight * scale * gen->weight * fewz_weight;
-	nEventsv(ibinMass2D,ibinY) += fullWeight;
-	w2Eventsv(ibinMass2D,ibinY) += fullWeight*fullWeight;
+	nEventsv(ibinMass,ibinY) += fullWeight;
+	w2Eventsv(ibinMass,ibinY) += fullWeight*fullWeight;
       }else if(ibin >= nEventsv.GetNoElements())
 	cout << "ERROR: binning problem" << endl;
 
-      Bool_t isB1 = (fabs(gen->eta_1)<kGAP_LOW);
-      Bool_t isB2 = (fabs(gen->eta_2)<kGAP_LOW);
-      Bool_t isE1 = (fabs(gen->eta_1)>kGAP_HIGH);
-      Bool_t isE2 = (fabs(gen->eta_2)>kGAP_HIGH);
+      Bool_t isB1 = (fabs(gen->eta_1)<kECAL_GAP_LOW);
+      Bool_t isB2 = (fabs(gen->eta_2)<kECAL_GAP_LOW);
+      Bool_t isE1 = (fabs(gen->eta_1)>kECAL_GAP_HIGH);
+      Bool_t isE2 = (fabs(gen->eta_2)>kECAL_GAP_HIGH);
       // Asymmetric Et cut scheme for DY analysis
       if( ( (gen->pt_1 > DYTools::etMinLead && gen->pt_2 > DYTools::etMinTrail) 
 	    || (gen->pt_1 > DYTools::etMinTrail && gen->pt_2 > DYTools::etMinLead) )
-         && ((fabs(gen->eta_1)<kGAP_LOW) || (fabs(gen->eta_1)>kGAP_HIGH))
-         && ((fabs(gen->eta_2)<kGAP_LOW) || (fabs(gen->eta_2)>kGAP_HIGH))   
+         && ((fabs(gen->eta_1)<kECAL_GAP_LOW) || (fabs(gen->eta_1)>kECAL_GAP_HIGH))
+         && ((fabs(gen->eta_2)<kECAL_GAP_LOW) || (fabs(gen->eta_2)>kECAL_GAP_HIGH))   
 	 && (fabs(gen->eta_1)<2.5) && (fabs(gen->eta_2)<2.5)) {
         
 	if(ibin != -1 && ibin < nPassv.GetNoElements()){
 	  double fullWeight = reweight * scale * gen->weight * fewz_weight;
-	  nPassv(ibinMass2D,ibinY) += fullWeight;
-	  w2Passv(ibinMass2D,ibinY) += fullWeight*fullWeight;
-	  if(isB1 && isB2)                          { nPassBBv(ibinMass2D,ibinY) += reweight * scale * gen->weight * fewz_weight; } 
-	  else if(isE1 && isE2)                     { nPassEEv(ibinMass2D,ibinY) += reweight * scale * gen->weight * fewz_weight; } 
-	  else if((isB1 && isE2) || (isE1 && isB2)) { nPassBEv(ibinMass2D,ibinY) += reweight * scale * gen->weight * fewz_weight; }
+	  nPassv(ibinMass,ibinY) += fullWeight;
+	  w2Passv(ibinMass,ibinY) += fullWeight*fullWeight;
+	  if(isB1 && isB2)                          { nPassBBv(ibinMass,ibinY) += reweight * scale * gen->weight * fewz_weight; } 
+	  else if(isE1 && isE2)                     { nPassEEv(ibinMass,ibinY) += reweight * scale * gen->weight * fewz_weight; } 
+	  else if((isB1 && isE2) || (isE1 && isB2)) { nPassBEv(ibinMass,ibinY) += reweight * scale * gen->weight * fewz_weight; }
 	}
       }
       hZMassv[ifile]->Fill(mass,reweight * scale * gen->weight * fewz_weight);
@@ -321,7 +337,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   accEEv    = 0;
   accErrEEv = 0;
 
-  for(int i=0; i<DYTools::nMassBins2D; i++)
+  for(int i=0; i<DYTools::nMassBins; i++)
     for (int j=0; j<nYBins[i]; j++)
       {
         if(nEventsv(i,j) != 0)
@@ -364,8 +380,19 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   // Make plots 
   //==============================================================================================================  
 
+  TString outDir= TString("../root_files/");
+  if (systematicsMode==DYTools::NORMAL)  outDir+=TString("constants/");
+  else if (systematicsMode==DYTools::FSR_STUDY)  outDir+=TString("systematics/");
+  outDir+=dirTag;
+  gSystem->mkdir(outDir,kTRUE);
 
-  TCanvas *c = MakeCanvas("c","c",800,600);
+  TString fileNamePlots=outDir + "/acceptance_plots" + analysisTag + ".root";
+  TFile *filePlots=new TFile(fileNamePlots,"recreate");
+  if (!filePlots) {
+    std::cout << "failed to create file <" << fileNamePlots << ">\n";
+    throw 2;
+  }
+  TCanvas *c = MakeCanvas("canvAcceptance","canvAcceptance",800,600);
 
   // string buffers
   char ylabel[50];   // y-axis label
@@ -380,21 +407,24 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   plotZMass1.Draw(c);
   SaveCanvas(c, "zmass1");
 
-  PlotMatrixVariousBinning(accv, "acceptance", "LEGO2");
+  PlotMatrixVariousBinning(accv, "acceptance", "LEGO2",filePlots);
+  filePlots->Close();
+  //delete filePlots;
   
 
-        
+  //          ------ can be adjusted to use outDir
   // Store constants in the file
   TString accConstFileName(TString("../root_files/"));
   if (systematicsMode==DYTools::NORMAL){
     accConstFileName+=TString("constants/")+dirTag;
     gSystem->mkdir(accConstFileName,kTRUE);
-    accConstFileName+=TString("/acceptance_constants.root");
+    //accConstFileName+=TString("/acceptance_constants.root");
+    accConstFileName+=TString("/acceptance_constants" + analysisTag + ".root");
   }
   else if (systematicsMode==DYTools::FSR_STUDY){
     accConstFileName+=TString("systematics/")+dirTag;
     gSystem->mkdir(accConstFileName,kTRUE);
-    accConstFileName+=TString("/acceptance_constants_reweight_");
+    accConstFileName+=TString("/acceptance_constants_reweight_") + analysisTag;
     accConstFileName+=int(reweightFsr*100);
     accConstFileName+=TString(".root");
   }
@@ -416,7 +446,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   cout << labelv[0] << " file: " << fnamev[0] << endl;
   cout << "     Number of generated events: " << nZv << endl;
   printf(" mass bin    preselected      passed     total_A_GEN      BB-BB_A_GEN      EB-BB_A_GEN      EB-EB_A_GEN\n");
-  for(int i=0; i<DYTools::nMassBins2D; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
 	   DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
 	   nEventsv[i], nPassv[i],
