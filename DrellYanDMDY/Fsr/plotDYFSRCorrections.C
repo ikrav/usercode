@@ -26,6 +26,10 @@
 // define classes and constants to read in ntuple
 #include "../Include/EWKAnaDefs.hh"
 #include "../Include/TGenInfo.hh"
+
+#include "../Include/EventSelector.hh"
+#include "../Include/FEWZ.hh"
+
 #endif
 
 //=== FUNCTION DECLARATIONS ======================================================================================
@@ -114,19 +118,25 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   //
   const bool useFewzWeights = true;
   const bool cutZPT100 = true;
+  FEWZ_t fewz(useFewzWeights,cutZPT100);
+  if (useFewzWeights && !fewz.isInitialized()) {
+    std::cout << "failed to prepare FEWZ correction\n";
+    throw 2;
+  }
+  const int new_fewz_code=1;
+  TH2D *weights[DYTools::_nMassBins2011]; // temporary
+  TH2D *weightErrors[DYTools::_nMassBins2011]; // temporary
+  if (!new_fewz_code) {
   if(cutZPT100)
     cout << "NOTE: in MC, for Z/gamma* PT>100 the FEWZ weights for 80<PT<100 GeV are used!" << endl;
-
-  TH2D *weights[DYTools::nMassBins2011];
-  TH2D *weightErrors[DYTools::nMassBins2011];
-
   TFile fweights("../root_files/fewz/weights_stepwise_prec10-5_fine12.root");
   if( !fweights.IsOpen() ) assert(0);
-  for(int i=0; i<DYTools::nMassBins2011; i++){
+  for(int i=0; i<DYTools::_nMassBins2011; i++){
     TString hname1 = TString::Format("weight_%02d",i+1);
     weights[i] = (TH2D*)fweights.Get(hname1);
     hname1 = TString::Format("h_weighterror_%02d",i+1);
     weightErrors[i] = (TH2D*)fweights.Get(hname1);
+  }
   }
 
   //
@@ -156,6 +166,7 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
     // Find weight for events for this file
     // The first file in the list comes with weight 1,
     // all subsequent ones are normalized to xsection and luminosity
+    AdjustXSectionForSkim(infile,xsecv[ifile],eventTree->GetEntries(),1);
     lumiv[ifile] = eventTree->GetEntries()/xsecv[ifile];
     double scale = lumiv[0]/lumiv[ifile];
 //     if(ifile != 0) scale *= 0.87;
@@ -169,7 +180,7 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
     nZ += eventTree->GetEntries();
     nZweighted += scale * eventTree->GetEntries();
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-	if (debugMode && (ientry>10000)) break; // debug option
+      if (debugMode && (ientry>10000)) break; // debug option
       genBr->GetEntry(ientry);
 
       // if sansAcc mode, Discard events that are not in kinematics acceptance
@@ -189,12 +200,12 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
       double yPostFsr = gen->y;    // post-FSR
       if((y < yRangeMin) || (y > yRangeMax)) continue;
 
-      int ibinM1D = DYTools::findMassBin2011(mass);
+      int ibinM1D = DYTools::_findMassBin2011(mass);      // temporary
       // If mass is larger than the highest bin boundary
       // (last bin), use the last bin.
-      if(ibinM1D == -1 && mass >= massBinLimits2011[nMassBins2011] )
-	ibinM1D = nMassBins2011-1;
-      int ibinM1DPostFsr = DYTools::findMassBin2011(massPostFsr);
+      if(ibinM1D == -1 && mass >= _massBinLimits2011[_nMassBins2011] )
+	ibinM1D = _nMassBins2011-1;
+      //int ibinM1DPostFsr = DYTools::_findMassBin2011(massPostFsr);  // temporary
 
       int ibinM = DYTools::findMassBin(mass);
       // If mass is larger than the highest bin boundary
@@ -203,14 +214,18 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
 	ibinM = nMassBins-1;
       int ibinMPostFsr = DYTools::findMassBin(massPostFsr);
 
-      int ibinY = DYTools::findAbsYBin2D(ibinM,y);
-      int ibinYPostFsr = DYTools::findAbsYBin2D(ibinMPostFsr,yPostFsr);
+      int ibinY = DYTools::findAbsYBin(ibinM,y);
+      int ibinYPostFsr = DYTools::findAbsYBin(ibinMPostFsr,yPostFsr);
 
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity and pt
       double fewz_weight = 1.0;
       if(useFewzWeights){
-	if(ibinM1D != -1 && ibinM1D < DYTools::nMassBins2011){
+	if (new_fewz_code) {
+	  fewz_weight=fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
+	}
+	else {
+	if(ibinM1D != -1 && ibinM1D < DYTools::_nMassBins2011){
 	  // Check that the virtual Z has Pt and Y within the
 	  // weight map range. If it is in the underflow or overflow,
 	  // move the index to point to the appropriate edge bin
@@ -229,6 +244,7 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
           binProblemFEWZ++;
       }
      //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
+      }
 
       if(ibinM != -1 && ibinM<nMassBins && ibinY!=-1 && ibinY<nYBins[ibinM])
 	nEventsv(ibinM,ibinY) += scale * gen->weight * fewz_weight;
@@ -280,13 +296,32 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   //--------------------------------------------------------------------------------------------------------------
   // Make plots 
   //==============================================================================================================  
-  TCanvas *c = MakeCanvas("c","c",800,600);
+
+  // prepare tag
+  TString addStr=TString("_") + analysisTag;
+  if (sansAcc) addStr.Append("_sans_acc");
+  //else addStr=""; 
+
+  // Prepare directories
+  TString outputDir(TString("../root_files/constants/")+dirTag);
+  gSystem->mkdir(outputDir,kTRUE);
+  TString fsr_constants="/fsr_constants";
+  fsr_constants+=addStr;   // addStr contains analysisTag
+  fsr_constants+=".root";
+
+  TString fileNamePlots=outputDir + fsr_constants;
+  fileNamePlots.Replace(fileNamePlots.Index(".root"),sizeof(".root"),"_plots.root");
+  TFile *filePlots=new TFile(fileNamePlots,"recreate");
+  if (!filePlots || !filePlots->IsOpen()) {
+    std::cout << "failed to create file <" << fileNamePlots << ">\n";
+    throw 2;
+  }
+
+  TString canvName=TString("canvFsr_zmass1") + addStr;
+  TCanvas *c = MakeCanvas(canvName,canvName,800,600);
 
   // string buffers
   char ylabel[50];   // y-axis label
-  TString addStr;
-  if (sansAcc) addStr="_sans_acc";
-  else addStr=""; 
 
   // Z mass
   sprintf(ylabel,"a.u. / %.1f GeV/c^{2}",hZMassv[0]->GetBinWidth(1));
@@ -299,9 +334,11 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   TString zmass1="zmass1";
   zmass1+=addStr;
   SaveCanvas(c, zmass1);
+  c->Write();
 
   // Pre FSR vs post-FSR plots
-  TCanvas *c2 = MakeCanvas("c2","c2",800,600);
+  canvName = TString("canv_preFsr_vs_postFSR") + addStr;
+  TCanvas *c2 = MakeCanvas(canvName,canvName,800,600);
   CPlot plotOverlay("overlay","","m(ee) [GeV/c^{2}]","Events");
   plotOverlay.AddHist1D(hMassPreFsr,"pre-FSR","hist",kBlue); 
   plotOverlay.AddHist1D(hMassPostFsr,"post-FSR","hist",kRed); 
@@ -310,21 +347,30 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   overlay+=addStr;
   plotOverlay.Draw(c2);
   SaveCanvas(c2, overlay);
+  c2->Write();
+
+  plotOverlay.SetLogx();
+  canvName.Append("_logM");
+  overlay.Append("_logM");
+  plotOverlay.SetXRange(1,DYTools::massBinLimits[DYTools::nMassBins]);
+  TCanvas *c3 = MakeCanvas(canvName,canvName,800,600);
+  plotOverlay.Draw(c3); // prepare legend
+  plotOverlay.TransLegend(-1.,0.);        // incorrect placement?!
+  plotOverlay.Draw(c3);
+  SaveCanvas(c3, overlay);
+  c3->Write();
+  
 
   TString NoverN="N_PosrFsr_over_N_PreFsr";
   NoverN+=addStr;
   std::cout<<"I'M going to save plots"<<std::endl;
-  PlotMatrixVariousBinning(corrv, NoverN, "LEGO2");
+  PlotMatrixVariousBinning(corrv, NoverN, "LEGO2",filePlots);
+
+  if (filePlots) filePlots->Close();
 
 
   // Store constants in the file
-  TString outputDir(TString("../root_files/constants/")+dirTag);
-  gSystem->mkdir(outputDir,kTRUE);
-  TString fsr_constants="/fsr_constants";
-  fsr_constants+=addStr;
-  fsr_constants+=".root";
   TString fsrConstFileName(outputDir+fsr_constants);
-
   TFile fa(fsrConstFileName,"recreate");
   //correctionGraph->Write("CORR_FSR");
   corrv.Write("fsrCorrectionArray");
