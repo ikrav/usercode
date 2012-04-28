@@ -119,6 +119,7 @@ namespace DYTools {
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
   // Declare mass binning for the analysis (1D and 2D case)
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
+
   const DYTools::TMassBinning_t massBinningSet=(study2D) ? _MassBins_2011_2D : _MassBins_2011;
   const int nMassBins=(study2D) ? _nMassBins2D : _nMassBins2011;
   const double *massBinLimits=(study2D) ? _massBinLimits2D : _massBinLimits2011;
@@ -149,9 +150,13 @@ namespace DYTools {
 
     int newCode=1;
     if (newCode) {
-      result = int( ( y - yRangeMin )* 1.0001*nYBinsThisMassRange/( yRangeMax - yRangeMin ) );
-      //double dy=((yRangeMax-yRangeMin)/double(nYBinsThisMassRange));
+      result = int( ( y - yRangeMin )* 1.0001*(nYBinsThisMassRange-1)/( yRangeMax - yRangeMin ) );
+      double dy=((yRangeMax-yRangeMin)/double(nYBinsThisMassRange-1));
       //std::cout << "y=" << y << ", dy=" << dy  << ", binIdx=" << result << ", yRange=" << (result*dy) << ".." << (result*dy+dy) << "\n";
+      if (result < 0 || result >= nYBinsThisMassRange) {
+	std::cout << "y=" << y << ", dy=" << dy  << ", binIdx=" << result << ", yRange=" << (result*dy) << ".." << (result*dy+dy) << "\n";
+	result=-1;
+      }
     }
     else {
       // Make the array large enough to accommodate any Y binning
