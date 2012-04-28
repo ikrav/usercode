@@ -53,6 +53,8 @@
   // Trigger info
 #include "../Include/TriggerSelection.hh"
 
+#include "../Include/EventSelector.hh"
+
 
 #endif
 
@@ -75,6 +77,16 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 //check mass spectra with reweightFsr = 0.95; 1.00; 1.05  
 //mass value until which do reweighting
 {
+
+  // check whether it is a calculation
+  if (input.Contains("_DebugRun_")) {
+    std::cout << "plotDYUnfoldingMatrix: _DebugRun_ detected. Terminating the script\n";
+    return;
+  }
+
+  // normal calculation
+
+
   gBenchmark->Start("makeUnfoldingMatrix");
 
   if (systematicsMode==DYTools::NORMAL)
@@ -83,6 +95,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
     std::cout<<"Running script in the RESOLUTION_STUDY mode"<<std::endl;
   else if (systematicsMode==DYTools::FSR_STUDY)
     std::cout<<"Running script in the FSR_STUDY mode"<<std::endl;
+  else if (systematicsMode==DYTools::ESCALE_RESIDUAL) 
+    std::cout << "Running script in the ESCALE_RESIDUAL mode\n";
   else { 
     std::cout<<"requested mode not recognized"<<std::endl;
     assert(0);
@@ -147,8 +161,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
     assert(0);
   }
 
-  const Double_t kGAP_LOW  = 1.4442;
-  const Double_t kGAP_HIGH = 1.566;
+  //const Double_t kGAP_LOW  = 1.4442;
+  //const Double_t kGAP_HIGH = 1.566;
 
   // For MC the trigger does not depend on run number
   const bool isData=kFALSE;
@@ -169,11 +183,31 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   random.SetSeed(seed);
   gRandom->SetSeed(seed);
 //   // In the case of systematic studies, generate an array of random offsets
-//   TVectorD shift(escale::nEtaBins);
-//   shift = 0;
-//   if(systematicsMode==DYTools::RESOLUTION_STUDY)
-//     for(int i=0; i<escale::nEtaBins; i++)
-//       shift[i] = gRandom->Gaus(0,1);
+  TVectorD shift(escale._nEtaBins); // temporary: this vector is outdated by the new features in the escale obj.class
+  shift = 0;
+  if(systematicsMode==DYTools::RESOLUTION_STUDY) {
+    escale.randomizeSmearingWidth(seed);
+    for(int i=0; i<escale._nEtaBins; i++)
+      shift[i] = gRandom->Gaus(0,1);
+  }
+
+  // prepare tools for ESCALE_RESIDUAL
+  /*
+  TH1F *shapeWeights=NULL;
+  if (systematicsMode==DYTools::ESCALE_RESIDUAL) {
+    TString shapeFName=TString("../root_files/yields/") + dirTag + TString("/shape_weights.root");
+    std::cout << "Obtaining shape_weights.root from <" << shapeFName << ">\n";
+    TFile fshape(shapeFName);
+    if (!fshape.IsOpen()) {
+      std::cout << "failed to open a file <" << shapeFName << ">\n";
+      throw 2;
+    }
+    shapeWeights = (TH1F*)fshape.Get("weights");
+    shapeWeights->SetDirectory(0);
+    dirTag += TString("_escale_residual");
+    std::cout << "changing dirTag to <" << dirTag << ">\n";
+  }
+  */
 
   //  
   // Set up histograms
@@ -190,7 +224,7 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   TH1F *hMassDiffEB = new TH1F("hMassDiffEB","", 100, -30, 30);
   TH1F *hMassDiffEE = new TH1F("hMassDiffEE","", 100, -30, 30);
 
-  int nUnfoldingBins = DYTools::getNumberOf2DBins();
+  int nUnfoldingBins = DYTools::getTotalNumberOfBins();
 
   TH1F *hMassDiffV[nUnfoldingBins];
   for(int i=0; i<nUnfoldingBins; i++){
@@ -266,7 +300,9 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
     // Find weight for events for this file
     // The first file in the list comes with weight 1,
     // all subsequent ones are normalized to xsection and luminosity
-    lumiv[ifile] = eventTree->GetEntries()/xsecv[ifile];
+    double xsec=xsecv[ifile];
+    AdjustXSectionForSkim(infile,xsec,eventTree->GetEntries(),1);
+    lumiv[ifile] = eventTree->GetEntries()/xsec;
     double scale = lumiv[0]/lumiv[ifile];
     cout << "       -> sample weight is " << scale << endl;
 
@@ -291,8 +327,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 
 
       // Use post-FSR generator level mass and rapidity in unfolding
-      int iMassGenPostFsr = DYTools::findMassBin2D(gen->mass);
-      int iYGenPostFsr = DYTools::findAbsYBin2D(iMassGenPostFsr, gen->y);
+      int iMassGenPostFsr = DYTools::findMassBin(gen->mass);
+      int iYGenPostFsr = DYTools::findAbsYBin(iMassGenPostFsr, gen->y);
       int iIndexFlatGenPostFsr = DYTools::findIndexFlat(iMassGenPostFsr, iYGenPostFsr);
       if(iIndexFlatGenPostFsr != -1 && iIndexFlatGenPostFsr < yieldsMcFsr.GetNoElements()){
          yieldsMcFsr[iIndexFlatGenPostFsr] += reweight * scale * gen->weight;
@@ -320,8 +356,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 	
 	// Apply selection
 	// Eta cuts
-        if((fabs(dielectron->scEta_1)>kGAP_LOW) && (fabs(dielectron->scEta_1)<kGAP_HIGH)) continue;
-        if((fabs(dielectron->scEta_2)>kGAP_LOW) && (fabs(dielectron->scEta_2)<kGAP_HIGH)) continue;
+        if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
+        if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
 	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
 	
 	// Asymmetric SC Et cuts
@@ -359,8 +395,9 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 // 	}
 //         double smearTotal = sqrt(smear1*smear1 + smear2*smear2);
 //         double massResmeared = dielectron->mass + random.Gaus(0.0,smearTotal);
-	double smearingCorrection = escale.generateMCSmear(dielectron->scEta_1, 
-							   dielectron->scEta_2);
+	double smearingCorrection = (systematicsMode == DYTools::RESOLUTION_STUDY) ?
+          escale.generateMCSmearRandomized(dielectron->scEta_1,dielectron->scEta_2) :
+          escale.generateMCSmear(dielectron->scEta_1,dielectron->scEta_2);
 	double massResmeared = dielectron->mass + smearingCorrection;
 
 	hZMassv[ifile]->Fill(massResmeared,scale * gen->weight);
@@ -376,8 +413,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 	  cout << "ERROR: binning problem" << endl;
 
 	// Find bin of the reconstructed mass and rapidity
-	int iMassReco = DYTools::findMassBin2D(massResmeared);
-	int iYReco = DYTools::findAbsYBin2D(iMassReco, dielectron->y);
+	int iMassReco = DYTools::findMassBin(massResmeared);
+	int iYReco = DYTools::findAbsYBin(iMassReco, dielectron->y);
 	int iIndexFlatReco = DYTools::findIndexFlat(iMassReco, iYReco);
 	if(iIndexFlatReco != -1 && iIndexFlatReco < yieldsMcRec.GetNoElements()){
 	    yieldsMcRec[iIndexFlatReco] += reweight * scale * gen->weight;
@@ -392,8 +429,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
           DetMigration(iIndexFlatGenPostFsr,iIndexFlatReco) += reweight * scale * gen->weight;
 	}
 	
-        Bool_t isB1 = (fabs(dielectron->scEta_1)<kGAP_LOW);
-        Bool_t isB2 = (fabs(dielectron->scEta_2)<kGAP_LOW);         
+        Bool_t isB1 = (fabs(dielectron->scEta_1)<kECAL_GAP_LOW);
+        Bool_t isB2 = (fabs(dielectron->scEta_2)<kECAL_GAP_LOW);         
 	hMassDiff->Fill(massResmeared - gen->mass);
 	if( isB1 && isB2 )
 	  hMassDiffBB->Fill(massResmeared - gen->mass);
@@ -417,6 +454,7 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   delete gen;
 
 
+  std::cout << "finish reweighting" << std::endl;
   //finish reweighting of mass spectra
 
   
@@ -438,6 +476,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
     }
   }
   
+  std::cout << "find response matrix" << std::endl;
+
   // Find response matrix, which is simply the normalized migration matrix
   for(int ifsr = 0; ifsr < DetMigration.GetNrows(); ifsr++){
     double nEventsInFsrMassBin = 0;
@@ -463,6 +503,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
     }
   }
 
+  std::cout << "find inverted response matrix" << std::endl;
+
   // Find inverted response matrix
   TMatrixD DetInvertedResponse = DetResponse;
   //Double_t det;
@@ -474,6 +516,9 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 //   TVectorD BinLimitsArray(nUnfoldingBins+1);
 //   for(int i=0; i<nUnfoldingBins+1; i++)
 //     BinLimitsArray(i) = DYTools::massBinLimits[i];
+
+
+  std::cout << "store constants in a file" << std::endl;
 
   // Store constants in the file
   TString outputDir(TString("../root_files/constants/")+dirTag);
@@ -515,6 +560,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   // Make plots 
   //==============================================================================================================  
 
+  std::cout << "making plots" << std::endl;
+
   TCanvas *c = MakeCanvas("c","c",800,600);
 
   // string buffers
@@ -530,6 +577,7 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   plotZMass1.Draw(c,doSave,format);
 
   // Create plots of how reco mass looks and how unfolded mass should look like
+// THIS IS A PROBLEMATIC PLOT nUnfoldingBins is nMassBins * nYBins !!
   TVectorD massBinCentral     (nUnfoldingBins);
   TVectorD massBinHalfWidth   (nUnfoldingBins);
   TVectorD yieldMcFsrOfRecErr (nUnfoldingBins);
@@ -555,6 +603,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   int xsize = 600;
   int ysize = 400;
 
+  std::cout << "Create the plot of the response matrix" << std::endl;
+
   // Create the plot of the response matrix
   TH2F *hResponse = new TH2F("hResponse","",nUnfoldingBins, DYTools::massBinLimits,
 			     nUnfoldingBins, DYTools::massBinLimits);
@@ -575,6 +625,8 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   hResponse->GetXaxis()->SetNoExponent();
   hResponse->GetYaxis()->SetNoExponent();
   plotResponse.Draw(e);
+
+  std::cout << "create inverted response matrix" << std::endl;
 
   // Create the plot of the inverted response matrix
   TH2F *hInvResponse = new TH2F("hInvResponse","",nUnfoldingBins, DYTools::massBinLimits,
