@@ -7,10 +7,15 @@
 #if [ -s ${triggerSet} ] ; then  
 #    triggerSet="Full2011_hltEffNew"  # not used in this script yet
 #fi
-if [ -s ${mcConfInputFile} ] ; then
+
+mcConfIputFile=$1
+xsecConfInputFile=$2
+echo "mcConf=\"${mcConfInputFile}\", xsecConf=\"${xsecConfInputFile}\""
+
+if [ ${#mcConfInputFile} -eq 0 ] ; then
     mcConfInputFile="../config_files/fall11mcT3.input" 
 fi
-if [ -s ${xsecConfInputFile} ] ; then
+if [ ${#xsecConfInputFile} -eq 0 ] ; then
     xsecConfInputFile="../config_files/xsecCalc.conf"
 fi
 
@@ -34,6 +39,7 @@ echo
 
 doFsrStudy=1
 doCalcAcceptanceSyst=1
+debugMode=0
 
 #
 #  Modify flags if fullRun=1
@@ -54,12 +60,12 @@ noError=1
 
 runPlotDYAcceptance() {
   loc_massLimit=-1
-  root -b -q -l ${LXPLUS_CORRECTION} plotDYAcceptance.C+\(\"${mcConfInputFile}\",${StudyFlag},${ReweightFactor},${loc_massLimit}\)
+  root -b -q -l ${LXPLUS_CORRECTION} plotDYAcceptance.C+\(\"${mcConfInputFile}\",${StudyFlag},${ReweightFactor},${loc_massLimit},${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
-     echo "DONE: plotDYAcceptance.C(\"${mcConfInputFile}\",${StudyFlag},${ReweightFactor},${loc_massLimit})"
+     echo "DONE: plotDYAcceptance.C(\"${mcConfInputFile}\",${StudyFlag},${ReweightFactor},${loc_massLimit},debug=${debugMode})"
      echo 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
   fi
