@@ -425,6 +425,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     accConstFileName+=TString("systematics/")+dirTag;
     gSystem->mkdir(accConstFileName,kTRUE);
     accConstFileName+=TString("/acceptance_constants_reweight_") + analysisTag;
+    accConstFileName+=TString("_");
     accConstFileName+=int(reweightFsr*100);
     accConstFileName+=TString(".root");
   }

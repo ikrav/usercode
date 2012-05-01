@@ -719,7 +719,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   // Make plots
   //==============================================================================================================
 
-  TString outFNameHistos = outputDir + TString("/selectEvents-") + analysisTag_USER + TString(".root");
+  TString outFNameHistos = outputDir + TString("/selectEvents") + analysisTag_USER + TString("-plots.root");
   TFile *outFileHistos = new TFile(outFNameHistos,"RECREATE");
   outFileHistos->cd();
   for(UInt_t isam=0; isam<samplev.size(); isam++) hNGoodPVv[isam]->Write();

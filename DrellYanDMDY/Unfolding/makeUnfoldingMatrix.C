@@ -525,14 +525,19 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   if((systematicsMode==DYTools::RESOLUTION_STUDY) || (systematicsMode==DYTools::FSR_STUDY))
     outputDir = TString("../root_files/systematics/")+dirTag;
   gSystem->mkdir(outputDir,kTRUE);
-  TString unfoldingConstFileName(outputDir+TString("/unfolding_constants.root"));
+  //TString unfoldingConstFileName(outputDir+TString("/unfolding_constants.root"));
+  TString unfoldingConstFileName=outputDir+
+    TString("/unfolding_constants") + analysisTag 
+    + TString(".root");
   if(systematicsMode==DYTools::RESOLUTION_STUDY){
     unfoldingConstFileName = outputDir+TString("/unfolding_constants_seed_");
+    unfoldingConstFileName += analysisTag;
     unfoldingConstFileName += seed;
     unfoldingConstFileName += ".root";
   }
   if(systematicsMode==DYTools::FSR_STUDY){
     unfoldingConstFileName = outputDir+TString("/unfolding_constants_reweight_");
+    unfoldingConstFileName += analysisTag;
     unfoldingConstFileName += int(100*reweightFsr);
     unfoldingConstFileName += ".root";
   }
