@@ -1,5 +1,5 @@
 #!/bin/bash
-1
+
 # 2012.04.14 Created from 1D FullChainMdf.sh
 #
 # If the script reports linking problems try to uncomment the line below.
@@ -9,29 +9,31 @@
 
 # ------------------  Define some variables
 
+anTagUser=
+anTag="1D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
 filename_data="../config_files/data.conf"
-filename_data="../config_files/data_evtTrig.conf"
+#filename_data="../config_files/data_evtTrig.conf"
 filename_mc="../config_files/fall11mc.input"
-filename_mc="../config_files/fall11mc_evtTrig.input"
+#filename_mc="../config_files/fall11mc_evtTrig.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffNew"
 tnpFileStart="../config_files/sf"
-debugMode=0
+debugMode=1
 
 # the variables below are more persistent
 crossSectionTag="DY_m10+pr+a05+o03+pr_4680pb"
-expectSelectedEventsFile="../root_files/selected_events/${crossSectionTag}/ntuples/zee_select.root"
-expectSelectedEventsFile2="../root_files/selected_events/${crossSectionTag}/npv.root"
-expectYieldsFile="../root_files/yields/${crossSectionTag}/yields.root"
-expectBkgSubtractedFile="../root_files/yields/${crossSectionTag}/yields_bg-subtracted.root"
-expectUnfoldingFile="../root_files/constants/${crossSectionTag}/unfolding_constants.root"
-expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics.root"
+expectSelectedEventsFile="../root_files/selected_events/${crossSectionTag}/ntuples/zee${anTagUser}_select.root"
+expectSelectedEventsFile2="../root_files/selected_events/${crossSectionTag}/npv${anTagUser}.root"
+expectYieldsFile="../root_files/yields/${crossSectionTag}/yields${anTag}.root"
+expectBkgSubtractedFile="../root_files/yields/${crossSectionTag}/yields_bg-subtracted${anTag}.root"
+expectUnfoldingFile="../root_files/constants/${crossSectionTag}/unfolding_constants${anTag}.root"
+expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics${anTag}.root"
 expectEfficiencyScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${triggerSet}.root"
-expectAcceptanceSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/acceptance_FSR_systematics.root"
-expectFsrSansAcc0File="../root_files/constants/${crossSectionTag}/fsr_constants.root"
-expectFsrSansAcc1File="../root_files/constants/${crossSectionTag}/fsr_constants_sans_acc.root"
-expectXSecFile="../root_files/xSec_results_${triggerSet}.root"
-expectXSecThFile="../root_files/xSecTh_results_${triggerSet}.root"
+expectAcceptanceSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/acceptance_FSR_systematics${anTag}.root"
+expectFsrSansAcc0File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}.root"
+expectFsrSansAcc1File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}_sans_acc.root"
+expectXSecFile="../root_files/xSec_results${anTag}_${triggerSet}.root"
+expectXSecThFile="../root_files/xSecTh_results${anTag}_${triggerSet}.root"
 
 # export some variables
 
@@ -51,23 +53,23 @@ force_rebuild_include_files=0
 
 ## controlling your work
 # catch-all flag
-do_all_steps=0
+do_all_steps=1
 do_post_selection_steps=0
 
 # individual flags. 
 # Note: all the above flags have to be 0 for these individual flags 
 # to be effective
 do_selection=0
-do_prepareYields=1
-do_subtractBackground=1
+do_prepareYields=0
+do_subtractBackground=0
 do_unfolding=0
 do_unfoldingSyst=0
 do_acceptance=0
 do_acceptanceSyst=0
-do_efficiency=0
+do_efficiency=1
 do_efficiencyScaleFactors=0
-do_plotFSRCorrections=1
-do_plotFSRCorrectionsSansAcc=1
+do_plotFSRCorrections=0
+do_plotFSRCorrectionsSansAcc=0
 do_theoryErrors=0
 do_crossSection=0
 
@@ -106,7 +108,7 @@ if [ ${do_post_selection_steps} -eq 1 ] ; then
 #    do_unfoldingSyst=1
     do_acceptance=1
 #    do_acceptanceSyst=1
-#    do_efficiency=1
+    do_efficiency=1
 #    do_efficiencyScaleFactors=1
     do_plotFSRCorrections=1
     do_plotFSRCorrectionsSansAcc=1
@@ -175,7 +177,7 @@ fi
 
 # prepare support libraries
 cd ../Include
-root -b -q -l rootlogon.C+              | tee ${logDir}/out${timeStamp}-00-include.log
+root -b -q -l rootlogon.C+              | tee ${logDir}/out${timeStamp}-00-include${anTag}.log
 
 
 #Selection
@@ -188,7 +190,7 @@ cd ../Selection
 rm -f *.so ${expectSelectedEventsFile} ${expectSelectedEventsFile2}
 echo
 checkFile selectEvents.C
-root -b -q -l ${LXPLUS_CORRECTION} selectEvents.C+\(\"$filename_data\",DYTools::NORMAL,\"$triggerSet\",${debugMode}\)           | tee ${logDir}/out${timeStamp}-01-selectEvents.log
+root -b -q -l ${LXPLUS_CORRECTION} selectEvents.C+\(\"$filename_data\",\"$triggerSet\",DYTools::NORMAL,${debugMode}\)           | tee ${logDir}/out${timeStamp}-01-selectEvents${anTag}.log
 get_status ${expectSelectedEventsFile} ${expectSelectedEventsFile2}
 statusSelection=$RUN_STATUS
 cd ../FullChain
@@ -209,7 +211,7 @@ cd ../YieldsAndBackgrounds
 rm -f *.so ${expectYieldsFile}
 echo
 checkFile prepareYields.C ${expectSelectedEventsFile} ${expectSelectedEventsFile2}
-root -b -q -l ${LXPLUS_CORRECTION} prepareYields.C+\(\"$filename_data\"\)       | tee ${logDir}/out${timeStamp}-02-prepareYields.log
+root -b -q -l ${LXPLUS_CORRECTION} prepareYields.C+\(\"$filename_data\"\)       | tee ${logDir}/out${timeStamp}-02-prepareYields${anTag}.log
 get_status ${expectYieldsFile}
 statusPrepareYields=$RUN_STATUS
 cd ../FullChain
@@ -230,7 +232,7 @@ cd ../YieldsAndBackgrounds
 rm -f *.so ${expectBkgSubtractedFile}
 echo
 checkFile subtractBackground.C ${expectYieldsFile}
-root -b -q -l ${LXPLUS_CORRECTION} subtractBackground.C+\(\"$filename_data\"\)      | tee ${logDir}/out${timeStamp}-03-subtractBackground.log
+root -b -q -l ${LXPLUS_CORRECTION} subtractBackground.C+\(\"$filename_data\"\)      | tee ${logDir}/out${timeStamp}-03-subtractBackground${anTag}.log
 get_status ${expectBkgSubractedFile}
 statusSubtractBackground=$RUN_STATUS
 cd ../FullChain
@@ -252,7 +254,7 @@ cd ../Unfolding
 rm -f *.so ${expectUnfoldingFile}
 echo
 checkFile makeUnfoldingMatrix.C
-root -b -q -l ${LXPLUS_CORRECTION} makeUnfoldingMatrix.C+\(\"$filename_mc\",DYTools::NORMAL,1,1.0,-1.0,${debugMode}\)    | tee ${logDir}/out${timeStamp}-04-makeUnfoldingMatrix.log
+root -b -q -l ${LXPLUS_CORRECTION} makeUnfoldingMatrix.C+\(\"$filename_mc\",DYTools::NORMAL,1,1.0,-1.0,${debugMode}\)    | tee ${logDir}/out${timeStamp}-04-makeUnfoldingMatrix${anTag}.log
 get_status ${expectUnfoldingFile}
 statusUnfolding=$RUN_STATUS
 cd ../FullChain
@@ -273,7 +275,7 @@ cd ../Unfolding
 rm -f *.so ${expectUnfoldingSystematicsFile}
 echo
 checkFile evaluateUnfoldingSyst.sh
-source evaluateUnfoldingSyst.sh --debug${debugMode} | tee ${logDir}/out${timeStamp}-05-evaluateUnfoldingSyst.log
+source evaluateUnfoldingSyst.sh --debug${debugMode} | tee ${logDir}/out${timeStamp}-05-evaluateUnfoldingSyst${anTag}.log
 get_status ${expectUnfoldingSystematicsFile}
 statusUnfoldingSyst=$RUN_STATUS
 cd ../FullChain
@@ -296,7 +298,7 @@ echo
 checkFile plotDYAcceptance.C
 root -b -q -l ${LXPLUS_CORRECTION} \
       plotDYAcceptance.C+\(\"$filename_mc\",DYTools::NORMAL,1.,-1,${debugMode}\) \
-    | tee ${logDir}/out${timeStamp}-06-plotDYAcceptance.log
+    | tee ${logDir}/out${timeStamp}-06-plotDYAcceptance${anTag}.log
 get_status
 statusAcceptance=$RUN_STATUS
 cd ../FullChain
@@ -318,7 +320,7 @@ cd ../Acceptance
 rm -f *.so ${expectAcceptanceSystematicsFile}
 echo
 checkFile evaluateAcceptanceSyst.sh
-source evaluateAcceptanceSyst.sh | tee ${logDir}/out${timeStamp}-07-evaluateAcceptanceSyst.log
+source evaluateAcceptanceSyst.sh | tee ${logDir}/out${timeStamp}-07-evaluateAcceptanceSyst${anTag}.log
 get_status ${expectAcceptanceSystematicsFile}
 statusAcceptanceSyst=$RUN_STATUS
 cd ../FullChain
@@ -333,15 +335,15 @@ fi
 if [ ${do_efficiency} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusEfficiency=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: plotDYEfficiency(\"${filename_mc}\")"
+echo "WILL DO: plotDYEfficiency(\"${filename_mc},debug=${debug}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Efficiency
 rm -f *.so
 echo
 checkFile plotDYEfficiency.C
-root -b -q -l ${LXPLUS_CORRECTION} plotDYEfficiency.C+\(\"$filename_mc\"\)       | tee ${logDir}/out${timeStamp}-08-plotDYEfficiency.log
+root -b -q -l ${LXPLUS_CORRECTION} plotDYEfficiency.C+\(\"$filename_mc\",${debugMode}\)       | tee ${logDir}/out${timeStamp}-08-plotDYEfficiency${anTag}.log
 get_status
-statusEfficiency=RUN_STATUS
+statusEfficiency=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "DONE: plotDYEfficiency(\"${filename_mc}\")"
@@ -360,7 +362,7 @@ cd ../EfficiencyScaleFactors
 rm -f *.so ${expectEfficiencyScaleFactorsFile}
 echo
 checkFile evaluateESF.sh
-source evaluateESF.sh  | tee ${logDir}/out${timeStamp}-09-evaluateESF-efficiencyScaleFactors.log
+source evaluateESF.sh  | tee ${logDir}/out${timeStamp}-09-evaluateESF-efficiencyScaleFactors${anTag}.log
 get_status ${expectEfficiencyScaleFactorsFile}
 statusEfficiencyScaleFactors=$RUN_STATUS
 cd ../FullChain
@@ -382,7 +384,7 @@ cd ../Fsr
 rm -f *.so ${expectFsrSansAcc0File}
 echo
 checkFile plotDYFSRCorrections.C
-root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\",0,${debugMode}\)     | tee ${logDir}/out${timeStamp}-10-plotDYFSRCorrections.log
+root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\",0,${debugMode}\)     | tee ${logDir}/out${timeStamp}-10-plotDYFSRCorrections${anTag}.log
 get_status ${expectFsrSansAcc0File}
 statusPlotDYFSRCorrections=$RUN_STATUS
 cd ../FullChain
