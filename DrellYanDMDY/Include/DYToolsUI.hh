@@ -60,7 +60,7 @@ TString TnPMethodName(DYTools::TTnPMethod_t method) {
 TString EfficiencyKindName(DYTools::TEfficiencyKind_t kind) {
   TString name;
   switch(kind) {
-  case GSF: name="Reco"; break;
+  case RECO: name="RECO"; break;
   case ID: name="ID"; break;
   case HLT: name="HLT"; break;
   default: name="Unknown_Efficiency_Kind";
@@ -87,6 +87,7 @@ TString EtaBinSetName(DYTools::TEtaBinSet_t set) {
   switch(set) {
   case ETABINS1: name="EtaBins1"; break;
   case ETABINS2: name="EtaBins2"; break;
+  case ETABINS5: name="EtaBins5"; break;
   default: name="Unknown_Eta_BinSet";
   }
   return name;
@@ -136,8 +137,8 @@ TTnPMethod_t DetermineTnPMethod(const TString &str) {
 // ------------------------------------------------------------------
 
 DYTools::TEfficiencyKind_t DetermineEfficiencyKind(const TString &str) {
-  DYTools::TEfficiencyKind_t kind=GSF;
-  if (str.Contains("GSF") || str.Contains("Reco") || str.Contains("RECO")) kind=GSF;
+  DYTools::TEfficiencyKind_t kind=RECO;
+  if (str.Contains("GSF") || str.Contains("Reco") || str.Contains("RECO")) kind=RECO;
   else if (str.Contains("ID")) kind=ID;
   else if (str.Contains("HLT")) kind=HLT;
   else {
@@ -166,6 +167,7 @@ DYTools::TEtaBinSet_t DetermineEtaBinSet(const TString& str) {
   DYTools::TEtaBinSet_t kind=ETABINS1;
   if (str.Contains("ETABINS1") || str.Contains("EtaBins1")) kind=ETABINS1;
   else if (str.Contains("ETABINS2") || str.Contains("EtaBins2")) kind=ETABINS2;
+  else if (str.Contains("ETABINS5") || str.Contains("EtaBins5")) kind=ETABINS5;
   else {
     std::cout << "DetermineEtaBinSet failed at <" << str  << ">\n";
     assert(0);
