@@ -61,7 +61,7 @@ namespace DYTools {
 
   // Tag and probe fitting constants
   typedef enum {COUNTnCOUNT, COUNTnFIT, FITnFIT} TTnPMethod_t;
-  typedef enum {GSF, ID, HLT} TEfficiencyKind_t;
+  typedef enum {RECO=0, ID=1, HLT=2} TEfficiencyKind_t;
  
 
   //
@@ -267,7 +267,7 @@ namespace DYTools {
   //
   // Define Et and Eta binning
   //
-  typedef enum {ETBINS1, ETBINS5} TEtBinSet_t;
+  typedef enum {ETBINS1=1, ETBINS5} TEtBinSet_t;
   const int nEtBins1 = 1;
   const double etBinLimits1[nEtBins1 + 1] = 
     {10, 500};
@@ -320,13 +320,16 @@ namespace DYTools {
     return result;
   };
 
-  typedef enum {ETABINS1, ETABINS2} TEtaBinSet_t;
+  typedef enum {ETABINS1, ETABINS2, ETABINS5} TEtaBinSet_t;
   const int nEtaBins1 = 1;
   const double etaBinLimits1[nEtBins1 + 1] = 
     {0, 2.5000001};
   const int nEtaBins2 = 2;
   const double etaBinLimits2[nEtaBins2 + 1] = 
     {0, 1.479, 2.5000001};
+  const int nEtaBins5 = 5;
+  const double etaBinLimits5[nEtaBins5 + 1] =
+    {0, 0.8, 1.4442, 1.566, 2.0, 2.500001 };
 
   int getNEtaBins(int binning){
     int n=0;
@@ -334,6 +337,8 @@ namespace DYTools {
       n = nEtaBins1;
     }else if( binning == ETABINS2 ){
       n = nEtaBins2;
+    }else if( binning == ETABINS5 ){
+      n = nEtaBins5;
     }else{
       printf("ERROR: unknown binning requested\n");
       n=0;
@@ -349,6 +354,8 @@ namespace DYTools {
       limits = etaBinLimits1;
     }else if( binning == ETABINS2 ){
       limits = etaBinLimits2;
+    }else if( binning == ETABINS5 ){
+      limits = etaBinLimits5;
     }else{
       printf("ERROR: unknown binning requested\n");
     }
