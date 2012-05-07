@@ -1,5 +1,11 @@
 #!/bin/bash
 
+mcConfInputFile="../config_files/fall11mc_evtTrig.input" 
+debugMode=1
+
+if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
+if [ ${#2} -gt 0 ] ; then debugMode=$2; fi
+
 #
 # Check if the environment variables are set. Assign values if they are empty
 #
@@ -7,16 +13,14 @@
 #if [ -s ${triggerSet} ] ; then  
 #    triggerSet="Full2011_hltEffNew"  # not used in this script yet
 #fi
-
-mcConfIputFile=$1
-xsecConfInputFile=$2
-echo "mcConf=\"${mcConfInputFile}\", xsecConf=\"${xsecConfInputFile}\""
-
-if [ ${#mcConfInputFile} -eq 0 ] ; then
-    mcConfInputFile="../config_files/fall11mcT3.input" 
+if [ -s {mcConfInputFile} ] || [ ${#mcConfInputFile} -eq 0 ] ; then
+    mcConfInputFile="../config_files/fall11mc.input" 
 fi
-if [ ${#xsecConfInputFile} -eq 0 ] ; then
+if [ -s ${xsecConfInputFile} ] || [ ${#xsecConfInputFile} -eq 0 ] ; then
     xsecConfInputFile="../config_files/xsecCalc.conf"
+fi
+if [ -s ${debugMode} ] || [ ${#debugMode} -eq 0 ] ; then
+    debugMode=0
 fi
 
 # check whether the full run was requested, overriding internal settings
@@ -37,9 +41,8 @@ echo
 #  Individual flags to control the calculation
 #
 
-doFsrStudy=1
+doFsrStudy=0
 doCalcAcceptanceSyst=1
-debugMode=0
 
 #
 #  Modify flags if fullRun=1
