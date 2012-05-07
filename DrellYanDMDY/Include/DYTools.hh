@@ -150,8 +150,8 @@ namespace DYTools {
 
     int newCode=1;
     if (newCode) {
-      result = int( ( y - yRangeMin )* 1.0001*(nYBinsThisMassRange-1)/( yRangeMax - yRangeMin ) );
-      double dy=((yRangeMax-yRangeMin)/double(nYBinsThisMassRange-1));
+      result = int( ( y - yRangeMin )* 1.000001*nYBinsThisMassRange/( yRangeMax - yRangeMin ) );
+      double dy=((yRangeMax-yRangeMin)/double(nYBinsThisMassRange));
       //std::cout << "y=" << y << ", dy=" << dy  << ", binIdx=" << result << ", yRange=" << (result*dy) << ".." << (result*dy+dy) << "\n";
       if (result < 0 || result >= nYBinsThisMassRange) {
 	std::cout << "y=" << y << ", dy=" << dy  << ", binIdx=" << result << ", yRange=" << (result*dy) << ".." << (result*dy+dy) << "\n";
