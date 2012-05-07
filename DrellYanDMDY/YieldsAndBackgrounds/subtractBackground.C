@@ -298,6 +298,7 @@ TString subtractBackground(const TString conf){
   signalYields         .Write("YieldsSignal");
   signalYieldsError    .Write("YieldsSignalErr");
   signalYieldsErrorSyst.Write("YieldsSignalSystErr");
+  DYTools::WriteBinningArrays(fileOut,"MassBinLimitsForYields","YBinCountsForYields");
   fileOut.Close();
 
   TString outFileNamePlots=outFileName;
