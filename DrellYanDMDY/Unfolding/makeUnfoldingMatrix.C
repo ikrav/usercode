@@ -49,6 +49,7 @@
 #include "../Include/EleIDCuts.hh"
 
 #include "../Include/ElectronEnergyScale.hh" //extra smearing
+#include "../Include/UnfoldingTools.hh"
 
   // Trigger info
 #include "../Include/TriggerSelection.hh"
@@ -549,15 +550,17 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   DetCorrFactor           .Write("DetCorrFactor");
   DetCorrFactorErrPos     .Write("DetCorrFactorErrPos");
   DetCorrFactorErrNeg     .Write("DetCorrFactorErrNeg");
+  unfolding::writeBinningArrays(fConst);
   fConst.Close();
-  
+
   // Store reference MC arrays in a file
-  TString refFileName(outputDir+TString("/yields_MC_unfolding_reference.root"));
+  TString refFileName(outputDir+TString("/yields_MC_unfolding_reference_") + analysisTag + TString(".root"));
   TFile fRef(refFileName, "recreate" );
 //   BinLimitsArray    .Write("BinLimitsArray");
   yieldsMcFsr       .Write("yieldsMcFsr");
   yieldsMcFsrOfRec  .Write("yieldsMcFsrOfRec");
   yieldsMcRec       .Write("yieldsMcRec");
+  unfolding::writeBinningArrays(fRef);
   fRef.Close();
 
 
@@ -567,7 +570,15 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 
   std::cout << "making plots" << std::endl;
 
-  TCanvas *c = MakeCanvas("c","c",800,600);
+  TString unfoldingConstantsPlotFName=unfoldingConstFileName;
+  unfoldingConstantsPlotFName.Replace(unfoldingConstantsPlotFName.Index(".root"),sizeof(".root"),"_plots.root");
+  TFile *fPlots=new TFile(unfoldingConstantsPlotFName,"recreate");
+  if (!fPlots) {
+    std::cout << "failed to create a file <" << unfoldingConstantsPlotFName << ">\n";
+  }
+ 
+
+  TCanvas *c = MakeCanvas("canvZmass1","canvZmass1",800,600);
 
   // string buffers
   char ylabel[50];   // y-axis label
@@ -580,28 +591,34 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   }
   plotZMass1.SetLogy();
   plotZMass1.Draw(c,doSave,format);
+  if (fPlots) { fPlots->cd(); c->Write(); }
 
   // Create plots of how reco mass looks and how unfolded mass should look like
 // THIS IS A PROBLEMATIC PLOT nUnfoldingBins is nMassBins * nYBins !!
+  // Plot has to be designed
   TVectorD massBinCentral     (nUnfoldingBins);
   TVectorD massBinHalfWidth   (nUnfoldingBins);
   TVectorD yieldMcFsrOfRecErr (nUnfoldingBins);
   TVectorD yieldMcRecErr      (nUnfoldingBins);
-  for(int i=0; i < nUnfoldingBins; i++){
-    massBinCentral  (i) = (DYTools::massBinLimits[i+1] + DYTools::massBinLimits[i])/2.0;
-    massBinHalfWidth(i) = (DYTools::massBinLimits[i+1] - DYTools::massBinLimits[i])/2.0;
-    yieldsMcFsrOfRecErr(i) = sqrt(yieldsMcFsrOfRec[i]);
-    yieldsMcRecErr     (i) = sqrt(yieldsMcRec[i]);
+  for (int mi=0; mi<nMassBins; ++mi) {
+    for (int yi=0; yi<nYBins(i); ++yi) {
+      int i=findIndexFlat(mi,yi);
+      massBinCentral  (i) = (DYTools::massBinLimits[i+1] + DYTools::massBinLimits[i])/2.0;
+      massBinHalfWidth(i) = (DYTools::massBinLimits[i+1] - DYTools::massBinLimits[i])/2.0;
+      yieldsMcFsrOfRecErr(i) = sqrt(yieldsMcFsrOfRec[i]);
+      yieldsMcRecErr     (i) = sqrt(yieldsMcRec[i]);
+    }
   }
   TGraphErrors *grFsrOfRec = new TGraphErrors(massBinCentral, yieldsMcFsrOfRec, 
 					      massBinHalfWidth, yieldsMcFsrOfRecErr);
   TGraphErrors *grRec      = new TGraphErrors(massBinCentral, yieldsMcRec, 
 					      massBinHalfWidth, yieldsMcRecErr);
-  TCanvas *d = MakeCanvas("d","d",800,600);
+  TCanvas *d = MakeCanvas("canvZmass2","canvZmass2",800,600);
   CPlot plotZMass2("zmass2","","m(ee) [GeV/c^{2}]","events");
   plotZMass2.AddGraph(grFsrOfRec,"no detector effects","PE",kBlack);
   plotZMass2.AddGraph(grRec,"reconstructed","PE",kBlue);
   plotZMass2.Draw(d);
+  if (fPlots) d->Write();
 
 //   int xsize = 600;
 //   int ysize = 600;
@@ -616,7 +633,7 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   for(int i=1; i<=nUnfoldingBins; i++)
     for(int j=1; j<=nUnfoldingBins; j++)
       hResponse->SetBinContent(i,j,DetResponse(i-1,j-1));
-  TCanvas *e = MakeCanvas("e","e",xsize,ysize);
+  TCanvas *e = MakeCanvas("canvResponse","canvResponse",xsize,ysize);
   CPlot plotResponse("response","",
 		     "generator post-FSR m(ee) [GeV/c^{2}]",
 		     "reconstructed  m(ee) [GeV/c^{2}]");
@@ -630,6 +647,7 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   hResponse->GetXaxis()->SetNoExponent();
   hResponse->GetYaxis()->SetNoExponent();
   plotResponse.Draw(e);
+  if (fPlots) { fPlots->cd(); e->Write(); }
 
   std::cout << "create inverted response matrix" << std::endl;
 
@@ -639,7 +657,7 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   for(int i=1; i<=nUnfoldingBins; i++)
     for(int j=1; j<=nUnfoldingBins; j++)
       hInvResponse->SetBinContent(i,j,DetInvertedResponse(i-1,j-1));
-  TCanvas *f = MakeCanvas("f","f",xsize,ysize);
+  TCanvas *f = MakeCanvas("canvInvResponse","canvInvResponse",xsize,ysize);
   CPlot plotInvResponse("inverted response","",
 			"reconstructed  m(ee) [GeV/c^{2}]",
 			"generator post-FSR m(ee) [GeV/c^{2}]");
@@ -653,9 +671,10 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   hInvResponse->GetXaxis()->SetNoExponent();
   hInvResponse->GetYaxis()->SetNoExponent();
   plotInvResponse.Draw(f);
+  if (fPlots) { fPlots->cd(); f->Write(); }
 
   // Create a plot of detector resolution without mass binning
-  TCanvas *g = MakeCanvas("g","g",600,600);
+  TCanvas *g = MakeCanvas("canvMassDiff","canvMassDiff",600,600);
   CPlot plotMassDiff("massDiff","","reco mass - gen post-FSR mass [GeV/c^{2}]","a.u.");
   hMassDiffBB->Scale(1.0/hMassDiffBB->GetSumOfWeights());
   hMassDiffEB->Scale(1.0/hMassDiffEB->GetSumOfWeights());
@@ -664,11 +683,12 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   plotMassDiff.AddHist1D(hMassDiffEB,"EE-EB","hist",kBlue);
   plotMassDiff.AddHist1D(hMassDiffEE,"EE-EE","hist",kRed);
   plotMassDiff.Draw(g);
+  if (fPlots) g->Write();
 
 
 
   // Create a plot of reco - gen post-FSR mass difference for several mass bins
-  TCanvas *h = MakeCanvas("h","h",600,600);
+  TCanvas *h = MakeCanvas("canvMassDiffV","canvMassDiffV",600,600);
   CPlot plotMassDiffV("massDiffV","","reco mass - gen post-FSR mass [GeV/c^{2}]","a.u.");
   hMassDiffV[7]->Scale(1.0/hMassDiffV[7]->GetSumOfWeights());
   hMassDiffV[6]->Scale(1.0/hMassDiffV[6]->GetSumOfWeights());
@@ -680,18 +700,26 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   plotMassDiffV.AddHist1D(hMassDiffV[7],"86-96 GeV/c^{2}","hist",kMagenta);
   plotMassDiffV.SetXRange(-20,50);
   plotMassDiffV.Draw(h);
+  if (fPlots) h->Write();
 
   // Create graph of bin-to-bin corrections
   TGraphAsymmErrors *grCorrFactor 
     = new TGraphAsymmErrors(massBinCentral, DetCorrFactor,
 			    massBinHalfWidth, massBinHalfWidth,
 			    DetCorrFactorErrNeg, DetCorrFactorErrPos);
-  TCanvas *c11 = MakeCanvas("c11","c11",800,600);
+  TCanvas *c11 = MakeCanvas("canvCorrFactor","canvCorrFactor",800,600);
   CPlot plotCorrFactor("corrFactor","","m(ee) [GeV/c^{2}]","correction factor");
   plotCorrFactor.AddGraph(grCorrFactor,"PE",kBlue);
   plotCorrFactor.SetLogx();
   plotCorrFactor.SetYRange(0,2.0);
   plotCorrFactor.Draw(c11);
+  if (fPlots) c11->Write();
+
+  if (fPlots) {
+    fPlots->Close();
+    delete fPlots;
+    std::cout << "plots saved to a file <" << unfoldingConstantsPlotFName << ">\n";
+  }
 
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out
