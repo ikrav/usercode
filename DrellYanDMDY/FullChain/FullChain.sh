@@ -10,15 +10,15 @@
 # ------------------  Define some variables
 
 anTagUser=
-anTag="1D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
+anTag="2D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
 filename_data="../config_files/data.conf"
-#filename_data="../config_files/data_evtTrig.conf"
+filename_data="../config_files/data_evtTrig.conf"
 filename_mc="../config_files/fall11mc.input"
-#filename_mc="../config_files/fall11mc_evtTrig.input"
+filename_mc="../config_files/fall11mc_evtTrig.input"
 filename_cs="../config_files/xsecCalc.conf"
-triggerSet="Full2011_hltEffNew"
+triggerSet="Full2011_hltEffOld"
 tnpFileStart="../config_files/sf"
-debugMode=1
+debugMode=0
 
 # the variables below are more persistent
 crossSectionTag="DY_m10+pr+a05+o03+pr_4680pb"
@@ -28,12 +28,12 @@ expectYieldsFile="../root_files/yields/${crossSectionTag}/yields${anTag}.root"
 expectBkgSubtractedFile="../root_files/yields/${crossSectionTag}/yields_bg-subtracted${anTag}.root"
 expectUnfoldingFile="../root_files/constants/${crossSectionTag}/unfolding_constants${anTag}.root"
 expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics${anTag}.root"
-expectEfficiencyScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${triggerSet}.root"
+expectEventScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${triggerSet}.root"
 expectAcceptanceSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/acceptance_FSR_systematics${anTag}.root"
 expectFsrSansAcc0File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}.root"
 expectFsrSansAcc1File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}_sans_acc.root"
-expectXSecFile="../root_files/xSec_results${anTag}_${triggerSet}.root"
-expectXSecThFile="../root_files/xSecTh_results${anTag}_${triggerSet}.root"
+expectXSecFile="../root_files/xSec_results_${anTag}_${triggerSet}.root"
+expectXSecThFile="../root_files/xSecTh_results_${anTag}_${triggerSet}.root"
 
 # export some variables
 
@@ -46,14 +46,14 @@ export tnpFileStart="${tnpFileStart}"
 
 
 # specify whether you want to clean the old logs
-clear_old_logs=0
+clear_old_logs=1
 
 # specify whether the support files need to be rebuilt
 force_rebuild_include_files=0
 
 ## controlling your work
 # catch-all flag
-do_all_steps=1
+do_all_steps=0
 do_post_selection_steps=0
 
 # individual flags. 
@@ -62,11 +62,11 @@ do_post_selection_steps=0
 do_selection=0
 do_prepareYields=0
 do_subtractBackground=0
-do_unfolding=0
+do_unfolding=1
 do_unfoldingSyst=0
 do_acceptance=0
 do_acceptanceSyst=0
-do_efficiency=1
+do_efficiency=0
 do_efficiencyScaleFactors=0
 do_plotFSRCorrections=0
 do_plotFSRCorrectionsSansAcc=0
@@ -112,7 +112,7 @@ if [ ${do_post_selection_steps} -eq 1 ] ; then
 #    do_efficiencyScaleFactors=1
     do_plotFSRCorrections=1
     do_plotFSRCorrectionsSansAcc=1
-#    do_theoryErrors=1
+    do_theoryErrors=1
 #    do_crossSection=1
 fi
 
@@ -352,25 +352,25 @@ else
     statusEfficiency=skipped
 fi
 
-#Efficiency Scale Factors
+#Event Scale Factors
 if [ ${do_efficiencyScaleFactors} -eq 1 ] && [ ${noError} -eq 1 ] ; then
-statusEfficiencyScaleFactors=OK
+statusEventScaleFactors=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: evaluateESF.sh in EfficiencyScaleFactors"
+echo "WILL DO: evaluateESF.sh in EventScaleFactors"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-cd ../EfficiencyScaleFactors
-rm -f *.so ${expectEfficiencyScaleFactorsFile}
+cd ../EventScaleFactors
+rm -f *.so ${expectEventScaleFactorsFile}
 echo
 checkFile evaluateESF.sh
 source evaluateESF.sh  | tee ${logDir}/out${timeStamp}-09-evaluateESF-efficiencyScaleFactors${anTag}.log
-get_status ${expectEfficiencyScaleFactorsFile}
-statusEfficiencyScaleFactors=$RUN_STATUS
+get_status ${expectEventScaleFactorsFile}
+statusEventScaleFactors=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: evaluateESF.sh from EfficiencyScaleFactors"
+echo "DONE: evaluateESF.sh from EventScaleFactors"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else 
-    statusEfficiencyScaleFactors=skipped
+    statusEventScaleFactors=skipped
 fi
 
 
@@ -447,7 +447,7 @@ cd ../CrossSection
 rm -f *.so ${expectXSecFile} ${expectXSecThFile}
 echo
 checkFile calcCrossSection.C
-root -b -q -l ${LXPLUS_CORRECTION} calcCrossSection.C+\(\"$filename_cs\"\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${timeStamp}.out
+root -q -b -l ${LXPLUS_CORRECTION} calcCrossSection.C+\(\"$filename_cs\"\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${timeStamp}.out
 get_status ${expectXSecFile} ${expectXSecThFile}
 statusCrossSection=$RUN_STATUS
 cd ../FullChain
@@ -469,7 +469,7 @@ echo "         Syst Unfolding:    " $statusUnfoldingSyst
 echo "             Acceptance:    " $statusAcceptance
 echo "        Syst Acceptance:    " $statusAcceptanceSyst
 echo "             Efficiency:    " $statusEfficiency
-echo " EfficiencyScaleFactors:    " $statusEfficiencyScaleFactors
+echo "      EventScaleFactors:    " $statusEventScaleFactors
 echo "         FSRCorrections:    " $statusPlotDYFSRCorrections
 echo "  FSRCorrectionsSansAcc:    " $statusPlotDYFSRCorrectionsSansAcc
 echo "           TheoryErrors:    " $statusTheoryErrors
