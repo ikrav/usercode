@@ -9,6 +9,7 @@
 #include "../Include/DYTools.hh"
 #include "../Include/MyTools.hh"
 #include "../Include/plotFunctions.hh"
+#include "../Include/UnfoldingTools.hh"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -298,7 +299,7 @@ TString subtractBackground(const TString conf){
   signalYields         .Write("YieldsSignal");
   signalYieldsError    .Write("YieldsSignalErr");
   signalYieldsErrorSyst.Write("YieldsSignalSystErr");
-  DYTools::WriteBinningArrays(fileOut,"MassBinLimitsForYields","YBinCountsForYields");
+  unfolding::writeBinningArrays(fileOut);
   fileOut.Close();
 
   TString outFileNamePlots=outFileName;
