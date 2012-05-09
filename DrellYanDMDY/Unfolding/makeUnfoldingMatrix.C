@@ -72,7 +72,11 @@ void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TEr
 				   TMatrixD &TinvErr);
 //=== MAIN MACRO =================================================================================================
 
-void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NORMAL, int randomSeed = 1, double reweightFsr = 1.0, double massLimit = -1.0, int debugMode=0)
+void makeUnfoldingMatrix(const TString input, 
+			 const TString triggerSetString="Full2011DatasetTriggers",
+			 int systematicsMode = DYTools::NORMAL, 
+			 int randomSeed = 1, double reweightFsr = 1.0, 
+			 double massLimit = -1.0, int debugMode=0)
 //systematicsMode 0 (NORMAL) - no systematic calc
 //1 (RESOLUTION_STUDY) - systematic due to smearing, 2 (FSR_STUDY) - systematics due to FSR, reweighting
 //check mass spectra with reweightFsr = 0.95; 1.00; 1.05  
@@ -86,8 +90,6 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   }
 
   // normal calculation
-
-
   gBenchmark->Start("makeUnfoldingMatrix");
 
   if (systematicsMode==DYTools::NORMAL)
@@ -165,13 +167,21 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   //const Double_t kGAP_LOW  = 1.4442;
   //const Double_t kGAP_HIGH = 1.566;
 
+  // Line below is old, to be deleted
+  // TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
+
+  TriggerConstantSet constantsSet=DetermineTriggerSet(triggerSetString);  
+  assert ( constantsSet != TrigSet_UNDEFINED );
+
   // For MC the trigger does not depend on run number
   const bool isData=kFALSE;
-  TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
   TriggerSelection requiredTriggers(constantsSet, isData, 0);
-  ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(0);
-  ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(0);
-  ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(0);
+
+  // The statements below are commented out: now trigger bit cuts are done
+  // in TriggerSelection
+//   ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(0);
+//   ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(0);
+//   ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(0);
 
 
   //--------------------------------------------------------------------------------------------------------------
@@ -346,7 +356,12 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
       */
       
-      if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
+      // The line below is replaced by the superseeding method, can be cleaned up
+//       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
+
+      if( !(requiredTriggers.matchEventTriggerBit(info->triggerBits, 
+						  info->runNum))) 
+	continue;
 
       // loop through dielectrons
       dielectronArr->Clear();
@@ -367,12 +382,17 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
     	
 	// Both electrons must match trigger objects. At least one ordering
 	// must match
-	if( ! ( 
-	       (dielectron->hltMatchBits_1 & leadingTriggerObjectBit && 
-		dielectron->hltMatchBits_2 & trailingTriggerObjectBit )
-	       ||
-	       (dielectron->hltMatchBits_1 & trailingTriggerObjectBit && 
-		dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
+	if( ! requiredTriggers.matchTwoTriggerObjectsAnyOrder( dielectron->hltMatchBits_1,
+							       dielectron->hltMatchBits_2,
+							       info->runNum) ) continue;
+
+	// The clause below can be deleted, it is superseeded by new methods
+// 	if( ! ( 
+// 	       (dielectron->hltMatchBits_1 & leadingTriggerObjectBit && 
+// 		dielectron->hltMatchBits_2 & trailingTriggerObjectBit )
+// 	       ||
+// 	       (dielectron->hltMatchBits_1 & trailingTriggerObjectBit && 
+// 		dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
 	
 	// The Smurf electron ID package is the same as used in HWW analysis
 	// and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
@@ -600,15 +620,16 @@ void makeUnfoldingMatrix(const TString input, int systematicsMode = DYTools::NOR
   TVectorD massBinHalfWidth   (nUnfoldingBins);
   TVectorD yieldMcFsrOfRecErr (nUnfoldingBins);
   TVectorD yieldMcRecErr      (nUnfoldingBins);
-  for (int mi=0; mi<nMassBins; ++mi) {
-    for (int yi=0; yi<nYBins(i); ++yi) {
-      int i=findIndexFlat(mi,yi);
-      massBinCentral  (i) = (DYTools::massBinLimits[i+1] + DYTools::massBinLimits[i])/2.0;
-      massBinHalfWidth(i) = (DYTools::massBinLimits[i+1] - DYTools::massBinLimits[i])/2.0;
-      yieldsMcFsrOfRecErr(i) = sqrt(yieldsMcFsrOfRec[i]);
-      yieldsMcRecErr     (i) = sqrt(yieldsMcRec[i]);
-    }
-  }
+  // DEBUG temporarily commented out a few lines below
+//   for (int mi=0; mi<nMassBins; ++mi) {
+//     for (int yi=0; yi<nYBins(i); ++yi) {
+//       int i=findIndexFlat(mi,yi);
+//       massBinCentral  (i) = (DYTools::massBinLimits[i+1] + DYTools::massBinLimits[i])/2.0;
+//       massBinHalfWidth(i) = (DYTools::massBinLimits[i+1] - DYTools::massBinLimits[i])/2.0;
+//       yieldsMcFsrOfRecErr(i) = sqrt(yieldsMcFsrOfRec[i]);
+//       yieldsMcRecErr     (i) = sqrt(yieldsMcRec[i]);
+//     }
+//   }
   TGraphErrors *grFsrOfRec = new TGraphErrors(massBinCentral, yieldsMcFsrOfRec, 
 					      massBinHalfWidth, yieldsMcFsrOfRecErr);
   TGraphErrors *grRec      = new TGraphErrors(massBinCentral, yieldsMcRec, 

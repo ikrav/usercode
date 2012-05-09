@@ -44,7 +44,9 @@
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDYEfficiency(const TString input, int debugMode=0) 
+void plotDYEfficiency(const TString input, 
+		      const TString triggerSetString="Full2011DatasetTriggers",
+		      int debugMode=0) 
 {
   gBenchmark->Start("plotDYEfficiency");
 
@@ -201,12 +203,22 @@ void plotDYEfficiency(const TString input, int debugMode=0)
       // ULong_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj
       // | kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
 
+      // old way, to be deleted
+      // TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
+
       const bool isData=kFALSE;
-      TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
+      TriggerConstantSet constantsSet = DetermineTriggerSet(triggerSetString);
+      assert ( constantsSet != TrigSet_UNDEFINED );
+
+      // Construct the trigger object
       TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
-      ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(info->runNum);
-      ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(info->runNum);
-      ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(info->runNum);
+      assert(requiredTriggers.isDefined());
+
+      // The statements below are commented out: now trigger bit cuts are done
+      // in TriggerSelection
+//       ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(info->runNum);
+//       ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(info->runNum);
+//       ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(info->runNum);
 
       // The A_FSR starting point: gen level quantities
       // The FSR subscript means we work with post-FSR generator level quantities
@@ -274,8 +286,13 @@ void plotDYEfficiency(const TString input, int debugMode=0)
       }else
         binProblem++;
 
-      if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
+      // The line below is replaced by the superseeding method, can be cleaned up
+      // if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
 
+      if( !(requiredTriggers.matchEventTriggerBit(info->triggerBits, 
+						  info->runNum))) 
+	continue;
+      
       // loop through dielectrons
       dielectronArr->Clear();
       dielectronBr->GetEntry(ientry);
@@ -303,12 +320,17 @@ void plotDYEfficiency(const TString input, int debugMode=0)
 
 	// Both electrons must match trigger objects. At least one ordering
 	// must match
- 	if( ! ( 
- 	       (dielectron->hltMatchBits_1 & leadingTriggerObjectBit && 
- 		dielectron->hltMatchBits_2 & trailingTriggerObjectBit )
- 	       ||
- 	       (dielectron->hltMatchBits_1 & trailingTriggerObjectBit && 
- 		dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
+	if( ! requiredTriggers.matchTwoTriggerObjectsAnyOrder( dielectron->hltMatchBits_1,
+							       dielectron->hltMatchBits_2,
+							       info->runNum) ) continue;
+
+	// The clause below can be deleted, it is superseeded by new methods
+//  	if( ! ( 
+//  	       (dielectron->hltMatchBits_1 & leadingTriggerObjectBit && 
+//  		dielectron->hltMatchBits_2 & trailingTriggerObjectBit )
+//  	       ||
+//  	       (dielectron->hltMatchBits_1 & trailingTriggerObjectBit && 
+//  		dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
 
 	// The Smurf electron ID package is the same as used in HWW analysis
 	// and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
