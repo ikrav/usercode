@@ -403,6 +403,77 @@ class TriggerSelection{
     return bits;
   }
 
+  // 
+  // The functions that implement cuts on trigger bits
+  //
+
+  Bool_t matchEventTriggerBit(ULong_t bit, UInt_t run) const {
+    if( ! (bit & getEventTriggerBit(run) ) )
+      return kFALSE;
+    return kTRUE;
+  }
+
+  Bool_t matchLeadingTriggerObjectBit(ULong_t bit, UInt_t run) const { 
+    if( ! (bit & getLeadingTriggerObjectBit(run) ) )
+      return kFALSE;
+    return kTRUE;    
+  }
+
+  Bool_t matchTrailingTriggerObjectBit(ULong_t bit, UInt_t run) const { 
+    if( ! (bit & getTrailingTriggerObjectBit(run) ) )
+      return kFALSE;
+    return kTRUE;    
+  }
+
+  Bool_t matchEventTriggerBit_SCtoGSF(ULong_t bit, UInt_t run) const {
+    if( ! (bit & getEventTriggerBit_SCtoGSF(run) ) )
+      return kFALSE;
+    return kTRUE;    
+  }
+
+  Bool_t matchLeadingTriggerObjectBit_SCtoGSF(ULong_t bit, UInt_t run) const { 
+    if( ! (bit & getLeadingTriggerObjectBit_SCtoGSF(run) ) )
+      return kFALSE;
+    return kTRUE;    
+  }
+
+  Bool_t matchEventTriggerBit_TagProbe(ULong_t bit, UInt_t run) const {
+    if( ! (bit & getEventTriggerBit_TagProbe(run) ) )
+      return kFALSE;
+    return kTRUE;    
+  }
+
+  Bool_t matchTagTriggerObjBit(ULong_t bit, UInt_t run) const { 
+    if( ! (bit & getTagTriggerObjBit(run) ) )
+      return kFALSE;
+    return kTRUE;    
+  }
+
+
+  Bool_t matchProbeTriggerObjBit_Tight(ULong_t bit, UInt_t run) const {
+    if( ! (bit & getProbeTriggerObjBit_Tight(run) ) )
+      return kFALSE;
+    return kTRUE;    
+  }
+
+  Bool_t matchProbeTriggerObjBit_Loose(ULong_t bit, UInt_t run) const { 
+     if( ! (bit & getProbeTriggerObjBit_Loose(run) ) )
+      return kFALSE;
+    return kTRUE;    
+  }
+
+  Bool_t matchTwoTriggerObjectsAnyOrder(ULong_t bit1, ULong_t bit2, UInt_t run) const {
+    if( ! ( 
+	   (matchLeadingTriggerObjectBit(bit1, run) &&
+	    matchTrailingTriggerObjectBit(bit2, run) )
+	   ||
+	   (matchLeadingTriggerObjectBit(bit2, run) &&
+	    matchTrailingTriggerObjectBit(bit1, run) ) ) )
+      return kFALSE;
+    return kTRUE;
+  }
+ 
+
  private:
   TriggerConstantSet  _constants;
   bool                _isData;
