@@ -46,15 +46,22 @@ const int NEffTypes=3;
 // Declaration of arrays into which efficiencies will be loaded
 typedef double EffArray_t[NEffTypes][DYTools::nEtBins5][DYTools::nEtaBins5]; // largest storage
 
+template T SQR(const T& x) { return x*x; }
+
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
-int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr, const TnPInputFileMgr_t &dataMgr, const TriggerSelection &triggers );
-int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, UInt_t kindIdx, vector<TMatrixD*> &data, vector<TMatrixD*> &dataErrLo, vector<TMatrixD*> &dataErrHi, vector<TMatrixD*> &dataAvgErr);
+int fillEfficiencyConstants(const TnPInputFileMgr_t &mcMgr, 
+	 const TnPInputFileMgr_t &dataMgr, const TriggerSelection &triggers );
+int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, 
+  UInt_t kindIdx, vector<TMatrixD*> &data, vector<TMatrixD*> &dataErrLo, 
+  vector<TMatrixD*> &dataErrHi, vector<TMatrixD*> &dataAvgErr);
 
 
-Bool_t matchedToGeneratorLevel(const TGenInfo *gen, const TDielectron *dielectron);
-int createSelectionFile(const MCInputFileMgr_t &mcMgr, const TString &outSkimFName, TriggerSelection &triggers, int debugMode);
+Bool_t matchedToGeneratorLevel(const TGenInfo *gen, 
+  const TDielectron *dielectron);
+int createSelectionFile(const MCInputFileMgr_t &mcMgr, 
+    const TString &outSkimFName, TriggerSelection &triggers, int debugMode);
 
 double findEventScaleFactor(const esfSelectEvent_t &data);
 double findEventScaleFactor(int kind, const esfSelectEvent_t &data);
@@ -62,9 +69,11 @@ double findScaleFactor(int kind, double scEt, double scEta);
 double findScaleFactor(int kind, int etBin, int etaBin);
 
 double findEventScaleFactorSmeared(const esfSelectEvent_t &data, int iexp);
-double findEventScaleFactorSmeared(int kind, const esfSelectEvent_t &data, int iexp);
+double findEventScaleFactorSmeared(int kind, const esfSelectEvent_t &data, 
+    int iexp);
 double findScaleFactorSmeared(int kind, double scEt, double scEta, int iexp);
-double findScaleFactorSmeared(int kind, int etBin, int etaBin, const EffArray_t &dataRndWeight, const EffArray_t &mcRndWeight);
+double findScaleFactorSmeared(int kind, int etBin, int etaBin, 
+    const EffArray_t &dataRndWeight, const EffArray_t &mcRndWeight);
 
 void drawEfficiencies();
 void drawEfficiencyGraphs(TGraphErrors *grData, TGraphErrors *grMc,
@@ -85,7 +94,8 @@ void drawEventScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle,
 
 double errOnRatio(double a, double da, double b, double db);
 
-void PrintEffInfoLines(const char *msg, int effKind, int effMethod, int binCount, const double *eff, const double *effErr);
+void PrintEffInfoLines(const char *msg, int effKind, int effMethod, 
+     int binCount, const double *eff, const double *effErr);
 
 //=== Constants ==========================
 
@@ -126,7 +136,9 @@ double *etaBinLimits=NULL;
 
 //=== MAIN MACRO =================================================================================================
 
-void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, const TString tnpMCInputFile, TString triggerSetString, int selectEvents, int debugMode=0)
+void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, 
+    const TString tnpMCInputFile, TString triggerSetString, int selectEvents, 
+    int debugMode=0)
 {
 
 //  ---------------------------------
@@ -134,7 +146,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
 //  ---------------------------------
 
   // verify whether it was a compilation check
-  if (mcInputFile.Contains("_DebugRun_") || triggerSetString.Contains("_DebugRun_")) {
+  if (mcInputFile.Contains("_DebugRun_") || 
+      triggerSetString.Contains("_DebugRun_")) {
     std::cout << "calcEventEff: _DebugRun_ detected. Terminating the script\n";
     return;
   }
@@ -164,8 +177,9 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
     return;
   }
   if (!tnpMCMgr.hasSameBinCounts(tnpDataMgr)) {
-    cout << "Files tnpMCInputFile=<" << tnpMCInputFile << 
-      ">, tnpDataInputFile=<" << tnpDataInputFile << "> have different bin counts:\n";
+    cout << "Files tnpMCInputFile=<" << tnpMCInputFile 
+	 << ">, tnpDataInputFile=<" << tnpDataInputFile 
+	 << "> have different bin counts:\n";
     cout << "MC   input: " << tnpMCMgr;
     cout << "Data input: " << tnpDataMgr;
     return;
@@ -184,8 +198,10 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
   TString selectEventsFName=TString("../root_files/tag_and_probe/") +
     dirTag + TString("/eventSFSelectEvents") + analysisTag + TString(".root");
   
-  if (selectEvents && !createSelectionFile(mcMgr, selectEventsFName, triggers, debugMode)) {
-    std::cout << "failed to create selection file <" << selectEventsFName << ">\n";
+  if (selectEvents && 
+      !createSelectionFile(mcMgr, selectEventsFName, triggers, debugMode)) {
+    std::cout << "failed to create selection file <" 
+	      << selectEventsFName << ">\n";
     return;
   }
 
@@ -224,9 +240,12 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
     TString base = "hScaleV_";
     base += i;
     hScaleV.push_back(new TH1F(base,base,150,0.0,1.5));
-    hScaleRecoV.push_back(new TH1F(base+TString("_reco"),base+TString("_reco"),150,0.0,1.5));
-    hScaleIdV .push_back(new TH1F(base+TString("_id" ),base+TString("_id" ),150,0.0,1.5));
-    hScaleHltV.push_back(new TH1F(base+TString("_hlt"),base+TString("_hlt"),150,0.0,1.5));
+    hScaleRecoV.push_back(new TH1F(base+TString("_reco"),
+				   base+TString("_reco"),150,0.0,1.5));
+    hScaleIdV .push_back(new TH1F(base+TString("_id" ),
+				  base+TString("_id" ),150,0.0,1.5));
+    hScaleHltV.push_back(new TH1F(base+TString("_hlt"),
+				  base+TString("_hlt"),150,0.0,1.5));
     base = "hLeadingEt_";
     base += i;
     hLeadingEtV.push_back(new TH1F(base,base,etBinCount, etBinLimits));
@@ -293,9 +312,12 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
       base += "_exp";
       base += j;
       systScale[i][j] = new TH1F(base,base,150,0.0,1.5);
-      systScaleReco[i][j] = new TH1F(base+TString("_reco"),base+TString("_reco"),150,0.0,1.5);
-      systScaleId [i][j] = new TH1F(base+TString("_id" ),base+TString("_id" ),150,0.0,1.5);
-      systScaleHlt[i][j] = new TH1F(base+TString("_hlt"),base+TString("_hlt"),150,0.0,1.5);
+      systScaleReco[i][j] = new TH1F(base+TString("_reco"),
+				     base+TString("_reco"),150,0.0,1.5);
+      systScaleId [i][j] = new TH1F(base+TString("_id" ),
+				    base+TString("_id" ),150,0.0,1.5);
+      systScaleHlt[i][j] = new TH1F(base+TString("_hlt"),
+				    base+TString("_hlt"),150,0.0,1.5);
     }
   
   TFile *skimFile=new TFile(selectEventsFName);
@@ -308,7 +330,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
   esfSelectEvent_t selData;
   selData.setBranchAddress(skimTree);
 
-  std::cout << "there are " << skimTree->GetEntries() << " entries in the <" << selectEventsFName << "> file\n";
+  std::cout << "there are " << skimTree->GetEntries() 
+	    << " entries in the <" << selectEventsFName << "> file\n";
   for (UInt_t ientry=0; ientry<skimTree->GetEntries(); ++ientry) {
     if (debugMode && (ientry>10000)) break;
     if ( ientry%10000 == 0 ) std::cout << "ientry=" << ientry << "\n";
@@ -389,16 +412,16 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
     scaleMeanHltErrV[ibin] = 0;
     for(int iexp = 0; iexp < nexp; iexp++){
       scaleMeanV[ibin] += systScale[ibin][iexp]->GetMean();
-      scaleMeanErrV[ibin] += systScale[ibin][iexp]->GetMean() * systScale[ibin][iexp]->GetMean();
+      scaleMeanErrV[ibin] += SQR(systScale[ibin][iexp]->GetMean());
 
       scaleMeanRecoV[ibin] += systScaleReco[ibin][iexp]->GetMean();
-      scaleMeanRecoErrV[ibin] += systScaleReco[ibin][iexp]->GetMean() * systScaleReco[ibin][iexp]->GetMean();
+      scaleMeanRecoErrV[ibin] += SQR(systScaleReco[ibin][iexp]->GetMean());
 
       scaleMeanIdV[ibin] += systScaleId[ibin][iexp]->GetMean();
-      scaleMeanIdErrV[ibin] += systScaleId[ibin][iexp]->GetMean() * systScaleId[ibin][iexp]->GetMean();
+      scaleMeanIdErrV[ibin] += SQR(systScaleId[ibin][iexp]->GetMean());
 
       scaleMeanHltV[ibin] += systScaleHlt[ibin][iexp]->GetMean();
-      scaleMeanHltErrV[ibin] += systScaleHlt[ibin][iexp]->GetMean() * systScaleHlt[ibin][iexp]->GetMean();
+      scaleMeanHltErrV[ibin] += SQR(systScaleHlt[ibin][iexp]->GetMean());
     }
     scaleRecoV[ibin] = hScaleRecoV[ibin]->GetMean();
     scaleIdV [ibin] = hScaleIdV [ibin] ->GetMean();
@@ -427,6 +450,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
   TString outputDir(TString("../root_files/constants/")+dirTag);
   gSystem->mkdir(outputDir,kTRUE);
   TString sfConstFileName(outputDir+TString("/scale_factors_") + analysisTag + 
+			  TString("_") +
 			  triggers.triggerConditionsName() + 
 			  TString(".root"));
 
@@ -454,10 +478,14 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
   c1->cd(4);
   hScaleHlt->Draw();
 
-  printf("\nScale factors as a function of mass bin\n");
-  printf("    mass          rho_reco          rho_id       rho_hlt        rho_total\n");
+  std::cout << "\nScale factors as a function of mass bin\n";
+  std::cout << "    mass          rho_reco          rho_id"
+	    << "       rho_hlt        rho_total\n";
+  std::string format1=
+    std::string("   %3.0f - %3.0f     %5.3f +- %5.3f    %5.3f +- %5.3f")+
+    std::string("     %5.3f +- %5.3f     %5.3f +- %5.3f\n");
   for(int i=0; i<nMassBins; i++){
-    printf("   %3.0f - %3.0f     %5.3f +- %5.3f    %5.3f +- %5.3f    %5.3f +- %5.3f     %5.3f +- %5.3f\n",
+    printf(format1.c_str(),
 	   massBinLimits[i], massBinLimits[i+1],
 	   hScaleRecoV[i]->GetMean(), scaleMeanRecoErrV[i],
 	   hScaleIdV[i]->GetMean(),  scaleMeanIdErrV[i],
@@ -477,7 +505,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
   //
   // Normalize first
   for(int i=0; i<nMassBins; i++){
-    printf("Total events in mass bin %3d     %10.0f\n", i, hLeadingEtV[i]->GetSumOfWeights());
+    printf("Total events in mass bin %3d     %10.0f\n", 
+	   i, hLeadingEtV[i]->GetSumOfWeights());
     hLeadingEtV  [i]->Sumw2();
     hTrailingEtV [i]->Sumw2();
     hElectronEtV [i]->Sumw2();
@@ -485,7 +514,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
     hTrailingEtV[i]->Scale(1.0/hTrailingEtV[i]->GetSumOfWeights());
     hElectronEtV[i]->Scale(1.0/hElectronEtV[i]->GetSumOfWeights());
   }
-  printf("Total events around Z peak    %10.0f\n", hZpeakEt->GetSumOfWeights()/2.0);
+  printf("Total events around Z peak    %10.0f\n", 
+	 hZpeakEt->GetSumOfWeights()/2.0);
   hZpeakEt->Sumw2();
   hZpeakEt->Scale(1.0/hZpeakEt->GetSumOfWeights());
 
@@ -539,7 +569,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, con
 
 // ------------------------------------------------------------
 
-Bool_t matchedToGeneratorLevel(const TGenInfo *gen, const TDielectron *dielectron){
+Bool_t matchedToGeneratorLevel(const TGenInfo *gen, 
+			       const TDielectron *dielectron){
 
   Bool_t result = kTRUE;
   // In the generator branch of this ntuple, first particle is always
@@ -547,8 +578,10 @@ Bool_t matchedToGeneratorLevel(const TGenInfo *gen, const TDielectron *dielectro
   // of the ntuple, the first particle is always the one with larger Pt.
   double dR1=999, dR2=999;
   TLorentzVector v1reco, v2reco, v1gen, v2gen;
-  v1reco.SetPtEtaPhiM(dielectron->pt_1, dielectron->eta_1, dielectron->phi_1, 0.000511);
-  v2reco.SetPtEtaPhiM(dielectron->pt_2, dielectron->eta_2, dielectron->phi_2, 0.000511);
+  v1reco.SetPtEtaPhiM(dielectron->pt_1, dielectron->eta_1, 
+		      dielectron->phi_1, 0.000511);
+  v2reco.SetPtEtaPhiM(dielectron->pt_2, dielectron->eta_2, 
+		      dielectron->phi_2, 0.000511);
   v1gen .SetPtEtaPhiM(gen->pt_1, gen->eta_1, gen->phi_1, 0.000511);
   v2gen .SetPtEtaPhiM(gen->pt_2, gen->eta_2, gen->phi_2, 0.000511);
   if( dielectron->q_1 < 0 ){
@@ -566,7 +599,8 @@ Bool_t matchedToGeneratorLevel(const TGenInfo *gen, const TDielectron *dielectro
 
 // ------------------------------------------------------------
 
-int createSelectionFile(const MCInputFileMgr_t &mcMgr, const TString &outSkimFName, TriggerSelection &triggers, int debugMode) {
+int createSelectionFile(const MCInputFileMgr_t &mcMgr, 
+     const TString &outSkimFName, TriggerSelection &triggers, int debugMode) {
   int eventsInNtuple = 0;
   double weightedEventsInNtuple = 0;
   int eventsAfterTrigger = 0;
@@ -584,7 +618,8 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr, const TString &outSkimFNa
   TFile *skimFile=new TFile(outSkimFName,"recreate");
   cout << "createSelectionFileName=<" << outSkimFName << ">\n";
   if (!skimFile || !skimFile->IsOpen()) {
-    cout << "createSelectionFile: failed to create a file <" << outSkimFName << ">\n";
+    cout << "createSelectionFile: failed to create a file <" 
+	 << outSkimFName << ">\n";
     return 0;
   }
   TTree *skimTree= new TTree("Events","Events");
@@ -628,9 +663,12 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr, const TString &outSkimFNa
     cout << "       -> sample weight is " << weight << endl;
 
     // Set branch address to structures that will store the info  
-    eventTree->SetBranchAddress("Info",&info);                TBranch *infoBr       = eventTree->GetBranch("Info");
-    eventTree->SetBranchAddress("Dielectron",&dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
-    eventTree->SetBranchAddress("Gen",&gen);                  TBranch *genBr = eventTree->GetBranch("Gen");
+    eventTree->SetBranchAddress("Info",&info);
+    TBranch *infoBr       = eventTree->GetBranch("Info");
+    eventTree->SetBranchAddress("Dielectron",&dielectronArr);
+    TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
+    eventTree->SetBranchAddress("Gen",&gen);
+    TBranch *genBr = eventTree->GetBranch("Gen");
     eventTree->SetBranchAddress("PV", &pvArr); 
     TBranch *pvBr         = eventTree->GetBranch("PV");
 
@@ -654,8 +692,10 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr, const TString &outSkimFNa
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
       */
       ULong_t eventTriggerBit = triggers.getEventTriggerBit(info->runNum);
-      ULong_t leadingTriggerObjectBit  = triggers.getLeadingTriggerObjectBit(info->runNum);
-      ULong_t trailingTriggerObjectBit = triggers.getTrailingTriggerObjectBit(info->runNum);
+      ULong_t leadingTriggerObjectBit  = 
+	triggers.getLeadingTriggerObjectBit(info->runNum);
+      ULong_t trailingTriggerObjectBit = 
+	triggers.getTrailingTriggerObjectBit(info->runNum);
       
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...
       eventsAfterTrigger++;
@@ -671,21 +711,27 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr, const TString &outSkimFNa
       for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
 	
 	totalCand++;
-	const mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
+	const mithep::TDielectron *dielectron = 
+	  (mithep::TDielectron*)((*dielectronArr)[i]);
 
 	// Consider only events in the mass range of interest
 	// Use generator level post-FSR mass.
- 	if( gen->mass < massBinLimits[0] || gen->mass > massBinLimits[nMassBins]) continue;
+ 	if( gen->mass < massBinLimits[0] || 
+	    gen->mass > massBinLimits[nMassBins]) continue;
 	totalCandInMassWindow++;
 
 	// Exclude ECAL gap region (should already be done for ntuple, but just to make sure...)
-	if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
-	if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
+	if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) &&
+	   (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
+	if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) &&
+	   (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
 	// ECAL acceptance cut on supercluster Et
-	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
+	if((fabs(dielectron->scEta_1) > 2.5)       || 
+	   (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
 	totalCandInEtaAcceptance++;
 	// None of the electrons should be below 10 GeV
-	if((dielectron->scEt_1 < 10)               || (dielectron->scEt_2 < 10))	      continue;  // below supercluster ET cut? Skip to next event...
+	if((dielectron->scEt_1 < 10)            || 
+	   (dielectron->scEt_2 < 10))	      continue;  // below supercluster ET cut? Skip to next event...
 	totalCandEtAbove10GeV++;
 
 	// For MC-only, do generator level matching
@@ -715,8 +761,10 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr, const TString &outSkimFNa
 	// exactly the same way as it is done in the signal selection.
 	// (At the moment of this writing it is a bit different, needs to
 	// be fixed).
-	if( !( leading->scEt  > 20 && (leading ->hltMatchBits & leadingTriggerObjectBit) ) ) continue;
-	if( !( trailing->scEt > 10 && (trailing->hltMatchBits & trailingTriggerObjectBit) ) ) continue;
+	if( !( leading->scEt  > 20 && 
+	       (leading ->hltMatchBits & leadingTriggerObjectBit) ) ) continue;
+	if( !( trailing->scEt > 10 && 
+	      (trailing->hltMatchBits & trailingTriggerObjectBit) ) ) continue;
 	totalCandFullSelection++;
 
 	selData.assign(gen->mass, dielectron->mass, 
@@ -748,15 +796,24 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr, const TString &outSkimFNa
   skimFile->Close();
   delete skimFile;
 
-  printf("Total events in ntuple(s)                                    %15d\n",eventsInNtuple);
-  printf("    number of weighted events in ntuple                      %17.1lf\n",weightedEventsInNtuple);
-  printf("    events after event level trigger cut                     %15d\n",eventsAfterTrigger);
-  printf("\nTotal candidates (no cuts)                                 %15d\n",totalCand);
-  printf("        candidates in 15-600 mass window                     %15d\n",totalCandInMassWindow);
-  printf("        candidates with eta 0-1.4442, 1.566-2.5              %15d\n",totalCandInEtaAcceptance);
-  printf("        candidates, both electrons above 10 GeV              %15d\n",totalCandEtAbove10GeV);
-  printf("        candidates matched to GEN level (if MC)              %15d\n",totalCandMatchedToGen);
-  printf("        candidates, full selection                           %15d\n",totalCandFullSelection);
+  printf("Total events in ntuple(s)                          %15d\n",
+	 eventsInNtuple);
+  printf("    number of weighted events in ntuple            %17.1lf\n",
+	 weightedEventsInNtuple);
+  printf("    events after event level trigger cut           %15d\n",
+	 eventsAfterTrigger);
+  printf("\nTotal candidates (no cuts)                       %15d\n",
+	 totalCand);
+  printf("        candidates in 15-600 mass window           %15d\n",
+	 totalCandInMassWindow);
+  printf("        candidates with eta 0-1.4442, 1.566-2.5    %15d\n",
+	 totalCandInEtaAcceptance);
+  printf("        candidates, both electrons above 10 GeV    %15d\n",
+	 totalCandEtAbove10GeV);
+  printf("        candidates matched to GEN level (if MC)    %15d\n",
+	 totalCandMatchedToGen);
+  printf("        candidates, full selection                 %15d\n",
+	 totalCandFullSelection);
   return 1;
 }
 
@@ -865,7 +922,8 @@ double findEventScaleFactorSmeared(const esfSelectEvent_t &data, int iexp) {
 
 // ------------------------------------------------------------
 
-double findEventScaleFactorSmeared(int kind, const esfSelectEvent_t &data, int iexp) {
+double findEventScaleFactorSmeared(int kind, const esfSelectEvent_t &data,
+				   int iexp) {
 
   double esf1=1.0;
   int etBin1 = findEtBin(data.et_1, etBinning);
@@ -896,7 +954,8 @@ double findScaleFactorSmeared(int kind, double scEt, double scEta, int iexp) {
 
 // --------------------------------------
 
-double findScaleFactorSmeared(int kind, int etBin, int etaBin, const EffArray_t &dataRndWeight, const EffArray_t &mcRndWeight) {
+double findScaleFactorSmeared(int kind, int etBin, int etaBin,
+	   const EffArray_t &dataRndWeight, const EffArray_t &mcRndWeight) {
 
   double result = 0;
   if( (etBin == -1) || (etaBin == -1)) {
@@ -959,7 +1018,7 @@ double findScaleFactorSmeared(int kind, int etBin, int etaBin, const EffArray_t 
 /*
 template<class Graph_t>
 void drawEfficiencyGraphsAsymmErrors(Graph_t *grData, Graph_t *grMc,
-				     TString yAxisTitle, TString text, TString plotName){
+                     TString yAxisTitle, TString text, TString plotName){
   
    // Generate "random" canvas name
 //    TTimeStamp time;
@@ -1117,10 +1176,12 @@ void drawEfficiencies(){
 
   for (int kind=0; kind<3; ++kind) {
     for (int iEta=0; iEta<etaBinCount; ++iEta) {
-      sprintf(bufEta,"_abs_eta_%5.3lf__%5.3lf",etaBinLimits[iEta],etaBinLimits[iEta+1]);
+      sprintf(bufEta,"_abs_eta_%5.3lf__%5.3lf",
+	      etaBinLimits[iEta],etaBinLimits[iEta+1]);
       TString etaStr=bufEta;
       etaStr.ReplaceAll(".","_");
-      sprintf(plotLabel,"%5.3lf < |#eta| < %5.3lf",etaBinLimits[iEta],etaBinLimits[iEta+1]);
+      sprintf(plotLabel,"%5.3lf < |#eta| < %5.3lf",
+	      etaBinLimits[iEta],etaBinLimits[iEta+1]);
 
       for (int iEt=0; iEt<etBinCount; ++iEt) {
 	effData[iEt]= (*dataEff[kind])[iEt][iEta];
@@ -1173,15 +1234,19 @@ void drawScaleFactors(){
 
   for (int kind=0; kind<3; ++kind) {
     for (int iEta=0; iEta<etaBinCount; ++iEta) {
-      sprintf(bufEta,"_abs_eta_%5.3lf__%5.3lf",etaBinLimits[iEta],etaBinLimits[iEta+1]);
+      sprintf(bufEta,"_abs_eta_%5.3lf__%5.3lf",
+	      etaBinLimits[iEta],etaBinLimits[iEta+1]);
       TString etaStr=bufEta;
       etaStr.ReplaceAll(".","_");
-      sprintf(plotLabel,"%5.3lf < |#eta| < %5.3lf",etaBinLimits[iEta],etaBinLimits[iEta+1]);
+      sprintf(plotLabel,"%5.3lf < |#eta| < %5.3lf",
+	      etaBinLimits[iEta],etaBinLimits[iEta+1]);
 
       for (int iEt=0; iEt<etBinCount; ++iEt) {
 	scale[iEt]= (*dataEff[kind])[iEt][iEta] / (*mcEff[kind])[iEt][iEta];
-	scaleErr[iEt]= errOnRatio( (*dataEff[kind])[iEt][iEta], (*dataEffAvgErr[kind])[iEt][iEta],
-				   (*mcEff[kind])[iEt][iEta], (*mcEffAvgErr[kind])[iEt][iEta] );
+	scaleErr[iEt]= errOnRatio( (*dataEff[kind])[iEt][iEta], 
+				   (*dataEffAvgErr[kind])[iEt][iEta],
+				   (*mcEff[kind])[iEt][iEta], 
+				   (*mcEffAvgErr[kind])[iEt][iEta] );
       }
 
       TGraphErrors *grScaleFactor
@@ -1241,13 +1306,18 @@ void drawEventScaleFactors(TVectorD scaleRecoV, TVectorD scaleRecoErrV,
     scaleErrA       [i] = scaleErrV   [i];
   }
 
-  TGraphErrors *grScale = new TGraphErrors(nMassBins, x, scaleA, dx, scaleErrA);
-  TGraphErrors *grScaleReco = new TGraphErrors(nMassBins, x, scaleRecoA, dx, scaleRecoErrA);
-  TGraphErrors *grScaleId  = new TGraphErrors(nMassBins, x, scaleIdA , dx, scaleIdErrA );
-  TGraphErrors *grScaleHlt = new TGraphErrors(nMassBins, x, scaleHltA, dx, scaleHltErrA);
+  TGraphErrors *grScale = 
+    new TGraphErrors(nMassBins, x, scaleA, dx, scaleErrA);
+  TGraphErrors *grScaleReco = 
+    new TGraphErrors(nMassBins, x, scaleRecoA, dx, scaleRecoErrA);
+  TGraphErrors *grScaleId  = 
+    new TGraphErrors(nMassBins, x, scaleIdA , dx, scaleIdErrA );
+  TGraphErrors *grScaleHlt = 
+    new TGraphErrors(nMassBins, x, scaleHltA, dx, scaleHltErrA);
 
   TString plotName;
-  TString plotNameBase = TString("plot_event_scale_") + analysisTag + TString("_");
+  TString plotNameBase = 
+    TString("plot_event_scale_") + analysisTag + TString("_");
   plotName = plotNameBase + TString("reco");
   drawEventScaleFactorGraphs(grScaleReco, "RECO scale factor" , plotName);
   plotName = "plot_event_scale_id";
@@ -1265,7 +1335,8 @@ void drawEventScaleFactors(TVectorD scaleRecoV, TVectorD scaleRecoErrV,
 // This method reads all ROOT files that have efficiencies from
 // tag and probe in TMatrixD form and converts the matrices into 
 // more simple arrays.
-int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr, const TnPInputFileMgr_t &dataMgr, const TriggerSelection &triggers ) {
+int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr, 
+      const TnPInputFileMgr_t &dataMgr, const TriggerSelection &triggers ) {
 
   TString fnStart="efficiency_TnP_"; //+ analysisTag;
   TString fnEnd=".root";
@@ -1285,14 +1356,16 @@ int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr, const TnPInputFile
       getLabel(DATA,TEfficiencyKind_t(kind),dataMgr.effCalcMethod(kind),
 	       etBinning, etaBinning, triggers)
       + fnEnd;
-    res=fillOneEfficiency(dataMgr, dataFName, kind, dataEff, dataEffErrLo, dataEffErrHi, dataEffAvgErr);
+    res=fillOneEfficiency(dataMgr, dataFName, kind, 
+			  dataEff, dataEffErrLo, dataEffErrHi, dataEffAvgErr);
   }
   for (int kind=0; res && (kind<3); ++kind) {
     TString mcFName=fnStart + 
       getLabel(MC,TEfficiencyKind_t(kind),mcMgr.effCalcMethod(kind),
 	       etBinning, etaBinning, triggers)
       + fnEnd;
-    res=fillOneEfficiency(mcMgr, mcFName, kind, mcEff, mcEffErrLo, mcEffErrHi, mcEffAvgErr);
+    res=fillOneEfficiency(mcMgr, mcFName, kind, 
+			  mcEff, mcEffErrLo, mcEffErrHi, mcEffAvgErr);
   }
   if (res!=1) std::cout << "Error in fillEfficiencyConstants\n"; 
   else std::cout << "fillEfficiencyConstants ok\n";
@@ -1301,7 +1374,9 @@ int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr, const TnPInputFile
 
 // -------------------------------------------------------------------------
 
-int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, UInt_t kindIdx, vector<TMatrixD*> &effV, vector<TMatrixD*> &errLoV, vector<TMatrixD*> &errHiV, vector<TMatrixD*> &avgErrV) {
+int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, 
+   UInt_t kindIdx, vector<TMatrixD*> &effV, vector<TMatrixD*> &errLoV, 
+   vector<TMatrixD*> &errHiV, vector<TMatrixD*> &avgErrV) {
 
   TFile f(TString("../root_files/tag_and_probe/")+mgr.dirTag()+TString("/")+
 	  filename);
@@ -1318,11 +1393,15 @@ int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, UInt
 
   // Make sure that there are only two eta bins and appropriate number of ET bins
   if( effMatrix->GetNcols() != etaBinCount ) {
-    printf("The number of eta bins stored in constants file (%d) is not %d\n",effMatrix->GetNcols(),etaBinCount);
+    std::cout << "The number of eta bins stored in constants file ("
+	      << effMatrix->GetNcols() << ") is not " <<
+	      << etaBinCount << "\n";
     return 0;
   }
   if( effMatrix->GetNrows() != etBinCount ) {
-    printf("The number of ET bins stored in constants file (%d) is different form expected (%d)\n",effMatrix->GetNrows(),etBinCount);
+    std::cout << "The number of ET bins stored in constants file ("
+	      << effMatrix->GetNrows() << ") is different form expected ("
+	      << etBinCount << ")\n";
     return 0;
   }
 
@@ -1330,7 +1409,11 @@ int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, UInt
       (errLoV.size()!=kindIdx) ||
       (errHiV.size()!=kindIdx) ||
       (avgErrV.size()!=kindIdx)) {
-    cout << "Error: effV.size=" << effV.size() << ", errLoV.size=" << errLoV.size() << ", errHiV.size=" << errHiV.size() << ", avgErrV.size=" << avgErrV.size() << ", kindIdx=" <<  kindIdx << "\n";
+    cout << "Error: effV.size=" << effV.size() 
+	 << ", errLoV.size=" << errLoV.size() 
+	 << ", errHiV.size=" << errHiV.size() 
+	 << ", avgErrV.size=" << avgErrV.size() 
+	 << ", kindIdx=" <<  kindIdx << "\n";
     return 0;
   }
 
@@ -1340,7 +1423,8 @@ int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, UInt
   TMatrixD* avgErr=(TMatrixD*)effMatrixErrLow->Clone("avgErr");
   for (int col=0; col<effMatrixErrLow->GetNcols(); ++col) {
     for (int row=0; row<effMatrixErrLow->GetNrows(); ++row) {
-      (*avgErr)[row][col]=0.5*((*effMatrixErrLow)[row][col] + (*effMatrixErrHigh)[row][col]);
+      (*avgErr)[row][col]=
+	0.5*((*effMatrixErrLow)[row][col] + (*effMatrixErrHigh)[row][col]);
     }
   }
   avgErrV.push_back(avgErr);
@@ -1351,8 +1435,11 @@ int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, UInt
 
 // -------------------------------------------------------------------------
 
-void PrintEffInfoLines(const char *msg, int effKind, int effMethod, int binCount, const double *eff, const double *effErr) {
-  std::cout << "PrintEffInfoLines(" << ((msg) ? msg : "<null>") << ", effKind=" << effKind << ", effMethod=" << effMethod << ", binCount=" << binCount << "\n";
+void PrintEffInfoLines(const char *msg, int effKind, int effMethod, 
+		       int binCount, const double *eff, const double *effErr) {
+  std::cout << "PrintEffInfoLines(" << ((msg) ? msg : "<null>") 
+	    << ", effKind=" << effKind << ", effMethod=" << effMethod 
+	    << ", binCount=" << binCount << "\n";
   for (int i=0; i<binCount; i++) {
     printf("  i=%d  eff=%6.4lf effErr=%8.6e\n",i,eff[i],effErr[i]);
   }
