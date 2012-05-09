@@ -29,6 +29,7 @@
 
 #include "../Include/EventSelector.hh"
 #include "../Include/FEWZ.hh"
+#include "../Include/UnfoldingTools.hh"
 
 #endif
 
@@ -110,7 +111,9 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
 
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
-    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,1500)); hZMassv[ifile]->Sumw2();
+    sprintf(hname,"hZMass_%i",ifile); 
+    hZMassv.push_back(new TH1F(hname,"",500,0,1500)); 
+    hZMassv[ifile]->Sumw2();
   }
 
   // 
@@ -186,8 +189,10 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
       // if sansAcc mode, Discard events that are not in kinematics acceptance
       if (sansAcc)
         {
-           if( ! (DYTools::isBarrel(gen->eta_1) || DYTools::isEndcap(gen->eta_1) ) ) continue;
-           if( ! (DYTools::isBarrel(gen->eta_2) || DYTools::isEndcap(gen->eta_2) ) ) continue;
+           if( ! (DYTools::isBarrel(gen->eta_1) || 
+		  DYTools::isEndcap(gen->eta_1) ) ) continue;
+           if( ! (DYTools::isBarrel(gen->eta_2) || 
+		  DYTools::isEndcap(gen->eta_2) ) ) continue;
            // both above 10 GeV and at least one above 20 GeV
            if( ! (gen->pt_1 > 10 && gen->pt_2 > 10) ) continue;
            if( ! (gen->pt_1 > 20 || gen->pt_2 > 20) ) continue;
@@ -251,16 +256,19 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
       else if(ibinM >= nMassBins || ibinY>=nYBins[ibinM])
         binProblemPreFsr++;
 
-      if(ibinMPostFsr!=-1 && ibinMPostFsr<nMassBins &&  ibinYPostFsr!=-1 && ibinYPostFsr<nYBins[ibinMPostFsr])
+      if(ibinMPostFsr!=-1 && ibinMPostFsr<nMassBins &&  ibinYPostFsr!=-1 
+	 && ibinYPostFsr<nYBins[ibinMPostFsr])
 	nPassv(ibinMPostFsr,ibinYPostFsr) += scale * gen->weight * fewz_weight;
-      else if(ibinMPostFsr >= nMassBins || ibinYPostFsr>=nYBins[ibinMPostFsr]) {
+      else if(ibinMPostFsr >= nMassBins || 
+	      ibinYPostFsr>=nYBins[ibinMPostFsr]) {
 	// Do nothing: post-fsr mass could easily be below the lowest edge of mass range
         binProblemPostFsr++;
       }
 
       if (ibinM==ibinMPostFsr && ibinY==ibinYPostFsr)
         {
-          if(ibinM != -1 && ibinM<nMassBins && ibinY!=-1 && ibinY<nYBins[ibinM])
+          if(ibinM != -1 && ibinM<nMassBins && ibinY!=-1 && 
+	     ibinY<nYBins[ibinM])
             nCorrelv(ibinM,ibinY) += scale * gen->weight * fewz_weight;
           else if(ibinM >= nMassBins || ibinY>=nYBins[ibinM])
             binProblemCorrel++;
@@ -275,9 +283,11 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
     infile=0, eventTree=0;
   }
   delete gen;
-  cout << "Error: binning problem FEWZ bins, " << binProblemFEWZ <<"  events"<< endl;
+  cout << "Error: binning problem FEWZ bins, " << binProblemFEWZ 
+       <<"  events"<< endl;
   cout << "ERROR: binning problem, " << binProblemPreFsr<<" events"<< endl;
-  cout << "ERROR: binning problem Correlation, " << binProblemCorrel <<"  events" << endl;
+  cout << "ERROR: binning problem Correlation, " << binProblemCorrel 
+       <<"  events" << endl;
 
   corrv      = 0;
   corrErrv   = 0;
@@ -287,7 +297,9 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
         if(nEventsv(i,j) != 0)
           {
             corrv(i,j) = nPassv(i,j)/nEventsv(i,j);
-            corrErrv(i,j) = corrv(i,j) * sqrt( 1.0/nPassv(i,j) + 1.0/nEventsv(i,j)- 2*nCorrelv(i,j)/(nPassv(i,j)*nEventsv(i,j)) );
+            corrErrv(i,j) = corrv(i,j) * 
+	      sqrt( 1.0/nPassv(i,j) + 1.0/nEventsv(i,j)- 
+		    2*nCorrelv(i,j)/(nPassv(i,j)*nEventsv(i,j)) );
             //corrErrv[i] = corrv[i] * sqrt( 1.0/nPassv[i] + 1.0/nEventsv[i] );
             //corrErrv[i] = sqrt(corrv[i]*(1-corrv[i])/nEventsv[i]);
           }
@@ -310,7 +322,8 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   fsr_constants+=".root";
 
   TString fileNamePlots=outputDir + fsr_constants;
-  fileNamePlots.Replace(fileNamePlots.Index(".root"),sizeof(".root"),"_plots.root");
+  fileNamePlots.Replace(fileNamePlots.Index(".root"),
+			sizeof(".root"),"_plots.root");
   TFile *filePlots=new TFile(fileNamePlots,"recreate");
   if (!filePlots || !filePlots->IsOpen()) {
     std::cout << "failed to create file <" << fileNamePlots << ">\n";
@@ -373,8 +386,9 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   TString fsrConstFileName(outputDir+fsr_constants);
   TFile fa(fsrConstFileName,"recreate");
   //correctionGraph->Write("CORR_FSR");
-  corrv.Write("fsrCorrectionArray");
-  corrErrv.Write("fsrCorrectionErrArray");
+  corrv.Write("fsrCorrectionMatrix");
+  corrErrv.Write("fsrCorrectionErrMatrix");
+  unfolding::writeBinningArrays(fa);
   fa.Close();
 
   //--------------------------------------------------------------------------------------------------------------
