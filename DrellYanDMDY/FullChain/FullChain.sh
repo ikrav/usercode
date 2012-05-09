@@ -12,9 +12,9 @@
 anTagUser=
 anTag="2D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
 filename_data="../config_files/data.conf"
-filename_data="../config_files/data_evtTrig.conf"
+#  filename_data="../config_files/data_evtTrig.conf"
 filename_mc="../config_files/fall11mc.input"
-filename_mc="../config_files/fall11mc_evtTrig.input"
+#  filename_mc="../config_files/fall11mc_evtTrig.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffOld"
 tnpFileStart="../config_files/sf"
@@ -248,18 +248,18 @@ fi
 if [ ${do_unfolding} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusUnfolding=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: makeUnfoldingMatrix(\"${filename_mc}\",debug=${debugMode})"
+echo "WILL DO: makeUnfoldingMatrix(\"${filename_mc}\",\"${triggerSet}\",debug=${debugMode})"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Unfolding
 rm -f *.so ${expectUnfoldingFile}
 echo
 checkFile makeUnfoldingMatrix.C
-root -b -q -l ${LXPLUS_CORRECTION} makeUnfoldingMatrix.C+\(\"$filename_mc\",DYTools::NORMAL,1,1.0,-1.0,${debugMode}\)    | tee ${logDir}/out${timeStamp}-04-makeUnfoldingMatrix${anTag}.log
+root -b -q -l ${LXPLUS_CORRECTION} makeUnfoldingMatrix.C+\(\"$filename_mc\",\"${triggerSet}\",DYTools::NORMAL,1,1.0,-1.0,${debugMode}\)    | tee ${logDir}/out${timeStamp}-04-makeUnfoldingMatrix${anTag}.log
 get_status ${expectUnfoldingFile}
 statusUnfolding=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: makeUnfoldingMatrix(\"${filename_mc}\")"
+echo "DONE: makeUnfoldingMatrix(\"${filename_mc}\",\"${triggerSet}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else
     statusUnfolding=skipped
@@ -335,18 +335,18 @@ fi
 if [ ${do_efficiency} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusEfficiency=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: plotDYEfficiency(\"${filename_mc},debug=${debug}\")"
+echo "WILL DO: plotDYEfficiency(\"${filename_mc},\"${triggerSet}\",debug=${debug}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Efficiency
 rm -f *.so
 echo
 checkFile plotDYEfficiency.C
-root -b -q -l ${LXPLUS_CORRECTION} plotDYEfficiency.C+\(\"$filename_mc\",${debugMode}\)       | tee ${logDir}/out${timeStamp}-08-plotDYEfficiency${anTag}.log
+root -b -q -l ${LXPLUS_CORRECTION} plotDYEfficiency.C+\(\"$filename_mc\",\"$triggerSet\",${debugMode}\)       | tee ${logDir}/out${timeStamp}-08-plotDYEfficiency${anTag}.log
 get_status
 statusEfficiency=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: plotDYEfficiency(\"${filename_mc}\")"
+echo "DONE: plotDYEfficiency(\"${filename_mc,\"${triggerSet}\"}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else
     statusEfficiency=skipped
