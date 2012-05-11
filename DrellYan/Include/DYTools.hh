@@ -176,8 +176,8 @@ namespace DYTools {
   int findMassBinLumi(double mass) { return findMassBin(mass,nMassBinsLumi,massBinLimitsLumi); }
 
   // Define a particular choice of mass binning
-  const int nMassBins=nMassBinsLumi;
-  const double *massBinLimits=massBinLimitsLumi;
+  const int nMassBins=nMassBins2011;
+  const double *massBinLimits=massBinLimits2011;
 
   int findMassBin(double mass) { return findMassBin(mass,nMassBins,massBinLimits); }
 
