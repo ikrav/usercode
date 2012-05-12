@@ -2,12 +2,9 @@
 
 // TODO:
 //
-// Are trigger bits implemented correctly for full 2011 dataset?
+// Review how systematics is done
 //
-// Sort out EfficiencyDivide and other functions!
-//
-// Review systematics for unfolding. Can it be done more
-// efficiently?
+// Switch to using EventSelection class for dielectron selection
 //
 
 #include <TROOT.h>                  // access to gROOT, entry point to ROOT system
@@ -38,6 +35,7 @@
 #include "../Include/MitStyleRemix.hh"  // style settings for drawing
 #include "../Include/MyTools.hh"        // miscellaneous helper functions
 #include "../Include/DYTools.hh"
+#include "../Include/plotFunctions.hh"
 
 // define classes and constants to read in ntuple
 #include "../Include/EWKAnaDefs.hh"
@@ -61,13 +59,9 @@
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
-// void BayesEfficiency(double passed, double total,
-//                      double& eff, double& errlow, double& errhigh);
-void EfficiencyDivide(double passed, double total,
-		  double& eff, double& errlow, double& errhigh);
-void SimpleDivide(double passed, double total,
-		  double& eff, double& errlow, double& errhigh);
-
+void computeNormalizedBinContent(double subset, double subsetErr,
+				 double total, double totalErr,
+				 double& ratio, double& ratioErr);
 void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TErrNeg,
 				   TMatrixD &TinvErr);
 //=== MAIN MACRO =================================================================================================
@@ -111,7 +105,7 @@ void makeUnfoldingMatrix(const TString input,
   // Settings 
   //==============================================================================================================
   
-  Bool_t doSave  = false;    // save plots?
+//   Bool_t doSave  = false;    // save plots?
   TString format = "png";   // output file format
   
   vector<TString> fnamev;   // file names   
@@ -164,25 +158,12 @@ void makeUnfoldingMatrix(const TString input,
     assert(0);
   }
 
-  //const Double_t kGAP_LOW  = 1.4442;
-  //const Double_t kGAP_HIGH = 1.566;
-
-  // Line below is old, to be deleted
-  // TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
-
   TriggerConstantSet constantsSet=DetermineTriggerSet(triggerSetString);  
   assert ( constantsSet != TrigSet_UNDEFINED );
 
   // For MC the trigger does not depend on run number
   const bool isData=kFALSE;
   TriggerSelection requiredTriggers(constantsSet, isData, 0);
-
-  // The statements below are commented out: now trigger bit cuts are done
-  // in TriggerSelection
-//   ULong_t eventTriggerBit = requiredTriggers.getEventTriggerBit(0);
-//   ULong_t leadingTriggerObjectBit = requiredTriggers.getLeadingTriggerObjectBit(0);
-//   ULong_t trailingTriggerObjectBit = requiredTriggers.getTrailingTriggerObjectBit(0);
-
 
   //--------------------------------------------------------------------------------------------------------------
   // Main analysis code 
@@ -193,7 +174,7 @@ void makeUnfoldingMatrix(const TString input,
   int seed = randomSeed;
   random.SetSeed(seed);
   gRandom->SetSeed(seed);
-//   // In the case of systematic studies, generate an array of random offsets
+  // In the case of systematic studies, generate an array of random offsets
   TVectorD shift(escale._nEtaBins); // temporary: this vector is outdated by the new features in the escale obj.class
   shift = 0;
   if(systematicsMode==DYTools::RESOLUTION_STUDY) {
@@ -237,48 +218,41 @@ void makeUnfoldingMatrix(const TString input,
 
   int nUnfoldingBins = DYTools::getTotalNumberOfBins();
 
-  TH1F *hMassDiffV[nUnfoldingBins];
-  for(int i=0; i<nUnfoldingBins; i++){
-    sprintf(hname,"hMassDiffV_%d",i);
-    hMassDiffV[i] = new TH1F(hname,"",100,-50,50);
-  }
+  // These histograms will contain (gen-reco) difference 
+  // for each (mass, Y) bin in a flattened format
+  TH2F *hMassDiffV = new TH2F("hMassDiffV","",
+			      nUnfoldingBins, -0.5, nUnfoldingBins-0.5,
+			      100, -50.0, 50.0);
+  TH2F *hYDiffV = new TH2F("hYDiffV","",
+			   nUnfoldingBins, -0.5, nUnfoldingBins-0.5,
+			   100, -5.0, 5.0);
+
+//   TH1F *hMassDiffV[nUnfoldingBins];
+//   for(int i=0; i<nUnfoldingBins; i++){
+//     sprintf(hname,"hMassDiffV_%d",i);
+//     hMassDiffV[i] = new TH1F(hname,"",100,-50,50);
+//   }
 
   // MC spectra for storage in ROOT file
-  // The FSR of RECO means that this is the spectrum of generator-level
-  // post-FSR mass for events that were actually reconstructed (i.e. includes
-  // efficiency and acceptances losses)
-  TVectorD yieldsMcFsrOfRec    (nUnfoldingBins);
-  TVectorD yieldsMcFsrOfRecErr (nUnfoldingBins);
-  TVectorD yieldsMcRec         (nUnfoldingBins);
-  TVectorD yieldsMcRecErr      (nUnfoldingBins);
-  yieldsMcFsrOfRec     = 0;
-  yieldsMcFsrOfRecErr  = 0;
-  yieldsMcRec          = 0;
-  yieldsMcRecErr       = 0;
-  // The yields at generator level with mass bins defined by post-FSR di-leptons
-  TVectorD yieldsMcFsr    (nUnfoldingBins);
-  yieldsMcFsr          = 0;
+  int nYBinsMax = DYTools::findMaxYBins();
+  TMatrixD yieldsMcPostFsrGen(DYTools::nMassBins,nYBinsMax);
+  TMatrixD yieldsMcPostFsrRec(DYTools::nMassBins,nYBinsMax);
+  // The errors 2D arrays are not filled at the moment. It needs
+  // to be done carefully since events are weighted.
+  // For each bin, the error would be sqrt(sum weights^2).
+  TMatrixD yieldsMcPostFsrGenErr(DYTools::nMassBins,nYBinsMax);
+  TMatrixD yieldsMcPostFsrRecErr(DYTools::nMassBins,nYBinsMax);
 
-  // Vectors for bin to bin corrections
-  TVectorD DetCorrFactorNumerator  (nUnfoldingBins);
-  TVectorD DetCorrFactorDenominator(nUnfoldingBins);
-  TVectorD DetCorrFactor           (nUnfoldingBins);
-  TVectorD DetCorrFactorErrPos     (nUnfoldingBins);
-  TVectorD DetCorrFactorErrNeg     (nUnfoldingBins);
-  DetCorrFactorNumerator   = 0;
-  DetCorrFactorDenominator = 0;
-  DetCorrFactor            = 0;
-  DetCorrFactorErrPos      = 0;
-  DetCorrFactorErrNeg      = 0;
-  
   // Matrices for unfolding
   TMatrixD DetMigration(nUnfoldingBins, nUnfoldingBins);
+  TMatrixD DetMigrationErr(nUnfoldingBins, nUnfoldingBins);
   TMatrixD DetResponse(nUnfoldingBins, nUnfoldingBins);
   TMatrixD DetResponseErrPos(nUnfoldingBins, nUnfoldingBins);
   TMatrixD DetResponseErrNeg(nUnfoldingBins, nUnfoldingBins);
   for(int i=0; i<nUnfoldingBins; i++){
     for(int j=0; j<nUnfoldingBins; j++){
-      DetMigration(i,j) = 0;
+      DetMigration   (i,j) = 0;
+      DetMigrationErr(i,j) = 0;
       DetResponse(i,j) = 0;
       DetResponseErrPos(i,j) = 0;
       DetResponseErrNeg(i,j) = 0;
@@ -336,29 +310,6 @@ void makeUnfoldingMatrix(const TString input,
 
       if (ientry<20) std::cout<<"reweight="<<reweight<<std::endl;
 
-
-      // Use post-FSR generator level mass and rapidity in unfolding
-      int iMassGenPostFsr = DYTools::findMassBin(gen->mass);
-      int iYGenPostFsr = DYTools::findAbsYBin(iMassGenPostFsr, gen->y);
-      int iIndexFlatGenPostFsr = DYTools::findIndexFlat(iMassGenPostFsr, iYGenPostFsr);
-      if(iIndexFlatGenPostFsr != -1 && iIndexFlatGenPostFsr < yieldsMcFsr.GetNoElements()){
-         yieldsMcFsr[iIndexFlatGenPostFsr] += reweight * scale * gen->weight;
-      }
-
-      /*
-      // For EPS2011 for both data and MC (starting from Summer11 production)
-      // we use an OR of the twi triggers below. Both are unpresecaled.
-      UInt_t eventTriggerBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL 
-	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL;
-      UInt_t leadingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj
-	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
-      UInt_t trailingTriggerObjectBit = kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj
-	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
-      */
-      
-      // The line below is replaced by the superseeding method, can be cleaned up
-//       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
-
       if( !(requiredTriggers.matchEventTriggerBit(info->triggerBits, 
 						  info->runNum))) 
 	continue;
@@ -385,14 +336,6 @@ void makeUnfoldingMatrix(const TString input,
 	if( ! requiredTriggers.matchTwoTriggerObjectsAnyOrder( dielectron->hltMatchBits_1,
 							       dielectron->hltMatchBits_2,
 							       info->runNum) ) continue;
-
-	// The clause below can be deleted, it is superseeded by new methods
-// 	if( ! ( 
-// 	       (dielectron->hltMatchBits_1 & leadingTriggerObjectBit && 
-// 		dielectron->hltMatchBits_2 & trailingTriggerObjectBit )
-// 	       ||
-// 	       (dielectron->hltMatchBits_1 & trailingTriggerObjectBit && 
-// 		dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
 	
 	// The Smurf electron ID package is the same as used in HWW analysis
 	// and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
@@ -423,31 +366,35 @@ void makeUnfoldingMatrix(const TString input,
 
 	hZMassv[ifile]->Fill(massResmeared,scale * gen->weight);
 
+	//
 	// Fill structures for response matrix and bin by bin corrections
+	// Note: there is no handling of overflow, underflow at present,
+	// those entries are just dropped. This can be improved.
+	// The only possible cases are: underflow in mass and overflow in Y.
 
-	if(iIndexFlatGenPostFsr != -1 && iIndexFlatGenPostFsr < yieldsMcFsrOfRec.GetNoElements()){
-	    yieldsMcFsrOfRec[iIndexFlatGenPostFsr] += reweight * scale * gen->weight;
-	    DetCorrFactorDenominator(iIndexFlatGenPostFsr) += reweight * scale * gen->weight;
-          }
-
-	else if(iIndexFlatGenPostFsr >= yieldsMcFsrOfRec.GetNoElements())
-	  cout << "ERROR: binning problem" << endl;
-
-	// Find bin of the reconstructed mass and rapidity
+	// Fill the matrix of post-FSR generator level invariant mass and rapidity
+	int iMassGenPostFsr = DYTools::findMassBin(gen->mass);
+	int iYGenPostFsr = DYTools::findAbsYBin(iMassGenPostFsr, gen->y);
+	if( iMassGenPostFsr != -1 && iYGenPostFsr != -1)
+	  yieldsMcPostFsrGen(iMassGenPostFsr, iYGenPostFsr) += reweight * scale * gen->weight;
+      
+	// Fill the matrix of the reconstruction level mass and rapidity
 	int iMassReco = DYTools::findMassBin(massResmeared);
 	int iYReco = DYTools::findAbsYBin(iMassReco, dielectron->y);
-	int iIndexFlatReco = DYTools::findIndexFlat(iMassReco, iYReco);
-	if(iIndexFlatReco != -1 && iIndexFlatReco < yieldsMcRec.GetNoElements()){
-	    yieldsMcRec[iIndexFlatReco] += reweight * scale * gen->weight;
-	    DetCorrFactorNumerator(iIndexFlatReco) += reweight * scale * gen->weight;
-          }
-
-	else if(iIndexFlatReco >= yieldsMcRec.GetNoElements())
-	  cout << "ERROR: binning problem" << endl;
+	if( iMassReco != -1 && iYReco != -1)
+	  yieldsMcPostFsrRec(iMassReco, iYReco) += reweight * scale * gen->weight;
 	
-	if( iIndexFlatReco != -1 && iIndexFlatReco < yieldsMcRec.GetNoElements() 
-	    && iIndexFlatGenPostFsr != -1 && iIndexFlatGenPostFsr < yieldsMcRec.GetNoElements() ){
-          DetMigration(iIndexFlatGenPostFsr,iIndexFlatReco) += reweight * scale * gen->weight;
+        // Unlike the mass vs Y reference yields matrices, to prepare the
+	// migration matrix we flatten (mass,Y) into a 1D array, and then
+	// store (mass,Y in 1D)_gen vs (mass,Y in 1D)_rec
+	int iIndexFlatGen  = DYTools::findIndexFlat(iMassGenPostFsr, iYGenPostFsr);
+ 	int iIndexFlatReco = DYTools::findIndexFlat(iMassReco, iYReco);
+	if( iIndexFlatReco != -1 && iIndexFlatReco < nUnfoldingBins
+	    && iIndexFlatGen != -1 && iIndexFlatGen < nUnfoldingBins ){
+	  double fullWeight = reweight * scale * gen->weight;
+          DetMigration(iIndexFlatGen,iIndexFlatReco) += fullWeight;
+	  // Accumulate sum of weights squared, sqrt of the sum is computed later
+          DetMigrationErr(iIndexFlatGen,iIndexFlatReco) += fullWeight*fullWeight;
 	}
 	
         Bool_t isB1 = (fabs(dielectron->scEta_1)<kECAL_GAP_LOW);
@@ -460,12 +407,12 @@ void makeUnfoldingMatrix(const TString input,
 	if( !isB1 && !isB2 )
 	  hMassDiffEE->Fill(massResmeared - gen->mass);
 	
-	if(iIndexFlatGenPostFsr != -1){
-	  hMassDiffV[iIndexFlatGenPostFsr]->Fill(massResmeared - gen->mass);
-	}
-// 	if(iIndexFlatReco == -1)
-// 	  printf("Missed bin:  M_fsr=%f   M_reco=%f\n", gen->mass, massResmeared);
-	
+	hMassDiffV->Fill(iIndexFlatGen, massResmeared - gen->mass);
+	hYDiffV   ->Fill(iIndexFlatGen, dielectron->y - gen->y);
+// 	if(iIndexFlatGen != -1){
+// 	  hMassDiffV[iIndexFlatGen]->Fill(massResmeared - gen->mass);
+// 	}
+
       } // end loop over dielectrons
 
     } // end loop over events 
@@ -474,53 +421,41 @@ void makeUnfoldingMatrix(const TString input,
   } // end loop over files
   delete gen;
 
-
-  std::cout << "finish reweighting" << std::endl;
-  //finish reweighting of mass spectra
-
+  // Compute the errors on the elements of migration matrix
+  // by simply taking the square root over the accumulated sum(w^2)
+  for(int i=0; i < DetMigration.GetNrows(); i++)
+    for(int j=0; j < DetMigration.GetNcols(); j++)
+      if( DetMigrationErr(i,j) >=0 )
+	DetMigrationErr(i,j) = sqrt( DetMigrationErr(i,j) );
+      else
+	printf("makeUnfoldingMatrix::Error: negative weights in DetMigrationErr\n");
   
-  // Find bin by bin corrections and the errors
-  double tCentral, tErrNeg, tErrPos;
-  for(int i=0; i<nUnfoldingBins; i++){
-    if ( DetCorrFactorDenominator(i) != 0 ){
-      // This method does not take into account correlation between numerator
-      // and denominator in calculation of errors. This is a flaw to be corrected
-      // in the future.
-      SimpleDivide( DetCorrFactorNumerator(i), DetCorrFactorDenominator(i), tCentral, tErrNeg, tErrPos);
-      DetCorrFactor(i) = tCentral;
-      DetCorrFactorErrPos(i) = tErrPos;
-      DetCorrFactorErrNeg(i) = tErrNeg;
-    } else {
-      DetCorrFactor(i) = 0;
-      DetCorrFactorErrPos(i) = 0;
-      DetCorrFactorErrNeg(i) = 0;
-    }
-  }
-  
-  std::cout << "find response matrix" << std::endl;
-
   // Find response matrix, which is simply the normalized migration matrix
-  for(int ifsr = 0; ifsr < DetMigration.GetNrows(); ifsr++){
-    double nEventsInFsrMassBin = 0;
-    for(int ireco = 0; ireco < DetMigration.GetNcols(); ireco++)
-      nEventsInFsrMassBin += DetMigration(ifsr,ireco);
+  std::cout << "find response matrix" << std::endl;
+  double tCentral, tErr;
+  for(int igen = 0; igen < DetMigration.GetNrows(); igen++){
+    // First find the normalization for the given generator level slice
+    double nEventsInGenBin = 0;
+    double nEventsInGenBinErr = 0;
+    for(int ireco = 0; ireco < DetMigration.GetNcols(); ireco++){
+      nEventsInGenBin += DetMigration(igen,ireco);
+      nEventsInGenBinErr += (DetMigrationErr(igen,ireco)*
+				 DetMigrationErr(igen,ireco));
+    }
+    nEventsInGenBinErr = sqrt(nEventsInGenBinErr);
+
     // Now normalize each element and find errors
     for(int ireco = 0; ireco < DetMigration.GetNcols(); ireco++){
       tCentral = 0;
-      tErrPos  = 0;
-      tErrNeg  = 0;
-      // Note: the event counts supposedly are dominated with events with weight "1"
-      // coming from the primary MC sample, so the error is assumed Poissonian in
-      // the call for efficiency-calculating function below.
-      if( nEventsInFsrMassBin != 0 ){
-	EfficiencyDivide(DetMigration(ifsr,ireco), nEventsInFsrMassBin, tCentral, tErrNeg, tErrPos);
-      // BayesEfficiency does not seem to be working in newer ROOT versions, 
-      // so it is replaced by simler method
-//         BayesEfficiency( DetMigration(ifsr,ireco), nEventsInFsrMassBin, tCentral, tErrNeg, tErrPos);
-      }
-      DetResponse      (ifsr,ireco) = tCentral;
-      DetResponseErrPos(ifsr,ireco) = tErrPos;
-      DetResponseErrNeg(ifsr,ireco) = tErrNeg;
+      tErr     = 0;
+      computeNormalizedBinContent(DetMigration(igen,ireco),
+				  DetMigrationErr(igen,ireco),
+				  nEventsInGenBin,
+				  nEventsInGenBinErr,
+				  tCentral, tErr);
+      DetResponse      (igen,ireco) = tCentral;
+      DetResponseErrPos(igen,ireco) = tErr;
+      DetResponseErrNeg(igen,ireco) = tErr;
     }
   }
 
@@ -528,20 +463,16 @@ void makeUnfoldingMatrix(const TString input,
 
   // Find inverted response matrix
   TMatrixD DetInvertedResponse = DetResponse;
-  //Double_t det;
-//   DetInvertedResponse.Invert(&det);
+  Double_t det;
+  DetInvertedResponse.Invert(&det);
   TMatrixD DetInvertedResponseErr(DetInvertedResponse.GetNrows(), DetInvertedResponse.GetNcols());
-//   calculateInvertedMatrixErrors(DetResponse, DetResponseErrPos, DetResponseErrNeg, DetInvertedResponseErr);
-
-  // Package bin limits into TVectorD for storing in a file
-//   TVectorD BinLimitsArray(nUnfoldingBins+1);
-//   for(int i=0; i<nUnfoldingBins+1; i++)
-//     BinLimitsArray(i) = DYTools::massBinLimits[i];
-
+  calculateInvertedMatrixErrors(DetResponse, DetResponseErrPos, DetResponseErrNeg, DetInvertedResponseErr);
 
   std::cout << "store constants in a file" << std::endl;
 
-  // Store constants in the file
+  //
+  // Store constants and reference arrays in files
+  //
   TString outputDir(TString("../root_files/constants/")+dirTag);
   if((systematicsMode==DYTools::RESOLUTION_STUDY) || (systematicsMode==DYTools::FSR_STUDY))
     outputDir = TString("../root_files/systematics/")+dirTag;
@@ -566,20 +497,14 @@ void makeUnfoldingMatrix(const TString input,
   DetResponse             .Write("DetResponse");
   DetInvertedResponse     .Write("DetInvertedResponse");
   DetInvertedResponseErr  .Write("DetInvertedResponseErr");
-//   BinLimitsArray          .Write("BinLimitsArray");
-  DetCorrFactor           .Write("DetCorrFactor");
-  DetCorrFactorErrPos     .Write("DetCorrFactorErrPos");
-  DetCorrFactorErrNeg     .Write("DetCorrFactorErrNeg");
   unfolding::writeBinningArrays(fConst);
   fConst.Close();
 
   // Store reference MC arrays in a file
   TString refFileName(outputDir+TString("/yields_MC_unfolding_reference_") + analysisTag + TString(".root"));
   TFile fRef(refFileName, "recreate" );
-//   BinLimitsArray    .Write("BinLimitsArray");
-  yieldsMcFsr       .Write("yieldsMcFsr");
-  yieldsMcFsrOfRec  .Write("yieldsMcFsrOfRec");
-  yieldsMcRec       .Write("yieldsMcRec");
+  yieldsMcPostFsrGen.Write("yieldsMcPostFsrGen");
+  yieldsMcPostFsrRec.Write("yieldsMcPostFsrRec");
   unfolding::writeBinningArrays(fRef);
   fRef.Close();
 
@@ -591,7 +516,9 @@ void makeUnfoldingMatrix(const TString input,
   std::cout << "making plots" << std::endl;
 
   TString unfoldingConstantsPlotFName=unfoldingConstFileName;
-  unfoldingConstantsPlotFName.Replace(unfoldingConstantsPlotFName.Index(".root"),sizeof(".root"),"_plots.root");
+  unfoldingConstantsPlotFName.Replace(unfoldingConstantsPlotFName.Index(".root"),
+				      sizeof(".root"),
+				      "_plots.root");
   TFile *fPlots=new TFile(unfoldingConstantsPlotFName,"recreate");
   if (!fPlots) {
     std::cout << "failed to create a file <" << unfoldingConstantsPlotFName << ">\n";
@@ -603,97 +530,66 @@ void makeUnfoldingMatrix(const TString input,
   // string buffers
   char ylabel[50];   // y-axis label
 
-  // Z mass
+  // 
+  // Draw DY candidate mass at the reconstruction level. Extra
+  // smearing is applied. This figure allows one to judge the 
+  // correctness of the weights aplied to different samples from the
+  // smoothness of the combined result.
+  //
   sprintf(ylabel,"a.u. / %.1f GeV/c^{2}",hZMassv[0]->GetBinWidth(1));
   CPlot plotZMass1("zmass1","","m(ee) [GeV/c^{2}]",ylabel);
   for(UInt_t i=0; i<fnamev.size(); i++) { 
     plotZMass1.AddHist1D(hZMassv[i],labelv[i],"hist",colorv[i],linev[i]); 
   }
   plotZMass1.SetLogy();
-  plotZMass1.Draw(c,doSave,format);
-  if (fPlots) { fPlots->cd(); c->Write(); }
+  plotZMass1.Draw(c);
+  SaveCanvas(c,"zmass1");
+//   plotZMass1.Draw(c,doSave,format);
+//   if (fPlots) { fPlots->cd(); c->Write(); }
 
-  // Create plots of how reco mass looks and how unfolded mass should look like
-// THIS IS A PROBLEMATIC PLOT nUnfoldingBins is nMassBins * nYBins !!
-  // Plot has to be designed
-  TVectorD massBinCentral     (nUnfoldingBins);
-  TVectorD massBinHalfWidth   (nUnfoldingBins);
-  TVectorD yieldMcFsrOfRecErr (nUnfoldingBins);
-  TVectorD yieldMcRecErr      (nUnfoldingBins);
-  // DEBUG temporarily commented out a few lines below
-//   for (int mi=0; mi<nMassBins; ++mi) {
-//     for (int yi=0; yi<nYBins(i); ++yi) {
-//       int i=findIndexFlat(mi,yi);
-//       massBinCentral  (i) = (DYTools::massBinLimits[i+1] + DYTools::massBinLimits[i])/2.0;
-//       massBinHalfWidth(i) = (DYTools::massBinLimits[i+1] - DYTools::massBinLimits[i])/2.0;
-//       yieldsMcFsrOfRecErr(i) = sqrt(yieldsMcFsrOfRec[i]);
-//       yieldsMcRecErr     (i) = sqrt(yieldsMcRec[i]);
-//     }
-//   }
-  TGraphErrors *grFsrOfRec = new TGraphErrors(massBinCentral, yieldsMcFsrOfRec, 
-					      massBinHalfWidth, yieldsMcFsrOfRecErr);
-  TGraphErrors *grRec      = new TGraphErrors(massBinCentral, yieldsMcRec, 
-					      massBinHalfWidth, yieldsMcRecErr);
-  TCanvas *d = MakeCanvas("canvZmass2","canvZmass2",800,600);
-  CPlot plotZMass2("zmass2","","m(ee) [GeV/c^{2}]","events");
-  plotZMass2.AddGraph(grFsrOfRec,"no detector effects","PE",kBlack);
-  plotZMass2.AddGraph(grRec,"reconstructed","PE",kBlue);
-  plotZMass2.Draw(d);
-  if (fPlots) d->Write();
+  //
+  // Draw a plot that illustrates the detector resolution effects.
+  // We plot (gen-rec)/gen as a function of mass and rapidity.
+  //
+  TMatrixD resolutionEffect(DYTools::nMassBins,nYBinsMax);
+  resolutionEffect = 0;
+  for(int i=0; i < resolutionEffect.GetNrows(); i++){
+    for(int j=0; j < resolutionEffect.GetNcols(); j++){
+      double ngen = yieldsMcPostFsrGen(i,j);
+      double nrec = yieldsMcPostFsrRec(i,j);
+      if( ngen != 0 )
+	resolutionEffect(i,j) = (ngen-nrec)/ngen;
+    }
+  }
+  PlotMatrixVariousBinning(resolutionEffect, "resolution_effect", "LEGO2", NULL);
 
-//   int xsize = 600;
-//   int ysize = 600;
-  int xsize = 600;
-  int ysize = 400;
-
-  std::cout << "Create the plot of the response matrix" << std::endl;
-
-  // Create the plot of the response matrix
-  TH2F *hResponse = new TH2F("hResponse","",nUnfoldingBins, DYTools::massBinLimits,
-			     nUnfoldingBins, DYTools::massBinLimits);
-  for(int i=1; i<=nUnfoldingBins; i++)
-    for(int j=1; j<=nUnfoldingBins; j++)
-      hResponse->SetBinContent(i,j,DetResponse(i-1,j-1));
-  TCanvas *e = MakeCanvas("canvResponse","canvResponse",xsize,ysize);
+  // Plot response and inverted response matrices
+  TH2F *hResponse = new TH2F("hResponse","",nUnfoldingBins, -0.5, nUnfoldingBins-0.5,
+			     nUnfoldingBins, -0.5, nUnfoldingBins-0.5);
+  TH2F *hInvResponse = new TH2F("hInvResponse","",nUnfoldingBins, -0.5, nUnfoldingBins-0.5,
+				nUnfoldingBins, -0.5, nUnfoldingBins-0.5);
+  for(int i=0; i<DetResponse.GetNrows(); i++){
+    for(int j=0; j<DetResponse.GetNcols(); j++){
+      hResponse->SetBinContent(i,j, DetResponse(i,j));
+      hInvResponse->SetBinContent(i,j, DetInvertedResponse(i,j));
+    }
+  }
+  TCanvas *e1 = MakeCanvas("canvResponse","canvResponse",600,600);
   CPlot plotResponse("response","",
-		     "generator post-FSR m(ee) [GeV/c^{2}]",
-		     "reconstructed  m(ee) [GeV/c^{2}]");
+		     "flat index gen",
+		     "flat index reco");
   plotResponse.AddHist2D(hResponse,"COLZ");
-  e->cd();
-  plotResponse.SetLogx();
-  plotResponse.SetLogy();
-  gPad->SetRightMargin(0.15);
-  gStyle->SetPalette(1);
-  hResponse->GetXaxis()->SetMoreLogLabels();
-  hResponse->GetXaxis()->SetNoExponent();
-  hResponse->GetYaxis()->SetNoExponent();
-  plotResponse.Draw(e);
-  if (fPlots) { fPlots->cd(); e->Write(); }
+  plotResponse.Draw(e1);
+  SaveCanvas(e1,"hResponse");
 
-  std::cout << "create inverted response matrix" << std::endl;
-
-  // Create the plot of the inverted response matrix
-  TH2F *hInvResponse = new TH2F("hInvResponse","",nUnfoldingBins, DYTools::massBinLimits,
-			     nUnfoldingBins, DYTools::massBinLimits);
-  for(int i=1; i<=nUnfoldingBins; i++)
-    for(int j=1; j<=nUnfoldingBins; j++)
-      hInvResponse->SetBinContent(i,j,DetInvertedResponse(i-1,j-1));
-  TCanvas *f = MakeCanvas("canvInvResponse","canvInvResponse",xsize,ysize);
-  CPlot plotInvResponse("inverted response","",
-			"reconstructed  m(ee) [GeV/c^{2}]",
-			"generator post-FSR m(ee) [GeV/c^{2}]");
+  TCanvas *e2 = MakeCanvas("canvInvResponse","canvInvResponse",600,600);
+  CPlot plotInvResponse("invResponse","",
+		     "flat index gen",
+		     "flat index reco");
   plotInvResponse.AddHist2D(hInvResponse,"COLZ");
-  f->cd();
-  plotInvResponse.SetLogx();
-  plotInvResponse.SetLogy();
-  gPad->SetRightMargin(0.15);
-  gStyle->SetPalette(1);
-  hInvResponse->GetXaxis()->SetMoreLogLabels();
-  hInvResponse->GetXaxis()->SetNoExponent();
-  hInvResponse->GetYaxis()->SetNoExponent();
-  plotInvResponse.Draw(f);
-  if (fPlots) { fPlots->cd(); f->Write(); }
-
+  plotInvResponse.Draw(e2);
+  SaveCanvas(e2,"hInvResponse");
+ 
   // Create a plot of detector resolution without mass binning
   TCanvas *g = MakeCanvas("canvMassDiff","canvMassDiff",600,600);
   CPlot plotMassDiff("massDiff","","reco mass - gen post-FSR mass [GeV/c^{2}]","a.u.");
@@ -704,37 +600,26 @@ void makeUnfoldingMatrix(const TString input,
   plotMassDiff.AddHist1D(hMassDiffEB,"EE-EB","hist",kBlue);
   plotMassDiff.AddHist1D(hMassDiffEE,"EE-EE","hist",kRed);
   plotMassDiff.Draw(g);
-  if (fPlots) g->Write();
+  SaveCanvas(g,"massDiff");
+//   if (fPlots) g->Write();
 
+  // Create a plot of reco - gen post-FSR mass and rapidity difference 
+  TCanvas *h1 = MakeCanvas("canvMassDiffV","canvMassDiffV",600,600);
+  CPlot plotMassDiffV("massDiffV","",
+		      "flat index",
+		      "reco mass - gen post-FSR mass [GeV/c^{2}]");
+  plotMassDiffV.AddHist2D(hMassDiffV,"LEGO");
+  plotMassDiffV.Draw(h1);
+  SaveCanvas(h1,"hMassDiffV");
 
-
-  // Create a plot of reco - gen post-FSR mass difference for several mass bins
-  TCanvas *h = MakeCanvas("canvMassDiffV","canvMassDiffV",600,600);
-  CPlot plotMassDiffV("massDiffV","","reco mass - gen post-FSR mass [GeV/c^{2}]","a.u.");
-  hMassDiffV[7]->Scale(1.0/hMassDiffV[7]->GetSumOfWeights());
-  hMassDiffV[6]->Scale(1.0/hMassDiffV[6]->GetSumOfWeights());
-  hMassDiffV[5]->Scale(1.0/hMassDiffV[5]->GetSumOfWeights());
-  hMassDiffV[4]->Scale(1.0/hMassDiffV[4]->GetSumOfWeights());
-  plotMassDiffV.AddHist1D(hMassDiffV[4],"50-60 GeV/c^{2}","hist",kBlack);
-  plotMassDiffV.AddHist1D(hMassDiffV[5],"60-76 GeV/c^{2}","hist",kBlue);
-  plotMassDiffV.AddHist1D(hMassDiffV[6],"76-86 GeV/c^{2}","hist",kRed);
-  plotMassDiffV.AddHist1D(hMassDiffV[7],"86-96 GeV/c^{2}","hist",kMagenta);
-  plotMassDiffV.SetXRange(-20,50);
-  plotMassDiffV.Draw(h);
-  if (fPlots) h->Write();
-
-  // Create graph of bin-to-bin corrections
-  TGraphAsymmErrors *grCorrFactor 
-    = new TGraphAsymmErrors(massBinCentral, DetCorrFactor,
-			    massBinHalfWidth, massBinHalfWidth,
-			    DetCorrFactorErrNeg, DetCorrFactorErrPos);
-  TCanvas *c11 = MakeCanvas("canvCorrFactor","canvCorrFactor",800,600);
-  CPlot plotCorrFactor("corrFactor","","m(ee) [GeV/c^{2}]","correction factor");
-  plotCorrFactor.AddGraph(grCorrFactor,"PE",kBlue);
-  plotCorrFactor.SetLogx();
-  plotCorrFactor.SetYRange(0,2.0);
-  plotCorrFactor.Draw(c11);
-  if (fPlots) c11->Write();
+  // Create a plot of reco - gen post-FSR mass and rapidity difference 
+  TCanvas *h2 = MakeCanvas("canvYDiffV","canvYDiffV",600,600);
+  CPlot plotYDiffV("massDiffV","",
+		      "flat index",
+		      "reco Y - gen post-FSR Y");
+  plotYDiffV.AddHist2D(hYDiffV,"LEGO");
+  plotYDiffV.Draw(h2);
+  SaveCanvas(h2,"hYDiffV");
 
   if (fPlots) {
     fPlots->Close();
@@ -770,53 +655,33 @@ void makeUnfoldingMatrix(const TString input,
 
 
 //=== FUNCTION DEFINITIONS ======================================================================================
-void EfficiencyDivide(double passed, double total, 
-		      double& eff, double& errlow, double& errhigh){
+void computeNormalizedBinContent(double subset, double subsetErr,
+				 double total, double totalErr,
+				 double& ratio, double& ratioErr){
   
   if(total == 0) {
-    printf("NOT GOOD! can't divide with zero denominator\n");
-    eff=0;
-    errlow=0;
-    errhigh=0;
+    printf("makeUnfoldingMatrix::Possible problem\n");
+    printf("     empty column in the response matrix\n");
     return;
   }
   
-  eff = passed/total;
-  if(passed<total){
-    if(passed != 0)
-      errlow = sqrt(eff*(1-eff)/total);
-    else
-      errlow = 0;
-    errhigh = errlow;
-  }else{
-    printf("Bayes efficiency warning: passed > total, using plain calculation\n");
-    SimpleDivide(passed,total,eff,errlow,errhigh);
-  }
+  ratio = subset/total;
+
+  // The formula for the ratio = subset/total is obtained by error
+  // propagation. The subsetErr and totalErr are NOT assumed ot be
+  // the sqrt(subset) and sqrt(total). (If one assume that, the formula
+  // below reduces to the familiar sqrt(ratio*(1-ratio)/total) ).
+  // The subset and subsetErr are part of the total and totalErr.
+  // The formula is easiest to derive if we take "A +- dA" and
+  // "B +- dB" as independent numbers, with total = A+B and
+  // totalErr^2 = dA^2 + dB^2. One then does error propagation of
+  // the expression ratio = A/(A+B).
+  // The outcome of it is found below (the absolute error on the ratio)
+  ratioErr = (1/total)*sqrt( subsetErr*subsetErr*(1-2*ratio)
+			     + totalErr*totalErr*ratio*ratio );
 
   return;
 }
-
-void SimpleDivide(double passed, double total, 
-                     double& eff, double& errlow, double& errhigh){
-
-  if(total == 0) {
-    printf("NOT GOOD! can't divide with zero denominator\n");
-    eff=0;
-    errlow=0;
-    errhigh=0;
-    return;
-  }
-
-  eff = passed/total;
-  if(passed != 0)
-    errlow = eff*sqrt( 1/passed + 1/total );
-  else
-    errlow = 0;
-  errhigh = errlow;
-  return;
-}
-
-
 
 void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TErrNeg,
 				   TMatrixD &TinvErr){
@@ -836,7 +701,7 @@ void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TEr
   TinvErr        = 0;
 
   // Do many tries, accumulate RMS
-  int N = 100000;
+  int N = 10000;
   for(int iTry = 0; iTry<N; iTry++){
     // Find the smeared matrix
     TMatrixD Tsmeared = T;
