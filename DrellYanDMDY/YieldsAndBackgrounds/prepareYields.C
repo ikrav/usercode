@@ -41,6 +41,7 @@
 
 #include "../Include/DYTools.hh"
 #include "../Include/plotFunctions.hh"
+#include "../Include/PUReweight.hh"
 
 #endif
 
@@ -211,14 +212,23 @@ void prepareYields(const TString conf  = "data_plot.conf")
 #endif
   TRandom random;
 
+  int puReweight_new_code=1;
   // Open file with number of PV distributions for pile-up reweighting
   // TString("/npv.root");
+  PUReweight_t puWeight;
   const TString fnamePV = outputDir+TString("/npv") + analysisTag_USER + TString(".root");
-  TFile *pvfile = new TFile(fnamePV);
-  assert(pvfile);
+  TFile *pvfile = NULL;
   TH1F *hPVData = 0;
-  if(hasData){ 
-    hPVData = (TH1F*)pvfile->Get("hNGoodPV_data"); assert(hPVData); 
+  if (puReweight_new_code) {
+    assert(puWeight.setFile(fnamePV));
+    assert(puWeight.setReference("hNGoodPV_data"));
+  }
+  else {
+    pvfile=new TFile(fnamePV);
+    assert(pvfile);
+    if(hasData){ 
+      hPVData = (TH1F*)pvfile->Get("hNGoodPV_data"); assert(hPVData); 
+    }
   }
 
   //
@@ -251,11 +261,24 @@ void prepareYields(const TString conf  = "data_plot.conf")
     assert(infile); 
 
     // Prepare weights for pile-up reweighting for MC
-    TH1F *hPVThis = (TH1F*) pvfile->Get(TString("hNGoodPV_")+snamev[isam]); assert(hPVThis);
-    // Normalize or not? Not clear
-    hPVThis->Scale( hPVData->GetSumOfWeights()/hPVThis->GetSumOfWeights());
-    TH1F *puWeights = (TH1F*)hPVData->Clone("puWeights");
-    puWeights->Divide(hPVThis);
+    TH1F *puWeights=NULL;
+    if (puReweight_new_code) {
+      assert(puWeight.setActiveSample(TString("hNGoodPV_")+snamev[isam]));
+      //puWeight.printActiveDistr_and_Weights(std::cout);
+      //puWeight.printWeights(std::cout);
+    }
+    else {
+      TH1F *hPVThis = (TH1F*) pvfile->Get(TString("hNGoodPV_")+snamev[isam]); assert(hPVThis);
+      hPVThis->SetDirectory(0);
+      // Normalize or not? Not clear
+      hPVThis->Scale( hPVData->GetSumOfWeights()/hPVThis->GetSumOfWeights());
+      puWeights = (TH1F*)hPVData->Clone("puWeights");
+      puWeights->SetDirectory(0);
+      puWeights->Divide(hPVThis);
+      for(int i=1; i<=puWeights->GetNbinsX(); i++)
+	printf(" %f    %f    %f\n",puWeights->GetBinCenter(i),puWeights->GetBinContent(i),puWeights->GetBinError(i));
+    }
+
     // Get the TTree and set branch address
     eventTree = (TTree*)infile->Get("Events"); assert(eventTree); 
     eventTree->SetBranchAddress("Events",&data);
@@ -264,12 +287,15 @@ void prepareYields(const TString conf  = "data_plot.conf")
     TMatrixD *thisSampleYields = yields.at(isam);
     TMatrixD *thisSampleYieldsSumw2 = yieldsSumw2.at(isam);
 
+    std::cout << "here are " << eventTree->GetEntries() << " entries in " << snamev[isam] << " sample\n";
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
       eventTree->GetEntry(ientry);
       Double_t weight = data->weight;
       
       // Any extra weight factors:
-      double weightPU = puWeights->GetBinContent( puWeights->FindBin( data->nPV ));
+      double weightPU = (puReweight_new_code) ?
+	puWeight.getWeight( data->nPV ) :
+	puWeights->GetBinContent( puWeights->FindBin( data->nPV ));
       weight *= weightPU;
       
       // If This is MC, add extra smearing to the mass
