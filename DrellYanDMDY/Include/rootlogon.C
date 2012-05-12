@@ -26,6 +26,7 @@
   gROOT->ProcessLine(".L ../Include/FEWZ.cc+");
   gROOT->ProcessLine(".L ../Include/EventSelector.cc+");
   gROOT->ProcessLine(".L ../Include/InputFileMgr.cc+");
+  gROOT->ProcessLine(".L ../Include/PUReweight.cc+");
 
   gROOT->ProcessLine(".L ../Unfolding/UnfoldingTools.C+");
   //gROOT->ProcessLine(".L ../Include/plotFunctions.cc+");
