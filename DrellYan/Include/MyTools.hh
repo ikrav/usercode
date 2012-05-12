@@ -4,6 +4,8 @@
 #include <TGraphAsymmErrors.h>
 #include <TH1F.h>
 #include <iostream>
+#include <TFile.h>
+#include <TTree.h>
 
 //#include "RooStats/FeldmanCousins.h"
 
