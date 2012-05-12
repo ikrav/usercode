@@ -158,7 +158,9 @@ void plotDYEfficiency(const TString input)
     // Find weight for events for this file
     // The first file in the list comes with weight 1,
     // all subsequent ones are normalized to xsection and luminosity
-    lumiv[ifile] = eventTree->GetEntries()/xsecv[ifile];
+    double xsec=xsecv[ifile];
+    AdjustXSectionForSkim(infile,xsec,eventTree->GetEntries(),1);
+    lumiv[ifile] = eventTree->GetEntries()/xsec;
     double scale = lumiv[0]/lumiv[ifile];
     cout << "       -> sample weight is " << scale << endl;
 

@@ -115,6 +115,31 @@ void ClearVec(std::vector<T*> &vec) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
+// if this is a spec.skim file, rescale xsec
+int AdjustXSectionForSkim(TFile *infile, Double_t &xsec, UInt_t numEntries, int verbatim=1) {
+  if(xsec>0) { 
+    // if this is a spec.skim file, rescale xsec
+    TTree *descrTree=(TTree*)infile->Get("Description");
+    if (descrTree) {
+      UInt_t origNumEntries=0;
+      descrTree->SetBranchAddress("origNumEntries",&origNumEntries);
+      descrTree->GetEntry(0);
+      if (origNumEntries>0) {
+	Double_t factor=numEntries/double(origNumEntries);
+	if (verbatim) std::cout << " -> rescaling xsec by " << factor << " due to skimming\n";
+	xsec*=factor;
+      }
+      delete descrTree;
+    }
+    else {
+      if (verbatim) std::cout << "descrTree not found\n";
+    }
+  }
+  return 1;
+}
+
+// -------------------------------------------------
+// -------------------------------------------------
 
 
 #endif
