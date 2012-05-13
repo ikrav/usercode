@@ -3,6 +3,7 @@
 #include <RooEffProd.h>
 #endif
 
+int performWeightedFit=1;
 int bkgPassContainsErrorFunction=0;
 int bkgFailContainsErrorFunction=0;
 
@@ -119,11 +120,42 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &ef
   mass.setBins(NsetBins);
   RooRealVar et ("et" ,"et" ,lims[1].lo, lims[1].hi);
   RooRealVar eta("eta","eta",lims[2].lo, lims[2].hi);
+  RooRealVar weight("weight","weight",0.,100.);
   RooFormulaVar rooCut("rooCut","rooCut",cut,RooArgSet(et,eta));
-  RooDataSet  *dataUnbinnedPass = new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
-						 passTree,RooArgSet(mass,et,eta), rooCut);
-  RooDataSet  *dataUnbinnedFail = new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
-						 failTree,RooArgSet(mass,et,eta), rooCut);
+  RooArgSet dsetArgs(mass,et,eta);
+  int weightedFit=0;
+  if (performWeightedFit && (passTree->GetBranch("weight")!=NULL)) {
+    weightedFit=1;
+    dsetArgs.add(weight);
+  }
+  RooDataSet  *dataUnbinnedPass = 
+    new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
+		   passTree,dsetArgs, rooCut);
+  RooDataSet *dataUnbinnedPassUnweighted=NULL;
+  RooDataSet  *dataUnbinnedFail = 
+    new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
+						 failTree,dsetArgs, rooCut);
+  RooDataSet *dataUnbinnedFailUnweighted=NULL;
+  std::string dline(70,'-'); dline+='\n';
+
+  if (weightedFit) {
+    std::cout << "\n\n\tweighted Fit\n\n";
+    dataUnbinnedPassUnweighted=dataUnbinnedPass;
+    RooDataSet *dSet=dataUnbinnedPassUnweighted;
+    dataUnbinnedPass= 
+      new RooDataSet("dataUnbinnedPassWeighted","dataUnbinnedPassWeighted",
+		     dSet, *dSet->get(), 0, "weight");
+    dataUnbinnedFailUnweighted=dataUnbinnedFail;
+    dSet=dataUnbinnedFailUnweighted;
+    dataUnbinnedFail=
+      new RooDataSet("dataUnbinnedFailWeighted","dataUnbinnedFailWeighted",
+		     dSet, *dSet->get(), 0, "weight");
+    std::cout << dline; dataUnbinnedPass->Print("V"); std::cout << dline;
+    std::cout << dline; dataUnbinnedFail->Print("V"); std::cout << dline;
+    std::cout << std::endl;    
+  }
+  else std::cout << "\n\n\tunweighted Fit\n\n";
+
   RooDataHist *dataBinnedPass   = dataUnbinnedPass->binnedClone("dataBinnedPass","dataBinnedPass");
   RooDataHist *dataBinnedFail   = dataUnbinnedFail->binnedClone("dataBinnedFail","dataBinnedFail");
   RooCategory probeType("probeType","probeType");
@@ -134,9 +166,12 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &ef
   // If needed do binned fit
   bool unbinnedFit = true;
   if(unbinnedFit){
-    data = new RooDataSet("data","data",mass,Index(probeType),
+    RooArgSet combiDSetArgs(mass);
+    if (weightedFit) dsetArgs.add(weight);
+    data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
 			  Import("pass",*dataUnbinnedPass), 
 			  Import("fail",*dataUnbinnedFail));
+    std::cout << dline; data->Print("V"); std::cout << dline;
     cout << endl << "Setting up UNBINNED fit" << endl << endl;
   }else{
     data = new RooDataHist("data","data",mass,Index(probeType),
@@ -394,13 +429,46 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   mass.setBins(30);
   RooRealVar et ("et" ,"et" ,lims[1].lo, lims[1].hi);
   RooRealVar eta("eta","eta",lims[2].lo, lims[2].hi);
+  RooRealVar weight("weight","weight",0.,100.);
   RooFormulaVar rooCut("rooCut","rooCut",cut,RooArgSet(et,eta));
-  RooDataSet  *dataUnbinnedPass = new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
-						 passTree,RooArgSet(mass,et,eta), rooCut);
-  RooDataSet  *dataUnbinnedFail = new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
-						 failTree,RooArgSet(mass,et,eta), rooCut);
-  RooDataHist *dataBinnedPass   = dataUnbinnedPass->binnedClone("dataBinnedPass","dataBinnedPass");
-  RooDataHist *dataBinnedFail   = dataUnbinnedFail->binnedClone("dataBinnedFail","dataBinnedFail");
+  RooArgSet dsetArgs(mass,et,eta);
+  int weightedFit=0;
+  if (performWeightedFit && (passTree->GetBranch("weight")!=NULL)) {
+    weightedFit=1;
+    dsetArgs.add(weight);
+  }
+  RooDataSet  *dataUnbinnedPass = 
+    new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
+		   passTree,dsetArgs, rooCut);
+  RooDataSet *dataUnbinnedPassUnweighted=NULL;
+  RooDataSet  *dataUnbinnedFail = 
+    new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
+		   failTree,dsetArgs, rooCut);
+  RooDataSet *dataUnbinnedFailUnweighted=NULL;
+  std::string dline(70,'-'); dline+='\n';
+
+  if (weightedFit) {
+    std::cout << "\n\n\tweighted Fit\n\n";
+    dataUnbinnedPassUnweighted=dataUnbinnedPass;
+    RooDataSet *dSet=dataUnbinnedPassUnweighted;
+    dataUnbinnedPass= 
+      new RooDataSet("dataUnbinnedPassWeighted","dataUnbinnedPassWeighted",
+		     dSet, *dSet->get(), 0, "weight");
+    dataUnbinnedFailUnweighted=dataUnbinnedFail;
+    dSet=dataUnbinnedFailUnweighted;
+    dataUnbinnedFail=
+      new RooDataSet("dataUnbinnedFailWeighted","dataUnbinnedFailWeighted",
+		     dSet, *dSet->get(), 0, "weight");
+    std::cout << dline; dataUnbinnedPass->Print("V"); std::cout << dline;
+    std::cout << dline; dataUnbinnedFail->Print("V"); std::cout << dline;
+    std::cout << std::endl;
+  }
+  else std::cout << "\n\n\tunweighted Fit (" << dataUnbinnedPass->numEntries() << "p," << dataUnbinnedFail->numEntries() << "f)\n\n";
+
+  RooDataHist *dataBinnedPass   = 
+    dataUnbinnedPass->binnedClone("dataBinnedPass","dataBinnedPass");
+  RooDataHist *dataBinnedFail   = 
+    dataUnbinnedFail->binnedClone("dataBinnedFail","dataBinnedFail");
   RooCategory probeType("probeType","probeType");
   probeType.defineType("pass");
   probeType.defineType("fail");
@@ -409,9 +477,12 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   // If needed do binned fit
   bool unbinnedFit = true;
   if(unbinnedFit){
-    data = new RooDataSet("data","data",mass,Index(probeType),
+    RooArgSet combiDSetArgs(mass);
+    if (weightedFit) dsetArgs.add(weight);
+    data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
 			  Import("pass",*dataUnbinnedPass), 
 			  Import("fail",*dataUnbinnedFail));
+    std::cout << dline; data->Print("V"); std::cout << dline;
     cout << endl << "Setting up UNBINNED fit" << endl << endl;
   }else{
     data = new RooDataHist("data","data",mass,Index(probeType),
@@ -432,6 +503,9 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   // Background
   RooRealVar lambdaBgPass("lambdaBgPass","lambdaBgPass",lims[5].av, lims[5].lo, lims[5].hi);
   RooExponential bgPassPdf("bgPassPdf","bgPassPdf",mass,lambdaBgPass);
+  RooRealVar bgPassErfHalfPos("bgPassErfHalfPos","bgPassErfHalfPos",0, lims[0].hi);
+  RooFormulaVar bgPassErf("bgPassErf","0.5*(TMath::Erf((@0-@1)/0.5)+1.)",RooArgList(mass,bgPassErfHalfPos));
+  RooEffProd bgPassTotPdf("bgPassTotPdf","pass background model: exp * erf",bgPassPdf,bgPassErf);
   // Signal
   //     - resolution function
   RooRealVar resMeanPass("resMeanPass","cbMeanPass"   ,lims[6].av, lims[6].lo, lims[6].hi);
@@ -455,7 +529,14 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
 							   *simpleSignal, nsigPass);
     passPdf = simpleSignalExtended;
   }else if( mode == FITnFIT ){
-    passPdf = new RooAddPdf("passPdf","passPdf",RooArgList(signalPassPdf,bgPassPdf), RooArgList(nsigPass,nbgPass));
+    if (bkgPassContainsErrorFunction) {
+      cout << "pass background model: exponential times error function\n";
+      fitLog << "pass background model: exponential times error function\n";
+      passPdf = new RooAddPdf("passPdf","passPdf",RooArgList(signalPassPdf,bgPassTotPdf),RooArgList(nsigPass,nbgPass));
+    }
+    else {
+      passPdf = new RooAddPdf("passPdf","passPdf",RooArgList(signalPassPdf,bgPassPdf), RooArgList(nsigPass,nbgPass));
+    }
   }else{
     printf("ERROR: inappropriate mode requested\n");
     return;
@@ -466,6 +547,9 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   // Background
   RooRealVar lambdaBgFail("lambdaBgFail","lambdaBgFail",lims[9].av, lims[9].lo, lims[9].hi);
   RooExponential bgFailPdf("bgFailPdf","bgFailPdf",mass,lambdaBgFail);
+  RooRealVar bgFailErfHalfPos("bgFailErfHalfPos","bgFailErfHalfPos",0, lims[0].hi);
+  RooFormulaVar bgFailErf("bgFailErf","0.5*(TMath::Erf((@0-@1)/0.5)+1.)",RooArgList(mass,bgFailErfHalfPos));
+  RooEffProd bgFailTotPdf("bgFailTotPdf","fail background model: exp * erf",bgFailPdf,bgFailErf);
   // Signal
   //     - resolution function
   // The limits for the "fail" come from stating at the fit results without
@@ -481,12 +565,20 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   // Combine signal and background
   RooFormulaVar nsigFail("nsigFail","nsigFail","@0*(1.0-@1)",RooArgList(nsignal,eff));
   RooRealVar nbgFail ("nbgFail" ,"nbgFail" ,lims[11].av,lims[11].lo,lims[11].hi);
-  RooAddPdf failPdf("failPdf","failPdf",RooArgList(signalFailPdf,bgFailPdf), RooArgList(nsigFail,nbgFail));
+  RooAddPdf *failPdf=NULL;
+  if (bkgFailContainsErrorFunction) {
+    cout << "fail background model: exponential times error function\n";
+    fitLog << "fail background model: exponential times error function\n";
+    failPdf=new RooAddPdf("failPdf","failPdf",RooArgList(signalFailPdf,bgFailTotPdf), RooArgList(nsigFail,nbgFail));
+  }
+  else {
+    failPdf=new RooAddPdf("failPdf","failPdf",RooArgList(signalFailPdf,bgFailPdf), RooArgList(nsigFail,nbgFail));
+  }
   
   // Combine pass and fail
   RooSimultaneous fullPdf("fullPdf","fullPdf",probeType);
   fullPdf.addPdf(*passPdf,"pass");
-  fullPdf.addPdf(failPdf,"fail");
+  fullPdf.addPdf(*failPdf,"fail");
 
   
   // Do the fit
@@ -499,6 +591,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   nbgFail.setVal(0.01*total);
 
   RooFitResult *result;  
+  std::cout << "fitting \n\n";
   result = fullPdf.fitTo(*data, Extended(kTRUE), Minos(RooArgSet(eff)), Save(), NumCPU(2,true));
   
   
@@ -555,8 +648,8 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   failPad->Clear();
   RooPlot *frameFail = mass.frame();
   dataUnbinnedFail->plotOn(frameFail);
-  failPdf.plotOn(frameFail);
-  failPdf.plotOn(frameFail,Components("bgFailPdf"),LineStyle(kDashed));
+  failPdf->plotOn(frameFail);
+  failPdf->plotOn(frameFail,Components("bgFailPdf"),LineStyle(kDashed));
   frameFail->Draw();
   failPad->Update();
 
