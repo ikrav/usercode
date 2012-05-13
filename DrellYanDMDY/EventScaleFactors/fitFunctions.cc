@@ -372,9 +372,19 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
   TMatrixD effArray2D(nEt, nEta);
   TMatrixD effArrayErrLow2D(nEt, nEta);
   TMatrixD effArrayErrHigh2D(nEt, nEta);
+
+  TString methodStr;
+  switch(method) {
+  case COUNTnCOUNT: methodStr="Count+Count"; break;
+  case COUNTnFIT: methodStr="Count+Fit"; break;
+  case FITnFIT: methodStr="Fit+Fit"; break;
+  default:
+    std::cout << "unknown method of efficiency calculation\n";
+    assert(0);
+  }
  
   effOutput << endl;
-  effOutput << "Efficiency, Count+Fit method:\n";  
+  effOutput << "Efficiency, " << methodStr << " method:\n";  
   effOutput << "     SC ET         SC eta           efficiency             pass         fail\n";
   for(int j=0; j<nEta; j++){
     for(int i=0; i<nEt; i++){
@@ -424,6 +434,9 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
 			     passPad, failPad, fitLog, templatePass, templateFail, 
 			     isRECO, setBinsType, dirTag, picFileExtraTag);
 	//std::cout << "after fitMassWithTemplates: enter a value\n"; double x; std::cin >> x;
+	char buf[50];
+	sprintf(buf,"tmp_eta%d_et%d.png",j,i);
+	canvas->SaveAs(buf);
  
       }
             
