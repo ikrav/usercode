@@ -5,7 +5,8 @@
 # evaluateESF.sh is the main script
 #
 
-debugMode=1
+debugMode=0
+fullRun=1
 
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
 if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
@@ -14,12 +15,15 @@ if [ ${#3} -gt 0 ] ; then debugMode=$3; fi
 tnpMCFile="../config_files/sf_mc_eta2.conf"
 #tnpMCFile="../config_files/sf_mc_evtTrig.conf"
 #tnpMCFile="../config_files/sf_mc_evtTrig_eta2.conf"
+#tnpMCFile="../config_files/sf_mc_spektras_evtTrig_eta2.conf"
+#tnpMCFile="../config_files/sf_mc_evtTrig_eta2_test11.conf"
 
 tnpDataFile="../config_files/sf_data_eta2.conf"
 #tnpDataFile="../config_files/sf_data_evtTrig.conf"
 #tnpDataFile="../config_files/sf_data_evtTrig_eta2.conf"
+#tnpDataFile="../config_files/sf_data_spektras_evtTrig_eta2.conf"
+#tnpDataFile="../config_files/sf_data_evtTrig_eta2_test11.conf"
 
-fullRun=0
 collectEvents=0  # it is recommended to have collectEvents=1 in evaluateESF!
 
 #
@@ -62,6 +66,8 @@ echo
 #
 
 puDependence=0
+
+
 runMC_Reco=0
 runMC_Id=0
 runMC_Hlt=0
@@ -77,7 +83,7 @@ runCalcEventEff=1
 if [ ${fullRun} -eq 1 ] ; then
   runMC_Reco=1; runMC_Id=1; runMC_Hlt=1
   runData_Reco=1; runData_Id=1; runData_Hlt=1
-  runCalcEventEff=0
+  runCalcEventEff=1
 fi
 
 
@@ -108,7 +114,7 @@ lumiWeighting=0
 
 runCalcEff() {
  effKind=$1
- root -b -q -l ${LXPLUS_CORRECTION} calcEff.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puDependence}\)
+ root -l -q -b ${LXPLUS_CORRECTION} calcEff.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puDependence}\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -150,9 +156,8 @@ if [ $? != 0 ] ; then noError=0; fi
 
 storeTriggerSet=${triggerSet}
 triggerSet="_DebugRun_"
-if [ $(( ${runMC_Reco} + ${runData_Reco} )) -gt 0 ] && [ noError} -eq 1 ] ; then runEffReco; fi
-doIdHlt=$(( ${runMC_Id} + ${runMC_Hlt} + ${runData_Id} + ${runData_Hlt} ))
-if [ ${doIdHlt} -gt 0 ] && [ ${noError} -eq 1 ] ; then runEffIdHlt "ID"; fi
+runAny=$(( ${runMC_Reco} + ${runMC_Id} + ${runMC_Hlt} + ${runData_Reco} + ${runData_Id} + ${runData_Hlt} ))
+if [ ${runAny} -gt 0 ] && [ ${noError} -eq 1 ] ; then runCalcEff; fi
 if [ ${runCalcEventEff} -eq 1 ] && [ ${noError} -eq 1 ] ; then runCalcEventEff; fi
 if [ ${noError} -eq 1 ] ; then echo; echo "  -=- Resuming normal calculation -=-"; echo; fi
 triggerSet=${storeTriggerSet}
