@@ -89,6 +89,7 @@ bool isTag(const mithep::TElectron *electron, ULong_t trigger){
 TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, const TriggerSelection &trigSet){
 
   TString label = analysisTag;
+  if (analysisTag.Length()>0) label.Append("_");
 
   assert ( trigSet.isDefined() );
   if (sample != -1111) {
