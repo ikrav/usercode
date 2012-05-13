@@ -46,7 +46,7 @@ const int NEffTypes=3;
 // Declaration of arrays into which efficiencies will be loaded
 typedef double EffArray_t[NEffTypes][DYTools::nEtBins5][DYTools::nEtaBins5]; // largest storage
 
-template T SQR(const T& x) { return x*x; }
+template<class T> T SQR(const T& x) { return x*x; }
 
 
 //=== FUNCTION DECLARATIONS ======================================================================================
@@ -1394,7 +1394,7 @@ int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename,
   // Make sure that there are only two eta bins and appropriate number of ET bins
   if( effMatrix->GetNcols() != etaBinCount ) {
     std::cout << "The number of eta bins stored in constants file ("
-	      << effMatrix->GetNcols() << ") is not " <<
+	      << effMatrix->GetNcols() << ") is not "
 	      << etaBinCount << "\n";
     return 0;
   }
