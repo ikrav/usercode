@@ -64,6 +64,8 @@ using namespace mithep;
 
 //=== COMMON CONSTANTS ===========================================================================================
 
+const int evaluate_efficiencies=0;
+
 //const Double_t kECAL_GAP_LOW  = 1.4442;
 //const Double_t kECAL_GAP_HIGH = 1.566;
 
@@ -525,6 +527,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
 	}
 
 	storeMass = dielectron->mass;
+	double event_weight=1.0;
 
 	// First electron is the tag, second is the probe
 	if( isTag1 && isProbe2){
@@ -533,7 +536,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
 	  storeEt   = dielectron->scEt_2;
 	  storeEta  = dielectron->scEta_2;
 	  if (new_store_data_code) {
-	    storeData.assign(dielectron->mass,dielectron->scEt_2,dielectron->scEta_2,storeNGoodPV);
+	    storeData.assign(dielectron->mass,dielectron->y,dielectron->scEt_2,dielectron->scEta_2,storeNGoodPV,event_weight);
 	  }
 	  int templateBin = getTemplateBin( findEtBin(storeEt,etBinning),
 					    findEtaBin(storeEta,etaBinning),
@@ -559,7 +562,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
 	  storeEt   = dielectron->scEt_1;
 	  storeEta  = dielectron->scEta_1;
 	  if (new_store_data_code) {
-	    storeData.assign(dielectron->mass,dielectron->scEt_1,dielectron->scEta_1,storeNGoodPV);
+	    storeData.assign(dielectron->mass,dielectron->y,dielectron->scEt_1,dielectron->scEta_1,storeNGoodPV,event_weight);
 	  }
 	  int templateBin = getTemplateBin( findEtBin(storeEt,etBinning),
 					    findEtaBin(storeEta,etaBinning),
@@ -620,7 +623,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
   printf("Number of probes, passed                                     %15.0f\n", hMassPass->GetSumOfWeights());
   printf("Number of probes, failed                                     %15.0f\n", hMassFail->GetSumOfWeights());
 
-
+  if (evaluate_efficiencies) {
   // Human-readbale text file to store measured efficiencies
   TString reslog = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString(".txt");
   ofstream effOutput;
@@ -681,6 +684,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
       }
     }
     templatesFile->Close();
+  }
   }
 
   selectedEventsFile->Close();

@@ -64,6 +64,8 @@ using namespace mithep;
 
 //=== COMMON CONSTANTS ===========================================================================================
 
+const int evaluate_efficiencies=0;
+
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
@@ -497,22 +499,29 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
 	  // get the number of goodPVs
 	  pvBr->GetEntry(ientry);
 	  storeNGoodPV=0;
-	  for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
-	    const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);
-	    if(pv->nTracksFit                        < 1)  continue;
-	    if(pv->ndof                              < 4)  continue;
-	    if(fabs(pv->z)                           > 24) continue;
-	    if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
-	    storeNGoodPV++;
+	  if (1) {
+	    storeNGoodPV = countGoodVertices(pvArr);
+	  }
+	  else {
+	    for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
+	      const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);
+	      if(pv->nTracksFit                        < 1)  continue;
+	      if(pv->ndof                              < 4)  continue;
+	      if(fabs(pv->z)                           > 24) continue;
+	      if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
+	      storeNGoodPV++;
+	    }
 	  }
 
 	  // total probes
+	  double event_weight=1.0;
+	  double ee_rapidity=0.;
 	  hMassTotal->Fill(mass);
 	  storeMass = mass;
 	  storeEt   = sc->scEt;
 	  storeEta  = sc->scEta;
 	  if (new_store_data_code) {
-	    storeData.assign(mass,sc->scEt,sc->scEta,storeNGoodPV);
+	    storeData.assign(mass,ee_rapidity,sc->scEt,sc->scEta, storeNGoodPV, event_weight);
 	  }
 	  int templateBin = getTemplateBin( findEtBin(sc->scEt,etBinning),
 					    findEtaBin(sc->scEta,etaBinning),
@@ -575,7 +584,8 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
   printf("Number of probes, passed                                     %15.0f\n", hMassPass->GetSumOfWeights());
   printf("Number of probes, failed                                     %15.0f\n", hMassFail->GetSumOfWeights());
 
-  // Human-readbale text file to store measured efficiencies
+  if (evaluate_efficiencies) {
+  // Human-readable text file to store measured efficiencies
   TString reslog = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString(".txt");
   ofstream effOutput;
   effOutput.open(reslog);
@@ -646,8 +656,8 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
     }
     templatesFile->Close();
   }
-
-    
+  }
+  
   selectedEventsFile->Close();
   std::cout << "selectedEventsFile <" << selectEventsFName << "> saved\n";
  
