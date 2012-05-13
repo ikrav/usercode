@@ -477,7 +477,12 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   // Efficiency analysis
   //
   
-  printf("\nTotal tag(electron)-probe(supercluster) pairs                %15d\n",numTagProbePairs);
+  if (effType == RECO) {
+    printf("\nTotal tag(electron)-probe(supercluster) pairs                %15d\n",numTagProbePairs);
+  }
+  else {
+    printf("\nTotal tag-probe pairs                                        %15d\n",numTagProbePairs);
+  }
   printf("               probe Et>10                                   %15d\n",numTagProbePairsPassEt);
   printf("               probe eta in acceptance                       %15d\n",numTagProbePairsPassEta);
   printf("               tag-probe mass in 60-120 GeV window           %15d\n",numTagProbePairsInMassWindow);
