@@ -22,29 +22,41 @@ struct tnpSelectEvent_t
 {
 public:
 
-  Double_t mass,et,eta;
+  Double_t mass, yZ; 
+  Double_t et,eta; // probe
   UInt_t nGoodPV;
+  Double_t weight;
 
-  void assign(Double_t mass_1, Double_t et_1, Double_t eta_1, UInt_t nGoodPV_1) {
-    mass=mass_1; et=et_1; eta=eta_1; nGoodPV=nGoodPV_1;
+  void assign(Double_t mass_1, Double_t yZee1, Double_t et_1, Double_t eta_1, UInt_t nGoodPV_1, Double_t event_weight) {
+    mass=mass_1; yZ=yZee1; et=et_1; eta=eta_1; 
+    nGoodPV=nGoodPV_1;
+    weight=event_weight;
   }
 
   void createBranches(TTree *tree) {
     tree->Branch("mass",&this->mass,"mass/D");
+    tree->Branch("yZee",&this->yZ,"yZee/D");
     tree->Branch("et",&this->et,"et/D");
     tree->Branch("eta",&this->eta,"eta/D");
     tree->Branch("nGoodPV",&this->nGoodPV,"nGoodPV/i");
+    tree->Branch("weight",&this->weight,"weight/D");
   }
 
   void setBranchAddress(TTree *tree) {
     tree->SetBranchAddress("mass",&this->mass);
+    tree->SetBranchAddress("yZee",&this->yZ);
     tree->SetBranchAddress("et",&this->et);
     tree->SetBranchAddress("eta",&this->eta);
     tree->SetBranchAddress("nGoodPV",&this->nGoodPV);
+    tree->SetBranchAddress("weight",&this->weight);
   }
 
   bool insideMassWindow(double mass_low, double mass_high) const {
-    return ((mass>=mass_low) && (mass<=mass_high));
+    return ((mass>=mass_low) && (mass<mass_high));
+  }
+
+  bool insideRapidityWindow(double rapidity_min, double rapidity_max) const {
+    return ((yZ>=rapidity_min) && (yZ<rapidity_max));
   }
 
 #ifdef tnpSelectEventsIsObject
