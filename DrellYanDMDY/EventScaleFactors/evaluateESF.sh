@@ -1,6 +1,7 @@
 #!/bin/bash
 
-debugMode=1
+debugMode=0
+fullRun=1
 
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
 if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
@@ -9,13 +10,15 @@ if [ ${#3} -gt 0 ] ; then debugMode=$3; fi
 tnpMCFile="../config_files/sf_mc_eta2.conf"
 #tnpMCFile="../config_files/sf_mc_evtTrig.conf"
 #tnpMCFile="../config_files/sf_mc_evtTrig_eta2.conf"
+#tnpMCFile="../config_files/sf_mc_spektras_evtTrig_eta2.conf"
 
 tnpDataFile="../config_files/sf_data_eta2.conf"
 #tnpDataFile="../config_files/sf_data_evtTrig.conf"
 #tnpDataFile="../config_files/sf_data_evtTrig_eta2.conf"
+#tnpDataFile="../config_files/sf_data_spektras_evtTrig_eta2.conf"
 
-fullRun=1
-collectEvents=1
+
+collectEvents=1 # recommended to have it set to 1. calcEventEff prepares skim fil
 
 #
 # Check if the environment variables are set. Assign values if they are empty
@@ -54,13 +57,13 @@ echo
 #  Individual flags to control the calculation
 #
 
-runMC_Reco=0
+runMC_Reco=1
 runMC_Id=0
 runMC_Hlt=0
-runData_Reco=0
+runData_Reco=1
 runData_Id=0
 runData_Hlt=0
-runCalcEventEff=1
+runCalcEventEff=0
 
 #
 #  Modify flags if fullRun=1
@@ -69,7 +72,7 @@ runCalcEventEff=1
 if [ ${fullRun} -eq 1 ] ; then
   runMC_Reco=1; runMC_Id=1; runMC_Hlt=1
   runData_Reco=1; runData_Id=1; runData_Hlt=1
-  runCalcEventEff=1
+  runCalcEventEff=1   # it prepares the skim for event efficiencies
 fi
 
 
@@ -99,7 +102,7 @@ lumiWeighting=0
 # --------------------------------
 
 runEffReco() {
- root -b -q -l ${LXPLUS_CORRECTION} eff_Reco.C+\(\"${inpFile}\",\"RECO\",\"${triggerSet}\",${debugMode}\)
+ root -b -q -l  eff_Reco.C+\(\"${inpFile}\",\"RECO\",\"${triggerSet}\",${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -113,7 +116,7 @@ runEffReco() {
 
 runEffIdHlt() {
  effKind=$1
- root -b -q -l ${LXPLUS_CORRECTION} eff_IdHlt.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${debugMode}\)
+ root -b -q -l  eff_IdHlt.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -127,7 +130,7 @@ runEffIdHlt() {
 runCalcEventEff() {
  _collectEvents=$1
  if [ ${#_collectEvents} -eq 0 ] ; then _collectEvents=1; fi
- root -b -q -l ${LXPLUS_CORRECTION} calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${debugMode}\)
+ root -b -q -l  calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -154,7 +157,7 @@ if [ $? != 0 ] ; then noError=0; fi
 
 storeTriggerSet=${triggerSet}
 triggerSet="_DebugRun_"
-if [ $(( ${runMC_Reco} + ${runData_Reco} )) -gt 0 ] && [ noError} -eq 1 ] ; then runEffReco; fi
+if [ $(( ${runMC_Reco} + ${runData_Reco} )) -gt 0 ] && [ ${noError} -eq 1 ] ; then runEffReco; fi
 doIdHlt=$(( ${runMC_Id} + ${runMC_Hlt} + ${runData_Id} + ${runData_Hlt} ))
 if [ ${doIdHlt} -gt 0 ] && [ ${noError} -eq 1 ] ; then runEffIdHlt "ID"; fi
 if [ ${runCalcEventEff} -eq 1 ] && [ ${noError} -eq 1 ] ; then runCalcEventEff; fi
