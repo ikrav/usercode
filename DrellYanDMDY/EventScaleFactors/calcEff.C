@@ -419,7 +419,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     int templateBin=-1;
     if (new_store_data_code) {
       isBsc = isBarrel(storeData.eta);
-      isEsc = isBarrel(storeData.eta);
+      isEsc = isEndcap(storeData.eta);
       if( ! isBsc && ! isEsc) continue;
       numTagProbePairsPassEta++;
 
