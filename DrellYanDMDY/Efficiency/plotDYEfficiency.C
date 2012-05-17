@@ -455,24 +455,30 @@ void plotDYEfficiency(const TString input,
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out
   //==============================================================================================================
-  //cout << endl;
-  //cout << "*" << endl;
-  //cout << "* SUMMARY" << endl;
-  //cout << "*--------------------------------------------------" << endl;
-  //cout << endl; 
+  cout << endl;
+  cout << "*" << endl;
+  cout << "* SUMMARY" << endl;
+  cout << "*--------------------------------------------------" << endl;
+  cout << endl; 
   
-  //cout << labelv[0] << " file: " << fnamev[0] << endl;
-  //printf("     Number of generated events: %8.1lf",nZv);
-  //printf(" mass bin    preselected      passed     total_Eff        BB-BB_Eff        EB-BB_Eff        EB-EB_Eff   \n");
-  //for(int i=0; i<DYTools::nMassBins; i++){
-  //  printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
-	 //  DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
-	  // nEventsv[i], nPassv[i],
-	  // effv[i], effErrv[i],
-	  // effBBv[i], effErrBBv[i],
-	  // effBEv[i], effErrBEv[i],
-	  // effEEv[i], effErrEEv[i]);
-  //}
+  cout << labelv[0] << " file: " << fnamev[0] << endl;
+  printf("     Number of generated events: %8.1lf",nZv);
+
+  if (DYTools::study2D==0)
+    {
+      printf(" mass bin    preselected      passed     total_Eff        BB-BB_Eff        EB-BB_Eff        EB-EB_Eff   \n");
+      for(int i=0; i<DYTools::nMassBins; i++){
+        printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
+	   DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
+	   nEventsv(i,0), nPassv(i,0),
+	   effv(i,0), effErrv(i,0),
+	   effBBv(i,0), effErrBBv(i,0),
+	   effBEv(i,0), effErrBEv(i,0),
+	   effEEv(i,0), effErrEEv(i,0));
+       }
+    }
+  else
+    printf("way of printout for 2D not chosen");
 
   printf("\n\nZ-peak efficiency\n");
   printf(" PU bin    preselected      passed     total_Eff\n");
