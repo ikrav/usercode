@@ -394,26 +394,31 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out
   //==============================================================================================================
-  //cout << endl;
-  //cout << "*" << endl;
-  //cout << "* SUMMARY" << endl;
-  //cout << "*--------------------------------------------------" << endl;
-  //cout << endl; 
+  cout << endl;
+  cout << "*" << endl;
+  cout << "* SUMMARY" << endl;
+  cout << "*--------------------------------------------------" << endl;
+  cout << endl; 
   
-  //cout << labelv[0] << " file: " << fnamev[0] << endl;
-  //cout << "     Number of generated events:    " << nZ << endl;
-  //char buf[30];
-  //sprintf(buf,"%3.1lf",nZweighted);
-  //cout << "     Number of weighted gen.events: " << buf << endl;
-  //printf(" mass bin    preselected      passed     FSR correction\n");
-  //for(int i=0; i<DYTools::nMassBins; i++){
-   // printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f \n",
-	//   DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
-	 //  nEventsv[i], nPassv[i], 
-          // corrv[i], corrErrv[i]);
-  //}
+  cout << labelv[0] << " file: " << fnamev[0] << endl;
+  cout << "     Number of generated events:    " << nZ << endl;
+  char buf[30];
+  sprintf(buf,"%3.1lf",nZweighted);
+  cout << "     Number of weighted gen.events: " << buf << endl;
 
-  //cout << endl;
+  if (DYTools::study2D==0)
+   {
+     printf(" mass bin    preselected      passed     FSR correction\n");
+     for(int i=0; i<DYTools::nMassBins; i++){
+       printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f \n",
+	 DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
+	 nEventsv(i,0), nPassv(i,0), 
+         corrv(i,0), corrErrv(i,0));
+     }
+   }
+  else
+    printf("printout way for 2D was not chosen");
+  cout << endl;
 
   gBenchmark->Show("plotDYFSRCorrections");
 }
