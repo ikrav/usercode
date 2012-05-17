@@ -2,7 +2,7 @@
 #include <TROOT.h>                  // access to gROOT, entry point to ROOT system
 #include <TFile.h>                  // file handle class
 #include <TTree.h>                  // class to access ntuples
-#include <TStyle.h>                
+#include <TStyle.h>
 #include <TCanvas.h>                // class for drawing
 #include <TH1F.h>                   // 1D histograms
 #include <TGraphErrors.h>           // graphs
@@ -177,7 +177,6 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     cout << "NOTE: in MC, for Z/gamma* PT>100 the FEWZ weights for 80<PT<100 GeV are used!" << endl;
   TFile fweights("../root_files/fewz/weights_stepwise_prec10-5_fine12.root");
   if( !fweights.IsOpen() ) assert(0);
-
   for(int i=0; i<DYTools::nMassBins; i++){
     TString hname_loc = TString::Format("weight_%02d",i+1);
     weights[i] = (TH2D*)fweights.Get(hname_loc);
@@ -185,7 +184,6 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     weightErrors[i] = (TH2D*)fweights.Get(hname_loc);
   }
   }
-
   //
   // Access samples and fill histograms
   //  
@@ -434,7 +432,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   accErrv.Write("acceptanceErrMatrix");
   fa.Close();
 
-/*
+
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out
   //==============================================================================================================
@@ -446,17 +444,22 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   
   cout << labelv[0] << " file: " << fnamev[0] << endl;
   cout << "     Number of generated events: " << nZv << endl;
-  printf(" mass bin    preselected      passed     total_A_GEN      BB-BB_A_GEN      EB-BB_A_GEN      EB-EB_A_GEN\n");
-  for(int i=0; i<DYTools::nMassBins; i++){
-    printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
+
+  if (DYTools::study2D==0)
+    {
+      printf(" mass bin    preselected      passed     total_A_GEN      BB-BB_A_GEN      EB-BB_A_GEN      EB-EB_A_GEN\n");
+      for(int i=0; i<DYTools::nMassBins; i++){
+        printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
 	   DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
-	   nEventsv[i], nPassv[i],
-	   accv[i], accErrv[i],
-	   accBBv[i], accErrBBv[i],
-	   accBEv[i], accErrBEv[i],
-	   accEEv[i], accErrEEv[i]);
-  }
-*/
+	   nEventsv(i,0), nPassv(i,0),
+	   accv(i,0), accErrv(i,0),
+	   accBBv(i,0), accErrBBv(i,0),
+	   accBEv(i,0), accErrBEv(i,0),
+	   accEEv(i,0), accErrEEv(i,0));
+      }
+    }
+  else
+    printf("printout format for 2D not chosen");
   cout << endl;
   
   gBenchmark->Show("plotDYAcceptance");
