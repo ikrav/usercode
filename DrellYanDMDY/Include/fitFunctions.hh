@@ -17,21 +17,51 @@
 
 #endif
 
-//void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,TTree *passTree, TTree *failTree,TCanvas *passCanvas, TCanvas *failCanvas,const char* setBinsType);
+//void measurePassAndFail(double &signal, double &signalErr, 
+// double &efficiency, double &efficiencyErr,
+// TTree *passTree, TTree *failTree,TCanvas *passCanvas, TCanvas *failCanvas,
+//const char* setBinsType);
 
-void measureEfficiency(TTree *passTree, TTree *failTree, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, TFile *resultsRootFile,int NsetBins, bool isRECO, const char* setBinsType, TString dirTag, const TString &picFileExtraTag, int puBin=-1); // puBin is important for the fit
+void measureEfficiency(TTree *passTree, TTree *failTree, 
+	       int method, int etBinning, int etaBinning, TCanvas *canvas, 
+		       ofstream &effOutput, ofstream &fitLog, 
+		       bool useTemplates, TFile *templatesFile, 
+		       TFile *resultsRootFile, TFile *plotsRootFile,
+		       int NsetBins, bool isRECO, const char* setBinsType, 
+		       TString dirTag, const TString &picFileExtraTag, 
+		       int puBin=-1); // puBin is important for the fit
 
-void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, const TString &resultRootFileBase,int NsetBins, bool isRECO, const char* setBinsType, TString dirTag, const TString &picFileExtraTag, int puDependence=0);
+void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull, 
+		 int method, int etBinning, int etaBinning, TCanvas *canvas, 
+			 ofstream &effOutput, ofstream &fitLog, 
+			 bool useTemplates, TFile *templatesFile, 
+			 const TString &resultRootFileBase,
+			 int NsetBins, bool isRECO, const char* setBinsType, 
+			 TString dirTag, const TString &picFileExtraTag, 
+			 int puDependence=0);
 
-void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, bool saveResultsToRootFile, TFile *resultsRootFile);
+void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree, 
+			    int etBinning, int etaBinning, 
+			    TCanvas *canvas, ofstream &effOutput, 
+			    bool saveResultsToRootFile, TFile *resultsRootFile,
+			    TFile *plotsRootFile);
 
-void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, int method, int etBinning, int etaBinning, TCanvas *canvas, ofstream &effOutput, ofstream &fitLog, bool useTemplates, TFile *templatesFile, TFile *resultsRootFile, int NsetBins, bool isRECO, const char* setBinsType, TString dirTag, const TString &picFileExtraTag, int puBin=-1);
+void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, 
+	      int method, int etBinning, int etaBinning, TCanvas *canvas, 
+	      ofstream &effOutput, ofstream &fitLog, 
+	      bool useTemplates, TFile *templatesFile, 
+	      TFile *resultsRootFile, TFile *plotsRootFile,
+	      int NsetBins, bool isRECO, const char* setBinsType,
+	      TString dirTag, const TString &picFileExtraTag, int puBin=-1);
 
 int getTemplateBin(int etBin, int etaBin, int etaBinning);
 
 
-TString getTemplateName(int etBin, int etaBin, const char *pass_fail_str, int puBin=-1);
+TString getTemplateName(int etBin, int etaBin, const char *pass_fail_str, 
+			int puBin=-1);
 
-TH1F * getPassTemplate(int etBin, int etaBin, int etaBinning, TFile *file, int puBin=-1);
+TH1F * getPassTemplate(int etBin, int etaBin, int etaBinning, TFile *file, 
+		       int puBin=-1);
 
-TH1F * getFailTemplate(int etBin, int etaBin, int etaBinning, TFile *file, int puBin=-1);
+TH1F * getFailTemplate(int etBin, int etaBin, int etaBinning, TFile *file, 
+		       int puBin=-1);

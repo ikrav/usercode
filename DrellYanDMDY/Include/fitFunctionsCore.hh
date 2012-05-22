@@ -44,6 +44,18 @@
 
 void printCorrelations(ostream& os, RooFitResult *res);
 
-void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHigh, double &efficiencyErrLow, TPad *passPad, TPad *failPad, ofstream &fitLog, int NsetBins, bool isRECO, const char* setBinsType, TString dirTag);
+void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, 
+     double &efficiency, double &efficiencyErrHigh, double &efficiencyErrLow, 
+	     TPad *passPad, TPad *failPad, TFile *plotsRootFile,
+	     ofstream &fitLog, int NsetBins, 
+	     bool isRECO, const char* setBinsType, TString dirTag);
 
-void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHigh, double &efficiencyErrLow, TPad *passPad, TPad *failPad, ofstream &fitLog, TH1F *templatePass, TH1F *templateFail, bool isRECO, const char* setBinsType, TString dirTag, const TString &picFileExtraTag );
+void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, 
+			  int mode, 
+			  double &efficiency, 
+			  double &efficiencyErrHigh, double &efficiencyErrLow, 
+			  TPad *passPad, TPad *failPad, TFile *plotsRootFile,
+			  ofstream &fitLog, 
+			  TH1F *templatePass, TH1F *templateFail, 
+			  bool isRECO, const char* setBinsType, 
+			  TString dirTag, const TString &picFileExtraTag );
