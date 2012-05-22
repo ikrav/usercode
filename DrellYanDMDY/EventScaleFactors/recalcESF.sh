@@ -6,7 +6,7 @@
 #
 
 debugMode=0
-fullRun=1
+fullRun=0
 
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
 if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
@@ -112,11 +112,35 @@ lumiWeighting=0
 #    Define functions to run
 # --------------------------------
 
+checkFile() { 
+  if [ ${noError} -eq 0 ] ; then 
+      noError=0
+      echo "error present before checking for the file(s) $@"
+      return
+  fi
+
+  # double underscore not to mess a possible variable with the same name in the script
+  for __fname in $@ ; do
+# if "-f" does not work (check plain file), 
+# one can use -e (name exists), but then directory will return 'true' as well
+# 2. else... echo ".. ok" can be removed
+  if [ ${#__fname} -gt 0 ] ; then 
+      if [ ! -f ${__fname} ] ; then 
+	  echo "file ${__fname} is missing"
+	  noError=0
+      else
+	  echo "file <${__fname}> checked ok"
+      fi
+  fi
+  done
+}
+
 runCalcEff() {
  effKind=$1
- root -l -q -b ${LXPLUS_CORRECTION} calcEff.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puDependence}\)
+ root -l -q -b  ${LXPLUS_CORRECTION} calcEff.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puDependence}\)
   if [ $? != 0 ] ; then noError=0;
   else 
+     checkFile calcEff_C.so
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
      echo "DONE: calcEff(\"$inpFile\",\"${effKind}\",\"${triggerSet}\",puCalc=${puDependence})" #,debug=${debugMode})"
@@ -129,9 +153,10 @@ runCalcEventEff() {
  _collectEvents=$1
  echo "_collectEvents=${_collectEvents}"
  if [ ${#_collectEvents} -eq 0 ] ; then _collectEvents=1; fi
- root -b -q -l ${LXPLUS_CORRECTION} calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${debugMode}\)
+ root -l ${LXPLUS_CORRECTION} calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
+      checkFile calcEventEff_C.so
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
      echo "DONE: calcEventEff(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",collectEvents=${_collectEvents},debug=${debugMode})"
@@ -148,7 +173,7 @@ runCalcEventEff() {
 #  Compile header files
 #
 root -b -q -l rootlogon.C+
-if [ $? != 0 ] ; then noError=0; fi
+checkFile tnpSelectEvents_hh.so
 
 # 
 #   Check that the codes compile

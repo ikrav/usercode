@@ -57,13 +57,13 @@ echo
 #  Individual flags to control the calculation
 #
 
-runMC_Reco=1
+runMC_Reco=0
 runMC_Id=0
 runMC_Hlt=0
-runData_Reco=1
+runData_Reco=0
 runData_Id=0
 runData_Hlt=0
-runCalcEventEff=0
+runCalcEventEff=1
 
 #
 #  Modify flags if fullRun=1
@@ -101,10 +101,35 @@ lumiWeighting=0
 #    Define functions to run
 # --------------------------------
 
+checkFile() { 
+  if [ ${noError} -eq 0 ] ; then 
+      noError=0
+      echo "error present before checking for the file(s) $@"
+      return
+  fi
+
+  # double underscore not to mess a possible variable with the same name in the script
+  for __fname in $@ ; do
+# if "-f" does not work (check plain file), 
+# one can use -e (name exists), but then directory will return 'true' as well
+# 2. else... echo ".. ok" can be removed
+  if [ ${#__fname} -gt 0 ] ; then 
+      if [ ! -f ${__fname} ] ; then 
+	  echo "file ${__fname} is missing"
+	  noError=0
+      else
+	  echo "file <${__fname}> checked ok"
+      fi
+  fi
+  done
+}
+
+
 runEffReco() {
  root -b -q -l  eff_Reco.C+\(\"${inpFile}\",\"RECO\",\"${triggerSet}\",${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
-  else 
+  else
+     checkFile eff_Reco_C.so
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
      echo "DONE: eff_Reco(\"$inpFile\",\"RECO\",\"${triggerSet}\",debug=${debugMode})"
@@ -119,6 +144,7 @@ runEffIdHlt() {
  root -b -q -l  eff_IdHlt.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
+     checkFile eff_IdHlt_C.so
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
      echo "DONE: eff_IdHlt(\"$inpFile\",\"${effKind}\",\"${triggerSet}\",debug=${debugMode})"
@@ -149,7 +175,7 @@ runCalcEventEff() {
 #  Compile header files
 #
 root -b -q -l rootlogon.C+
-if [ $? != 0 ] ; then noError=0; fi
+checkFile tnpSelectEvents_hh.so
 
 # 
 #   Check that the codes compile
