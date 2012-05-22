@@ -21,7 +21,8 @@ namespace DYTools {
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
 
   const int study2D=1;
-  const TString analysisTag_USER="";  // extra name to differentiate the analysis files
+  const int extendYRangeFor1D=0; // whether |ymax|=4 for 1D study
+  const TString analysisTag_USER=(!study2D && extendYRangeFor1D) ? "ymax4" : "";  // extra name to differentiate the analysis files
 
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
@@ -47,7 +48,8 @@ namespace DYTools {
   // Note: this implementation neglects underflow and overflow
   // in rapidity.
   const double yRangeMin =  0.0;
-  const double yRangeMax =  2.5;
+  const double yRangeMax =  2.5 + ((!study2D && extendYRangeFor1D) ? 1.5 : 0);
+  const int _nYBinsMax2D=25; // the largest division into Y bins
   const int _nYBins2D[_nMassBins2D] = 
     { 25,// underflow, binned like first mass bin 
       25, 25, 25, 25, 25, 10,
@@ -80,6 +82,7 @@ namespace DYTools {
      81, 86, 91, 96, 101, 106, 110, 115, 120, 126, 133, 141, 
      150, 160, 171, 185, 200, 220, 243, 273, 320, 380, 440, 
      510, 600, 1000, 1500}; // 40 bins
+  const int _nYBinsMax2011=1; // the largest division into Y bins
   const int _nYBins2011[_nMassBins2011] = { 
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -90,6 +93,7 @@ namespace DYTools {
   const int _nMassBinsLumi = 9;
   const double _massBinLimitsLumi[_nMassBinsLumi+1] = 
     {15,20,30,40,50,60,120,150,200,600}; // 9 bins with Z-peak region singled-out
+  const int _nYBinsMaxLumi=1; // the largest division into Y bins
   const int _nYBinsLumi[_nMassBinsLumi] = { 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
 
@@ -124,9 +128,13 @@ namespace DYTools {
   const int nMassBins=(study2D) ? _nMassBins2D : _nMassBins2011;
   const double *massBinLimits=(study2D) ? _massBinLimits2D : _massBinLimits2011;
   const int *nYBins=(study2D) ? _nYBins2D : _nYBins2011;
+  const int nYBinsMax=(study2D) ? _nYBinsMax2D : _nYBinsMax2011;
+  
+
 
   const TString study2Dstr=(study2D) ? "2D" : "1D";
   const TString analysisTag=study2Dstr + analysisTag_USER;
+  const int nUnfoldingBinsMax= nMassBins * nYBinsMax;
 
   // some analyses use 1D always
   //const int nMassBins1D=nMassBins2011;
@@ -201,6 +209,12 @@ namespace DYTools {
     return result;
   }
 
+  // This function finds a unique 1D index for (index_m, index_y) pair
+  int findIndexFlat(double mass, double y){
+    int massBin=findMassBin(mass);
+    int yBin=findAbsYBin(massBin,y);
+    return findIndexFlat(massBin,yBin);
+  }
 
   // 
   // 
@@ -247,6 +261,7 @@ namespace DYTools {
   //
   // Define single electron Pt binning
   //
+  /*
   const int nPtBins = 5;
   const double ptBinLimits[nPtBins+1] = 
     {10, 20, 30, 40, 50, 500};
@@ -263,17 +278,21 @@ namespace DYTools {
     
     return result;
   };
+  */
 
   //
   // Define Et and Eta binning
   //
-  typedef enum {ETBINS1=1, ETBINS5} TEtBinSet_t;
+  typedef enum {ETBINS1=1, ETBINS5, ETBINS6} TEtBinSet_t;
   const int nEtBins1 = 1;
   const double etBinLimits1[nEtBins1 + 1] = 
     {10, 500};
   const int nEtBins5 = 5;
   const double etBinLimits5[nEtBins5 + 1] = 
     {10, 20, 30, 40, 50, 500};
+  const int nEtBins6 = 6;
+  const double etBinLimits6[nEtBins6 + 1] = 
+    {10, 15, 20, 30, 40, 50, 500};
 
   int getNEtBins(int binning){
     int n=0;
@@ -281,6 +300,8 @@ namespace DYTools {
       n = nEtBins1;
     }else if( binning == ETBINS5 ){
       n = nEtBins5;
+    }else if( binning == ETBINS6 ){
+      n = nEtBins6;
     }else{
       printf("ERROR: unknown binning requested\n");
       n=0;
@@ -296,6 +317,8 @@ namespace DYTools {
       limits = etBinLimits1;
     }else if( binning == ETBINS5 ){
       limits = etBinLimits5;
+    }else if( binning == ETBINS6 ){
+      limits = etBinLimits6;
     }else{
       printf("ERROR: unknown binning requested\n");
     }
