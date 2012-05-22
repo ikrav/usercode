@@ -185,6 +185,7 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
       if (debugMode && (ientry>10000)) break; // debug option
       genBr->GetEntry(ientry);
+      //std::cout << "ientry=" << ientry << "\n";
 
       // if sansAcc mode, Discard events that are not in kinematics acceptance
       if (sansAcc)
@@ -203,7 +204,7 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
       if((mass < massLow) || (mass > massHigh)) continue;
       double y = gen->vy;    // pre-FSR
       double yPostFsr = gen->y;    // post-FSR
-      if((y < yRangeMin) || (y > yRangeMax)) continue;
+      if((fabs(y) < yRangeMin) || (fabs(y) > yRangeMax)) continue;
 
       int ibinM1D = DYTools::_findMassBin2011(mass);      // temporary
       // If mass is larger than the highest bin boundary
@@ -251,8 +252,10 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
      //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
       }
 
-      if(ibinM != -1 && ibinM<nMassBins && ibinY!=-1 && ibinY<nYBins[ibinM])
+      if(ibinM != -1 && ibinM<nMassBins && ibinY!=-1 && ibinY<nYBins[ibinM]) {
+	//std::cout << "presel: ientry=" << ientry << ", ibinM=" << ibinM << ", ibinY=" << ibinY << ", weight=" << (scale * gen->weight * fewz_weight) << "\n";
 	nEventsv(ibinM,ibinY) += scale * gen->weight * fewz_weight;
+      }
       else if(ibinM >= nMassBins || ibinY>=nYBins[ibinM])
         binProblemPreFsr++;
 
