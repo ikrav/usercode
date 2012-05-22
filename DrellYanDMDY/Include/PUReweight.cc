@@ -1,14 +1,25 @@
 #include "../Include/PUReweight.hh"
 
 // --------------------------------------------------------------
+// --------------------------------------------------------------
 
-int PUReweight_t::setFile(const TString &fname) {
-  if (fname == FName) {
-    std::cout << "PUReweight::setFile warning: method repeatedly called for the same file name <" << fname << ">\n";
+int PUReweight_t::setFile(const TString &fname, int create) {
+  if ((fname == FName) && (FCreate==create)) {
+    std::cout << "PUReweight::setFile warning: method repeatedly called for the same file name <" << fname << ">, create=" << create << "\n";
     return 0;
   }
-  this->clear();
-  FFile = new TFile(fname);
+  this->clear(); // save active histo if needed and close file
+  TString opt;
+  switch(create) {
+  case 0: opt="READ"; break;
+  case 1: opt="RECREATE"; break;
+  case 2: opt="UPDATE"; break;
+  default:
+    std::cout << "PUReweight::setFile: create=" << create << " option is not recognized\n";
+    return 0;
+  }
+  FCreate=create;
+  FFile = new TFile(fname,opt.Data());
   if (!FFile || !FFile->IsOpen()) {
     std::cout << "failed to open a file <" << fname << ">\n";
     return 0;
@@ -17,12 +28,15 @@ int PUReweight_t::setFile(const TString &fname) {
   return 1;
 }
 
-
 // --------------------------------------------------------------
 
 int PUReweight_t::setReference(const TString &name) {
   if (!FFile) {
     std::cout << "PUReweight::setReference(" << name << "): file is not open\n";
+    return 0;
+  }
+  if (FCreate) {
+    std::cout << "File is opened for writing (create=" << FCreate << "), it's not possible to setReference\n";
     return 0;
   }
   if (hRef) delete hRef;
@@ -42,23 +56,63 @@ int PUReweight_t::setActiveSample(const TString &name) {
     std::cout << "PUReweight::setActiveSample(" << name << "): file is not open\n";
     return 0;
   }
-  if (!hRef) {
-    std::cout << "PUReweight::setActiveSample(" << name << "): hRef is not set (call setReference first)\n";
-    return 0;
-  }
-  if (hActive) delete hActive;
-  if (hWeight) delete hWeight;
 
-  hActive = (TH1F*) FFile->Get(name);
+  if (FCreate==0) {
+    // reading mode
+
+    if (!hRef) {
+      std::cout << "PUReweight::setActiveSample(" << name << "): hRef is not set (call setReference first)\n";
+      return 0;
+    }
+
+    if (hActive) { delete hActive; hActive=0; }
+    if (hWeight) { delete hWeight; hWeight=0; }
+    
+    hActive = (TH1F*) FFile->Get(name);
+    if (!hActive) {
+      std::cout << "PUReweight::setActiveSample(" << name << "): failed to set active sample\n";
+      return 0;
+    }
+    if (!prepareWeights(0)) {
+      std::cout << "in method setActiveSample\n";
+      return 0;
+    }
+  }
+  else {
+    // writing mode
+    if (hActive) {
+      FFile->cd(); hActive->Write();
+      delete hActive;
+    }
+    hActive=this->newHisto(name);
+    hActive->SetDirectory(FFile);
+  }
+  return 1;
+}
+
+// --------------------------------------------------------------
+
+int PUReweight_t::prepareWeights(int save_weight) {
   if (!hActive) {
-    std::cout << "PUReweight::setActiveSample(" << name << "): failed to set active sample\n";
+    std::cout << "PUReweight::prepareWeights: hActive is not set (maybe call setActiveSample)\n";
     return 0;
   }
-  hActive->SetDirectory(0);
-  hWeight= (TH1F*)hRef->Clone(name+TString("_puWeights"));
+  if (!hRef) {
+    std::cout << "PUReweight::prepareWeights: hRef is not set (call setReference first)\n";
+    return 0;
+  }
+  
+  if (hWeight) delete hWeight;
+  
+  hWeight= (TH1F*)hRef->Clone( hActive->GetName() + TString("_puWeights") );
+  assert(hWeight);
   hWeight->SetDirectory(0);
   hWeight->Scale( hActive->GetSumOfWeights() / hRef->GetSumOfWeights() );
   hWeight->Divide(hActive);
+  if (save_weight) {
+    if (FCreate!=0) { FFile->cd(); hWeight->Write(); }
+    else std::cout << "PUReweight::prepareWeights: save is requested but the file is in reading mode\n";
+  }
   return 1;
 }
 
@@ -80,15 +134,16 @@ int PUReweight_t::printActiveDistr_and_Weights(std::ostream& out) const {
 
 // --------------------------------------------------------------
 
-int PUReweight_t::printWeights(std::ostream& out) const {
-  if (!hWeight) {
-    out << "PUReweight::printWeights: hWeight is not set (call setActiveSample first)\n";
+int PUReweight_t::printHisto(std::ostream& out, const TH1F* histo, const TString &name) const {
+  if (!histo) {
+    out << "PUReweight::printHisto: " << name << " is not set\n";
     return 0;
   }
   char buf[100];
-  out << "values of " << hWeight->GetName() << "\n";
-  for(int i=1; i<=hWeight->GetNbinsX(); i++) {
-    sprintf(buf," %5.2f    %f    %f\n",hWeight->GetBinCenter(i),hWeight->GetBinContent(i),hWeight->GetBinError(i));
+  out << "values of " << histo->GetName() << "\n";
+  for(int i=1; i<=histo->GetNbinsX(); i++) {
+    sprintf(buf," %5.2f    %f    %f\n",
+	    histo->GetBinCenter(i),histo->GetBinContent(i),histo->GetBinError(i));
     out << buf;
   }
   return 1;
