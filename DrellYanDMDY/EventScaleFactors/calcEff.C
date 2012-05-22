@@ -399,7 +399,6 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
 
   } // end loop pass entries
 
-  
   // Failing tree
   for (UInt_t ientry=0; ientry<failTree->GetEntries(); ++ientry) {
     failTree->GetEntry(ientry);
@@ -442,6 +441,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
 	int puIdx= (puDependence) ? findPUBin(storeData.nGoodPV) : 0;
 	if (puIdx>=0)
 	  (*hFailTemplateV[puIdx])[templateBin]->Fill(storeData.mass);
+	else std::cout << "puIdx=" << puIdx << "\n";
       }
     }
     else{
@@ -530,7 +530,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   double ymax = 800;
   if(nDivisions <4 )
     ymax = nDivisions * 200;
-  TCanvas *c1 = MakeCanvas("c1","c1", 600, (int)ymax);
+  TCanvas *c1 = MakeCanvas("canvDistr","canvDistr", 600, (int)ymax);
   c1->Divide(2,nDivisions);
   
   measureEfficiencyPU(passTree, failTree,
