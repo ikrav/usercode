@@ -101,7 +101,7 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
 
     ok=kTRUE; // selection PASSED
 
-  } while(0); // fictitious loop
+  } // end of fictitious loop
   return ok;
 }
 
