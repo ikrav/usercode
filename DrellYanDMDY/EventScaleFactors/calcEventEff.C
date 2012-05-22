@@ -43,8 +43,12 @@
 using namespace mithep;
 
 const int NEffTypes=3;
-// Declaration of arrays into which efficiencies will be loaded
+// Declaration of arrays for systematic studies
 typedef double EffArray_t[NEffTypes][DYTools::nEtBins5][DYTools::nEtaBins5]; // largest storage
+
+const int nexp=100;
+typedef TH1F* SystTH1FArray_t[nMassBins][nexp];   // mass index
+typedef TH1F* SystTH1FArrayFI_t[nUnfoldingBinsMax][nexp]; // flat(mass,y) index
 
 template<class T> T SQR(const T& x) { return x*x; }
 
@@ -65,13 +69,14 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 
 double findEventScaleFactor(const esfSelectEvent_t &data);
 double findEventScaleFactor(int kind, const esfSelectEvent_t &data);
-double findScaleFactor(int kind, double scEt, double scEta);
+//double findScaleFactor(int kind, double scEt, double scEta);
 double findScaleFactor(int kind, int etBin, int etaBin);
 
 double findEventScaleFactorSmeared(const esfSelectEvent_t &data, int iexp);
 double findEventScaleFactorSmeared(int kind, const esfSelectEvent_t &data, 
     int iexp);
-double findScaleFactorSmeared(int kind, double scEt, double scEta, int iexp);
+//double findScaleFactorSmeared(int kind, double scEt, double scEta, int iexp);
+double findScaleFactorSmeared(int kind, int scEtBin, int scEtaBin, int iexp);
 double findScaleFactorSmeared(int kind, int etBin, int etaBin, 
     const EffArray_t &dataRndWeight, const EffArray_t &mcRndWeight);
 
@@ -85,17 +90,49 @@ void drawScaleFactors();
 void drawScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle, TString text, 
 			   TString plotName);
 
-void drawEventScaleFactors(TVectorD scaleRecoV, TVectorD scaleRecoErrV,
-			   TVectorD scaleIdV , TVectorD scaleIdErrV ,
-			   TVectorD scaleHltV, TVectorD scaleHltErrV,
-			   TVectorD scaleV   , TVectorD scaleErrV    );
+void drawEventScaleFactors(TVectorD &scaleRecoV, TVectorD &scaleRecoErrV,
+			   TVectorD &scaleIdV , TVectorD &scaleIdErrV ,
+			   TVectorD &scaleHltV, TVectorD &scaleHltErrV,
+			   TVectorD &scaleV   , TVectorD &scaleErrV   );
+void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
+			     TVectorD scaleIdFIV , TVectorD scaleIdErrFIV ,
+			     TVectorD scaleHltFIV, TVectorD scaleHltErrFIV,
+			     TVectorD scaleV   , TVectorD scaleErrFIV   ,
+			     int rapidityBinIndex0);
 void drawEventScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle, 
 				TString plotName);
 
 double errOnRatio(double a, double da, double b, double db);
 
-void PrintEffInfoLines(const char *msg, int effKind, int effMethod, 
-     int binCount, const double *eff, const double *effErr);
+// Global variables
+//const int nexp = 100;
+
+template<class TSystTH1FArray_t>
+void deriveScaleMeanAndErr(const int binCount, const int nexpCount, 
+			   TSystTH1FArray_t &systScale, 
+			   TVectorD &scaleMean, TVectorD &scaleMeanErr) {
+  if ((scaleMean.GetNoElements() != binCount) ||
+      (scaleMeanErr.GetNoElements() != binCount)) {
+    std::cout << "Error in derive: binCount=" << binCount 
+	      << ", scaleMean[" << scaleMean.GetNoElements() 
+	      << "], scaleMeanErr[" << scaleMeanErr.GetNoElements() << "\n";
+    assert(0);
+  }
+  for(int ibin = 0; ibin < binCount; ibin++){
+    scaleMean[ibin] = 0;
+    scaleMeanErr[ibin] = 0;
+    for(int iexp = 0; iexp < nexpCount; iexp++){
+      scaleMean[ibin] += systScale[ibin][iexp]->GetMean();
+      scaleMeanErr[ibin] += SQR(systScale[ibin][iexp]->GetMean());
+    }
+    scaleMean[ibin] = scaleMean[ibin]/double(nexpCount);
+    scaleMeanErr[ibin] = sqrt( scaleMeanErr[ibin] / double(nexpCount) 
+			       - SQR(scaleMean[ibin]) );
+    //std::cout << "scaleMean[ibin=" << ibin << "]=" << scaleMean[ibin] << ", err=" << scaleMeanErr[ibin] << "\n";
+  }
+  return;
+}
+
 
 //=== Constants ==========================
 
@@ -121,7 +158,7 @@ vector<TMatrixD*> dataEffErrHi,mcEffErrHi;
 vector<TMatrixD*> dataEffAvgErr,mcEffAvgErr;
 
 // Global variables
-const int nexp = 100;
+//const int nexp = 100;
 EffArray_t ro_Data[nexp], ro_MC[nexp];
 
 
@@ -226,24 +263,40 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   vector<TH1F*> hTrailingEtV;
   vector<TH1F*> hElectronEtV;
 
-  vector<TH1F*> hScaleV;
+  vector<TH1F*> hScaleV;     // mass indexing
   vector<TH1F*> hScaleRecoV;
   vector<TH1F*> hScaleIdV;
   vector<TH1F*> hScaleHltV;
-  vector<vector<TH1F*>*> hScaleEffVV;
-  hScaleEffVV.reserve(3);
-  hScaleEffVV.push_back(&hScaleRecoV);
-  hScaleEffVV.push_back(&hScaleIdV);
-  hScaleEffVV.push_back(&hScaleHltV);
+  vector<TH1F*> hScaleFIV; // flat indexing
+  vector<TH1F*> hScaleRecoFIV;
+  vector<TH1F*> hScaleIdFIV;
+  vector<TH1F*> hScaleHltFIV;
+
+  hLeadingEtV.reserve(nMassBins);
+  hTrailingEtV.reserve(nMassBins);
+  hElectronEtV.reserve(nMassBins);
+
+  hScaleV.reserve(nMassBins);
+  hScaleRecoV.reserve(nMassBins);
+  hScaleIdV.reserve(nMassBins);
+  hScaleHltV.reserve(nMassBins);
+
+  int nUnfoldingBins = DYTools::getTotalNumberOfBins();
+  hScaleFIV.reserve(nUnfoldingBins);
+  hScaleRecoFIV.reserve(nUnfoldingBins);
+  hScaleIdFIV.reserve(nUnfoldingBins);
+  hScaleHltFIV.reserve(nUnfoldingBins);
 
   for(int i=0; i<nMassBins; i++){
-    TString base = "hScaleV_";
+    double *rapidityBinLimits=DYTools::getYBinLimits(i);
+
+    TString base = TString("hScaleV_massBin");
     base += i;
     hScaleV.push_back(new TH1F(base,base,150,0.0,1.5));
     hScaleRecoV.push_back(new TH1F(base+TString("_reco"),
 				   base+TString("_reco"),150,0.0,1.5));
-    hScaleIdV .push_back(new TH1F(base+TString("_id" ),
-				  base+TString("_id" ),150,0.0,1.5));
+    hScaleIdV.push_back(new TH1F(base+TString("_id" ),
+				 base+TString("_id" ),150,0.0,1.5));
     hScaleHltV.push_back(new TH1F(base+TString("_hlt"),
 				  base+TString("_hlt"),150,0.0,1.5));
     base = "hLeadingEt_";
@@ -255,6 +308,23 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     base = "hElectronEt_";
     base += i;
     hElectronEtV.push_back(new TH1F(base,base,etBinCount, etBinLimits));
+    
+    for (int yi=0; yi<nYBins[i]; ++yi) {
+      char buf[50];
+      sprintf(buf,"mIdx%d_y%4.2lf-%4.2lf",
+	      i,rapidityBinLimits[yi],rapidityBinLimits[yi+1]);
+      TString idxStr=buf;
+      idxStr.ReplaceAll(".","_");
+      base = TString("hScaleV_")+idxStr;
+      hScaleFIV.push_back(new TH1F(base,base,150,0.0,1.5));
+      hScaleRecoFIV.push_back(new TH1F(base+TString("_reco"),
+				       base+TString("_reco"),150,0.0,1.5));
+      hScaleIdFIV.push_back(new TH1F(base+TString("_id" ),
+				     base+TString("_id" ),150,0.0,1.5));
+      hScaleHltFIV.push_back(new TH1F(base+TString("_hlt"),
+				      base+TString("_hlt"),150,0.0,1.5));
+    }
+    delete rapidityBinLimits;
   }
 
   // Create Gaussian-distributed random offsets for each pseudo-experiment
@@ -301,25 +371,47 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   }
 
   // Create container for data for error estimates based on pseudo-experiments
-  TH1F *systScale[nMassBins][nexp];
-  TH1F *systScaleReco[nMassBins][nexp];
-  TH1F *systScaleId[nMassBins][nexp];
-  TH1F *systScaleHlt[nMassBins][nexp];
-  for(int i=0; i<nMassBins; i++)
+  //TH1F *systScale[nMassBins][nexp];
+  SystTH1FArray_t systScale;
+  SystTH1FArray_t systScaleReco;
+  SystTH1FArray_t systScaleId;
+  SystTH1FArray_t systScaleHlt;
+  //TH1F *systScaleFI[nUnfoldingBins][nexp];
+  SystTH1FArrayFI_t systScaleFI;
+  SystTH1FArrayFI_t systScaleRecoFI;
+  SystTH1FArrayFI_t systScaleIdFI;
+  SystTH1FArrayFI_t systScaleHltFI;
+
+  for(int i=0; i<nUnfoldingBins; i++) {
     for(int j=0; j<nexp; j++){
-      TString base = "hScaleM_mass";
+      TString base;
+      if (i<nMassBins) {
+	base = "hScaleM_massBin";
+	base += i;
+	base += "_exp";
+	base += j;
+	systScale[i][j] = new TH1F(base,base,150,0.0,1.5);
+	systScaleReco[i][j] = new TH1F(base+TString("_reco"),
+				       base+TString("_reco"),150,0.0,1.5);
+	systScaleId [i][j] = new TH1F(base+TString("_id" ),
+				      base+TString("_id" ),150,0.0,1.5);
+	systScaleHlt[i][j] = new TH1F(base+TString("_hlt"),
+				      base+TString("_hlt"),150,0.0,1.5);
+      }
+      base = "hScaleM_flatIdx";
       base += i;
       base += "_exp";
       base += j;
-      systScale[i][j] = new TH1F(base,base,150,0.0,1.5);
-      systScaleReco[i][j] = new TH1F(base+TString("_reco"),
-				     base+TString("_reco"),150,0.0,1.5);
-      systScaleId [i][j] = new TH1F(base+TString("_id" ),
-				    base+TString("_id" ),150,0.0,1.5);
-      systScaleHlt[i][j] = new TH1F(base+TString("_hlt"),
-				    base+TString("_hlt"),150,0.0,1.5);
+      systScaleFI[i][j] = new TH1F(base,base,150,0.0,1.5);
+      systScaleRecoFI[i][j] = new TH1F(base+TString("_reco"),
+				       base+TString("_reco"),150,0.0,1.5);
+      systScaleIdFI [i][j] = new TH1F(base+TString("_id" ),
+				      base+TString("_id" ),150,0.0,1.5);
+      systScaleHltFI[i][j] = new TH1F(base+TString("_hlt"),
+				      base+TString("_hlt"),150,0.0,1.5);
     }
-  
+  }
+
   TFile *skimFile=new TFile(selectEventsFName);
   if (!skimFile || !skimFile->IsOpen()) {
     std::cout << "failed to open file <" << selectEventsFName << ">\n";
@@ -330,11 +422,12 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   esfSelectEvent_t selData;
   selData.setBranchAddress(skimTree);
 
+  //std::cout << "nMassBins=" << nMassBins << ", nUnfoldingBins=" << nUnfoldingBins << std::endl;
   std::cout << "there are " << skimTree->GetEntries() 
 	    << " entries in the <" << selectEventsFName << "> file\n";
   for (UInt_t ientry=0; ientry<skimTree->GetEntries(); ++ientry) {
-    if (debugMode && (ientry>10000)) break;
-    if ( ientry%10000 == 0 ) std::cout << "ientry=" << ientry << "\n";
+    if (debugMode && (ientry>30000)) break;
+    //if ( ientry%10000 == 0 ) std::cout << "ientry=" << ientry << "\n";
 
     skimTree->GetEntry(ientry);
 
@@ -343,37 +436,55 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     double scaleFactorId  = sqrt(findEventScaleFactor(1,selData));
     double scaleFactorHlt = sqrt(findEventScaleFactor(2,selData));
     double weight=selData.weight;
+    if ( ientry%20000 == 0 ) std::cout << "ientry=" << ientry << ", weight=" << weight << ", scaleFactor=" << scaleFactor << "\n";
+
     hScale->Fill(scaleFactor, weight);
     hScaleReco->Fill( scaleFactorReco, weight);
     hScaleId ->Fill( scaleFactorId, weight);
     hScaleHlt->Fill( scaleFactorHlt, weight);
-    // Use generator-level post-FSR mass 
-    int ibin = findMassBin(selData.genMass);
-    hScaleRecoV[ibin]->Fill( scaleFactorReco, weight);
-    hScaleIdV [ibin]->Fill( scaleFactorId, weight);
-    hScaleHltV[ibin]->Fill( scaleFactorHlt, weight);
-    hScaleV   [ibin]->Fill( scaleFactor, weight);
-    
-    hLeadingEtV [ibin]->Fill( selData.et_1, weight);
-    hTrailingEtV[ibin]->Fill( selData.et_2, weight);
-    hElectronEtV[ibin]->Fill( selData.et_1, weight);
-    hElectronEtV[ibin]->Fill( selData.et_2, weight);
-    if( selData.insideMassWindow(60,120) ) {
-      hZpeakEt->Fill(selData.et_1, weight);
-      hZpeakEt->Fill(selData.et_2, weight);
-    }
+    // Use generator-level post-FSR mass, y
+    int ibin= findMassBin(selData.genMass);
+    int idx = findIndexFlat(selData.genMass,selData.genY);
+    if ((ibin>=0) && (ibin<nMassBins)) {
+      hLeadingEtV [ibin]->Fill( selData.et_1, weight);
+      hTrailingEtV[ibin]->Fill( selData.et_2, weight);
+      hElectronEtV[ibin]->Fill( selData.et_1, weight);
+      hElectronEtV[ibin]->Fill( selData.et_2, weight);
+      if( selData.insideMassWindow(60,120) ) {
+	hZpeakEt->Fill(selData.et_1, weight);
+	hZpeakEt->Fill(selData.et_2, weight);
+      }
 
-    // Acumulate pseudo-experiments for error estimate
-    for(int iexp = 0; iexp<nexp; iexp++){
-      scaleFactor = findEventScaleFactorSmeared(selData, iexp);
-      scaleFactorReco = sqrt(findEventScaleFactorSmeared(0,selData,iexp));
-      scaleFactorId  = sqrt(findEventScaleFactorSmeared(1,selData,iexp));
-      scaleFactorHlt = sqrt(findEventScaleFactorSmeared(2,selData,iexp));
-      systScale   [ibin][iexp]->Fill(scaleFactor, weight);
-      systScaleReco[ibin][iexp]->Fill(scaleFactorReco, weight);
-      systScaleId[ibin][iexp]->Fill(scaleFactorId, weight);
-      systScaleHlt[ibin][iexp]->Fill(scaleFactorHlt, weight);
-    }
+      hScaleRecoV[ibin]->Fill( scaleFactorReco, weight);
+      hScaleIdV [ibin]->Fill( scaleFactorId, weight);
+      hScaleHltV[ibin]->Fill( scaleFactorHlt, weight);
+      hScaleV   [ibin]->Fill( scaleFactor, weight);
+      if ((idx>=0) && (idx<nUnfoldingBins)) {
+	hScaleRecoFIV[idx]->Fill( scaleFactorReco, weight);
+	hScaleIdFIV [idx]->Fill( scaleFactorId, weight);
+	hScaleHltFIV[idx]->Fill( scaleFactorHlt, weight);
+	hScaleFIV   [idx]->Fill( scaleFactor, weight);
+      }
+	
+      // Acumulate pseudo-experiments for error estimate
+      for(int iexp = 0; iexp<nexp; iexp++){
+	scaleFactor = findEventScaleFactorSmeared(selData, iexp);
+	//std::cout << "findEventScaleFactor(selData)=" << findEventScaleFactor(selData) << ", smeared scaleFactor=" << scaleFactor << "\n";
+	scaleFactorReco = sqrt(findEventScaleFactorSmeared(0,selData,iexp));
+	scaleFactorId  = sqrt(findEventScaleFactorSmeared(1,selData,iexp));
+	scaleFactorHlt = sqrt(findEventScaleFactorSmeared(2,selData,iexp));
+	systScale    [ibin][iexp]->Fill(scaleFactor, weight);
+	systScaleReco[ibin][iexp]->Fill(scaleFactorReco, weight);
+	systScaleId [ibin][iexp]->Fill(scaleFactorId, weight);
+	systScaleHlt[ibin][iexp]->Fill(scaleFactorHlt, weight);
+	if ((idx>=0) && (idx<nUnfoldingBins)) {
+	  systScaleFI    [idx][iexp]->Fill(scaleFactor, weight);
+	  systScaleRecoFI[idx][iexp]->Fill(scaleFactorReco, weight);
+	  systScaleIdFI [idx][iexp]->Fill(scaleFactorId, weight);
+	  systScaleHltFI[idx][iexp]->Fill(scaleFactorHlt, weight);
+	}
+      }
+    } // if (ibin is ok)
     
     // 	if(scaleFactor>1.3)
     // 	  printf("  leading:   %f    %f      trailing:   %f   %f     mass: %f\n",
@@ -381,10 +492,12 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     
 
   } // end loop over selected events
-    
+   
+ 
   delete skimTree;
   delete skimFile;
-  std::cout << "loop over selected events done\n";
+
+  std::cout << "loop over selected events done" << std::endl;
   
   // Calculate errors on the scale factors
   // The "Mean" are the mean among all pseudo-experiments, very close to the primary scale factor values
@@ -401,6 +514,56 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   TVectorD scaleRecoV(nMassBins);
   TVectorD scaleIdV(nMassBins);
   TVectorD scaleHltV(nMassBins);
+
+  TVectorD scaleMeanFIV(nUnfoldingBins);
+  TVectorD scaleMeanErrFIV(nUnfoldingBins);
+  TVectorD scaleMeanRecoFIV(nUnfoldingBins);
+  TVectorD scaleMeanRecoErrFIV(nUnfoldingBins);
+  TVectorD scaleMeanIdFIV(nUnfoldingBins);
+  TVectorD scaleMeanIdErrFIV(nUnfoldingBins);
+  TVectorD scaleMeanHltFIV(nUnfoldingBins);
+  TVectorD scaleMeanHltErrFIV(nUnfoldingBins);
+  // Put into these vectors the content of the mean of the primary scale factor distributions
+  TVectorD scaleFIV(nUnfoldingBins);
+  TVectorD scaleRecoFIV(nUnfoldingBins);
+  TVectorD scaleIdFIV(nUnfoldingBins);
+  TVectorD scaleHltFIV(nUnfoldingBins);
+
+  deriveScaleMeanAndErr(nMassBins,nexp, 
+			systScale, scaleMeanV,scaleMeanErrV);
+  deriveScaleMeanAndErr(nMassBins,nexp, 
+			systScaleReco, scaleMeanRecoV,scaleMeanRecoErrV);
+  deriveScaleMeanAndErr(nMassBins,nexp, 
+			systScaleId  , scaleMeanIdV  ,scaleMeanIdErrV  );
+  deriveScaleMeanAndErr(nMassBins,nexp, 
+			systScaleHlt , scaleMeanHltV ,scaleMeanHltErrV );
+
+  deriveScaleMeanAndErr(nUnfoldingBins,nexp, 
+			systScaleFI, scaleMeanFIV,scaleMeanErrFIV);
+  deriveScaleMeanAndErr(nUnfoldingBins,nexp, 
+			systScaleRecoFI, scaleMeanRecoFIV,scaleMeanRecoErrFIV);
+  if (0) {
+  deriveScaleMeanAndErr(nUnfoldingBins,nexp, 
+			systScaleIdFI  , scaleMeanIdFIV  ,scaleMeanIdErrFIV  );
+  deriveScaleMeanAndErr(nUnfoldingBins,nexp, 
+			systScaleHltFI , scaleMeanHltFIV ,scaleMeanHltErrFIV );
+  }
+
+
+  for(int ibin = 0; ibin < nMassBins; ibin++){
+    scaleRecoV[ibin] = hScaleRecoV[ibin]->GetMean();
+    scaleIdV [ibin] = hScaleIdV [ibin] ->GetMean();
+    scaleHltV[ibin] = hScaleHltV[ibin]->GetMean();
+    scaleV   [ibin] = hScaleV   [ibin]->GetMean();
+  }
+  for(int idx = 0; idx < nUnfoldingBins; idx++){
+    scaleRecoFIV[idx] = hScaleRecoFIV[idx]->GetMean();
+    scaleIdFIV [idx] = hScaleIdFIV [idx] ->GetMean();
+    scaleHltFIV[idx] = hScaleHltFIV[idx]->GetMean();
+    scaleFIV   [idx] = hScaleFIV   [idx]->GetMean();
+  }
+
+  /* superceded
   for(int ibin = 0; ibin < nMassBins; ibin++){
     scaleMeanV[ibin] = 0;
     scaleMeanErrV[ibin] = 0;
@@ -445,6 +608,51 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 				- scaleMeanHltV[ibin]*scaleMeanHltV[ibin] ); 
 				
   }
+  for(int idx = 0; idx < nUnfoldingBins; idx++){
+    scaleMeanFIV[idx] = 0;
+    scaleMeanErrFIV[idx] = 0;
+    scaleMeanRecoFIV[idx] = 0;
+    scaleMeanRecoErrFIV[idx] = 0;
+    scaleMeanIdFIV[idx] = 0;
+    scaleMeanIdErrFIV[idx] = 0;
+    scaleMeanHltFIV[idx] = 0;
+    scaleMeanHltErrFIV[idx] = 0;
+    for(int iexp = 0; iexp < nexp; iexp++){
+      scaleMeanFIV[idx] += systScaleFI[idx][iexp]->GetMean();
+      scaleMeanErrFIV[idx] += SQR(systScaleFI[idx][iexp]->GetMean());
+
+      scaleMeanRecoFIV[idx] += systScaleRecoFI[idx][iexp]->GetMean();
+      scaleMeanRecoErrFIV[idx] += SQR(systScaleRecoFI[idx][iexp]->GetMean());
+
+      scaleMeanIdFIV[idx] += systScaleIdFI[idx][iexp]->GetMean();
+      scaleMeanIdErrFIV[idx] += SQR(systScaleIdFI[idx][iexp]->GetMean());
+
+      scaleMeanHltFIV[idx] += systScaleHltFI[idx][iexp]->GetMean();
+      scaleMeanHltErrFIV[idx] += SQR(systScaleHltFI[idx][iexp]->GetMean());
+    }
+    scaleRecoFIV[idx] = hScaleRecoFIV[idx]->GetMean();
+    scaleIdFIV [idx] = hScaleIdFIV [idx] ->GetMean();
+    scaleHltFIV[idx] = hScaleHltFIV[idx]->GetMean();
+    scaleFIV   [idx] = hScaleFIV   [idx]->GetMean();
+
+    scaleMeanFIV[idx] = scaleMeanFIV[idx]/double(nexp);
+    scaleMeanErrFIV[idx] = sqrt( scaleMeanErrFIV[idx] / double(nexp) 
+				- scaleMeanFIV[idx]*scaleMeanFIV[idx] ); 
+				
+    scaleMeanRecoFIV[idx] = scaleMeanRecoFIV[idx]/double(nexp);
+    scaleMeanRecoErrFIV[idx] = sqrt( scaleMeanRecoErrFIV[idx] / double(nexp)
+				- scaleMeanRecoFIV[idx]*scaleMeanRecoFIV[idx] ); 
+				
+    scaleMeanIdFIV[idx] = scaleMeanIdFIV[idx]/double(nexp);
+    scaleMeanIdErrFIV[idx] = sqrt( scaleMeanIdErrFIV[idx] / double(nexp) 
+				- scaleMeanIdFIV[idx]*scaleMeanIdFIV[idx] ); 
+				
+    scaleMeanHltFIV[idx] = scaleMeanHltFIV[idx]/double(nexp);
+    scaleMeanHltErrFIV[idx] = sqrt( scaleMeanHltErrFIV[idx] / double(nexp) 
+				- scaleMeanHltFIV[idx]*scaleMeanHltFIV[idx] ); 
+				
+  }
+  */
 
   // Store constants in the file
   TString outputDir(TString("../root_files/constants/")+dirTag);
@@ -455,15 +663,18 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 			  TString(".root"));
 
   TFile fa(sfConstFileName, "recreate");
-  scaleV.Write("scaleFactorArray");
-  scaleMeanErrV.Write("scaleFactorErrArray");
+  scaleV.Write("scaleFactorMassIdxArray");
+  scaleMeanErrV.Write("scaleFactorErrMassIdxArray");
+  scaleFIV.Write("scaleFactorFlatIdxArray");
+  scaleMeanErrFIV.Write("scaleFactorErrFlatIdxArray");
   fa.Close();
 
   //
   // Some plots
   //
 
-  TCanvas *c1 = new TCanvas("c1","c1",10,10,500,500);
+  TCanvas *c1 = 
+    new TCanvas("canvScaleFactors","canvScaleFactors",10,10,500,500);
   c1->Divide(2,2);
  
   c1->cd(1);
@@ -478,27 +689,64 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   c1->cd(4);
   hScaleHlt->Draw();
 
-  std::cout << "\nScale factors as a function of mass bin\n";
-  std::cout << "    mass          rho_reco          rho_id"
-	    << "       rho_hlt        rho_total\n";
-  std::string format1=
-    std::string("   %3.0f - %3.0f     %5.3f +- %5.3f    %5.3f +- %5.3f")+
-    std::string("     %5.3f +- %5.3f     %5.3f +- %5.3f\n");
-  for(int i=0; i<nMassBins; i++){
-    printf(format1.c_str(),
-	   massBinLimits[i], massBinLimits[i+1],
-	   hScaleRecoV[i]->GetMean(), scaleMeanRecoErrV[i],
-	   hScaleIdV[i]->GetMean(),  scaleMeanIdErrV[i],
-	   hScaleHltV[i]->GetMean(), scaleMeanHltErrV[i],
-	   hScaleV[i]->GetMean()   , scaleMeanErrV[i]);
+  if (0) {
+    std::cout << "\nScale factors as a function of mass bin\n";
+    std::cout << "    mass          rho_reco          rho_id"
+	      << "       rho_hlt        rho_total\n";
+    std::string format1=
+      std::string("   %3.0f - %3.0f     %5.3f +- %5.3f    %5.3f +- %5.3f")+
+      std::string("     %5.3f +- %5.3f     %5.3f +- %5.3f\n");
+    for(int i=0; i<nMassBins; i++){
+      printf(format1.c_str(),
+	     massBinLimits[i], massBinLimits[i+1],
+	     hScaleRecoV[i]->GetMean(), scaleMeanRecoErrV[i],
+	     hScaleIdV[i]->GetMean(),  scaleMeanIdErrV[i],
+	     hScaleHltV[i]->GetMean(), scaleMeanHltErrV[i],
+	     hScaleV[i]->GetMean()   , scaleMeanErrV[i]);
+    }
   }
 
-  drawEfficiencies();
-  drawScaleFactors();
+  if (0) {
+    std::cout << "\nScale factors as a function of mass and rapidity bin\n";
+    std::cout << "    mass     rapidity     rho_reco          rho_id"
+	      << "       rho_hlt        rho_total\n";
+    std::string format2=
+      std::string("   %3.0f - %3.0f  %4.2f-%4.2f     %5.3f +- %5.3f    %5.3f +- %5.3f")+
+      std::string("     %5.3f +- %5.3f     %5.3f +- %5.3f\n");
+    for(int i=0; i<nMassBins; i++){
+      double *rapidityBinLimits=DYTools::getYBinLimits(i);
+      for (int yi=0; yi<nYBins[i]; ++yi) {
+	int idx=findIndexFlat(i,yi);
+	std::cout << "idx=" << idx << "\n";
+	printf(format2.c_str(),
+	       massBinLimits[i], massBinLimits[i+1],
+	       rapidityBinLimits[yi], rapidityBinLimits[yi+1],
+	       hScaleRecoFIV[idx]->GetMean(), scaleMeanRecoErrFIV[idx],
+	       hScaleIdFIV[idx]->GetMean(),  scaleMeanIdErrFIV[idx],
+	       hScaleHltFIV[idx]->GetMean(), scaleMeanHltErrFIV[idx],
+	       hScaleFIV[idx]->GetMean()   , scaleMeanErrFIV[idx]);
+      }
+    }
+  }
+
+  //drawEfficiencies();
+  //drawScaleFactors();
+  if (1)
   drawEventScaleFactors(scaleRecoV, scaleMeanRecoErrV,
 			scaleIdV , scaleMeanIdErrV ,
 			scaleHltV, scaleMeanHltErrV,
 			scaleV   , scaleMeanErrV    );
+
+  const int rapidityIdxCount=5;
+  const int rapidityIdx[rapidityIdxCount] = { 0, 10, 15, 20, 24 };
+  if (1)
+  for (int ri=0; ri<rapidityIdxCount; ++ri) {
+    drawEventScaleFactorsFI(scaleRecoFIV, scaleMeanRecoErrFIV,
+			    scaleIdFIV , scaleMeanIdErrFIV ,
+			    scaleHltFIV, scaleMeanHltErrFIV,
+			    scaleFIV   , scaleMeanErrFIV   ,
+			    rapidityIdx[ri]);
+  }
 
   //
   // Make plots of Et spectra
@@ -519,49 +767,38 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   hZpeakEt->Sumw2();
   hZpeakEt->Scale(1.0/hZpeakEt->GetSumOfWeights());
 
-  TCanvas *c3 = MakeCanvas("ET canvas 1", "ET canvas 1");
-  CPlot etplot1("etplot_bin0", "","E_{T} [GeV]", "N_{ele}, normalized");
-  int cbin = 0;
-  TString label = "mass bin 0";
-  etplot1.SetLogx();
-  etplot1.AddHist1D(hElectronEtV[cbin] , label , "PE", kRed);
-  etplot1.AddHist1D(hZpeakEt       , "60-120 mass range", "hist,f", kBlack);
-  etplot1.SetYRange(0.0,0.6);
-  hElectronEtV[cbin]->GetXaxis()->SetMoreLogLabels();
-  hElectronEtV[cbin]->GetXaxis()->SetNoExponent();
-  hZpeakEt->SetFillStyle(3001);
-  hElectronEtV[cbin]->SetMarkerColor(kRed);
-  etplot1.Draw(c3,savePlots,"png");
 
-  TCanvas *c4 = MakeCanvas("ET canvas 2", "ET canvas 2");
-  CPlot etplot2("etplot_bin3", "","E_{T} [GeV]", "N_{ele}, normalized");
-  cbin = 3;
-  label = "mass bin 3";
-  etplot2.SetLogx();
-  etplot2.AddHist1D(hElectronEtV[cbin] , label , "PE", kRed);
-  etplot2.AddHist1D(hZpeakEt       , "60-120 mass range", "hist,f", kBlack);
-  etplot2.SetYRange(0.0,0.6);
-  hElectronEtV[cbin]->GetXaxis()->SetMoreLogLabels();
-  hElectronEtV[cbin]->GetXaxis()->SetNoExponent();
-  hZpeakEt->SetFillStyle(3001);
-  hZpeakEt->SetMarkerColor(kBlack);
-  hElectronEtV[cbin]->SetMarkerColor(kRed);
-  etplot2.Draw(c4,savePlots,"png");
+  const int plotMassBinIdxCount=5;
+  const int plotMassBinIdx[plotMassBinIdxCount] = { 0, 3, 4, 5, nMassBins-1 };
+  std::vector<TCanvas*> canvV;
+  canvV.reserve(plotMassBinIdxCount);
 
-  TCanvas *c5 = MakeCanvas("ET canvas 3", "ET canvas 3");
-  CPlot etplot3("etplot_bin5", "","E_{T} [GeV]", "N_{ele}, normalized");
-  cbin = 5;
-  label = "mass bin 5";
-  etplot3.SetLogx();
-  etplot3.AddHist1D(hElectronEtV[cbin] , label , "PE", kRed);
-  etplot3.AddHist1D(hZpeakEt       , "60-120 mass range", "hist,f", kBlack);
-  etplot3.SetYRange(0.0,0.6);
-  hElectronEtV[cbin]->GetXaxis()->SetMoreLogLabels();
-  hElectronEtV[cbin]->GetXaxis()->SetNoExponent();
-  hZpeakEt->SetFillStyle(3001);
-  hZpeakEt->SetMarkerColor(kBlack);
-  hElectronEtV[cbin]->SetMarkerColor(kRed);
-  etplot3.Draw(c5,savePlots,"png");
+  for (int plot_i=0; plot_i<plotMassBinIdxCount; ++plot_i) {
+    char buf[30];
+    sprintf(buf,"canvET_%d",plot_i+1);
+    TCanvas *c3 = MakeCanvas(buf,buf);
+    canvV.push_back(c3);
+    sprintf(buf,"etplot_bin%d",plotMassBinIdx[plot_i]);
+    CPlot etplot1(buf, "","E_{T} [GeV]", "N_{ele}, normalized");
+    const int cbin=plotMassBinIdx[plot_i];
+    if (cbin<=nMassBins) {
+      sprintf(buf,"%1.0f-%1.0f mass range",massBinLimits[cbin],massBinLimits[cbin+1]);
+    }
+    else {
+      std::cout << "ERROR: cbin=" << cbin << " is greater than nMassBins=" << nMassBins << "\n";
+      break;
+    }
+    TString label = buf;
+    etplot1.SetLogx();
+    etplot1.AddHist1D(hElectronEtV[cbin] , label , "PE", kRed);
+    etplot1.AddHist1D(hZpeakEt       , "60-120 mass range", "hist,f", kBlack);
+    etplot1.SetYRange(0.0,0.6);
+    hElectronEtV[cbin]->GetXaxis()->SetMoreLogLabels();
+    hElectronEtV[cbin]->GetXaxis()->SetNoExponent();
+    hZpeakEt->SetFillStyle(3001);
+    hElectronEtV[cbin]->SetMarkerColor(kRed);
+    etplot1.Draw(c3,savePlots,"png");
+  }
 
   gBenchmark->Show("calcEventEff");
   return;
@@ -767,7 +1004,8 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	      (trailing->hltMatchBits & trailingTriggerObjectBit) ) ) continue;
 	totalCandFullSelection++;
 
-	selData.assign(gen->mass, dielectron->mass, 
+	selData.assign(gen->mass, gen->y,
+		       dielectron->mass, dielectron->y,
 		       leading->scEt, leading->scEta,
 		       trailing->scEt, trailing->scEta,
 		       weight,
@@ -888,6 +1126,7 @@ double findScaleFactor(int kind, int etBin, int etaBin) {
   }
 
   result = (*dataEff[kind])[etBin][etaBin] / (*mcEff[kind])[etBin][etaBin];
+  //std::cout << "scaleFactor[kind=" << kind << "][etBin=" << etBin << "][etaBin=" << etaBin << "]=" << result << "\n";
   return result;
 }
 
@@ -900,6 +1139,7 @@ double findEventScaleFactorSmeared(const esfSelectEvent_t &data, int iexp) {
   double esf1=1.0;
   int etBin1 = findEtBin(data.et_1, etBinning);
   int etaBin1 = findEtaBin(data.eta_1, etaBinning);
+
   if ((etBin1!=-1) && (etaBin1!=-1)) {
     esf1=
       findScaleFactorSmeared(0, etBin1, etaBin1, iexp) *
@@ -954,11 +1194,20 @@ double findScaleFactorSmeared(int kind, double scEt, double scEta, int iexp) {
 
 // --------------------------------------
 
+double findScaleFactorSmeared(int kind, int scEtBin, int scEtaBin, int iexp) {
+
+  return findScaleFactorSmeared(kind,scEtBin,scEtaBin,ro_Data[iexp],ro_MC[iexp]);
+
+}
+
+// --------------------------------------
+
 double findScaleFactorSmeared(int kind, int etBin, int etaBin,
 	   const EffArray_t &dataRndWeight, const EffArray_t &mcRndWeight) {
 
   double result = 0;
   if( (etBin == -1) || (etaBin == -1)) {
+    std::cout << "err: findScaleFactorSmeared(etBin=" << etBin << ", etaBin=" << etaBin << ")\n";
     // Found bin outside of calibrated range, return 1.0
     result = 1.0;
     return result;
@@ -972,6 +1221,7 @@ double findScaleFactorSmeared(int kind, int etBin, int etaBin,
     (*mcEff[kind])[etBin][etaBin] + 
     mcRndWeight[kind][etBin][etaBin] * (*mcEffAvgErr[kind])[etBin][etaBin];
   if (effMC>100.) effMC=100.;
+  //std::cout << "scaleFactorSmeared[kind=" << kind << "][etBin=" << etBin << "][etaBin=" << etaBin << "]=" << effData << '/' << effMC << "=" << (effData/effMC) << "\n";
   return (effData/effMC);
 }
 
@@ -1276,11 +1526,17 @@ double errOnRatio(double a, double da, double b, double db){
 
 // -------------------------------------------------------------------------
 
-void drawEventScaleFactors(TVectorD scaleRecoV, TVectorD scaleRecoErrV,
-			   TVectorD scaleIdV , TVectorD scaleIdErrV ,
-			   TVectorD scaleHltV, TVectorD scaleHltErrV,
-			   TVectorD scaleV   , TVectorD scaleErrV    )
+void drawEventScaleFactors(TVectorD &scaleRecoV, TVectorD &scaleRecoErrV,
+			   TVectorD &scaleIdV , TVectorD &scaleIdErrV ,
+			   TVectorD &scaleHltV, TVectorD &scaleHltErrV,
+			   TVectorD &scaleV   , TVectorD &scaleErrV    )
 {
+
+  if (scaleRecoV.GetNoElements()!=nMassBins) {
+    std::cout << "\n\nERROR: drawEventScaleFactors should be called for "
+	      << "mass-bin indexed vectors\n\n";
+    return;
+  }
 
   // repackage into arrays
   double x[nMassBins];
@@ -1300,7 +1556,7 @@ void drawEventScaleFactors(TVectorD scaleRecoV, TVectorD scaleRecoErrV,
     scaleIdA        [i] = scaleIdV    [i];
     scaleHltA       [i] = scaleHltV   [i];
     scaleA          [i] = scaleV      [i];
-    scaleRecoErrA    [i] = scaleRecoErrV[i];
+    scaleRecoErrA   [i] = scaleRecoErrV[i];
     scaleIdErrA     [i] = scaleIdErrV [i];
     scaleHltErrA    [i] = scaleHltErrV[i];
     scaleErrA       [i] = scaleErrV   [i];
@@ -1327,6 +1583,91 @@ void drawEventScaleFactors(TVectorD scaleRecoV, TVectorD scaleRecoErrV,
   drawEventScaleFactorGraphs(grScaleHlt, "HLT scale factor"  , plotName);
   plotName = plotNameBase + TString("full");
   drawEventScaleFactorGraphs(grScale   , "event scale factor", plotName);
+
+}
+
+// -------------------------------------------------------------------------
+
+void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
+			     TVectorD scaleIdFIV , TVectorD scaleIdErrFIV ,
+			     TVectorD scaleHltFIV, TVectorD scaleHltErrFIV,
+			     TVectorD scaleFIV   , TVectorD scaleErrFIV   ,
+			     int rapidityIndex)
+{
+  int nUnfoldingBins = DYTools::getTotalNumberOfBins();
+  if (scaleRecoFIV.GetNoElements()!=nUnfoldingBins) {
+    std::cout << "\n\nERROR: drawEventScaleFactorsFI should be called for "
+	      << "flat-indexed vectors\n\n";
+    return;
+  }
+
+  // repackage into arrays
+  double x[nMassBins];
+  double dx[nMassBins];
+  double scaleRecoA   [nMassBins];
+  double scaleIdA    [nMassBins];
+  double scaleHltA   [nMassBins];
+  double scaleA      [nMassBins];
+  double scaleRecoErrA[nMassBins];
+  double scaleIdErrA [nMassBins];
+  double scaleHltErrA[nMassBins];
+  double scaleErrA   [nMassBins];
+
+  double rapidity=-999;
+  {
+    double *rapidityBinLimits=DYTools::getYBinLimits(0);
+    rapidity=0.5*
+      (rapidityBinLimits[rapidityIndex]+rapidityBinLimits[rapidityIndex+1]);
+    delete rapidityBinLimits;
+  }
+  for(int i=0; i<nMassBins; i++){
+    int idx=findIndexFlat(i,rapidityIndex);
+    if (i==nMassBins-1) {
+      // last mass bins is special
+      idx=DYTools::findIndexFlat(i, findAbsYBin(i,rapidity));
+    }
+    x[i] = (massBinLimits[i] + massBinLimits[i+1])/2.0;
+    dx[i]= (massBinLimits[i+1] - massBinLimits[i])/2.0;
+    scaleRecoA       [i] = scaleRecoFIV   [idx];
+    scaleIdA        [i] = scaleIdFIV    [idx];
+    scaleHltA       [i] = scaleHltFIV   [idx];
+    scaleA          [i] = scaleFIV      [idx];
+    scaleRecoErrA    [i] = scaleRecoErrFIV[idx];
+    scaleIdErrA     [i] = scaleIdErrFIV [idx];
+    scaleHltErrA    [i] = scaleHltErrFIV[idx];
+    scaleErrA       [i] = scaleErrFIV   [idx];
+  }
+
+  TGraphErrors *grScale = 
+    new TGraphErrors(nMassBins, x, scaleA, dx, scaleErrA);
+  TGraphErrors *grScaleReco = 
+    new TGraphErrors(nMassBins, x, scaleRecoA, dx, scaleRecoErrA);
+  TGraphErrors *grScaleId  = 
+    new TGraphErrors(nMassBins, x, scaleIdA , dx, scaleIdErrA );
+  TGraphErrors *grScaleHlt = 
+    new TGraphErrors(nMassBins, x, scaleHltA, dx, scaleHltErrA);
+
+  char buf[20];
+  sprintf(buf,"_y=%4.2lf_",rapidity); // for file name
+  TString yStr=buf;
+  yStr.ReplaceAll(".","_"); yStr.ReplaceAll("=","_");
+  sprintf(buf," |y|=%4.2lf",rapidity); // for label
+  TString plotName;
+  TString plotNameBase = 
+    TString("plot_event_scale_") + analysisTag + TString("_") + yStr;
+  plotName = plotNameBase + TString("reco");
+  drawEventScaleFactorGraphs(grScaleReco, 
+	       TString("RECO scale factor ") + TString(buf) , plotName);
+  //plotName = "plot_event_scale_id";
+  plotName = plotNameBase + TString("id");
+  drawEventScaleFactorGraphs(grScaleId , 
+	       TString("ID scale factor ") + TString(buf)   , plotName);
+  plotName = plotNameBase + TString("hlt");
+  drawEventScaleFactorGraphs(grScaleHlt, 
+	       TString("HLT scale factor ") + TString(buf)  , plotName);
+  plotName = plotNameBase + TString("full");
+  drawEventScaleFactorGraphs(grScale   , 
+	       TString("event scale factor") + TString(buf), plotName);
 
 }
 
