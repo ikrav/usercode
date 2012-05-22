@@ -57,11 +57,14 @@ using namespace std;
 
 #include "../Include/EventSelector.hh"
 #include "../Include/FEWZ.hh"
+#include "../Include/PUReweight.hh"
 
 #endif
 
 // define structure for output ntuple
 #include "../Include/ZeeData.hh"
+
+#define usePUReweight
 
 
 //=== FUNCTION DECLARATIONS ======================================================================================
@@ -84,7 +87,8 @@ void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron,
 
 //=== MAIN MACRO =================================================================================================
 
-void selectEvents(const TString conf, const TString triggerSetString="Full2011DatasetTriggers", DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL, int debugMode=0) 
+void selectEvents(const TString conf, const TString triggerSetString="Full2011DatasetTriggers", 
+		  DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL, int debugMode=0) 
 {  
   gBenchmark->Start("selectEvents");
 
@@ -136,7 +140,8 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
       if (line.find("generate_EEM_files=") != string::npos) {
 	generateEEMFile=line.substr(line.find('=')+1);
 	generateEEMFEWZFile=(line.find("FEWZ") != string::npos) ? 1:0;
-	std::cout << "\n\tEEM files will be generated, tag=<" << generateEEMFile << ">, with_FEWZ_weights=" << generateEEMFEWZFile << "\n\n";
+	std::cout << "\n\tEEM files will be generated, tag=<" << generateEEMFile 
+		  << ">, with_FEWZ_weights=" << generateEEMFEWZFile << "\n\n";
 	continue;
       }
     }
@@ -237,6 +242,12 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   vector<TH1F*> hMassv, hMass2v, hMass3v;
   vector<TH1F*> hyv;   
 
+#ifdef usePUReweight
+  PUReweight_t puReweight;
+  TString outNamePV = outputDir + TString("/npv") + analysisTag_USER + TString(".root");
+  int res=puReweight.setFile(outNamePV,1); // create a file
+  assert(res);
+#endif
   vector<TH1F*> hNGoodPVv;
   
   vector<Double_t> nSelv, nSelVarv;  
@@ -253,12 +264,24 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     sprintf(hname,"hMass2_%i",isam);  hMass2v.push_back(new TH1F(hname,"",35,20,160));  hMass2v[isam]->Sumw2();
     sprintf(hname,"hMass3_%i",isam);  hMass3v.push_back(new TH1F(hname,"",50,0,500));   hMass3v[isam]->Sumw2();
     sprintf(hname,"hy_%i",isam);      hyv.push_back(new TH1F(hname,"",20,-3,3));        hyv[isam]->Sumw2();
+#ifndef usePUReweight
     sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());       hNGoodPVv.push_back(new TH1F(hname,"",46,-0.5,45.5));        hNGoodPVv[isam]->Sumw2();
+#endif
     
     nSelv.push_back(0);
     nSelVarv.push_back(0);
     nPosSSv.push_back(0);
     nNegSSv.push_back(0);    
+  }
+
+  for (unsigned int i=0; i<hMassv.size(); ++i) {
+    hMassv[i]->SetDirectory(0);
+    hMass2v[i]->SetDirectory(0);
+    hMass3v[i]->SetDirectory(0);
+    hyv[i]->SetDirectory(0);
+#ifndef usePUReweight
+    hNGoodPVv[i]->SetDirectory(0);
+#endif    
   }
   
   // 
@@ -340,6 +363,12 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     // Define dielectron selector
     DielectronSelector_t eeSelector(DielectronSelector_t::_selectDefault,
 				    &escale);
+
+#ifdef usePUReweight
+    // prepare histogram for nPV
+    sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());
+    if (!puReweight.setActiveSample(hname)) assert(0);
+#endif
 
     //
     // Set up output ntuple file for the sample
@@ -655,7 +684,11 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
             nGoodPV++;
           }
 	  }
+#ifdef usePUReweight
+	  assert(puReweight.Fill(nGoodPV,weight));
+#else
           hNGoodPVv[isam]->Fill(nGoodPV,weight);
+#endif
 	  
 	  // fill ntuple data
 	  double weightSave = weight;
@@ -698,13 +731,22 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     }
 
     eeSelector.printCounts(std::cout);
+#ifdef usePUReweight
+    const TH1F *hTmp=puReweight.getHActive();
+    hNGoodPVv.push_back((TH1F*)hTmp->Clone(hTmp->GetName() + TString("_1")));
+    hNGoodPVv.back()->SetDirectory(0);
+#endif
   }
   delete info;
   delete dielectronArr;
   delete pvArr;
   if (evtfile.is_open()) evtfile.close();
+#ifdef usePUReweight
+  puReweight.clear();
+#endif
 
 
+#ifndef usePUReweight
   // Write useful histograms
   // npv.root
   TString outNamePV = outputDir + TString("/npv") + analysisTag_USER + TString(".root");
@@ -714,6 +756,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     hNGoodPVv[isam]->Write();
   }
   outFilePV->Close();
+#endif
 
   //--------------------------------------------------------------------------------------------------------------
   // Make plots
