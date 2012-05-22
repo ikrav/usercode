@@ -65,13 +65,19 @@ using namespace mithep;
 //=== COMMON CONSTANTS ===========================================================================================
 
 const int evaluate_efficiencies=0;
+const int performPUReweight=1;
 
+const tnpSelectEvent_t::TCreateBranchesOption_t weightBranch1stStep=
+      (performPUReweight) ?
+            tnpSelectEvent_t::_skipWeight :
+	    tnpSelectEvent_t::_dontSkipWeight;
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 //=== MAIN MACRO =================================================================================================
 
-void eff_Reco(const TString configFile, const TString effTypeString, const TString triggerSetString, int debugMode=0) 
+void eff_Reco(const TString configFile, const TString effTypeString, 
+	      const TString triggerSetString, int debugMode=0) 
 {
 
   //  ---------------------------------
@@ -251,8 +257,10 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
   vector<TH1F*> hFailTemplateV;
   if( sample != DATA) {
     // For simulation, we will be saving templates
-    TString labelMC = getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
-    TString templatesLabel = tagAndProbeDir + TString("/mass_templates_")+labelMC+TString(".root");
+    TString labelMC = 
+      getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
+    TString templatesLabel = 
+      tagAndProbeDir + TString("/mass_templates_")+ labelMC+TString(".root");
     templatesFile = new TFile(templatesLabel,"recreate");
     for(int i=0; i<getNEtBins(etBinning); i++){
       for(int j=0; j<getNEtaBins(etaBinning); j++){
@@ -268,8 +276,10 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
     // For data, we will be using templates
     // however, if the request is COUNTnCOUNT, do nothing
     if( calcMethod != COUNTnCOUNT ){
-      TString labelMC = getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
-      TString templatesLabel = tagAndProbeDir+TString("/mass_templates_")+labelMC+TString(".root");
+      TString labelMC = 
+	getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
+      TString templatesLabel = 
+	tagAndProbeDir+TString("/mass_templates_")+labelMC+TString(".root");
       templatesFile = new TFile(templatesLabel);
       if( ! templatesFile->IsOpen() ) {
 	std::cout << "templatesFile name " << templatesLabel << "\n";
@@ -296,7 +306,7 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
   Double_t storeMass, storeEt, storeEta;
   UInt_t storeNGoodPV;
   if (new_store_data_code) {
-    storeData.createBranches(passTree);
+    storeData.createBranches(passTree, weightBranch1stStep);
   }
   else {
     passTree->Branch("mass",&storeMass,"mass/D");
@@ -309,7 +319,7 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
   TTree *failTree = new TTree("failTree","failTree");
   assert(failTree);
   if (new_store_data_code) {
-    storeData.createBranches(failTree);
+    storeData.createBranches(failTree, weightBranch1stStep);
   }
   else {
     failTree->Branch("mass",&storeMass,"mass/D");
@@ -358,7 +368,8 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
     eventTree = (TTree*)infile->Get("Events"); assert(eventTree);
 
     // Set branch address to structures that will store the info  
-    eventTree->SetBranchAddress("Info",&info);                TBranch *infoBr       = eventTree->GetBranch("Info");
+    eventTree->SetBranchAddress("Info",&info); 
+    TBranch *infoBr       = eventTree->GetBranch("Info");
 
     // check whether the file is suitable for the requested run range
     UInt_t runNumMin = UInt_t(eventTree->GetMinimum("runNum"));
@@ -422,7 +433,8 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
       // Loop over the tag electrons
       for(int iele = 0; iele < eleArr->GetEntriesFast(); iele++){
 	
-	const mithep::TElectron *electron = (mithep::TElectron*)((*eleArr)[iele]);
+	const mithep::TElectron *electron = 
+	  (mithep::TElectron*)((*eleArr)[iele]);
 	tagCand++;
 
 	// All cuts for the tag electron should be applied here
@@ -521,7 +533,8 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
 	  storeEt   = sc->scEt;
 	  storeEta  = sc->scEta;
 	  if (new_store_data_code) {
-	    storeData.assign(mass,ee_rapidity,sc->scEt,sc->scEta, storeNGoodPV, event_weight);
+	    storeData.assign(mass,ee_rapidity,sc->scEt,sc->scEta, storeNGoodPV,
+			     event_weight, 1.);
 	  }
 	  int templateBin = getTemplateBin( findEtBin(sc->scEt,etBinning),
 					    findEtaBin(sc->scEta,etaBinning),
@@ -560,6 +573,30 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
   failTree->Write();
   selectedEventsFile->Write();
 
+  if (performPUReweight) {
+    selectedEventsFile->Close();
+    delete selectedEventsFile;
+    TString outFNamePV = tagAndProbeDir + 
+      TString("/npv_tnp") + effTypeString + TString("_") + sampleTypeString +
+      analysisTag + TString(".root");
+    TString refFNamePV = tagAndProbeDir; // from Selection/selectEvents.C
+    refFNamePV.Replace(refFNamePV.Index("tag_and_probe"),
+		       sizeof("tag_and_probe"),"selected_events/");
+    refFNamePV.Append( TString("/npv") + analysisTag_USER + TString(".root") );
+    TString refDistribution="hNGoodPV_data";
+    TString sampleNameBase= effTypeString + TString("_") + 
+      sampleTypeString + analysisTag;
+    int res=CreatePUWeightedBranch(selectEventsFName,
+				   refFNamePV, refDistribution,
+				   outFNamePV, sampleNameBase);
+    assert(res);
+    selectedEventsFile=new TFile(selectEventsFName);
+    assert(selectedEventsFile);
+    passTree= (TTree*)selectedEventsFile->Get("passTree");
+    failTree= (TTree*)selectedEventsFile->Get("failTree");
+    assert(passTree); assert(failTree);
+  }
+
   //
   // Efficiency analysis
   //
@@ -586,7 +623,8 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
 
   if (evaluate_efficiencies) {
   // Human-readable text file to store measured efficiencies
-  TString reslog = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString(".txt");
+  TString reslog = tagAndProbeDir+
+    TString("/efficiency_TnP_")+label+TString(".txt");
   ofstream effOutput;
   effOutput.open(reslog);
   // Print into the results file the header.
@@ -600,11 +638,13 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
     effOutput << "   " << ntupleFileNames[i].Data() << endl;
   
   // ROOT file to store measured efficiencies in ROOT format
-  TString resroot = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString(".root");
+  TString resroot = tagAndProbeDir+
+    TString("/efficiency_TnP_")+label+TString(".root");
   TFile *resultsRootFile = new TFile(resroot,"recreate");
 
   // Fit log 
-  TString fitlogname = TString("results_unsorted/efficiency_TnP_")+label+TString("_fitlog.dat");
+  TString fitlogname = 
+    TString("results_unsorted/efficiency_TnP_")+label+TString("_fitlog.dat");
   ofstream fitLog;
   fitLog.open(fitlogname);
 
@@ -640,7 +680,8 @@ void eff_Reco(const TString configFile, const TString effTypeString, const TStri
   command += reslog;
   system(command.Data());
 
-  TString fitpicname = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString("_fit.png");
+  TString fitpicname = tagAndProbeDir+
+    TString("/efficiency_TnP_")+label+TString("_fit.png");
   //c1->Update();
   c1->SaveAs(fitpicname);
 
