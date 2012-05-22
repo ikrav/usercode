@@ -65,6 +65,14 @@ using namespace mithep;
 //=== COMMON CONSTANTS ===========================================================================================
 
 const int evaluate_efficiencies=0;
+const int performPUReweight=1;
+const int performOppositeSignTest=0;
+
+const tnpSelectEvent_t::TCreateBranchesOption_t weightBranch1stStep=
+      (performPUReweight) ?
+            tnpSelectEvent_t::_skipWeight :
+	    tnpSelectEvent_t::_dontSkipWeight;
+ 
 
 //const Double_t kECAL_GAP_LOW  = 1.4442;
 //const Double_t kECAL_GAP_HIGH = 1.566;
@@ -73,7 +81,8 @@ const int evaluate_efficiencies=0;
 
 //=== MAIN MACRO =================================================================================================
 
-void eff_IdHlt(const TString configFile, const TString effTypeString, const TString triggerSetString, int debugMode=0) 
+void eff_IdHlt(const TString configFile, const TString effTypeString, 
+	       const TString triggerSetString, int debugMode=0) 
 {
 
   //  ---------------------------------
@@ -219,7 +228,11 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
 
   // Correct the trigger object
   triggers.actOnData((sample==DATA)?true:false);
-  if (effType==HLT) std::cout << "\tHLT efficiency calculation method " << triggers.hltEffCalcName() << ", triggerSet=" << triggers.triggerSetName() << "\n";
+  if (effType==HLT) {
+    std::cout << "\tHLT efficiency calculation method " 
+	      << triggers.hltEffCalcName() << ", triggerSet=" 
+	      << triggers.triggerSetName() << "\n";
+  }
   else triggers.hltEffCalcMethod(HLTEffCalc_2011Old);
 
   TRandom *rnd= new TRandom();
@@ -255,8 +268,10 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
   vector<TH1F*> hFailTemplateV;
   if( sample != DATA) {
     // For simulation, we will be saving templates
-    TString labelMC = getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
-    TString templatesLabel = tagAndProbeDir + TString("/mass_templates_")+labelMC+TString(".root");
+    TString labelMC = 
+      getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
+    TString templatesLabel = tagAndProbeDir + 
+      TString("/mass_templates_")+labelMC+TString(".root");
     templatesFile = new TFile(templatesLabel,"recreate");
     for(int i=0; i<getNEtBins(etBinning); i++){
       for(int j=0; j<getNEtaBins(etaBinning); j++){
@@ -272,8 +287,10 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
     // For data, we will be using templates,
     // however, if the request is COUNTnCOUNT, do nothing
     if( calcMethod != COUNTnCOUNT ){
-      TString labelMC = getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
-      TString templatesLabel = tagAndProbeDir+TString("/mass_templates_")+labelMC+TString(".root");
+      TString labelMC = 
+	getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
+      TString templatesLabel = 
+	tagAndProbeDir+TString("/mass_templates_")+labelMC+TString(".root");
       templatesFile = new TFile(templatesLabel);
       if( ! templatesFile->IsOpen() )
 	assert(0);
@@ -300,7 +317,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
   Double_t storeMass, storeEt, storeEta;
   UInt_t storeNGoodPV;
   if (new_store_data_code) {
-    storeData.createBranches(passTree);
+    storeData.createBranches(passTree, weigthBranch1stStep);
   }
   else {
     passTree->Branch("mass",&storeMass,"mass/D");
@@ -311,7 +328,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
 
   TTree *failTree = new TTree("failTree","failTree");
   if (new_store_data_code) {
-    storeData.createBranches(failTree);
+    storeData.createBranches(failTree, weightBranch1stStep);
   }
   else {
     failTree->Branch("mass",&storeMass,"mass/D");
@@ -334,6 +351,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
   int totalCandInEtaAcceptance = 0;
   int totalCandEtAbove10GeV = 0;
   int totalCandMatchedToGen = 0;
+  int totalCandOppositeSign = 0;
 
   // Loop over files
   for(UInt_t ifile=0; ifile<ntupleFileNames.size(); ifile++){
@@ -359,7 +377,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
     eventTree = (TTree*)infile->Get("Events"); assert(eventTree);
 
     // Set branch address to structures that will store the info  
-    eventTree->SetBranchAddress("Info",&info);                TBranch *infoBr       = eventTree->GetBranch("Info");
+    eventTree->SetBranchAddress("Info",&info);                
+    TBranch *infoBr       = eventTree->GetBranch("Info");
     assert(infoBr);
 
     // check whether the file is suitable for the requested run range
@@ -372,7 +391,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
     }
 
     // Define other branches
-    eventTree->SetBranchAddress("Dielectron",&dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
+    eventTree->SetBranchAddress("Dielectron",&dielectronArr); 
+    TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
     eventTree->SetBranchAddress("PV", &pvArr); 
     TBranch *pvBr         = eventTree->GetBranch("PV");
     assert(dielectronBr); assert(pvBr);
@@ -458,6 +478,9 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
 	  if( ! dielectronMatchedToGeneratorLevel(gen, dielectron) ) continue;
 	totalCandMatchedToGen++;
 
+	if (performOppositeSignTest && ( dielectron->q_1 == dielectron->q_2 )) continue;
+	totalCandOppositeSign++;
+
 	// ECAL driven: this condition is NOT applied	
 
 	// Preliminary selection is complete. Now work on tags and probes.
@@ -517,13 +540,18 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
 	// get the number of goodPVs
 	pvBr->GetEntry(ientry);
 	storeNGoodPV=0;
-	for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
-	  const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);
-	  if(pv->nTracksFit                        < 1)  continue;
-	  if(pv->ndof                              < 4)  continue;
-	  if(fabs(pv->z)                           > 24) continue;
-	  if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
-	  storeNGoodPV++;
+	if (1) {
+	  storeNGoodPV = countGoodVertices(pvArr);
+	}
+	else {
+	  for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
+	    const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);
+	    if(pv->nTracksFit                        < 1)  continue;
+	    if(pv->ndof                              < 4)  continue;
+	    if(fabs(pv->z)                           > 24) continue;
+	    if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
+	    storeNGoodPV++;
+	  }
 	}
 
 	storeMass = dielectron->mass;
@@ -536,7 +564,9 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
 	  storeEt   = dielectron->scEt_2;
 	  storeEta  = dielectron->scEta_2;
 	  if (new_store_data_code) {
-	    storeData.assign(dielectron->mass,dielectron->y,dielectron->scEt_2,dielectron->scEta_2,storeNGoodPV,event_weight);
+	    storeData.assign(dielectron->mass,dielectron->y,
+			     dielectron->scEt_2,dielectron->scEta_2,
+			     storeNGoodPV,event_weight,1.);
 	  }
 	  int templateBin = getTemplateBin( findEtBin(storeEt,etBinning),
 					    findEtaBin(storeEta,etaBinning),
@@ -562,7 +592,9 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
 	  storeEt   = dielectron->scEt_1;
 	  storeEta  = dielectron->scEta_1;
 	  if (new_store_data_code) {
-	    storeData.assign(dielectron->mass,dielectron->y,dielectron->scEt_1,dielectron->scEta_1,storeNGoodPV,event_weight);
+	    storeData.assign(dielectron->mass,dielectron->y,
+			     dielectron->scEt_1,dielectron->scEta_1,
+			     storeNGoodPV,event_weight,1.);
 	  }
 	  int templateBin = getTemplateBin( findEtBin(storeEt,etBinning),
 					    findEtaBin(storeEta,etaBinning),
@@ -607,6 +639,30 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
   failTree->Write();
   selectedEventsFile->Write();
 
+  if (performPUReweight) {
+    selectedEventsFile->Close();
+    delete selectedEventsFile;
+    TString outFNamePV = tagAndProbeDir + 
+      TString("/npv_tnp") + effTypeString + TString("_") + 
+      sampleTypeString + analysisTag + TString(".root");
+    TString refFNamePV = tagAndProbeDir; // from Selection/selectEvents.C
+    refFNamePV.Replace(refFNamePV.Index("tag_and_probe"),
+		       sizeof("tag_and_probe"),"selected_events/");
+    refFNamePV.Append( TString("/npv") + analysisTag_USER + TString(".root") );
+    TString refDistribution="hNGoodPV_data";
+    TString sampleNameBase= effTypeString + TString("_") + 
+      sampleTypeString + analysisTag;
+    int res=CreatePUWeightedBranch(selectEventsFName,
+				   refFNamePV, refDistribution,
+				   outFNamePV, sampleNameBase);
+    assert(res);
+    selectedEventsFile=new TFile(selectEventsFName);
+    assert(selectedEventsFile);
+    passTree= (TTree*)selectedEventsFile->Get("passTree");
+    failTree= (TTree*)selectedEventsFile->Get("failTree");
+    assert(passTree); assert(failTree);
+  }
+
   //
   // Efficiency analysis
   //
@@ -619,13 +675,16 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
   printf("        candidates witheta 0-1.4442, 1.566-2.5               %15d\n",totalCandInEtaAcceptance);
   printf("        candidates, both electrons above 10 GeV              %15d\n",totalCandEtAbove10GeV);
   printf("        candidates matched to GEN level (if MC)              %15d\n",totalCandMatchedToGen);
+  if (performOppositeSignTest) 
+    printf("        candidates opposite sign                             %15d\n",totalCandOppositeSign);
   printf("\nNumber of probes, total                                      %15.0f\n", hMassTotal->GetSumOfWeights());
   printf("Number of probes, passed                                     %15.0f\n", hMassPass->GetSumOfWeights());
   printf("Number of probes, failed                                     %15.0f\n", hMassFail->GetSumOfWeights());
 
   if (evaluate_efficiencies) {
   // Human-readbale text file to store measured efficiencies
-  TString reslog = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString(".txt");
+  TString reslog = tagAndProbeDir+
+    TString("/efficiency_TnP_")+label+TString(".txt");
   ofstream effOutput;
   effOutput.open(reslog);
   // Print into the results file the header.
@@ -639,11 +698,13 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
     effOutput << "   " << ntupleFileNames[i].Data() << endl;
   
   // ROOT file to store measured efficiencies in ROOT format
-  TString resroot = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString(".root");
+  TString resroot = tagAndProbeDir+
+    TString("/efficiency_TnP_")+label+TString(".root");
   TFile *resultsRootFile = new TFile(resroot,"recreate");
 
   // Fit log 
-  TString fitlogname = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString("_fitlog.dat");
+  TString fitlogname = tagAndProbeDir+
+    TString("/efficiency_TnP_")+label+TString("_fitlog.dat");
   ofstream fitLog;
   fitLog.open(fitlogname);
 
@@ -670,7 +731,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString, const TStr
   command += reslog;
   system(command.Data());
 
-  TString fitpicname = tagAndProbeDir+TString("/efficiency_TnP_")+label+TString("_fit.png");
+  TString fitpicname = tagAndProbeDir+
+    TString("/efficiency_TnP_")+label+TString("_fit.png");
   c1->SaveAs(fitpicname);
 
   // Save MC templates
