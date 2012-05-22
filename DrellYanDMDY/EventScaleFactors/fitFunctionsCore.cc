@@ -3,7 +3,7 @@
 #include <RooEffProd.h>
 #endif
 
-int performWeightedFit=1;
+int performWeightedFit=0;
 int bkgPassContainsErrorFunction=0;
 int bkgFailContainsErrorFunction=0;
 
@@ -17,7 +17,8 @@ void printCorrelations(ostream& os, RooFitResult *res)
   os << " --------------------" << endl;
   for(Int_t i=0; i<parlist->getSize(); i++) {
     for(Int_t j=0; j<parlist->getSize(); j++) 
-      os << "  " << setw(7) << setprecision(4) << fixed << res->correlationMatrix()(i,j);    
+      os << "  " << setw(7) << setprecision(4) << fixed 
+	 << res->correlationMatrix()(i,j);    
     os << endl;
   }
   os.flags(flags);
@@ -30,10 +31,17 @@ struct RealLimit
   double hi;
 };
 
-void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, int NsetBins, bool isRECO, const char* setBinsType, TString dirTag){
+
+void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, 
+	     double &efficiency, double &efficiencyErrHi, 
+	     double &efficiencyErrLo, 
+	     TPad *passPad, TPad *failPad, TFile *plotsRootFile, 
+	     ofstream &fitLog, int NsetBins, bool isRECO, 
+	     const char* setBinsType, TString dirTag){
   
   // meaningless check, saving from compiler complaints
-  if (dirTag.Length() && 0) std::cout << "fitMass : dirTag=" << dirTag << "\n";
+  if (dirTag.Length() && 0) 
+    std::cout << "fitMass : dirTag=" << dirTag << "\n";
 
   RealLimit lims[19];
 
@@ -329,6 +337,7 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &ef
   }
   framePass->Draw();
   passPad->Update();
+  if (plotsRootFile) { plotsRootFile->cd(); passPad->Write(); }
 
 
   failPad->cd();
@@ -339,6 +348,7 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &ef
   failPdf->plotOn(frameFail,Components("bgFailPdf"),LineStyle(kDashed));
   frameFail->Draw();
   failPad->Update();
+  if (plotsRootFile) { plotsRootFile->cd(); failPad->Write(); }
 
 
   // Print fit outcome into fit log
@@ -352,7 +362,14 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, double &ef
 }
 
 
-void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mode, double &efficiency, double &efficiencyErrHi, double &efficiencyErrLo, TPad *passPad, TPad *failPad, ofstream &fitLog, TH1F *templatePass, TH1F *templateFail, bool isRECO, const char* setBinsType, TString dirTag, const TString &picFileExtraTag){
+void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, 
+			  int mode, double &efficiency, 
+			  double &efficiencyErrHi, double &efficiencyErrLo,
+			  TPad *passPad, TPad *failPad, TFile *plotsRootFile,
+			  ofstream &fitLog, 
+			  TH1F *templatePass, TH1F *templateFail, bool isRECO,
+			  const char* setBinsType, TString dirTag, 
+			  const TString &picFileExtraTag){
 
     
   RealLimit lims[12];
@@ -630,19 +647,22 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   cutF=cutF.ReplaceAll("___","_");
   cutF=cutF.ReplaceAll("__","_");
 
-  TString pngFileBase=TString("../root_files/tag_and_probe/") + dirTag + TString("/fit-") + picFileExtraTag;
+  TString pngFilePath=TString("../root_files/tag_and_probe/") + dirTag + TString("/");
+  TString pngFileBase=TString("fit-") + picFileExtraTag;
   if (isRECO) pngFileBase+="-reco-"; else pngFileBase+="-id-";
   pngFileBase += cutF;
   
-  TCanvas cPass("cPass","cPass");
+  TString canvasName="canv-" + pngFileBase + TString("-pass");
+  TCanvas cPass(canvasName,canvasName);
   framePass->Draw();
   cPass.Update();
+  if (plotsRootFile) { plotsRootFile->cd(); cPass.Write(); }
 
   /*
   if (isRECO) cPass.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-reco-"+(std::string)cutF+"-pass.png").c_str());
   else cPass.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-id-"+(std::string)cutF+"-pass.png").c_str());
   */
-  cPass.Print((pngFileBase + TString("-pass.png")).Data());
+  cPass.Print((pngFilePath + pngFileBase + TString("-pass.png")).Data());
 
   failPad->cd();
   failPad->Clear();
@@ -653,14 +673,13 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, int mod
   frameFail->Draw();
   failPad->Update();
 
-  TCanvas cFail("cFail","cFail");
+  canvasName="canv-" + pngFileBase + TString("-fail");
+  TCanvas cFail(canvasName,canvasName);
   frameFail->Draw();
   cFail.Update();
-  /*
-  if (isRECO) cFail.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-reco-"+(std::string)cutF+"-fail.png").c_str());
-  else cFail.Print(("../root_files/tag_and_probe/"+(std::string)dirTag+"/fit-id-"+(std::string)cutF+"-fail.png").c_str());
-  */
-  cFail.Print((pngFileBase + TString("-fail.png")).Data());
+  if (plotsRootFile) { plotsRootFile->cd(); cFail.Write(); }
+
+  cFail.Print((pngFilePath + pngFileBase + TString("-fail.png")).Data());
 
   // Print fit outcome into fit log
   result->printStream(fitLog,RooPrintable::kValue,RooPrintable::kVerbose);

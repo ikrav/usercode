@@ -147,7 +147,8 @@ void measurePassAndFail(double &signal, double &signalErr, double &efficiency, d
 void measureEfficiency(TTree *passTree, TTree *failTree, 
 		       int method, int etBinning, int etaBinning, 
 		       TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
-		       bool useTemplates, TFile *templatesFile, TFile *resultsRootFile,
+		       bool useTemplates, TFile *templatesFile, 
+		       TFile *resultsRootFile, TFile *plotsRootFile,
 		       int NsetBins, bool isRECO, const char* setBinsType, 
 		       TString dirTag, const TString &picFileExtraTag, 
 		       int puBin) {
@@ -162,15 +163,18 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
   
   // Always report counting method results
   measureEfficiencyCountAndCount(passTree, failTree, etBinning, etaBinning, 
-				 canvas, effOutput, saveCountingToRootFile, resultsRootFile);
+				 canvas, effOutput, 
+				 saveCountingToRootFile, resultsRootFile, 
+				 plotsRootFile);
   
   if( method == COUNTnFIT || method == FITnFIT )
     measureEfficiencyWithFit(passTree, failTree, 
 			     method, etBinning, etaBinning, 
 			     canvas, effOutput, fitLog,
-			     useTemplates, templatesFile, resultsRootFile,
-			     NsetBins, isRECO, setBinsType, dirTag, picFileExtraTag,
-			     puBin);
+			     useTemplates, templatesFile, 
+			     resultsRootFile, plotsRootFile,
+			     NsetBins, isRECO, setBinsType, dirTag, 
+			     picFileExtraTag, puBin);
   
 
   return;
@@ -180,7 +184,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
 
 void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull, 
 			 int method, int etBinning, int etaBinning, 
-			 TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
+			 TCanvas *canvas,ofstream &effOutput, ofstream &fitLog,
 			 bool useTemplates, TFile *templatesFile, 
 			 const TString &resultRootFileBase,
 			 int NsetBins, bool isRECO, const char* setBinsType, 
@@ -192,8 +196,11 @@ void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull,
     fitLog << "\nmeasureEfficiencyPU: no PU-dependence requested\n";
     TString resRootFName=resultRootFileBase + TString(".root");
     TFile *resultsRootFile=new TFile(resRootFName,"recreate");
+    TString resPlotsFName=resultRootFileBase + TString("-plots.root");
+    TFile *resultPlotsFile=new TFile(resPlotsFName,"recreate");
     measureEfficiency(passTreeFull,failTreeFull,method,etBinning,etaBinning,
-		      canvas,effOutput,fitLog,useTemplates,templatesFile,resultsRootFile,
+		      canvas,effOutput,fitLog,useTemplates,
+		      templatesFile,resultsRootFile,resultPlotsFile,
 		      NsetBins,isRECO,setBinsType,
 		      dirTag,picFileExtraTag);
   }
@@ -272,11 +279,18 @@ void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull,
       sprintf(buf,"_%u_%u.root",pvMin,pvMax);
       TString resRootFName=resultRootFileBase + TString(buf);
       TFile *resultsRootFile=new TFile(resRootFName,"recreate");
-      fitLog << "\nmeasureEfficiencyPU: PU range " << pvMin << " - " << pvMax << "\n";
-      effOutput << "\nmeasureEfficiencyPU: PU range " << pvMin << " - " << pvMax << "\n";
+      sprintf(buf,"-plots_%u_%u.root",pvMin,pvMax);
+      TString resPlotFName=resultRootFileBase + TString(buf);
+      TFile *resultPlotFile=new TFile(resPlotFName,"recreate");
+      fitLog << "\nmeasureEfficiencyPU: PU range " 
+	     << pvMin << " - " << pvMax << "\n";
+      effOutput << "\nmeasureEfficiencyPU: PU range " 
+		<< pvMin << " - " << pvMax << "\n";
       std::cout << "call measure efficiency" << std::endl;
-      measureEfficiency(passTreeV[pu_i],failTreeV[pu_i],method,etBinning,etaBinning,
-			canvas,effOutput,fitLog,useTemplates,templatesFile,resultsRootFile,
+      measureEfficiency(passTreeV[pu_i],failTreeV[pu_i],
+			method,etBinning,etaBinning,
+			canvas,effOutput,fitLog,useTemplates,templatesFile,
+			resultsRootFile,resultPlotFile,
 			NsetBins,isRECO,setBinsType,
 			dirTag,picFileExtraTag, pu_i+1);
       std::cout << "done measure efficiency" << std::endl;
@@ -289,9 +303,10 @@ void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull,
 }
 
 void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree, 
-				    int etBinning, int etaBinning, 
-				    TCanvas *canvas, ofstream &effOutput,
-				    bool saveResultsToRootFile, TFile *resultsRootFile){
+			    int etBinning, int etaBinning, 
+			    TCanvas *canvas, ofstream &effOutput,
+			    bool saveResultsToRootFile, TFile *resultsRootFile,
+			    TFile *resultPlotsFile){
   
   int nEt                = getNEtBins(etBinning);
   const double *limitsEt = getEtBinLimits(etBinning);
@@ -312,13 +327,15 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       double effCount, effErrLowCount, effErrHighCount;
       TString etCut = TString::Format(" ( et >=%6.1f && et <%6.1f ) ",
 				      limitsEt[i], limitsEt[i+1]);
-      TString etaCut = TString::Format(" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ",
+      TString etaCut = 
+	TString::Format(" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ",
 				       limitsEta[j], limitsEta[j+1]);
       TString cut = etCut + TString(" && ") + etaCut;
       //cout << cut.Data() << endl;
       double probesPass = passTree->GetEntries(cut);
       double probesFail = failTree->GetEntries(cut);
-      DYTools::calcEfficiency( probesPass, probesPass+probesFail, DYTools::EFF_CLOPPER_PEARSON,
+      DYTools::calcEfficiency( probesPass, probesPass+probesFail, 
+			       DYTools::EFF_CLOPPER_PEARSON,
 			       effCount, effErrLowCount, effErrHighCount);
       char strOut[200];
       sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f    %10.0f  %10.0f\n",
@@ -347,6 +364,10 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       effArrayErrHigh2D.Write("effArrayErrHigh2D");    
       resultsRootFile->Close();
     }else assert(0);
+    if (resultPlotsFile && resultPlotsFile->IsOpen()) {
+      resultPlotsFile->cd();
+      canvas->Write();
+    }
   }
 
   return;
@@ -355,12 +376,13 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 // --------------------------------------------------
 
 void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, 
-			      int method, int etBinning, int etaBinning, 
-			      TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
-			      bool useTemplates, TFile *templatesFile, TFile *resultsRootFile, 
-			      int NsetBins, bool isRECO, const char* setBinsType, 
-			      TString dirTag, const TString &picFileExtraTag,
-			      int puBin){
+		      int method, int etBinning, int etaBinning, 
+		      TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
+		      bool useTemplates, TFile *templatesFile, 
+		      TFile *resultsRootFile, TFile *resultPlotsFile,
+		      int NsetBins, bool isRECO, const char* setBinsType, 
+		      TString dirTag, const TString &picFileExtraTag,
+		      int puBin){
   
   int nEt                = getNEtBins(etBinning);
   const double *limitsEt = getEtBinLimits(etBinning);
@@ -392,7 +414,8 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
     //for(int i=0; i<1; i++){
        TString etCut = TString::Format(" ( et >=%6.1f && et <%6.1f ) ",
 				      limitsEt[i], limitsEt[i+1]);
-      TString etaCut = TString::Format(" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ",
+      TString etaCut = 
+	TString::Format(" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ",
 				       limitsEta[j], limitsEta[j+1]);
       TString cut = etCut + TString(" && ") + etaCut;
       //cout << cut.Data() << endl;
@@ -403,7 +426,8 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
       double efficiency, efficiencyErrHi, efficiencyErrLo;
       printf("\n ==\n");
       char strOut[200];
-      sprintf(strOut," ==   Start fitting Et: %3.0f - %3.0f  and eta:  %5.3f - %5.3f \n",
+      sprintf(strOut,
+	   " ==   Start fitting Et: %3.0f - %3.0f  and eta:  %5.3f - %5.3f \n",
 	     limitsEt[i], limitsEt[i+1],
 	     limitsEta[j], limitsEta[j+1]);
       printf("%s",strOut);
@@ -411,13 +435,18 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
       fitLog << endl << strOut << endl;
       
       if(!useTemplates){
-	fitMass(passTree, failTree, cut, method, efficiency, efficiencyErrHi, efficiencyErrLo, passPad, failPad, fitLog, NsetBins, isRECO, setBinsType, dirTag);
+	fitMass(passTree, failTree, cut, method, 
+		efficiency,efficiencyErrHi, efficiencyErrLo, passPad, failPad, 
+		resultPlotsFile,
+		fitLog, NsetBins, isRECO, setBinsType, dirTag);
       }
       else{
 	printf("\nMASS TEMPLATES ARE USED IN THE FIT\n\n");
 	// In case templates are used, find the right templates
-	TH1F *templatePass = getPassTemplate(i,j,etaBinning, templatesFile, puBin);
-	TH1F *templateFail = getFailTemplate(i,j,etaBinning, templatesFile, puBin);
+	TH1F *templatePass = 
+	  getPassTemplate(i,j,etaBinning, templatesFile, puBin);
+	TH1F *templateFail = 
+	  getFailTemplate(i,j,etaBinning, templatesFile, puBin);
 
 	if (0) {
 	  TCanvas *cx=new TCanvas("cx","cx",600,600);
@@ -431,7 +460,8 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
       
 	fitMassWithTemplates(passTree, failTree, cut, method, 
 			     efficiency, efficiencyErrHi, efficiencyErrLo,
-			     passPad, failPad, fitLog, templatePass, templateFail, 
+			     passPad, failPad, resultPlotsFile,
+			     fitLog, templatePass, templateFail, 
 			     isRECO, setBinsType, dirTag, picFileExtraTag);
 	//std::cout << "after fitMassWithTemplates: enter a value\n"; double x; std::cin >> x;
 	char buf[50];
@@ -453,7 +483,7 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
       
     }
   }
-  
+
   effOutput << endl;
 
   if(resultsRootFile && resultsRootFile->IsOpen()){
@@ -463,6 +493,11 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
     effArrayErrHigh2D.Write("effArrayErrHigh2D");    
     resultsRootFile->Close();
   }else assert(0);
+
+  if (resultPlotsFile && resultPlotsFile->IsOpen()) {
+    resultPlotsFile->cd();
+    canvas->Write();
+  }
 
   //std::cout << "before leaving measureEfficiencyWithFit: enter a value\n"; double x; std::cin >> x;
    
@@ -484,7 +519,8 @@ int getTemplateBin(int etBin, int etaBin, int etaBinning){
 
 // --------------------------------------------------
 
-TString getTemplateName(int etBin, int etaBin, const char *pass_fail_str, int puBin) {
+TString getTemplateName(int etBin, int etaBin, const char *pass_fail_str, 
+			int puBin) {
   char buf[50];
   sprintf(buf,"hMassTemplate_Et%d_eta%d",etBin,etaBin);
   int len=0;
@@ -501,7 +537,8 @@ TString getTemplateName(int etBin, int etaBin, const char *pass_fail_str, int pu
 
 // --------------------------------------------------
 
-TH1F * getPassTemplate(int etBin, int etaBin, int etaBinning, TFile *file, int puBin){
+TH1F * getPassTemplate(int etBin, int etaBin, int etaBinning, TFile *file, 
+		       int puBin){
 
   TH1F *hist = 0;
   if(file == 0)
@@ -519,7 +556,8 @@ TH1F * getPassTemplate(int etBin, int etaBin, int etaBinning, TFile *file, int p
 
 // --------------------------------------------------
 
-TH1F * getFailTemplate(int etBin, int etaBin, int etaBinning, TFile *file, int puBin){
+TH1F * getFailTemplate(int etBin, int etaBin, int etaBinning, TFile *file, 
+		       int puBin){
 
   TH1F *hist = 0;
   if(file == 0)
