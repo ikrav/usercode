@@ -68,12 +68,6 @@ const int evaluate_efficiencies=0;
 const int performPUReweight=1;
 const int performOppositeSignTest=0;
 
-const tnpSelectEvent_t::TCreateBranchesOption_t weightBranch1stStep=
-      (performPUReweight) ?
-            tnpSelectEvent_t::_skipWeight :
-	    tnpSelectEvent_t::_dontSkipWeight;
- 
-
 //const Double_t kECAL_GAP_LOW  = 1.4442;
 //const Double_t kECAL_GAP_HIGH = 1.566;
 
@@ -119,10 +113,15 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   // Settings 
   //==============================================================================================================
   
+  const tnpSelectEvent_t::TCreateBranchesOption_t weightBranch1stStep=
+      (performPUReweight) ?
+            tnpSelectEvent_t::_skipWeight :
+	    tnpSelectEvent_t::_dontSkipWeight;
+ 
   Double_t massLow  = 60;
   Double_t massHigh = 120;
 
-  // Read in the configuratoin file
+  // Read in the configuration file
   TString sampleTypeString = "";
   TString calcMethodString = "";
   TString etBinningString  = "";
@@ -317,7 +316,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   Double_t storeMass, storeEt, storeEta;
   UInt_t storeNGoodPV;
   if (new_store_data_code) {
-    storeData.createBranches(passTree, weigthBranch1stStep);
+    storeData.createBranches(passTree, weightBranch1stStep);
   }
   else {
     passTree->Branch("mass",&storeMass,"mass/D");
@@ -722,6 +721,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   measureEfficiency(passTree, failTree,
 		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,
 		    useTemplates, templatesFile, resultsRootFile,
+		    resultsRootFile,
 		    NsetBins, isRECO, setBinsType, 
 		    dirTag, triggers.triggerSetName());
 

@@ -67,11 +67,6 @@ using namespace mithep;
 const int evaluate_efficiencies=0;
 const int performPUReweight=1;
 
-const tnpSelectEvent_t::TCreateBranchesOption_t weightBranch1stStep=
-      (performPUReweight) ?
-            tnpSelectEvent_t::_skipWeight :
-	    tnpSelectEvent_t::_dontSkipWeight;
-
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 //=== MAIN MACRO =================================================================================================
@@ -115,10 +110,15 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   // Settings 
   //==============================================================================================================
   
+  const tnpSelectEvent_t::TCreateBranchesOption_t weightBranch1stStep=
+      (performPUReweight) ?
+            tnpSelectEvent_t::_skipWeight :
+	    tnpSelectEvent_t::_dontSkipWeight;
+
   Double_t massLow  = 60;
   Double_t massHigh = 120;
 
-  // Read in the configuratoin file
+  // Read in the configuration file
   TString sampleTypeString = "";
   TString calcMethodString = "";
   TString etBinningString  = "";
@@ -669,6 +669,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   measureEfficiency(passTree, failTree,
 		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,
 		    useTemplates, templatesFile, resultsRootFile,
+		    resultsRootFile,
 		    NsetBins, isRECO, setBinsType,
 		    dirTag, triggers.triggerSetName());
 
