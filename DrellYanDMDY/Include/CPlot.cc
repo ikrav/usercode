@@ -468,8 +468,8 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
 { 
   c->cd(subpad);
   
-  c->SetLogy(0);
-  c->SetLogx(0);
+  c->GetPad(subpad)->SetLogy(fLogy);
+  c->GetPad(subpad)->SetLogx(fLogx);
   
   if(!fItems.size() && !fRooPlot)
     return;   
@@ -805,15 +805,15 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
   
   //
   // Set log scale if necessary
-  // 
-  c->SetLogx(fLogx);
-  c->SetLogy(fLogy);
+  //
+  c->GetPad(subpad)->SetLogx(fLogx);
+  c->GetPad(subpad)->SetLogy(fLogy);
   
   //
   // Set grid lines if necessary
   //
-  c->SetGridx(fGridx);
-  c->SetGridy(fGridy);
+  c->GetPad(subpad)->SetGridx(fGridx);
+  c->GetPad(subpad)->SetGridy(fGridy);
   
   //
   // Save plot if necessary
