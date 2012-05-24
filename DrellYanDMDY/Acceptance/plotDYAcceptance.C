@@ -31,7 +31,7 @@
 
 #include "../Include/EventSelector.hh"
 #include "../Include/FEWZ.hh"
-
+#include "../Include/UnfoldingTools.hh"
 #endif
 
 //=== FUNCTION DECLARATIONS ======================================================================================
@@ -123,7 +123,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   // Set up histograms
   //
 
-  int nYBinsMax=DYTools::findMaxYBins();
+  //int nYBinsMax=DYTools::findMaxYBins();
 
 
   vector<TH1F*> hZMassv;//, hZMass2v, hZPtv, hZPt2v, hZyv, hZPhiv;  
@@ -430,6 +430,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   TFile fa(accConstFileName,"recreate");
   accv.Write("acceptanceMatrix");
   accErrv.Write("acceptanceErrMatrix");
+  unfolding::writeBinningArrays(fa);
   fa.Close();
 
 
