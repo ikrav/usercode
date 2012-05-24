@@ -12,13 +12,45 @@
 anTagUser=
 anTag="2D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
 filename_data="../config_files/data.conf"
-#  filename_data="../config_files/data_evtTrig.conf"
+#filename_data="../config_files/data_vilnius_raw.conf"
+#filename_data="../config_files/data_evtTrig.conf"
 filename_mc="../config_files/fall11mc.input"
-#  filename_mc="../config_files/fall11mc_evtTrig.input"
+#filename_mc="../config_files/fall11mc_evtTrig.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffOld"
 tnpFileStart="../config_files/sf"
 debugMode=0
+
+## controlling your work
+# catch-all flag
+do_all_steps=1
+do_post_selection_steps=0
+
+# specify whether you want to clean the old logs
+clear_old_logs=0
+
+# specify whether the support files need to be rebuilt
+force_rebuild_include_files=0
+
+
+
+# individual flags. 
+# Note: all the above flags have to be 0 for these individual flags 
+# to be effective
+do_selection=0
+do_prepareYields=0
+do_subtractBackground=0
+do_unfolding=0
+do_unfoldingSyst=0
+do_acceptance=1
+do_acceptanceSyst=0
+do_efficiency=1
+do_efficiencyScaleFactors=0
+do_plotFSRCorrections=0
+do_plotFSRCorrectionsSansAcc=0
+do_theoryErrors=0
+do_crossSection=0
+
 
 # the variables below are more persistent
 crossSectionTag="DY_m10+pr+a05+o03+pr_4680pb"
@@ -28,6 +60,7 @@ expectYieldsFile="../root_files/yields/${crossSectionTag}/yields${anTag}.root"
 expectBkgSubtractedFile="../root_files/yields/${crossSectionTag}/yields_bg-subtracted${anTag}.root"
 expectUnfoldingFile="../root_files/constants/${crossSectionTag}/unfolding_constants${anTag}.root"
 expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics${anTag}.root"
+expectEfficiencyFile="../root_files/constants/${crossSectionTag}/event_efficiency_constants${anTag}.root"
 expectEventScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${triggerSet}.root"
 expectAcceptanceSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/acceptance_FSR_systematics${anTag}.root"
 expectFsrSansAcc0File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}.root"
@@ -43,35 +76,6 @@ export xsecConfInputFile=${filename_cs}
 export triggerSet="${triggerSet}"
 export tnpFileStart="${tnpFileStart}"
 
-
-
-# specify whether you want to clean the old logs
-clear_old_logs=1
-
-# specify whether the support files need to be rebuilt
-force_rebuild_include_files=0
-
-## controlling your work
-# catch-all flag
-do_all_steps=0
-do_post_selection_steps=0
-
-# individual flags. 
-# Note: all the above flags have to be 0 for these individual flags 
-# to be effective
-do_selection=0
-do_prepareYields=0
-do_subtractBackground=0
-do_unfolding=1
-do_unfoldingSyst=0
-do_acceptance=0
-do_acceptanceSyst=0
-do_efficiency=0
-do_efficiencyScaleFactors=0
-do_plotFSRCorrections=0
-do_plotFSRCorrectionsSansAcc=0
-do_theoryErrors=0
-do_crossSection=0
 
 # use logDir="./" if you want that the log files are placed in the directory
 # where the producing script resides
@@ -107,7 +111,7 @@ if [ ${do_post_selection_steps} -eq 1 ] ; then
     do_unfolding=1
 #    do_unfoldingSyst=1
     do_acceptance=1
-#    do_acceptanceSyst=1
+    do_acceptanceSyst=1
     do_efficiency=1
 #    do_efficiencyScaleFactors=1
     do_plotFSRCorrections=1
@@ -320,7 +324,7 @@ cd ../Acceptance
 rm -f *.so ${expectAcceptanceSystematicsFile}
 echo
 checkFile evaluateAcceptanceSyst.sh
-source evaluateAcceptanceSyst.sh | tee ${logDir}/out${timeStamp}-07-evaluateAcceptanceSyst${anTag}.log
+source evaluateAcceptanceSyst.sh ${filename_mc} ${debugMode} | tee ${logDir}/out${timeStamp}-07-evaluateAcceptanceSyst${anTag}.log
 get_status ${expectAcceptanceSystematicsFile}
 statusAcceptanceSyst=$RUN_STATUS
 cd ../FullChain
@@ -338,15 +342,15 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "WILL DO: plotDYEfficiency(\"${filename_mc},\"${triggerSet}\",debug=${debug}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Efficiency
-rm -f *.so
+rm -f *.so ${expectEfficiencyFile}
 echo
 checkFile plotDYEfficiency.C
 root -b -q -l ${LXPLUS_CORRECTION} plotDYEfficiency.C+\(\"$filename_mc\",\"$triggerSet\",${debugMode}\)       | tee ${logDir}/out${timeStamp}-08-plotDYEfficiency${anTag}.log
-get_status
+get_status ${expectEfficiencyFile}
 statusEfficiency=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: plotDYEfficiency(\"${filename_mc,\"${triggerSet}\"}\")"
+echo "DONE: plotDYEfficiency(\"${filename_mc},\"${triggerSet}\"}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else
     statusEfficiency=skipped
@@ -428,7 +432,7 @@ echo
 checkFile TheoryErrors.C
 root -b -q -l ${LXPLUS_CORRECTION} TheoryErrors.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-12-TheoryErrors${timeStamp}.out
 get_status
-statusTheoryErrors=RUN_STATUS
+statusTheoryErrors=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "DONE: TheoryErrors(\"${filename_mc}\")"
