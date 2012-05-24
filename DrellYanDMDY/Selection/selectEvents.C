@@ -244,9 +244,12 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 
 #ifdef usePUReweight
   PUReweight_t puReweight;
-  TString outNamePV = outputDir + TString("/npv") + analysisTag_USER + TString(".root");
-  int res=puReweight.setFile(outNamePV,1); // create a file
+  //TString outNamePV = outputDir + TString("/npv") + analysisTag_USER + TString(".root");
+  //int res=puReweight.setFile(outNamePV,1); // create a file
+  TString dirTag(outputDir(outputDir.Index("DY_"),outputDir.Length()));
+  int res=puReweight.setDefaultFile(dirTag,analysisTag_USER,1);
   assert(res);
+  TString outNamePV=puReweight.fileName();
 #endif
   vector<TH1F*> hNGoodPVv;
   
