@@ -41,6 +41,7 @@
 #include "../Include/EventSelector.hh"
 
 using namespace mithep;
+using namespace std;
 
 const int NEffTypes=3;
 // Declaration of arrays for systematic studies
@@ -98,7 +99,8 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
 			     TVectorD scaleIdFIV , TVectorD scaleIdErrFIV ,
 			     TVectorD scaleHltFIV, TVectorD scaleHltErrFIV,
 			     TVectorD scaleV   , TVectorD scaleErrFIV   ,
-			     int rapidityBinIndex0);
+			     int rapidityBinIndex0,
+			     std::vector<CPlot*> *cplotV=NULL);
 void drawEventScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle, 
 				TString plotName);
 
@@ -676,18 +678,10 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   TCanvas *c1 = 
     new TCanvas("canvScaleFactors","canvScaleFactors",10,10,500,500);
   c1->Divide(2,2);
- 
-  c1->cd(1);
-  hScale->Draw();
-
-  c1->cd(2);
-  hScaleReco->Draw();
-
-  c1->cd(3);
-  hScaleId->Draw();
-
-  c1->cd(4);
-  hScaleHlt->Draw();
+  c1->cd(1);   hScale->Draw();
+  c1->cd(2);   hScaleReco->Draw();
+  c1->cd(3);   hScaleId->Draw();
+  c1->cd(4);   hScaleHlt->Draw();
 
   if (0) {
     std::cout << "\nScale factors as a function of mass bin\n";
@@ -737,15 +731,43 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 			scaleHltV, scaleMeanHltErrV,
 			scaleV   , scaleMeanErrV    );
 
-  const int rapidityIdxCount=5;
-  const int rapidityIdx[rapidityIdxCount] = { 0, 10, 15, 20, 24 };
-  if (1)
-  for (int ri=0; ri<rapidityIdxCount; ++ri) {
-    drawEventScaleFactorsFI(scaleRecoFIV, scaleMeanRecoErrFIV,
-			    scaleIdFIV , scaleMeanIdErrFIV ,
-			    scaleHltFIV, scaleMeanHltErrFIV,
-			    scaleFIV   , scaleMeanErrFIV   ,
-			    rapidityIdx[ri]);
+  const int rapidityIdxCount=3;
+  const int rapidityIdx[rapidityIdxCount] = { 0, 10, 20 };
+  if (1) {
+    std::vector<CPlot*> cplotsV;
+    if (1) {
+      CPlot *yDepSF_Full= new CPlot("yDepSF_Full","", "m(e^{+}e^{-}) [GeV]", "scale factor");
+      CPlot *yDepSF_Reco= new CPlot("yDepSF_Reco","", "m(e^{+}e^{-}) [GeV]", "sqrt(RECO scale factor)");
+      CPlot *yDepSF_ID  = new CPlot("yDepSF_Id"  ,"", "m(e^{+}e^{-}) [GeV]", "sqrt(ID scale factor)");
+      CPlot *yDepSF_HLT = new CPlot("yDepSF_Hlt" ,"", "m(e^{+}e^{-}) [GeV]", "sqrt(HLT scale factor)");
+      cplotsV.reserve(4);
+      cplotsV.push_back(yDepSF_Full); cplotsV.push_back(yDepSF_Reco);
+      cplotsV.push_back(yDepSF_ID);   cplotsV.push_back(yDepSF_HLT);
+      for (unsigned int i=0; i<cplotsV.size(); ++i) {
+	cplotsV[i]->SetLogx();
+	cplotsV[i]->SetYRange(0.5, 1.5);
+	cplotsV[i]->AddLine(0,1.0, 1500,1.0, kBlack, kDashed);
+      }
+    }
+    for (int ri=0; ri<rapidityIdxCount; ++ri) {
+      drawEventScaleFactorsFI(scaleRecoFIV, scaleMeanRecoErrFIV,
+			      scaleIdFIV , scaleMeanIdErrFIV ,
+			      scaleHltFIV, scaleMeanHltErrFIV,
+			      scaleFIV   , scaleMeanErrFIV   ,
+			      rapidityIdx[ri],
+			      &cplotsV
+			      );
+    }
+    if (cplotsV.size()==4) {
+      TCanvas *c6 = MakeCanvas("canvYDepScaleFactors","canvYDepScaleFactors",800,800);
+      c6->Divide(2,2);
+      cplotsV[0]->Draw(c6,savePlots,"png",1);
+      cplotsV[1]->Draw(c6,savePlots,"png",2);
+      cplotsV[2]->Draw(c6,savePlots,"png",3);
+      cplotsV[3]->Draw(c6,savePlots,"png",4);
+      c6->Update();
+      c6->SaveAs("test_c6.png");
+    }
   }
 
   //
@@ -1377,7 +1399,7 @@ void drawScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle, TString text,
 // -------------------------------------------------------------------------
 
 void drawEventScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle, 
-				TString plotName){
+				TString plotName) {
   
   // Generate "random" canvas name
 //   TTimeStamp time;
@@ -1592,7 +1614,8 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
 			     TVectorD scaleIdFIV , TVectorD scaleIdErrFIV ,
 			     TVectorD scaleHltFIV, TVectorD scaleHltErrFIV,
 			     TVectorD scaleFIV   , TVectorD scaleErrFIV   ,
-			     int rapidityIndex)
+			     int rapidityIndex,
+			     std::vector<CPlot*> *cplotV)
 {
   int nUnfoldingBins = DYTools::getTotalNumberOfBins();
   if (scaleRecoFIV.GetNoElements()!=nUnfoldingBins) {
@@ -1651,7 +1674,7 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
   sprintf(buf,"_y=%4.2lf_",rapidity); // for file name
   TString yStr=buf;
   yStr.ReplaceAll(".","_"); yStr.ReplaceAll("=","_");
-  sprintf(buf," |y|=%4.2lf",rapidity); // for label
+  sprintf(buf,"|y|=%4.2lf",rapidity); // for label
   TString plotName;
   TString plotNameBase = 
     TString("plot_event_scale_") + analysisTag + TString("_") + yStr;
@@ -1669,6 +1692,20 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
   drawEventScaleFactorGraphs(grScale   , 
 	       TString("event scale factor") + TString(buf), plotName);
 
+  if (cplotV && (cplotV->size()==4)) {
+    const int colorCount=5;
+    const int colors[colorCount] = { kBlack, kRed+1, kBlue+1, kGreen+2, kViolet  };
+    CPlot* cpFull = (*cplotV)[0];
+    CPlot* cpReco = (*cplotV)[1];
+    CPlot* cpId = (*cplotV)[2];
+    CPlot* cpHlt = (*cplotV)[3];
+    int currCollIdx= cpFull->getItemCount() % colorCount;
+    int currCol= colors[currCollIdx];
+    cpFull->AddGraph(grScale, buf, "PE", currCol);
+    cpReco->AddGraph(grScaleReco, buf, "PE", currCol);
+    cpId->AddGraph(grScaleId, buf, "PE", currCol);
+    cpHlt->AddGraph(grScaleHlt, buf, "PE", currCol);
+  }
 }
 
 // -------------------------------------------------------------------------
