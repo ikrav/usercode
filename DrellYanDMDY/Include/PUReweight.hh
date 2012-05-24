@@ -33,6 +33,7 @@ public:
   }
 
   // access
+  const TString& fileName() const { return FName; }
   const TH1F* getHRef() const { return hRef; }
   const TH1F* getHActive() const { return hActive; }
   const TH1F* getHWeigth() const { return hWeight; }
@@ -52,6 +53,14 @@ public:
     return w;
   }
 
+  int setDefaultFile(const TString &dirTag, const TString &analysisTag, 
+		     int create=0) {
+    TString fname=TString("../root_files/selected_events/") + dirTag + 
+      TString("/npv") + analysisTag + TString(".root");
+    int res=setFile(fname,create);
+    if (!res) std::cout << "Error in PUReweight::setDefaultFile\n";
+    return res;
+  }
 
   int setFile(const TString &fname, int create=0);
   int setReference(const TString &setName);
