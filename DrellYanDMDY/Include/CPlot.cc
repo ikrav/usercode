@@ -2,6 +2,11 @@
 #include "CPlot.hh"
 #include <TLatex.h>
 
+int CPlot::sCount = 0;
+TString CPlot::sOutDir = "./plots";
+
+// -------------------------------------------------
+
 CPlot::CPlot():
 fStack(0),
 fName(),

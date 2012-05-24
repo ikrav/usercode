@@ -14,6 +14,7 @@
 #ifndef CPLOT_HH
 #define CPLOT_HH
 
+#if !defined(__CINT__) || defined(__MAKECINT__)
 #include <TROOT.h>
 #include <TSystem.h>
 #include <TCanvas.h>
@@ -29,12 +30,18 @@
 #include <TLine.h>
 #include <THStack.h>
 #include <TBox.h>
+#include <string>
 #include <vector>
+#include <assert.h>
 
 #include "RooGlobalFunc.h"
 #include "RooPlot.h"
+#endif
 
 using namespace RooFit;
+using std::vector;
+using std::string;
+
 
 class CPlotItem {
 public:
@@ -149,6 +156,8 @@ public:
   // 
   TLegend* GetLegend() { return fLeg; }
   THStack* GetStack()  { return fStack; }
+
+  int getItemCount() const { return fItems.size(); }
   
 protected:
   vector<CPlotItem> fItems;             // list of items to be plotted
@@ -177,7 +186,8 @@ protected:
   static int sCount;                    // number of CPlot instances
 };
 
-int CPlot::sCount = 0;
-TString CPlot::sOutDir = "./plots";
+//int CPlot::sCount = 0;
+//TString CPlot::sOutDir = "./plots";
+
 
 #endif
