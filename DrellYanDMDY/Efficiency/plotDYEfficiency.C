@@ -37,8 +37,12 @@
 #include "../Include/EleIDCuts.hh"
 
 #include "../Include/EventSelector.hh"
+#include "../Include/PUReweight.hh"
 
 #endif
+
+#define usePUReweight  // Whether apply PU reweighting
+
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
@@ -109,8 +113,9 @@ void plotDYEfficiency(const TString input,
   vector<TH1F*> hZMassv;//, hZMass2v, hZPtv, hZPt2v, hZyv, hZPhiv;  
   
   Double_t   nZv = 0;
+  Double_t nZv_puUnweighted=0, nZv_puWeighted=0;
 
-  int nYBinsMax=findMaxYBins();
+  //int nYBinsMax=findMaxYBins();
 
   TMatrixD nEventsv (DYTools::nMassBins,nYBinsMax);  
   TMatrixD nPassv (DYTools::nMassBins,nYBinsMax);  
@@ -121,9 +126,12 @@ void plotDYEfficiency(const TString input,
   TMatrixD nEventsBEv (DYTools::nMassBins,nYBinsMax);
   TMatrixD nEventsEEv (DYTools::nMassBins,nYBinsMax);
  
-  TMatrixD nPassBBv(DYTools::nMassBins,nYBinsMax), effBBv(DYTools::nMassBins,nYBinsMax), effErrBBv(DYTools::nMassBins,nYBinsMax); 
-  TMatrixD nPassBEv(DYTools::nMassBins,nYBinsMax), effBEv(DYTools::nMassBins,nYBinsMax), effErrBEv(DYTools::nMassBins,nYBinsMax); 
-  TMatrixD nPassEEv(DYTools::nMassBins,nYBinsMax), effEEv(DYTools::nMassBins,nYBinsMax), effErrEEv(DYTools::nMassBins,nYBinsMax);
+  TMatrixD nPassBBv(DYTools::nMassBins,nYBinsMax), 
+    effBBv(DYTools::nMassBins,nYBinsMax), effErrBBv(DYTools::nMassBins,nYBinsMax); 
+  TMatrixD nPassBEv(DYTools::nMassBins,nYBinsMax), 
+    effBEv(DYTools::nMassBins,nYBinsMax), effErrBEv(DYTools::nMassBins,nYBinsMax); 
+  TMatrixD nPassEEv(DYTools::nMassBins,nYBinsMax), 
+    effEEv(DYTools::nMassBins,nYBinsMax), effErrEEv(DYTools::nMassBins,nYBinsMax);
 
   TVectorD nEventsZPeakPU(DYTools::nPVBinCount), nPassZPeakPU(DYTools::nPVBinCount);
   TVectorD nEventsZPeakPURaw(100), nPassZPeakPURaw(100);
@@ -140,8 +148,25 @@ void plotDYEfficiency(const TString input,
 
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
-    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,1500)); hZMassv[ifile]->Sumw2();
+    sprintf(hname,"hZMass_%i",ifile); 
+    hZMassv.push_back(new TH1F(hname,"",500,0,1500)); 
+    hZMassv[ifile]->Sumw2();
   }
+
+#ifdef usePUReweight
+  PUReweight_t puReweight;
+  int res=puReweight.setDefaultFile(dirTag,analysisTag_USER,0);
+  assert(res);
+  TString outNamePV=puReweight.fileName();
+  TString refPUDistribution="hNGoodPV_data";
+  TString currentPUDistribution="hNGoodPV_zee";
+  res= puReweight.setReference(refPUDistribution) && 
+    puReweight.setActiveSample(currentPUDistribution);
+  if (!res) {
+    std::cout << "failed to locate needed distributions in <" << outNamePV << ">\n";
+    assert(res);
+  }
+#endif
 
   //
   // Access samples and fill histograms
@@ -180,10 +205,14 @@ void plotDYEfficiency(const TString input,
     cout << "       -> sample weight is " << scale << endl;
 
     // Set branch address to structures that will store the info  
-    eventTree->SetBranchAddress("Info",&info);                TBranch *infoBr       = eventTree->GetBranch("Info");
-    eventTree->SetBranchAddress("Gen",&gen);                  TBranch *genBr = eventTree->GetBranch("Gen");
-    eventTree->SetBranchAddress("Dielectron",&dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
-    eventTree->SetBranchAddress("PV", &pvArr);                TBranch *pvBr = eventTree->GetBranch("PV");
+    eventTree->SetBranchAddress("Info",&info);                
+    TBranch *infoBr       = eventTree->GetBranch("Info");
+    eventTree->SetBranchAddress("Gen",&gen);                  
+    TBranch *genBr = eventTree->GetBranch("Gen");
+    eventTree->SetBranchAddress("Dielectron",&dielectronArr); 
+    TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
+    eventTree->SetBranchAddress("PV", &pvArr);                
+    TBranch *pvBr = eventTree->GetBranch("PV");
 
     // loop over events    
     nZv += scale * eventTree->GetEntries();
@@ -241,7 +270,7 @@ void plotDYEfficiency(const TString input,
       pvBr->GetEntry(ientry);
       int iPUBin=-1;
       int nGoodPV=-1;
-      if ((gen->mass>=60) && (gen->mass<=120)) {
+      double puWeight=1.0;
 	nGoodPV=0;
 	const int new_pv_count_code=1;
 	if (new_pv_count_code) {
@@ -257,6 +286,7 @@ void plotDYEfficiency(const TString input,
 	  nGoodPV++;
 	}
 	}
+      if ((gen->mass>=60) && (gen->mass<=120)) {
 	if (nGoodPV>0) {
            if (nGoodPV<=nEventsZPeakPURaw.GetNoElements()) 
 	        nEventsZPeakPURaw[nGoodPV] += scale * gen->weight;
@@ -265,24 +295,31 @@ void plotDYEfficiency(const TString input,
 	   if ((iPUBin!=-1) && (iPUBin < nEventsZPeakPU.GetNoElements())) {
 	     nEventsZPeakPU[iPUBin] += scale * gen->weight;
 	   }
-	   else {
-	     std::cout << "error in PU bin indexing iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
-	   }
+	   //else {
+	   //  std::cout << "error in PU bin indexing iPUBin=" << iPUBin << ", nGoodPV=" << nGoodPV << "\n";
+	   //}
 	}
 	//else std::cout << "nGoodPV=" << nGoodPV << "\n";
       }
 
+#ifdef usePUReweight
+      puWeight=puReweight.getWeight(nGoodPV);
+      nZv_puUnweighted += scale * gen->weight;
+      nZv_puWeighted += scale * gen->weight * puWeight;
+#endif
+    
       // Use post-FSR generator level mass for binning
       int ibinGenM = DYTools::findMassBin(gen->mass);
       int ibinGenY = DYTools::findAbsYBin(ibinGenM,gen->y);
+      double totalWeight= scale * gen->weight * puWeight;
 
       // Accumulate denominator for efficiency calculations
       if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= nYBins[ibinGenM]){
-	nEventsv(ibinGenM,ibinGenY) += scale * gen->weight;
+	nEventsv(ibinGenM,ibinGenY) += totalWeight;
 	// Split events barrel/endcap using matched supercluster or particle eta
-	if(isBGen1 && isBGen2)                                  { nEventsBBv(ibinGenM,ibinGenY) += scale * gen->weight; } 
-	else if(!isBGen1 && !isBGen2)                           { nEventsEEv(ibinGenM,ibinGenY) += scale * gen->weight; } 
-	else if((isBGen1 && !isBGen2) || (!isBGen1 && isBGen2)) { nEventsBEv(ibinGenM,ibinGenY) += scale * gen->weight; }
+	if(isBGen1 && isBGen2)                                  { nEventsBBv(ibinGenM,ibinGenY) += totalWeight; } 
+	else if(!isBGen1 && !isBGen2)                           { nEventsEEv(ibinGenM,ibinGenY) += totalWeight; } 
+	else if((isBGen1 && !isBGen2) || (!isBGen1 && isBGen2)) { nEventsBEv(ibinGenM,ibinGenY) += totalWeight; }
       }else
         binProblem++;
 
@@ -339,7 +376,7 @@ void plotDYEfficiency(const TString input,
 
         // ******** We have a Z candidate! HURRAY! ******** /
 
-	hZMassv[ifile]->Fill(gen->mass,scale * gen->weight);
+	hZMassv[ifile]->Fill(gen->mass,totalWeight);
 
 	// DEBUG
 // 	if(ibinGen == 12)
@@ -349,19 +386,19 @@ void plotDYEfficiency(const TString input,
 	
 	// Accumulate numerator for efficiency calculations
 	if ((nGoodPV>0) && (iPUBin!=-1)) { // -1 may also indicate that the mass was not in Z-peak range
-	  if ((nGoodPV>=0) && (nGoodPV<=nEventsZPeakPURaw.GetNoElements())) nPassZPeakPURaw[nGoodPV] += scale * gen->weight;
+	  if ((nGoodPV>=0) && (nGoodPV<=nEventsZPeakPURaw.GetNoElements())) nPassZPeakPURaw[nGoodPV] += totalWeight;
 	  if (iPUBin < nPassZPeakPU.GetNoElements()) {
-	    nPassZPeakPU[iPUBin] += scale * gen->weight;
+	    nPassZPeakPU[iPUBin] += totalWeight;
 	  }
-	  else {
-	    std::cout << "error in PU bin indexing\n";
-	  }
+	  //else {
+	  //  std::cout << "error in PU bin indexing\n";
+	  //}
 	}
 	if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= nYBins[ibinGenM]){
-	  nPassv(ibinGenM,ibinGenY) += scale * gen->weight;
-	  if(isB1 && isB2)                            { nPassBBv(ibinGenM,ibinGenY) += scale * gen->weight; } 
-	  else if(!isB1 && !isB2)                     { nPassEEv(ibinGenM,ibinGenY) += scale * gen->weight; } 
-	  else if((isB1 && !isB2) || (!isB1 && isB2)) { nPassBEv(ibinGenM,ibinGenY) += scale * gen->weight; }
+	  nPassv(ibinGenM,ibinGenY) += totalWeight;
+	  if(isB1 && isB2)                            { nPassBBv(ibinGenM,ibinGenY) += totalWeight; } 
+	  else if(!isB1 && !isB2)                     { nPassEEv(ibinGenM,ibinGenY) += totalWeight; } 
+	  else if((isB1 && !isB2) || (!isB1 && isB2)) { nPassBEv(ibinGenM,ibinGenY) += totalWeight; }
 	}
 
       } // end loop over dielectrons
@@ -370,7 +407,7 @@ void plotDYEfficiency(const TString input,
     infile=0, eventTree=0;
   } // end loop over files
   delete gen;
-  cout << "ERROR: binning problem. (for " << binProblem <<" events)"<<endl;
+  cout << "ERROR: binning problem (" << binProblem <<" events in ECAL gap)"<<endl;
 
   effv      = 0;
   effErrv   = 0;
@@ -462,23 +499,45 @@ void plotDYEfficiency(const TString input,
   cout << endl; 
   
   cout << labelv[0] << " file: " << fnamev[0] << endl;
-  printf("     Number of generated events: %8.1lf",nZv);
+  printf("     Number of generated events: %8.1lf\n",nZv);
+#ifdef usePUReweight
+  printf("     Number of selected events (puUnweighted): %8.1lf\n",nZv_puUnweighted);
+  printf("     Number of selected events (puWeighted)  : %8.1lf\n",nZv_puWeighted);
+#endif
 
-  if (DYTools::study2D==0)
-    {
-      printf(" mass bin    preselected      passed     total_Eff        BB-BB_Eff        EB-BB_Eff        EB-EB_Eff   \n");
-      for(int i=0; i<DYTools::nMassBins; i++){
-        printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
-	   DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
-	   nEventsv(i,0), nPassv(i,0),
-	   effv(i,0), effErrv(i,0),
-	   effBBv(i,0), effErrBBv(i,0),
-	   effBEv(i,0), effErrBEv(i,0),
-	   effEEv(i,0), effErrEEv(i,0));
-       }
+  const char *yRangeStr=(study2D) ? "rapidity range" : "";
+  printf(" mass range  %s preselected      passed     total_Eff        BB-BB_Eff        EB-BB_Eff        EB-EB_Eff\n",yRangeStr);
+  for(int i=0; i<DYTools::nMassBins; i++){
+    double *rapidityBinLimits=DYTools::getYBinLimits(i);
+    for (int yi=0; yi<nYBins[i]; ++yi) {
+      printf(" %4.0f-%4.0f ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
+      if (study2D!=0) printf(" %4.2f-%4.2f ", rapidityBinLimits[yi], rapidityBinLimits[yi+1]);
+      printf("    %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
+	     nEventsv(i,yi), nPassv(i,yi),
+	     effv(i,yi), effErrv(i,yi),
+	     effBBv(i,yi), effErrBBv(i,yi),
+	     effBEv(i,yi), effErrBEv(i,yi),
+	     effEEv(i,yi), effErrEEv(i,yi));
     }
-  else
-    printf("way of printout for 2D not chosen");
+    delete rapidityBinLimits;
+  }
+
+  if (1) {
+    printf(" mass_range  %s total_preselected  total_passed     BB-BB_preselected  passed    EB-BB_preselected  passed        EB-EB_preselected  passed\n",yRangeStr);
+    for(int i=0; i<DYTools::nMassBins; i++){
+      double *rapidityBinLimits=DYTools::getYBinLimits(i);
+      for (int yi=0; yi<nYBins[i]; ++yi) {
+	printf(" %4.0f-%4.0f ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
+	if (study2D!=0) printf(" %4.2f-%4.2f ", rapidityBinLimits[yi], rapidityBinLimits[yi+1]);
+	printf("    %8.1f %8.1f   %8.1f %8.1f  %8.1f %8.1f  %8.1f %8.1f\n",
+	       nEventsv(i,yi), nPassv(i,yi),
+	       nEventsBBv(i,yi), nPassBBv(i,yi),
+	       nEventsBEv(i,yi), nPassBEv(i,yi),
+	       nEventsEEv(i,yi), nPassEEv(i,yi));
+      }
+      delete rapidityBinLimits;
+    }
+  }
 
   printf("\n\nZ-peak efficiency\n");
   printf(" PU bin    preselected      passed     total_Eff\n");
