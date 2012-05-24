@@ -1,6 +1,7 @@
 #!/bin/bash
 
-mcConfInputFile="../config_files/fall11mc_evtTrig.input" 
+mcConfInputFile="../config_files/fall11mc.input" 
+#mcConfInputFile="../config_files/fall11mc_evtTrig.input" 
 debugMode=1
 
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
@@ -41,7 +42,7 @@ echo
 #  Individual flags to control the calculation
 #
 
-doFsrStudy=0
+doFsrStudy=1
 doCalcAcceptanceSyst=1
 
 #
