@@ -121,7 +121,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   Double_t massLow  = 60;
   Double_t massHigh = 120;
 
-  // Read in the configuration file
+  // Read in the configuratoin file
   TString sampleTypeString = "";
   TString calcMethodString = "";
   TString etBinningString  = "";
@@ -697,9 +697,11 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
     effOutput << "   " << ntupleFileNames[i].Data() << endl;
   
   // ROOT file to store measured efficiencies in ROOT format
-  TString resroot = tagAndProbeDir+
-    TString("/efficiency_TnP_")+label+TString(".root");
-  TFile *resultsRootFile = new TFile(resroot,"recreate");
+  TString resrootBase = tagAndProbeDir+
+    TString("/efficiency_TnP_")+label;
+  //TString resroot = tagAndProbeDir+
+  //  TString("/efficiency_TnP_")+label+TString(".root");
+  //TFile *resultsRootFile = new TFile(resroot,"recreate");
 
   // Fit log 
   TString fitlogname = tagAndProbeDir+
@@ -718,12 +720,13 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   bool isRECO=0;
   const char* setBinsType="fft";
 
-  measureEfficiency(passTree, failTree,
+  measureEfficiencyPU(passTree, failTree,
 		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,
-		    useTemplates, templatesFile, resultsRootFile,
-		    resultsRootFile,
-		    NsetBins, isRECO, setBinsType, 
-		    dirTag, triggers.triggerSetName());
+		      useTemplates, templatesFile, 
+		      resrootBase,
+		      //resultsRootFile,
+		      NsetBins, isRECO, setBinsType, 
+		      dirTag, triggers.triggerSetName(),0);
 
   effOutput.close();
   fitLog.close();

@@ -53,11 +53,12 @@
 #include "../Include/cutFunctions.hh"
 #include "../Include/fitFunctions.hh"
 #include "../Include/fitFunctionsCore.hh"
-#include "../EventScaleFactors/tnpSelectEvents.hh"
 
 #include "../Include/EventSelector.hh"
+#include "../EventScaleFactors/tnpSelectEvents.hh"
 
 #endif
+
 
 using namespace mithep;
 
@@ -109,16 +110,16 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
   //==============================================================================================================
-  
+
   const tnpSelectEvent_t::TCreateBranchesOption_t weightBranch1stStep=
       (performPUReweight) ?
             tnpSelectEvent_t::_skipWeight :
 	    tnpSelectEvent_t::_dontSkipWeight;
-
+  
   Double_t massLow  = 60;
   Double_t massHigh = 120;
 
-  // Read in the configuration file
+  // Read in the configuratoin file
   TString sampleTypeString = "";
   TString calcMethodString = "";
   TString etBinningString  = "";
@@ -638,9 +639,8 @@ void eff_Reco(const TString configFile, const TString effTypeString,
     effOutput << "   " << ntupleFileNames[i].Data() << endl;
   
   // ROOT file to store measured efficiencies in ROOT format
-  TString resroot = tagAndProbeDir+
-    TString("/efficiency_TnP_")+label+TString(".root");
-  TFile *resultsRootFile = new TFile(resroot,"recreate");
+  TString resrootBase = tagAndProbeDir+
+    TString("/efficiency_TnP_")+label;
 
   // Fit log 
   TString fitlogname = 
@@ -665,14 +665,13 @@ void eff_Reco(const TString configFile, const TString effTypeString,
     ymax = nDivisions * 200;
   TCanvas *c1 = MakeCanvas("c1","c1", 600, (int)ymax);
   c1->Divide(2,nDivisions);
-
-  measureEfficiency(passTree, failTree,
+  measureEfficiencyPU(passTree, failTree,
 		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,
-		    useTemplates, templatesFile, resultsRootFile,
-		    resultsRootFile,
-		    NsetBins, isRECO, setBinsType,
-		    dirTag, triggers.triggerSetName());
-
+		      useTemplates, templatesFile, 
+		      resrootBase,
+		      //resultsRootFile, //resultsRootFilePlots,
+		      NsetBins, isRECO, setBinsType,
+		      dirTag, triggers.triggerSetName(),0);
   
 
   effOutput.close();
