@@ -351,8 +351,8 @@ void readData(TMatrixD &v, TMatrixD &vErr1, TMatrixD &vErr2){
   TMatrixD *YieldsSignalPtr       = (TMatrixD *)fileYields.FindObjectAny("YieldsSignal");
   TMatrixD *YieldsSignalErrPtr    = (TMatrixD *)fileYields.FindObjectAny("YieldsSignalErr");
   TMatrixD *YieldsSignalSystErrPtr= (TMatrixD *)fileYields.FindObjectAny("YieldsSignalSystErr");
-  TVectorD *MassBinLimitsForYieldsPtr = (TVectorD *)fileYields.FindObjectAny("MassBinLimitsForYields");
-  TVectorD *YBinCountsForYieldsPtr = (TVectorD *)fileYields.FindObjectAny("YBinCountsForYields");
+  TVectorD *MassBinLimitsForYieldsPtr = (TVectorD *)fileYields.FindObjectAny("massBinning");
+  TVectorD *YBinCountsForYieldsPtr = (TVectorD *)fileYields.FindObjectAny("rapidityCounts");
 
   if (!YieldsSignalPtr || !YieldsSignalErrPtr || !YieldsSignalSystErrPtr ||
       !MassBinLimitsForYieldsPtr || !YBinCountsForYieldsPtr) {
@@ -518,8 +518,8 @@ void applyUnfoldingToMc() { //TString fullUnfoldingConstFileName, TString fullMc
     std::cout << "failed to open a file <" << fullMcRefYieldsFileName << ">\n";
     assert(fileMcRef.IsOpen());
   }
-  TVectorD *yieldsMcFsrOfRecPtr        = (TVectorD *)fileMcRef.FindObjectAny("yieldsMcFsrOfRec");
-  TVectorD *yieldsMcRecPtr             = (TVectorD *)fileMcRef.FindObjectAny("yieldsMcRec");
+  TVectorD *yieldsMcFsrOfRecPtr        = (TVectorD *)fileMcRef.FindObjectAny("yieldsMcPostFsrRecFIArray");
+  TVectorD *yieldsMcRecPtr             = (TVectorD *)fileMcRef.FindObjectAny("yieldsMcPostFsrGenFIArray");
   if (!yieldsMcFsrOfRecPtr || !yieldsMcRecPtr) {
     std::cout << "null pointers from <" << fullMcRefYieldsFileName << ">\n";
     assert(0);
@@ -559,6 +559,7 @@ void applyUnfoldingToMc() { //TString fullUnfoldingConstFileName, TString fullMc
 void  efficiencyCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
              TMatrixD &vout, TMatrixD &voutStatErr, TMatrixD &voutSystErr)
 {
+  const int nUnfoldingBins= DYTools::getTotalNumberOfBins();
 
   // Read efficiency constants
   printf("Efficiency: Load constants\n"); fflush(stdout);
@@ -575,8 +576,8 @@ void  efficiencyCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
 
   TString fileScaleConstantsFullName=TString("../root_files/constants/")+tagDirConstants+TString("/")+fileScaleFactorConstants;
   TFile fileScaleConstants(fileScaleConstantsFullName);
-  TVectorD* rhoDataMcPtr    = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorArray");
-  TVectorD* rhoDataMcErrPtr = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorErrArray");
+  TVectorD* rhoDataMcPtr    = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorFlatIdxArray");
+  TVectorD* rhoDataMcErrPtr = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorErrFlatIdxArray");
 
   if (!rhoDataMcPtr || !rhoDataMcErrPtr) {
     std::cout << "a least one needed object is not present in <" << fileScaleConstantsFullName << ">\n";
@@ -591,9 +592,9 @@ void  efficiencyCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
   // Check that the binning is consistent
   bool checkResult = true;
   if (checkResult) checkResult=unfolding::checkRangesMY(efficiencyArray,"efficiencyArray");
-  if (checkResult && (rhoDataMc.GetNoElements()!=nMassBins)) {
+  if (checkResult && (rhoDataMc.GetNoElements()!=nUnfoldingBins)) {
     std::cout << "rhoDataMc has incorrect number of entries (" <<
-      rhoDataMc.GetNoElements() << " instead of " << nMassBins << "\n";
+      rhoDataMc.GetNoElements() << " instead of " << nUnfoldingBins << "\n";
     checkResult=false;
   }
   if( !checkResult ){
