@@ -54,8 +54,8 @@
 
 #include "../Include/EventSelector.hh"
 
-
 #endif
+
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
@@ -468,6 +468,22 @@ void makeUnfoldingMatrix(const TString input,
   TMatrixD DetInvertedResponseErr(DetInvertedResponse.GetNrows(), DetInvertedResponse.GetNcols());
   calculateInvertedMatrixErrors(DetResponse, DetResponseErrPos, DetResponseErrNeg, DetInvertedResponseErr);
 
+
+  TVectorD DetResponseArr(nUnfoldingBins);
+  TVectorD DetInvertedResponseArr(nUnfoldingBins), DetInvertedResponseErrArr(nUnfoldingBins);
+  TVectorD yieldsMcPostFsrGenArr(nUnfoldingBins), yieldsMcPostFsrRecArr(nUnfoldingBins);
+
+  int resFlatten=
+    (unfolding::flattenMatrix(DetResponse, DetResponseArr) == 1) &&
+    (unfolding::flattenMatrix(DetInvertedResponse, DetInvertedResponseArr) == 1) &&
+    (unfolding::flattenMatrix(DetInvertedResponseErr, DetInvertedResponseErrArr) == 1) &&
+    (unfolding::flattenMatrix(yieldsMcPostFsrGen, yieldsMcPostFsrGenArr) == 1) &&
+    (unfolding::flattenMatrix(yieldsMcPostFsrRec, yieldsMcPostFsrRecArr) == 1);
+  if (!resFlatten) {
+    std::cout << "Error : failed to flatten the arrays\n";
+    assert(0);
+  }
+
   std::cout << "store constants in a file" << std::endl;
 
   //
@@ -497,6 +513,9 @@ void makeUnfoldingMatrix(const TString input,
   DetResponse             .Write("DetResponse");
   DetInvertedResponse     .Write("DetInvertedResponse");
   DetInvertedResponseErr  .Write("DetInvertedResponseErr");
+  DetResponseArr          .Write("DetResponseFIArray");
+  DetInvertedResponseArr  .Write("DetInvertedResponseFIArray");
+  DetInvertedResponseErrArr.Write("DetInvertedResponseErrFIArray");
   unfolding::writeBinningArrays(fConst);
   fConst.Close();
 
@@ -505,6 +524,8 @@ void makeUnfoldingMatrix(const TString input,
   TFile fRef(refFileName, "recreate" );
   yieldsMcPostFsrGen.Write("yieldsMcPostFsrGen");
   yieldsMcPostFsrRec.Write("yieldsMcPostFsrRec");
+  yieldsMcPostFsrGenArr.Write("yieldsMcPostFsrGenFIArray");
+  yieldsMcPostFsrRecArr.Write("yieldsMcPostFsrRecFIArray");
   unfolding::writeBinningArrays(fRef);
   fRef.Close();
 
