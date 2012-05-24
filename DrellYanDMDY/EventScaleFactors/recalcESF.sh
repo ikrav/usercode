@@ -6,7 +6,7 @@
 #
 
 debugMode=0
-fullRun=0
+fullRun=1
 
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
 if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
@@ -153,7 +153,7 @@ runCalcEventEff() {
  _collectEvents=$1
  echo "_collectEvents=${_collectEvents}"
  if [ ${#_collectEvents} -eq 0 ] ; then _collectEvents=1; fi
- root -l ${LXPLUS_CORRECTION} calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${debugMode}\)
+ root -l -b -q ${LXPLUS_CORRECTION} calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
       checkFile calcEventEff_C.so
