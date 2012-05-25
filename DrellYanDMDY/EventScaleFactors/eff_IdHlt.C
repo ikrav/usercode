@@ -65,7 +65,7 @@ using namespace mithep;
 //=== COMMON CONSTANTS ===========================================================================================
 
 const int evaluate_efficiencies=0;
-const int performPUReweight=1;
+//const int performPUReweight=0;
 const int performOppositeSignTest=0;
 
 //const Double_t kECAL_GAP_LOW  = 1.4442;
@@ -76,7 +76,8 @@ const int performOppositeSignTest=0;
 //=== MAIN MACRO =================================================================================================
 
 void eff_IdHlt(const TString configFile, const TString effTypeString, 
-	       const TString triggerSetString, int debugMode=0) 
+	       const TString triggerSetString, int performPUReweight,
+	       int debugMode=0) 
 {
 
   //  ---------------------------------
@@ -113,6 +114,10 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   // Settings 
   //==============================================================================================================
   
+  TString puStr = (performPUReweight) ? "_PU" : "";
+  CPlot::sOutDir = TString("plots") + analysisTag + puStr;
+  gSystem->mkdir(CPlot::sOutDir,true);
+
   const tnpSelectEvent_t::TCreateBranchesOption_t weightBranch1stStep=
       (performPUReweight) ?
             tnpSelectEvent_t::_skipWeight :
@@ -303,7 +308,9 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   TString selectEventsFName=tagAndProbeDir + TString("/selectEvents_") 
     + analysisTag + uScore+
     + sampleTypeString + uScore +
-    + effTypeString + uScore +  triggers.triggerSetName() + TString(".root");
+    + effTypeString + uScore +  triggers.triggerSetName();
+  if (performPUReweight) selectEventsFName.Append("_PU");
+  selectEventsFName.Append(".root");
   std::cout << "selectEventsFName=<" << selectEventsFName << ">\n"; 
   TFile *selectedEventsFile = new TFile(selectEventsFName,"recreate");
   if (!selectedEventsFile) {
