@@ -1,6 +1,7 @@
 #if !defined(__CINT__) || defined(__MAKECINT__)
 #include "../Include/fitFunctions.hh"
 #include "../Include/MyTools.hh"
+#include <TEntryList.h>
 #endif
 
 /*
@@ -318,10 +319,19 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
   TMatrixD effArray2D(nEt, nEta);
   TMatrixD effArrayErrLow2D(nEt, nEta);
   TMatrixD effArrayErrHigh2D(nEt, nEta);
+  TMatrixD effArray2DWeighted(nEt, nEta);
+  TMatrixD effArrayErrLow2DWeighted(nEt, nEta);
+  TMatrixD effArrayErrHigh2DWeighted(nEt, nEta);
  
+  std::vector<std::string> lines;
+  lines.reserve(50);
+
   effOutput << endl;
   effOutput << "Efficiency, counting method:\n";  
   effOutput << "     SC ET         SC eta           efficiency             pass         fail\n";
+
+  lines.push_back("\nEfficiency, counting method (weighted):\n");
+  lines.push_back("     SC ET         SC eta           efficiency             pass         fail\n");
   for(int j=0; j<nEta; j++){
     for(int i=0; i<nEt; i++){
       double effCount, effErrLowCount, effErrHighCount;
@@ -331,19 +341,56 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 	TString::Format(" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ",
 				       limitsEta[j], limitsEta[j+1]);
       TString cut = etCut + TString(" && ") + etaCut;
-      //cout << cut.Data() << endl;
+      //cout << cut << endl;
       double probesPass = passTree->GetEntries(cut);
       double probesFail = failTree->GetEntries(cut);
+
+      passTree->Draw("weight >> hwPass",cut);
+      failTree->Draw("weight >> hwFail",cut);
+      TH1 *hwPass=(TH1*)gDirectory->Get("hwPass");
+      TH1 *hwFail=(TH1*)gDirectory->Get("hwFail");
+      double probesPassWeighted = hwPass->GetMean() * hwPass->GetEntries();
+      double probesFailWeighted = hwFail->GetMean() * hwFail->GetEntries();
+      double effCountWeighted, effErrLowCountWeighted, effErrHighCountWeighted;
+      //std::cout << " probesPass=" << probesPass << ", probesFail=" << probesFail << "\n";
+      //std::cout << " hwPass->GetEntries=" << hwPass->GetEntries() << ", hwFail->GetEntries=" << hwFail->GetEntries() << "\n";
+      //std::cout << " probesPassWeighted=" << probesPassWeighted << ", probesFailWeighted=" << probesFailWeighted << "\n";
+
       DYTools::calcEfficiency( probesPass, probesPass+probesFail, 
 			       DYTools::EFF_CLOPPER_PEARSON,
 			       effCount, effErrLowCount, effErrHighCount);
+      DYTools::calcEfficiency( probesPassWeighted, 
+			       probesPassWeighted+probesFailWeighted,
+			       DYTools::EFF_CLOPPER_PEARSON,
+			       effCountWeighted, 
+			       effErrLowCountWeighted,effErrHighCountWeighted);
       char strOut[200];
+      sprintf(strOut, "hweightPass_Et_%1.0f-%1.0f__Eta_%5.3f-%5.3f",
+	      limitsEt[i],limitsEt[i+1],
+	      limitsEta[j],limitsEta[j+1]);
+      hwPass->SetName(strOut);
+      if (resultPlotsFile) { resultPlotsFile->cd(); hwPass->Write(); }
+      sprintf(strOut, "hweightFail_Et_%1.0f-%1.0f__Eta_%5.3f-%5.3f",
+	      limitsEt[i],limitsEt[i+1],
+	      limitsEta[j],limitsEta[j+1]);
+      hwFail->SetName(strOut);
+      if (resultPlotsFile) { resultPlotsFile->cd(); hwFail->Write(); }
+
       sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f    %10.0f  %10.0f\n",
 	     limitsEt[i], limitsEt[i+1],
 	     limitsEta[j], limitsEta[j+1],
 	     effCount*100, effErrHighCount*100, effErrLowCount*100,
 	     probesPass, probesFail);
       effOutput << strOut;
+
+      sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f    %10.0f  %10.0f\n",
+	      limitsEt[i], limitsEt[i+1],
+	      limitsEta[j], limitsEta[j+1],
+	      effCountWeighted*100, 
+	      effErrHighCountWeighted*100, effErrLowCountWeighted*100,
+	      probesPassWeighted, probesFailWeighted);
+      lines.push_back(strOut);
+
       canvas->cd(1 + 2*(i + j*nEt) + 0);
       passTree->Draw("mass",cut);
       canvas->cd(1 + 2*(i + j*nEt) + 1);
@@ -352,7 +399,14 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       effArray2D(i,j) = effCount;
       effArrayErrLow2D(i,j) = effErrLowCount;
       effArrayErrHigh2D(i,j) = effErrHighCount;
+      effArray2DWeighted(i,j) = effCountWeighted;
+      effArrayErrLow2DWeighted(i,j) = effErrLowCountWeighted;
+      effArrayErrHigh2DWeighted(i,j) = effErrHighCountWeighted;
     }
+  }
+  effOutput << endl;
+  for (unsigned int i=0; i<lines.size(); ++i) {
+    effOutput << lines[i];
   }
   effOutput << endl;
 
@@ -362,6 +416,9 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       effArray2D.Write("effArray2D");
       effArrayErrLow2D.Write("effArrayErrLow2D");
       effArrayErrHigh2D.Write("effArrayErrHigh2D");    
+      effArray2DWeighted.Write("effArray2DWeighted");
+      effArrayErrLow2DWeighted.Write("effArrayErrLow2DWeighted");
+      effArrayErrHigh2DWeighted.Write("effArrayErrHigh2DWeighted");    
       resultsRootFile->Close();
     }else assert(0);
     if (resultPlotsFile && resultPlotsFile->IsOpen()) {
