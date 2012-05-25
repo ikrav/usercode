@@ -66,12 +66,13 @@ using namespace mithep;
 
 //=== COMMON CONSTANTS ===========================================================================================
 
+//const int performPUReweight=0;
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 //=== MAIN MACRO =================================================================================================
 
-void calcEff(const TString configFile, const TString effTypeString, const TString triggerSetString, int puDependence=1) 
+void calcEff(const TString configFile, const TString effTypeString, const TString triggerSetString, int performPUReweight, int puDependence=0) 
 {
 
   //  ---------------------------------
@@ -250,7 +251,8 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   vector<vector<TH1F*>*> hPassTemplateV;
   vector<vector<TH1F*>*> hFailTemplateV;
   TString labelMC = getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
-  TString puTag=(puDependence) ? "_PU" : "";
+  TString puTag=(performPUReweight) ? "_PU" : "";
+  if (puDependence) puTag.Append("_varPU");
   TString templatesLabel = tagAndProbeDir + TString("/mass_templates_")+labelMC + puTag + TString(".root");
 
   if( sample != DATA) {
@@ -290,7 +292,9 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   TString selectEventsFName=tagAndProbeDir + TString("/selectEvents_") 
     + analysisTag + uScore
     + sampleTypeString + uScore +
-    + effTypeString + uScore +  triggers.triggerSetName() + TString(".root");
+    + effTypeString + uScore +  triggers.triggerSetName();
+  if (performPUReweight) selectEventsFName.Append("_PU");
+  selectEventsFName.Append(".root");
   std::cout << "selectEventsFName=<" << selectEventsFName << ">\n"; 
   TFile *selectedEventsFile = new TFile(selectEventsFName);
   if(!selectedEventsFile || !selectedEventsFile->IsOpen()) {
@@ -376,7 +380,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       if(sample != DATA && templateBin != -1) {      
 	int puIdx= (puDependence) ? findPUBin(storeData.nGoodPV) : 0;
 	if (puIdx>=0)
-	  (*hPassTemplateV[puIdx])[templateBin]->Fill(storeData.mass);
+	  (*hPassTemplateV[puIdx])[templateBin]->Fill(storeData.mass,storeData.weight);
       }
     }
     else {
@@ -440,7 +444,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       if(sample != DATA && templateBin != -1) {
 	int puIdx= (puDependence) ? findPUBin(storeData.nGoodPV) : 0;
 	if (puIdx>=0)
-	  (*hFailTemplateV[puIdx])[templateBin]->Fill(storeData.mass);
+	  (*hFailTemplateV[puIdx])[templateBin]->Fill(storeData.mass,storeData.weight);
 	else std::cout << "puIdx=" << puIdx << "\n";
       }
     }
