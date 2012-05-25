@@ -81,28 +81,31 @@ double findScaleFactorSmeared(int kind, int scEtBin, int scEtaBin, int iexp);
 double findScaleFactorSmeared(int kind, int etBin, int etaBin, 
     const EffArray_t &dataRndWeight, const EffArray_t &mcRndWeight);
 
-void drawEfficiencies();
+void drawEfficiencies(TFile *fRoot);
 void drawEfficiencyGraphs(TGraphErrors *grData, TGraphErrors *grMc,
-			  TString yAxisTitle, TString text, TString plotName);
+			  TString yAxisTitle, TString text, TString plotName,
+			  TFile *fRoot);
 //template<class Graph_t>
 //void drawEfficiencyGraphsAsymmErrors(Graph_t *grData, Graph_t *grMc,
 //			  TString yAxisTitle, TString text, TString plotName);
-void drawScaleFactors();
+void drawScaleFactors(TFile *fRoot);
 void drawScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle, TString text, 
-			   TString plotName);
+			   TString plotName, TFile *fRoot);
 
 void drawEventScaleFactors(TVectorD &scaleRecoV, TVectorD &scaleRecoErrV,
 			   TVectorD &scaleIdV , TVectorD &scaleIdErrV ,
 			   TVectorD &scaleHltV, TVectorD &scaleHltErrV,
-			   TVectorD &scaleV   , TVectorD &scaleErrV   );
+			   TVectorD &scaleV   , TVectorD &scaleErrV   ,
+			   TFile *fRoot);
 void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
 			     TVectorD scaleIdFIV , TVectorD scaleIdErrFIV ,
 			     TVectorD scaleHltFIV, TVectorD scaleHltErrFIV,
 			     TVectorD scaleV   , TVectorD scaleErrFIV   ,
 			     int rapidityBinIndex0,
+			     TFile *fRoot,
 			     std::vector<CPlot*> *cplotV=NULL);
 void drawEventScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle, 
-				TString plotName);
+				TString plotName, TFile *fRoot);
 
 double errOnRatio(double a, double da, double b, double db);
 
@@ -177,7 +180,7 @@ double *etaBinLimits=NULL;
 
 void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile, 
     const TString tnpMCInputFile, TString triggerSetString, int selectEvents, 
-    int debugMode=0)
+		  int puReweight, int debugMode=0)
 {
 
 //  ---------------------------------
@@ -205,7 +208,9 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   gBenchmark->Start("calcEventEff");
   
 
-  CPlot::sOutDir = "plots";
+  TString puStr = (puReweight) ? "_PU" : "";
+  CPlot::sOutDir = TString("plots") + analysisTag + puStr;
+  gSystem->mkdir(CPlot::sOutDir,true);
 
   MCInputFileMgr_t mcMgr;
   TnPInputFileMgr_t tnpDataMgr,tnpMCMgr;
@@ -233,14 +238,18 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   etaBinCount=DYTools::getNEtaBins(etaBinning);
   etaBinLimits=DYTools::getEtaBinLimits(etaBinning);
   
-
   TString selectEventsFName=TString("../root_files/tag_and_probe/") +
-    dirTag + TString("/eventSFSelectEvents") + analysisTag + TString(".root");
+    dirTag + TString("/eventSFSelectEvents") + analysisTag + puStr +
+    TString(".root");
   
-  if (selectEvents && 
-      !createSelectionFile(mcMgr, selectEventsFName, triggers, debugMode)) {
-    std::cout << "failed to create selection file <" 
-	      << selectEventsFName << ">\n";
+  if (selectEvents) {
+    if (!createSelectionFile(mcMgr, selectEventsFName, triggers, debugMode)) {
+      std::cout << "failed to create selection file <" 
+		<< selectEventsFName << ">\n";
+    }
+    else {
+      std::cout << "selection file <" << selectEventsFName << "> created\n";
+    }
     return;
   }
 
@@ -661,7 +670,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   gSystem->mkdir(outputDir,kTRUE);
   TString sfConstFileName(outputDir+TString("/scale_factors_") + analysisTag + 
 			  TString("_") +
-			  triggers.triggerConditionsName() + 
+			  triggers.triggerConditionsName() + puStr +
 			  TString(".root"));
 
   TFile fa(sfConstFileName, "recreate");
@@ -675,6 +684,11 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   // Some plots
   //
 
+  TString plotsFName=sfConstFileName;
+  plotsFName.Replace(plotsFName.Index(".root"),sizeof(".root"),"-plots.root");
+  TFile *faPlots=new TFile(plotsFName,"recreate");
+  assert(faPlots);
+
   TCanvas *c1 = 
     new TCanvas("canvScaleFactors","canvScaleFactors",10,10,500,500);
   c1->Divide(2,2);
@@ -682,8 +696,9 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   c1->cd(2);   hScaleReco->Draw();
   c1->cd(3);   hScaleId->Draw();
   c1->cd(4);   hScaleHlt->Draw();
+  c1->Write(); // save to file
 
-  if (0) {
+  if (1) {
     std::cout << "\nScale factors as a function of mass bin\n";
     std::cout << "    mass          rho_reco          rho_id"
 	      << "       rho_hlt        rho_total\n";
@@ -700,7 +715,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     }
   }
 
-  if (0) {
+  if (1) {
     std::cout << "\nScale factors as a function of mass and rapidity bin\n";
     std::cout << "    mass     rapidity     rho_reco          rho_id"
 	      << "       rho_hlt        rho_total\n";
@@ -723,16 +738,19 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     }
   }
 
-  //drawEfficiencies();
-  //drawScaleFactors();
+  drawEfficiencies(faPlots);
+  drawScaleFactors(faPlots);
   if (1)
   drawEventScaleFactors(scaleRecoV, scaleMeanRecoErrV,
 			scaleIdV , scaleMeanIdErrV ,
 			scaleHltV, scaleMeanHltErrV,
-			scaleV   , scaleMeanErrV    );
+			scaleV   , scaleMeanErrV   ,
+			faPlots);
 
-  const int rapidityIdxCount=3;
-  const int rapidityIdx[rapidityIdxCount] = { 0, 10, 20 };
+  const int rapidityIdxCount= (study2D==1) ? 3 : 1;
+  const int rapidityIdx_1D[] = {0};
+  const int rapidityIdx_2D[] = { 0, 10, 20 };
+  const int *rapidityIdx = (study2D==1) ? rapidityIdx_1D : rapidityIdx_2D;
   if (1) {
     std::vector<CPlot*> cplotsV;
     if (1) {
@@ -755,18 +773,21 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 			      scaleHltFIV, scaleMeanHltErrFIV,
 			      scaleFIV   , scaleMeanErrFIV   ,
 			      rapidityIdx[ri],
-			      &cplotsV
+			      faPlots, &cplotsV
 			      );
     }
     if (cplotsV.size()==4) {
       TCanvas *c6 = MakeCanvas("canvYDepScaleFactors","canvYDepScaleFactors",800,800);
       c6->Divide(2,2);
-      cplotsV[0]->Draw(c6,savePlots,"png",1);
-      cplotsV[1]->Draw(c6,savePlots,"png",2);
-      cplotsV[2]->Draw(c6,savePlots,"png",3);
+      cplotsV[0]->Draw(c6,false,"png",1);
+      cplotsV[1]->Draw(c6,false,"png",2);
+      cplotsV[2]->Draw(c6,false,"png",3);
       cplotsV[3]->Draw(c6,savePlots,"png",4);
       c6->Update();
-      c6->SaveAs("test_c6.png");
+      TString plotName=TString("figYDepScaleFactors") + analysisTag + puStr
+	+ TString(".png");
+      c6->SaveAs(plotName);
+      c6->Write();
     }
   }
 
@@ -820,8 +841,10 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     hZpeakEt->SetFillStyle(3001);
     hElectronEtV[cbin]->SetMarkerColor(kRed);
     etplot1.Draw(c3,savePlots,"png");
+    c3->Write();
   }
 
+  faPlots->Close();
   gBenchmark->Show("calcEventEff");
   return;
 }
@@ -1252,7 +1275,8 @@ double findScaleFactorSmeared(int kind, int etBin, int etaBin,
 
 
  void drawEfficiencyGraphs(TGraphErrors *grData, TGraphErrors *grMc,
-			   TString yAxisTitle, TString text, TString plotName){
+			   TString yAxisTitle, TString text, TString plotName,
+			   TFile *fRoot){
    
    // Generate "random" canvas name
 //    TTimeStamp time;
@@ -1282,6 +1306,7 @@ double findScaleFactorSmeared(int kind, int etBin, int etaBin,
    line->Draw("same");
 
    plot1.Draw(c2, savePlots, "png");
+   if (fRoot) c2->Write();
 
    return;
  }
@@ -1367,7 +1392,7 @@ void drawEfficiencyGraphsAsymmErrorsPU(Graph_t *grData, Graph_t *grMc,
 // -------------------------------------------------------------------------
 
 void drawScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle, TString text,
-			   TString plotName){
+			   TString plotName, TFile *fRoot){
    
    // Generate "random" canvas name
 //    TTimeStamp time;
@@ -1392,14 +1417,14 @@ void drawScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle, TString text,
    line->Draw("same");
 
    plot1.Draw(c2,savePlots, "png");
-
+   if (fRoot) c2->Write();
    return;
  }
 
 // -------------------------------------------------------------------------
 
 void drawEventScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle, 
-				TString plotName) {
+				TString plotName, TFile *fRoot) {
   
   // Generate "random" canvas name
 //   TTimeStamp time;
@@ -1418,20 +1443,20 @@ void drawEventScaleFactorGraphs(TGraphErrors *gr, TString yAxisTitle,
   gr->GetXaxis()->SetMoreLogLabels();
   gr->GetXaxis()->SetNoExponent();
 //   cout << "From main progam CPlot::sOutDir " << CPlot::sOutDir << endl;
-  CPlot::sOutDir = "plots";
+  //CPlot::sOutDir = "plots";
   
   TLine *line = new TLine(15,1.0,500,1.0);
   line->SetLineStyle(kDashed);
   line->Draw("same");
 
   plot1.Draw(c2, savePlots, "png");
-
+  if (fRoot) c2->Write();
   return;
  }
 
 // -------------------------------------------------------------------------
 
-void drawEfficiencies(){
+void drawEfficiencies(TFile *fRoot){
   // Make graphs
   double x[etBinCount];
   double dx[etBinCount];
@@ -1476,7 +1501,7 @@ void drawEfficiencies(){
 	effName + etaStr;
       
       drawEfficiencyGraphs(grDataEff, grMcEff,
- 		       ylabel, plotLabel, plotName);
+			   ylabel, plotLabel, plotName, fRoot);
 
       //delete grMcEff;
       //delete grDataEff;
@@ -1488,7 +1513,7 @@ void drawEfficiencies(){
 
 // -------------------------------------------------------------------------
 
-void drawScaleFactors(){
+void drawScaleFactors(TFile *fRoot){
 
   double x[etBinCount];
   double dx[etBinCount];
@@ -1528,7 +1553,7 @@ void drawScaleFactors(){
       TString plotName = TString("plot_scale_") + analysisTag + TString("_") +
 	effName + etaStr;
 
-      drawScaleFactorGraphs(grScaleFactor, ylabel, plotLabel, plotName);
+      drawScaleFactorGraphs(grScaleFactor, ylabel, plotLabel, plotName, fRoot);
       //delete grScaleFactor;
     }
   }
@@ -1551,7 +1576,8 @@ double errOnRatio(double a, double da, double b, double db){
 void drawEventScaleFactors(TVectorD &scaleRecoV, TVectorD &scaleRecoErrV,
 			   TVectorD &scaleIdV , TVectorD &scaleIdErrV ,
 			   TVectorD &scaleHltV, TVectorD &scaleHltErrV,
-			   TVectorD &scaleV   , TVectorD &scaleErrV    )
+			   TVectorD &scaleV   , TVectorD &scaleErrV   ,
+			   TFile *fRoot)
 {
 
   if (scaleRecoV.GetNoElements()!=nMassBins) {
@@ -1597,14 +1623,14 @@ void drawEventScaleFactors(TVectorD &scaleRecoV, TVectorD &scaleRecoErrV,
   TString plotNameBase = 
     TString("plot_event_scale_") + analysisTag + TString("_");
   plotName = plotNameBase + TString("reco");
-  drawEventScaleFactorGraphs(grScaleReco, "RECO scale factor" , plotName);
+  drawEventScaleFactorGraphs(grScaleReco, "RECO scale factor", plotName,fRoot);
   plotName = "plot_event_scale_id";
   plotName = plotNameBase + TString("id");
-  drawEventScaleFactorGraphs(grScaleId , "ID scale factor"   , plotName);
+  drawEventScaleFactorGraphs(grScaleId , "ID scale factor", plotName, fRoot);
   plotName = plotNameBase + TString("hlt");
-  drawEventScaleFactorGraphs(grScaleHlt, "HLT scale factor"  , plotName);
+  drawEventScaleFactorGraphs(grScaleHlt, "HLT scale factor", plotName, fRoot);
   plotName = plotNameBase + TString("full");
-  drawEventScaleFactorGraphs(grScale   , "event scale factor", plotName);
+  drawEventScaleFactorGraphs(grScale   , "event scale factor", plotName,fRoot);
 
 }
 
@@ -1615,6 +1641,7 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
 			     TVectorD scaleHltFIV, TVectorD scaleHltErrFIV,
 			     TVectorD scaleFIV   , TVectorD scaleErrFIV   ,
 			     int rapidityIndex,
+			     TFile *fRoot,
 			     std::vector<CPlot*> *cplotV)
 {
   int nUnfoldingBins = DYTools::getTotalNumberOfBins();
@@ -1680,17 +1707,21 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
     TString("plot_event_scale_") + analysisTag + TString("_") + yStr;
   plotName = plotNameBase + TString("reco");
   drawEventScaleFactorGraphs(grScaleReco, 
-	       TString("RECO scale factor ") + TString(buf) , plotName);
+			     TString("RECO scale factor ") + TString(buf),
+			     plotName, fRoot);
   //plotName = "plot_event_scale_id";
   plotName = plotNameBase + TString("id");
   drawEventScaleFactorGraphs(grScaleId , 
-	       TString("ID scale factor ") + TString(buf)   , plotName);
+			     TString("ID scale factor ") + TString(buf),
+			     plotName, fRoot);
   plotName = plotNameBase + TString("hlt");
   drawEventScaleFactorGraphs(grScaleHlt, 
-	       TString("HLT scale factor ") + TString(buf)  , plotName);
+			     TString("HLT scale factor ") + TString(buf), 
+			     plotName, fRoot);
   plotName = plotNameBase + TString("full");
   drawEventScaleFactorGraphs(grScale   , 
-	       TString("event scale factor") + TString(buf), plotName);
+			     TString("event scale factor") + TString(buf),
+			     plotName, fRoot);
 
   if (cplotV && (cplotV->size()==4)) {
     const int colorCount=5;
