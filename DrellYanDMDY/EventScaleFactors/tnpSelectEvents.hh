@@ -154,13 +154,43 @@ int CreatePUWeightedBranch(const TString &fName,
   PUReweight_t puReweight;
   res=puReweight.setFile(savePUFName,1); // create a new file
   assert(res);
+  TString puDistrName=savePUHistoNameBase;
+  res= puReweight.setActiveSample(puDistrName);  // create a histo container
+  assert(res);
 
   TFile *selectedEventsFile= new TFile(fName,"UPDATE");
   assert(selectedEventsFile && selectedEventsFile->IsOpen());
   //std::cout << "selectedEventsFile tree entry counts: " << ((TTree*)selectedEventsFile->Get("passTree"))->GetEntries() << ", " << ((TTree*)selectedEventsFile->Get("failTree"))->GetEntries() << "\n";
 
-
+  // first accumulate the PU distribution
   // loop over the trees (pass/fail)
+  for (int fail=0; res && (fail<2); ++fail) {
+    TString pass_fail_str= (fail) ? "_fail" : "_pass";
+    TString treeName= (fail) ? "failTree" : "passTree";
+    // get the tree
+    TTree *tree = (TTree*)selectedEventsFile->Get(treeName); assert(tree);
+    // set addresses 
+    double evWeight;
+    UInt_t nGoodPV;
+    tree->SetBranchAddress("eventWeight",&evWeight);   
+    tree->SetBranchAddress("nGoodPV",&nGoodPV);
+    TBranch *evWeightBr= tree->GetBranch("eventWeight");
+    TBranch *pvCountBr= tree->GetBranch("nGoodPV");
+    assert(evWeightBr && pvCountBr);
+
+    // determine the PU distribution
+    for (UInt_t i=0; i<tree->GetEntries(); ++i) {
+      pvCountBr->GetEntry(i);
+      evWeightBr->GetEntry(i);
+      puReweight.Fill(nGoodPV,evWeight);
+    }
+  }
+
+  res=puReweight.setReference(puRef.getHRef()) &&  // set reference distribution
+    puReweight.prepareWeights(1);  // prepare weights and save histo
+  assert(res);
+
+  // set weights
   for (int fail=0; res && (fail<2); ++fail) {
     TString pass_fail_str= (fail) ? "_fail" : "_pass";
     TString treeName= (fail) ? "failTree" : "passTree";
@@ -176,22 +206,11 @@ int CreatePUWeightedBranch(const TString &fName,
     TBranch *pvCountBr= tree->GetBranch("nGoodPV");
     TBranch *weightBr= tree->GetBranch("weight");
     assert(evWeightBr && pvCountBr && weightBr);
-    // determine the PU distribution
-    TString puDistrName=savePUHistoNameBase + pass_fail_str;
-    res= puReweight.setActiveSample(puDistrName);  // create a histo container
-    assert(res);
-    for (UInt_t i=0; i<tree->GetEntries(); ++i) {
-      pvCountBr->GetEntry(i);
-      evWeightBr->GetEntry(i);
-      puReweight.Fill(nGoodPV,evWeight);
-    }
-    // set weights
-    res=puReweight.setReference(puRef.getHRef()) &&  // set reference distribution
-      puReweight.prepareWeights(1);  // prepare weights and save histo
-    assert(res);
+
     // fill the weight branch
     for (UInt_t i=0; i<tree->GetEntries(); ++i) {
       pvCountBr->GetEntry(i);
+      evWeightBr->GetEntry(i);
       pvWeight=evWeight * puReweight.getWeight(nGoodPV);
       weightBr->Fill();
     }
