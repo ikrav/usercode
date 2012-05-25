@@ -2,6 +2,7 @@
 
 debugMode=0
 fullRun=1
+puReweight=0
 
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
 if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
@@ -61,9 +62,9 @@ runMC_Reco=0
 runMC_Id=0
 runMC_Hlt=0
 runData_Reco=0
-runData_Id=0
-runData_Hlt=0
-runCalcEventEff=1
+runData_Id=1
+runData_Hlt=1
+runCalcEventEff=0
 
 #
 #  Modify flags if fullRun=1
@@ -126,13 +127,13 @@ checkFile() {
 
 
 runEffReco() {
- root -b -q -l  eff_Reco.C+\(\"${inpFile}\",\"RECO\",\"${triggerSet}\",${debugMode}\)
+ root -b -q -l  eff_Reco.C+\(\"${inpFile}\",\"RECO\",\"${triggerSet}\",${puReweight},${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else
      checkFile eff_Reco_C.so
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
-     echo "DONE: eff_Reco(\"$inpFile\",\"RECO\",\"${triggerSet}\",debug=${debugMode})"
+     echo "DONE: eff_Reco(\"$inpFile\",\"RECO\",\"${triggerSet}\",puReweight=${puReweight},debug=${debugMode})"
      echo 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
   fi
@@ -141,13 +142,13 @@ runEffReco() {
 
 runEffIdHlt() {
  effKind=$1
- root -b -q -l  eff_IdHlt.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${debugMode}\)
+ root -b -q -l  eff_IdHlt.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puReweight},${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
      checkFile eff_IdHlt_C.so
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
-     echo "DONE: eff_IdHlt(\"$inpFile\",\"${effKind}\",\"${triggerSet}\",debug=${debugMode})"
+     echo "DONE: eff_IdHlt(\"$inpFile\",\"${effKind}\",\"${triggerSet}\",puReweight=${puReweight},debug=${debugMode})"
      echo 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
   fi
@@ -156,12 +157,12 @@ runEffIdHlt() {
 runCalcEventEff() {
  _collectEvents=$1
  if [ ${#_collectEvents} -eq 0 ] ; then _collectEvents=1; fi
- root -b -q -l  calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${debugMode}\)
+ root -b -q -l  calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${puReweight},${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
-     echo "DONE: calcEventEff(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",collectEvents=${_collectEvents},debug=${debugMode})"
+     echo "DONE: calcEventEff(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",collectEvents=${_collectEvents},puReweight=${puReweight},debug=${debugMode})"
      echo 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
   fi

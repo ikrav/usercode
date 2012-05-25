@@ -7,6 +7,7 @@
 
 debugMode=0
 fullRun=1
+puReweight=0
 
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
 if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
@@ -68,13 +69,13 @@ echo
 puDependence=0
 
 
-runMC_Reco=0
+runMC_Reco=1
 runMC_Id=0
 runMC_Hlt=0
 runData_Reco=0
 runData_Id=0
 runData_Hlt=0
-runCalcEventEff=1
+runCalcEventEff=0
 
 #
 #  Modify flags if fullRun=1
@@ -137,13 +138,13 @@ checkFile() {
 
 runCalcEff() {
  effKind=$1
- root -l -q -b  ${LXPLUS_CORRECTION} calcEff.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puDependence}\)
+ root -l -q -b  ${LXPLUS_CORRECTION} calcEff.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puReweight},${puDependence}\)
   if [ $? != 0 ] ; then noError=0;
   else 
      checkFile calcEff_C.so
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
-     echo "DONE: calcEff(\"$inpFile\",\"${effKind}\",\"${triggerSet}\",puCalc=${puDependence})" #,debug=${debugMode})"
+     echo "DONE: calcEff(\"$inpFile\",\"${effKind}\",\"${triggerSet}\",puReweight=${puReweight},puDep=${puDependence})" #,debug=${debugMode})"
      echo 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
   fi
@@ -153,13 +154,13 @@ runCalcEventEff() {
  _collectEvents=$1
  echo "_collectEvents=${_collectEvents}"
  if [ ${#_collectEvents} -eq 0 ] ; then _collectEvents=1; fi
- root -l -b -q ${LXPLUS_CORRECTION} calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${debugMode}\)
+ root -l -b -q ${LXPLUS_CORRECTION} calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${puReweight},${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
       checkFile calcEventEff_C.so
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
-     echo "DONE: calcEventEff(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",collectEvents=${_collectEvents},debug=${debugMode})"
+     echo "DONE: calcEventEff(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",collectEvents=${_collectEvents},puReweight=${puReweight},debug=${debugMode})"
      echo 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
   fi
