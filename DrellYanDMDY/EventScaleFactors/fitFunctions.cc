@@ -345,7 +345,9 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       double probesPass = passTree->GetEntries(cut);
       double probesFail = failTree->GetEntries(cut);
 
+      canvas->cd(1 + 2*(i + j*nEt) + 0);
       passTree->Draw("weight >> hwPass",cut);
+      canvas->cd(1 + 2*(i + j*nEt) + 1);
       failTree->Draw("weight >> hwFail",cut);
       TH1 *hwPass=(TH1*)gDirectory->Get("hwPass");
       TH1 *hwFail=(TH1*)gDirectory->Get("hwFail");
