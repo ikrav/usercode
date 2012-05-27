@@ -206,6 +206,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
     etBinning = ETBINS1;
   else if(etBinningString == "ETBINS5")
     etBinning = ETBINS5;
+  else if(etBinningString == "ETBINS6")
+    etBinning = ETBINS6;
   else
     assert(0);
   printf("SC ET binning: %s\n", etBinningString.Data());

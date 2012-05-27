@@ -198,6 +198,8 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     etBinning = ETBINS1;
   else if(etBinningString == "ETBINS5")
     etBinning = ETBINS5;
+  else if(etBinningString == "ETBINS6")
+    etBinning = ETBINS6;
   else
     assert(0);
   printf("SC ET binning: %s\n", etBinningString.Data());
