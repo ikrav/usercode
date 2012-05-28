@@ -104,11 +104,30 @@ int PUReweight_t::prepareWeights(int save_weight) {
   
   if (hWeight) delete hWeight;
   
+  // check that the PU division is the same
+  int ok=(hActive->GetNbinsX() == hRef->GetNbinsX()) ? 1:0;
+  for (int ibin=1; ok && (ibin<=hActive->GetNbinsX()); ++ibin) {
+    if ( (hActive->GetBinLowEdge(ibin) != hRef->GetBinLowEdge(ibin)) ||
+	 (hActive->GetBinWidth(ibin) != hRef->GetBinWidth(ibin)) ) {
+      ok=0;
+    }
+  }
+  if (!ok) {
+    std::cout << "prepareWeights: hRef and hActive have different binnings\n";
+    std::cout << "hRef: "; ::printHisto(std::cout, hRef);
+    std::cout << "hActive: "; ::printHisto(std::cout, hActive);
+    return 0;
+  }
+  
+
   hWeight= (TH1F*)hRef->Clone( hActive->GetName() + TString("_puWeights") );
   assert(hWeight);
   hWeight->SetDirectory(0);
   hWeight->Scale( hActive->GetSumOfWeights() / hRef->GetSumOfWeights() );
   hWeight->Divide(hActive);
+  if ((hWeight->GetBinLowEdge(1)==-0.5) && (hWeight->GetBinWidth(1)==1.)) {
+    hWeight->SetBinContent(1,0.); hWeight->SetBinError(1,0.);
+  }
   if (save_weight) {
     if (FCreate!=0) { FFile->cd(); hWeight->Write(); }
     else std::cout << "PUReweight::prepareWeights: save is requested but the file is in reading mode\n";
