@@ -355,7 +355,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       isBsc = isBarrel(storeData.eta);
       isEsc = isEndcap(storeData.eta);
     }
-    if( ! isBsc && ! isEsc) continue;
+    if( ! isBsc && ! isEsc && (etaBinning!=ETABINS5)) continue;
     numTagProbePairsPassEta++;
 
     // Tag and probe is done around the Z peak
@@ -533,6 +533,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   const char* setBinsType="cache";
 
   int nDivisions = getNEtBins(etBinning)*getNEtaBins(etaBinning);
+  //std::cout << "nDivisions=" << getNEtBins(etBinning) << "*" << getNEtaBins(etaBinning) << "=" << nDivisions << "\n";
   double ymax = 800;
   if(nDivisions <4 )
     ymax = nDivisions * 200;
