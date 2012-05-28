@@ -75,6 +75,7 @@ TString EtBinSetName(DYTools::TEtBinSet_t set) {
   switch(set) {
   case ETBINS1: name="EtBins1"; break;
   case ETBINS5: name="EtBins5"; break;
+  case ETBINS6: name="EtBins6"; break;
   default: name="Unknown_Et_BinSet";
   }
   return name;
@@ -154,6 +155,7 @@ DYTools::TEtBinSet_t DetermineEtBinSet(const TString& str) {
   DYTools::TEtBinSet_t kind=ETBINS1;
   if (str.Contains("ETBINS1") || str.Contains("EtBins1")) kind=ETBINS1;
   else if (str.Contains("ETBINS5") || str.Contains("EtBins5")) kind=ETBINS5;
+  else if (str.Contains("ETBINS6") || str.Contains("EtBins6")) kind=ETBINS6;
   else {
     std::cout << "DetermineEtBinSet failed at <" << str  << ">\n";
     assert(0);
