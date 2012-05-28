@@ -453,7 +453,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 
 	bool isBele = isBarrel(electron->scEta);
 	bool isEele = isEndcap(electron->scEta);
-	if( ! isBele && ! isEele) continue;
+	if ( ! isBele && ! isEele && (etaBinning!=ETABINS5)) continue;
 	tagCandPassEta++;
 	
 	if( sample != DATA)
@@ -489,7 +489,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 
 	  bool isBsc = isBarrel(sc->scEta);
 	  bool isEsc = isEndcap(sc->scEta);
-	  if( ! isBsc && ! isEsc) continue;
+	  if( ! isBsc && ! isEsc && (etaBinning!=ETABINS5)) continue;
 	  numTagProbePairsPassEta++;
 
 	  if( sample != DATA)
@@ -690,7 +690,8 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   system(command.Data());
 
   TString fitpicname = tagAndProbeDir+
-    TString("/efficiency_TnP_")+label+TString("_fit.png");
+    TString("/efficiency_TnP_")+label;
+  if (calcMethod==COUNTnCOUNT) fitpicname.Append(".png"); else fitpicname.Append("_fit.png");
   //c1->Update();
   c1->SaveAs(fitpicname);
 

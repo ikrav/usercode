@@ -463,8 +463,10 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	totalCandInMassWindow++;
 	//
 	// Exclude ECAL gap region (should already be done for ntuple, but just to make sure...)
-	if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
-	if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
+	if (etaBinning!=ETABINS5) {
+	  if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
+	  if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
+	}
 	// ECAL acceptance cut on supercluster Et
 	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
 	totalCandInEtaAcceptance++;
@@ -744,7 +746,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   system(command.Data());
 
   TString fitpicname = tagAndProbeDir+
-    TString("/efficiency_TnP_")+label+TString("_fit.png");
+    TString("/efficiency_TnP_")+label;
+  if (calcMethod==COUNTnCOUNT) fitpicname.Append(".png"); else fitpicname.Append("_fit.png");
   c1->SaveAs(fitpicname);
 
   // Save MC templates
