@@ -437,7 +437,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   std::cout << "there are " << skimTree->GetEntries() 
 	    << " entries in the <" << selectEventsFName << "> file\n";
   for (UInt_t ientry=0; ientry<skimTree->GetEntries(); ++ientry) {
-    if (debugMode && (ientry>30000)) break;
+    if (debugMode && (ientry>10000)) break;
     //if ( ientry%10000 == 0 ) std::cout << "ientry=" << ientry << "\n";
 
     skimTree->GetEntry(ientry);
@@ -748,16 +748,16 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 			faPlots);
 
   const int rapidityIdxCount= (study2D==1) ? 3 : 1;
-  const int rapidityIdx_1D[] = {0};
   const int rapidityIdx_2D[] = { 0, 10, 20 };
-  const int *rapidityIdx = (study2D==1) ? rapidityIdx_1D : rapidityIdx_2D;
+  const int rapidityIdx_1D[] = {0};
+  const int *rapidityIdx = (study2D==1) ? rapidityIdx_2D : rapidityIdx_1D;
   if (1) {
     std::vector<CPlot*> cplotsV;
     if (1) {
       CPlot *yDepSF_Full= new CPlot("yDepSF_Full","", "m(e^{+}e^{-}) [GeV]", "scale factor");
-      CPlot *yDepSF_Reco= new CPlot("yDepSF_Reco","", "m(e^{+}e^{-}) [GeV]", "sqrt(RECO scale factor)");
-      CPlot *yDepSF_ID  = new CPlot("yDepSF_Id"  ,"", "m(e^{+}e^{-}) [GeV]", "sqrt(ID scale factor)");
-      CPlot *yDepSF_HLT = new CPlot("yDepSF_Hlt" ,"", "m(e^{+}e^{-}) [GeV]", "sqrt(HLT scale factor)");
+      CPlot *yDepSF_Reco= new CPlot("yDepSF_Reco","", "m(e^{+}e^{-}) [GeV]", "sqrt( RECO scale factor )");
+      CPlot *yDepSF_ID  = new CPlot("yDepSF_Id"  ,"", "m(e^{+}e^{-}) [GeV]", "sqrt( ID scale factor )");
+      CPlot *yDepSF_HLT = new CPlot("yDepSF_Hlt" ,"", "m(e^{+}e^{-}) [GeV]", "sqrt( HLT scale factor )");
       cplotsV.reserve(4);
       cplotsV.push_back(yDepSF_Full); cplotsV.push_back(yDepSF_Reco);
       cplotsV.push_back(yDepSF_ID);   cplotsV.push_back(yDepSF_HLT);
@@ -1003,10 +1003,12 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	totalCandInMassWindow++;
 
 	// Exclude ECAL gap region (should already be done for ntuple, but just to make sure...)
-	if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) &&
-	   (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
-	if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) &&
-	   (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
+	if (etaBinning!=ETABINS5) {
+	  if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) &&
+	     (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
+	  if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) &&
+	     (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
+	}
 	// ECAL acceptance cut on supercluster Et
 	if((fabs(dielectron->scEta_1) > 2.5)       || 
 	   (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
@@ -1291,7 +1293,7 @@ double findScaleFactorSmeared(int kind, int etBin, int etaBin,
    plot1.AddGraph(grData,"data","PE2", kBlue);
    plot1.AddGraph(grMc  ,"MC"  ,"PE", kBlack);
    plot1.Draw(c2);
-   plot1.SetYRange(0.2,1.1);
+   plot1.SetYRange(0.0,1.1);
    grData->GetXaxis()->SetTitle("E_{T} [GeV]");
    grData->GetXaxis()->SetMoreLogLabels();
    grData->GetXaxis()->SetNoExponent();
@@ -1672,6 +1674,10 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
   }
   for(int i=0; i<nMassBins; i++){
     int idx=findIndexFlat(i,rapidityIndex);
+    if (idx<0) {
+      std::cout <<"drawEventScaleFactorsFI: massBin=" << i << ", rapidityIndex=" << rapidityIndex << "(supplied to subroutine), idx=" << idx << std::endl;
+      return;
+    }
     if (i==nMassBins-1) {
       // last mass bins is special
       idx=DYTools::findIndexFlat(i, findAbsYBin(i,rapidity));
