@@ -151,8 +151,10 @@ int printHisto(std::ostream& out, const TH1F* histo) {
   char buf[100];
   out << "values of " << histo->GetName() << "\n";
   for(int i=1; i<=histo->GetNbinsX(); i++) {
-    sprintf(buf," %5.2f    %f    %f\n",
-	    histo->GetBinCenter(i),histo->GetBinContent(i),histo->GetBinError(i));
+    double x=histo->GetBinLowEdge(i);
+    double w=histo->GetBinWidth(i);
+    sprintf(buf," %5.2f-%5.2f    %f    %f\n",
+	    x,x+w,histo->GetBinContent(i),histo->GetBinError(i));
     out << buf;
   }
   return 1;
