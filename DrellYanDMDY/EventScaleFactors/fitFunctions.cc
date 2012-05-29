@@ -398,6 +398,18 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       canvas->cd(1 + 2*(i + j*nEt) + 1);
       failTree->Draw("mass",cut);
       canvas->Update();
+      if (resultPlotsFile) {
+	resultPlotsFile->cd();
+	TString canvName=TString::Format("canvMassDistr_Et_%2.0f-%2.0f_abs_eta_%5.3f-%5.3f",
+					 limitsEt[i],limitsEt[i+1],
+					 limitsEta[j],limitsEta[j+1]);
+	canvName.ReplaceAll(".","_");
+	TCanvas ctemp(canvName,canvName,900,400);
+	ctemp.Divide(2,1);
+	ctemp.cd(1); passTree->Draw("mass",cut);
+	ctemp.cd(2); failTree->Draw("mass",cut);
+	ctemp.Write();
+      }
       effArray2D(i,j) = effCount;
       effArrayErrLow2D(i,j) = effErrLowCount;
       effArrayErrHigh2D(i,j) = effErrHighCount;
@@ -423,10 +435,11 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       effArrayErrHigh2DWeighted.Write("effArrayErrHigh2DWeighted");    
       resultsRootFile->Close();
     }else assert(0);
-    if (resultPlotsFile && resultPlotsFile->IsOpen()) {
-      resultPlotsFile->cd();
-      canvas->Write();
-    }
+  }
+
+  if (resultPlotsFile && resultPlotsFile->IsOpen()) {
+    resultPlotsFile->cd();
+    canvas->Write();
   }
 
   return;
