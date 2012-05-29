@@ -356,7 +356,23 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   fitLog << endl;
   printCorrelations(fitLog, result);
 
-  //std::cout << "enter a value\n"; double x; std::cin >> x;
+
+ // Clean-up
+
+  if (dataUnbinnedPass) delete dataUnbinnedPass;
+  if (dataUnbinnedPassUnweighted) delete dataUnbinnedPassUnweighted;
+  if (dataUnbinnedFail) delete dataUnbinnedFail;
+  if (dataUnbinnedFailUnweighted) delete dataUnbinnedFailUnweighted;
+  if (dataBinnedPass) delete dataBinnedPass;
+  if (dataBinnedFail) delete dataBinnedFail;
+  if (data) delete data;
+  //if (simpleSignal) delete simpleSignal;
+  //if (simpleSignalExtended) delete simpleSignalExtended;
+  if (passPdf) delete passPdf;
+  if (failPdf) delete failPdf;
+  //if (framePass) delete framePass;
+  //if (frameFail) delete frameFail;
+  if (result) delete result;
   
   return;
 }
@@ -686,7 +702,24 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   fitLog << endl;
   printCorrelations(fitLog, result);
   
-  
+ 
+  // Clean-up
+
+  if (dataUnbinnedPass) delete dataUnbinnedPass;
+  if (dataUnbinnedPassUnweighted) delete dataUnbinnedPassUnweighted;
+  if (dataUnbinnedFail) delete dataUnbinnedFail;
+  if (dataUnbinnedFailUnweighted) delete dataUnbinnedFailUnweighted;
+  if (dataBinnedPass) delete dataBinnedPass;
+  if (dataBinnedFail) delete dataBinnedFail;
+  if (data) delete data;
+  //if (simpleSignal) delete simpleSignal;
+  //if (simpleSignalExtended) delete simpleSignalExtended;
+  if (passPdf) delete passPdf;
+  if (failPdf) delete failPdf;
+  //if (framePass) delete framePass;
+  //if (frameFail) delete frameFail;
+  if (result) delete result;
+
   return;
 }
 
