@@ -175,7 +175,7 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   bool unbinnedFit = true;
   if(unbinnedFit){
     RooArgSet combiDSetArgs(mass);
-    if (weightedFit) dsetArgs.add(weight);
+    if (weightedFit) combiDSetArgs.add(weight);
     data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
 			  Import("pass",*dataUnbinnedPass), 
 			  Import("fail",*dataUnbinnedFail));
@@ -511,7 +511,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   bool unbinnedFit = true;
   if(unbinnedFit){
     RooArgSet combiDSetArgs(mass);
-    if (weightedFit) dsetArgs.add(weight);
+    if (weightedFit) combiDSetArgs.add(weight);
     data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
 			  Import("pass",*dataUnbinnedPass), 
 			  Import("fail",*dataUnbinnedFail));
