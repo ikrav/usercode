@@ -3,9 +3,9 @@
 #include <RooEffProd.h>
 #endif
 
-int performWeightedFit=0;
-int bkgPassContainsErrorFunction=0;
-int bkgFailContainsErrorFunction=0;
+int performWeightedFit=1;
+int bkgPassContainsErrorFunction=1;
+int bkgFailContainsErrorFunction=1;
 
 
 void printCorrelations(ostream& os, RooFitResult *res)
@@ -314,12 +314,19 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
 			 Save(),
 			 NumCPU(2,true));
   // If minos fails, refit without minos
-  if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5)){
+  if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5) || 
+     (fabs(eff.getAsymErrorLo())<5e-5) || (eff.getAsymErrorHi()<5e-5)) {
     cout << "MINOS FAILS" << endl;
+    fitLog << "MINOS FAILS" << endl;
     result = fullPdf.fitTo(*data,
 			   Extended(kTRUE),
 			   Save(),
 			   NumCPU(2,true));
+    if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5) || 
+       (fabs(eff.getAsymErrorLo())<5e-5) || (eff.getAsymErrorHi()<5e-5)) {
+       cout << "SECOND FIT FAILURE" << endl;
+       fitLog << "SECOND FIT FAILURE" << endl;
+     }
   }
 
   efficiency       = eff.getVal();
@@ -482,6 +489,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
 
   if (weightedFit) {
     std::cout << "\n\n\tweighted Fit\n\n";
+    fitLog << "\n\n\tweighted Fit\n\n";
     dataUnbinnedPassUnweighted=dataUnbinnedPass;
     RooDataSet *dSet=dataUnbinnedPassUnweighted;
     dataUnbinnedPass= 
@@ -511,7 +519,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   bool unbinnedFit = true;
   if(unbinnedFit){
     RooArgSet combiDSetArgs(mass);
-    if (weightedFit) combiDSetArgs.add(weight);
+    if (0 && weightedFit) combiDSetArgs.add(weight);
     data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
 			  Import("pass",*dataUnbinnedPass), 
 			  Import("fail",*dataUnbinnedFail));
@@ -630,9 +638,15 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   
   
   // If minos fails, refit without minos
-  if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5)){
+  if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5) || 
+     (fabs(eff.getAsymErrorLo())<5e-5) || (eff.getAsymErrorHi()<5e-5)) {
     cout << "\n\n\tMINOS FAILS\n\n" << endl;
+    fitLog << "\n\n\tMINOS FAILS\n\n" << endl;
     result = fullPdf.fitTo(*data, Extended(kTRUE), Save(), NumCPU(2,true));
+    if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5)) {
+       cout << "\n\n\tSECOND FIT FAILURE\n\n" << endl;
+       fitLog << "\n\n\tSECOND FIT FAILURE\n\n" << endl;
+     }
   }
   
   efficiency     = eff.getVal();
