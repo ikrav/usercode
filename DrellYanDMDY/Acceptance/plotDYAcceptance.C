@@ -182,6 +182,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     weights[i] = (TH2D*)fweights.Get(hname_loc);
     hname_loc = TString::Format("h_weighterror_%02d",i+1);
     weightErrors[i] = (TH2D*)fweights.Get(hname_loc);
+    weights[i]->SetDirectory(0); weightErrors[i]->SetDirectory(0);
   }
   }
   //
@@ -258,7 +259,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
       double fewz_weight = 1.0;
 
-      if(useFewzWeights)
+      if(useFewzWeights) {
 	if (new_fewz_code) fewz_weight=fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
 	else
         {
@@ -287,6 +288,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
             noFewz++;
 	}
 //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
+      }
 
       if(ibin != -1 && ibin < nEventsv.GetNoElements()){
 	double fullWeight = reweight * scale * gen->weight * fewz_weight;
@@ -378,6 +380,8 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   // Make plots 
   //==============================================================================================================  
 
+  CPlot::sOutDir="plots" + analysisTag;
+
   TString outDir= TString("../root_files/");
   if (systematicsMode==DYTools::NORMAL)  outDir+=TString("constants/");
   else if (systematicsMode==DYTools::FSR_STUDY)  outDir+=TString("systematics/");
@@ -403,9 +407,9 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   }
   plotZMass1.SetLogy();
   plotZMass1.Draw(c);
-  SaveCanvas(c, "zmass1");
+  SaveCanvas(c, "zmass1",CPlot::sOutDir);
 
-  PlotMatrixVariousBinning(accv, "acceptance", "LEGO2",filePlots);
+  PlotMatrixVariousBinning(accv, "acceptance", "LEGO2",filePlots, CPlot::sOutDir);
   filePlots->Close();
   //delete filePlots;
   
@@ -450,7 +454,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     {
       printf(" mass bin    preselected      passed     total_A_GEN      BB-BB_A_GEN      EB-BB_A_GEN      EB-EB_A_GEN\n");
       for(int i=0; i<DYTools::nMassBins; i++){
-        printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
+        printf(" %4.0f-%4.0f   %10.1f   %10.1f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
 	   DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
 	   nEventsv(i,0), nPassv(i,0),
 	   accv(i,0), accErrv(i,0),
