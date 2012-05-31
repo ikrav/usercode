@@ -403,7 +403,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   cout << "     Number of generated events: " << nZv << endl;
   printf(" mass bin    preselected      passed     total_A_GEN      BB-BB_A_GEN      EB-BB_A_GEN      EB-EB_A_GEN\n");
   for(int i=0; i<DYTools::nMassBins; i++){
-    printf(" %4.0f-%4.0f   %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
+    printf(" %4.0f-%4.0f   %10.1f   %10.1f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
 	   DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
 	   nEventsv[i], nPassv[i],
 	   accv[i], accErrv[i],
