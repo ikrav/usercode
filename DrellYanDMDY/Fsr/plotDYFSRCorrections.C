@@ -139,6 +139,7 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
     weights[i] = (TH2D*)fweights.Get(hname1);
     hname1 = TString::Format("h_weighterror_%02d",i+1);
     weightErrors[i] = (TH2D*)fweights.Get(hname1);
+    weights[i]->SetDirectory(0); weightErrors[i]->SetDirectory(0);
   }
   }
 
@@ -312,6 +313,8 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   // Make plots 
   //==============================================================================================================  
 
+  CPlot::sOutDir="plots" + analysisTag;
+
   // prepare tag
   TString addStr=TString("_") + analysisTag;
   if (sansAcc) addStr.Append("_sans_acc");
@@ -349,7 +352,7 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   plotZMass1.Draw(c);
   TString zmass1="zmass1";
   zmass1+=addStr;
-  SaveCanvas(c, zmass1);
+  SaveCanvas(c, zmass1, CPlot::sOutDir);
   c->Write();
 
   // Pre FSR vs post-FSR plots
@@ -362,7 +365,7 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   TString overlay="overlay";
   overlay+=addStr;
   plotOverlay.Draw(c2);
-  SaveCanvas(c2, overlay);
+  SaveCanvas(c2, overlay, CPlot::sOutDir);
   c2->Write();
 
   plotOverlay.SetLogx();
@@ -373,14 +376,14 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   plotOverlay.Draw(c3); // prepare legend
   plotOverlay.TransLegend(-1.,0.);        // incorrect placement?!
   plotOverlay.Draw(c3);
-  SaveCanvas(c3, overlay);
+  SaveCanvas(c3, overlay, CPlot::sOutDir);
   c3->Write();
   
 
   TString NoverN="N_PosrFsr_over_N_PreFsr";
   NoverN+=addStr;
   std::cout<<"I'M going to save plots"<<std::endl;
-  PlotMatrixVariousBinning(corrv, NoverN, "LEGO2",filePlots);
+  PlotMatrixVariousBinning(corrv, NoverN, "LEGO2",filePlots, CPlot::sOutDir);
 
   if (filePlots) filePlots->Close();
 
