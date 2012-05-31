@@ -310,6 +310,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     weights[i] = (TH2D*)fweights.Get(hnames);
     hnames = TString::Format("h_weighterror_%02d",i+1);
     weightErrors[i] = (TH2D*)fweights.Get(hnames);
+    weights[i]->SetDirectory(0); weightErrors[i]->SetDirectory(0);
   }
   }
 
