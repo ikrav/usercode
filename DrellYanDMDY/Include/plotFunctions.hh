@@ -49,7 +49,7 @@ Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
 TMatrixD AdjustMatrixBinning(TMatrixD matrUsualBinning);
 
-void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile)
+void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, const TString &saveDir="plots")
 {
 //acceptance, bkgRatesPercent, LEGO2,COLZ 
    TMatrixD matrDraw = AdjustMatrixBinning(matr);
@@ -82,7 +82,7 @@ void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, T
    canv->SetLogx();
 
   Hist->Draw(drawOption);
-  SaveCanvas(canv, name);
+  SaveCanvas(canv, name, saveDir);
   if (histoFile) canv->Write();
 }
 
