@@ -21,8 +21,8 @@ namespace DYTools {
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
 
   const int study2D=1;
-  const int extendYRangeFor1D=0; // whether |ymax|=4 for 1D study
-  const TString analysisTag_USER=(!study2D && extendYRangeFor1D) ? "ymax4" : "";  // extra name to differentiate the analysis files
+  const int extendYRangeFor1D=1; // whether |ymax|=9 for 1D study
+  const TString analysisTag_USER=(!study2D && extendYRangeFor1D) ? "ymax9" : "";  // extra name to differentiate the analysis files
 
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
@@ -48,7 +48,7 @@ namespace DYTools {
   // Note: this implementation neglects underflow and overflow
   // in rapidity.
   const double yRangeMin =  0.0;
-  const double yRangeMax =  2.5 + ((!study2D && extendYRangeFor1D) ? 1.5 : 0);
+  const double yRangeMax =  2.5 + ((!study2D && extendYRangeFor1D) ? 6.5 : 0);
   const int _nYBinsMax2D=25; // the largest division into Y bins
   const int _nYBins2D[_nMassBins2D] = 
     { 25,// underflow, binned like first mass bin 
