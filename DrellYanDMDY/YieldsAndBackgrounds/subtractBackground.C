@@ -18,6 +18,8 @@
 Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
 Bool_t checkMatrixSize(TMatrixD m);
+const int correct_error_code=1;
+
 
 TString subtractBackground(const TString conf){
 
@@ -100,7 +102,7 @@ TString subtractBackground(const TString conf){
 
   // Matrices to store backgrounds
   TMatrixD true2eBackground(DYTools::nMassBins,nYBinsMax);
-  TMatrixD true2eBackgroundError(DYTools::nMassBins,nYBinsMax);
+  TMatrixD true2eBackgroundError(DYTools::nMassBins,nYBinsMax); // squared!
   TMatrixD true2eBackgroundErrorSyst(DYTools::nMassBins,nYBinsMax);
   TMatrixD wzzz(DYTools::nMassBins,nYBinsMax);
   TMatrixD wzzzError(DYTools::nMassBins,nYBinsMax);
@@ -166,10 +168,11 @@ TString subtractBackground(const TString conf){
                         true2eBackground(i,j)+=aux1(i,j);
                         true2eBackgroundError(i,j)+=aux2(i,j);
                         // Use ballpark numbers: 0% systematics on DY->tautau, 50% on ttbar, 100% on WW
-                        if (sample_names[k]==(TObjString*)"ztt") mSyst=0.0;
-                        if (sample_names[k]==(TObjString*)"ttbar") mSyst=0.5;
-                        if (sample_names[k]==(TObjString*)"ww") mSyst=1.0;
+                        if (sn[k]=="ztt") mSyst=0.0;
+                        if (sn[k]=="ttbar") mSyst=0.5;
+                        if (sn[k]=="ww") mSyst=1.0;
                         true2eBackgroundErrorSyst(i,j)+=mSyst*mSyst*aux1(i,j)*aux1(i,j);
+			//std::cout << sn[k] << ", " << sample_names[k]->String() << ": true2eBackgroundErrorSys(" << i << "," << j << ")+=(" << mSyst << '*' << aux1(i,j) << ")^2=" << (mSyst*mSyst*aux1(i,j)*aux1(i,j)) << "\n";
 
                       }
                    }
@@ -201,6 +204,7 @@ TString subtractBackground(const TString conf){
                      wzzz(i,j)+=aux1(i,j);
                      wzzzError(i,j)+=aux2(i,j);
                      wzzzErrorSyst(i,j)+=aux1(i,j)*aux1(i,j);
+		     //std::cout << "wzzzErrorSyst(" << i << "," << j << ")+=" <<  aux1(i,j) << "^2=" << (aux1(i,j)*aux1(i,j)) << "\n";
                  }
            }
        }
@@ -255,12 +259,22 @@ TString subtractBackground(const TString conf){
       for (int j=0; j<DYTools::nYBins[i]; j++)
         {
            totalBackground(i,j)=true2eBackground(i,j) + wzzz(i,j) + fakeEleBackground(i,j);
+	   if (correct_error_code) {
+           totalBackgroundError(i,j)=sqrt( true2eBackgroundError(i,j) +
+					   wzzzError(i,j) +
+					   fakeEleBackgroundError(i,j) );
+           totalBackgroundErrorSyst(i,j)=sqrt( true2eBackgroundErrorSyst(i,j) +
+					       wzzzErrorSyst(i,j) +
+					       fakeEleBackgroundErrorSyst(i,j) );
+	   }
+	   else {
            totalBackgroundError(i,j)=sqrt( true2eBackgroundError(i,j) * true2eBackgroundError(i,j) +
 				    wzzzError(i,j) * wzzzError(i,j) +
 				    fakeEleBackgroundError(i,j) * fakeEleBackgroundError(i,j) );
            totalBackgroundErrorSyst(i,j)=sqrt( true2eBackgroundErrorSyst(i,j) * true2eBackgroundErrorSyst(i,j) +
 				    wzzzErrorSyst(i,j) * wzzzErrorSyst(i,j) +
 				    fakeEleBackgroundErrorSyst(i,j) * fakeEleBackgroundErrorSyst(i,j) );
+	   }
          }
 
 
@@ -297,8 +311,8 @@ TString subtractBackground(const TString conf){
   TString outFileName=inputDir + TString("/yields_bg-subtracted") + analysisTag + TString(".root");
   TFile fileOut(outFileName,"recreate");
   signalYields         .Write("YieldsSignal");
-  signalYieldsError    .Write("YieldsSignalErr");
-  signalYieldsErrorSyst.Write("YieldsSignalSystErr");
+  signalYieldsError    .Write("YieldsSignalErr");   // not squared
+  signalYieldsErrorSyst.Write("YieldsSignalSystErr"); // not squared
   unfolding::writeBinningArrays(fileOut);
   fileOut.Close();
 
@@ -310,6 +324,63 @@ TString subtractBackground(const TString conf){
   PlotMatrixVariousBinning(signalYieldsError,"signalYieldsError","COLZ",foutPlots);
   foutPlots->Close();
 
+  if (0) {
+    int yi=0;
+    // Print tables of yields and background
+    printf("\n\n\t\tTables for yi=%d\n\n",yi);
+    
+    // Table 1: split background into true, wz/zz, and qcd
+    printf(" Note: stat error in signal yield contain stat error on background,\n");
+    printf("   and syst error on signal yield contains syst error on background\n");
+    printf("mass range            observed       true2e-bg         wz-zz-bg               fake-bg                 total-bg            signal\n");
+    for(int i=0; i<nMassBins; i++){
+      printf("%5.1f-%5.1f GeV: ", massBinLimits[i], massBinLimits[i+1]);
+      printf(" %7.0f+-%3.0f ", observedYields[i][yi], sqrt(observedYieldsErrorSquared[i][yi]));
+      printf(" %5.1f+-%4.1f+-%4.1f ", true2eBackground[i][yi], sqrt(true2eBackgroundError[i][yi]), sqrt(true2eBackgroundErrorSyst[i][yi]));
+      printf(" %6.2f+-%4.2f+-%4.2f ", wzzz[i][yi], sqrt(wzzzError[i][yi]), sqrt(wzzzErrorSyst[i][yi]));
+      printf(" %5.1f+-%5.1f+-%5.1f ", fakeEleBackground[i][yi], sqrt(fakeEleBackgroundError[i][yi]), sqrt(fakeEleBackgroundErrorSyst[i][yi]));
+      printf("    %5.1f+-%4.1f+-%4.1f ", totalBackground[i][yi], totalBackgroundError[i][yi], totalBackgroundErrorSyst[i][yi]);
+      printf("    %8.1f+-%5.1f+-%5.1f ", signalYields[i][yi], signalYieldsError[i][yi], signalYieldsErrorSyst[i][yi]);
+      printf("\n");
+    }
+
+    // Table 2: combined true2e and WZ/ZZ backgrounds only
+    printf("\n  only true2e-bg + ww-wz\n");
+    printf("mass range      true2e, includingwz/zz\n");
+    for(int i=0; i<nMassBins; i++){
+      printf("%5.1f-%5.1f GeV: ", massBinLimits[i], massBinLimits[i+1]);
+      double val = true2eBackground[i][yi] + wzzz[i][yi];
+      double err=0, sys=0;
+      if (correct_error_code){
+      err = sqrt(true2eBackgroundError[i][yi]
+		 + wzzzError[i][yi]);
+      sys = sqrt(true2eBackgroundErrorSyst[i][yi]
+		 + wzzzErrorSyst[i][yi]);
+      }
+      else {
+      err = sqrt(true2eBackgroundError[i][yi]*true2eBackgroundError[i][yi]
+			+ wzzzError[i][yi]*wzzzError[i][yi]);
+      sys = sqrt(true2eBackgroundErrorSyst[i][yi]*true2eBackgroundErrorSyst[i][yi]
+			+ wzzzErrorSyst[i][yi]*wzzzErrorSyst[i][yi]);
+      }
+      printf(" %5.1f+-%4.1f+-%4.1f ", val,err, sys);
+      printf("\n");
+    }
+
+    // Table 3: Systematic error on signal yields assuming that it includes
+    // only the syst. error on the background.
+    printf("\n  Systematics, %% relative to background subtracted yields\n");
+    printf("mass range            subtr-signal    total-bg      syst-from-bg-frac      syst-from-bg-percent\n");
+    for(int i=0; i<nMassBins; i++){
+      printf("%5.1f-%5.1f GeV: ", massBinLimits[i], massBinLimits[i+1]);
+      printf("    %8.1f+-%5.1f+-%4.1f ", signalYields[i][yi], signalYieldsError[i][yi],signalYieldsErrorSyst[i][yi]);
+      printf("    %5.1f+-%4.1f+-%4.1f ", totalBackground[i][yi], totalBackgroundError[i][yi], totalBackgroundErrorSyst[i][yi]);
+      printf("    %6.4f ", totalBackgroundErrorSyst[i][yi]/signalYields[i][yi]);
+      printf("    %6.1f ", totalBackgroundErrorSyst[i][yi]*100.0/signalYields[i][yi]);
+      printf("\n");
+    }
+  }
+ 
   return "Ok";
 
 }
