@@ -314,6 +314,11 @@ void prepareYields1D(const TString conf  = "data_plot.conf")
 	data.mass = data.mass + smearingCorrection;
       }
 
+      if ( findMassBin(data.mass) == -1 ) {
+	std::cout << "skipping data.mass=" << data.mass << "\n";
+	continue;
+      }
+
       hMassv[isam]->Fill(data.mass,weight);
       hMassBinsv[isam]->Fill(data.mass,weight);
       // DEBUG in case event list needs to be printed
