@@ -543,6 +543,42 @@ void prepareYields(const TString conf  = "data_plot.conf")
     printf(" %7.2f+-%5.2f", totalBg[im], totalBgError[im]);
     printf("\n");
   }
+  printf("Note: these MC numbers are not rescaled!\n");
+
+  if (1) {
+  // A different view of background table
+  printf("\n\nPrintout of the backgrounds for all mass bins, view II\n");
+
+  printf("            ");
+  for(UInt_t isam=0; isam<samplev.size(); isam++) {
+    printf(" %14s ",snamev[isam].Data());
+  }
+  printf("           total          fraction\n");
+  for(int ibin=0; ibin<nMassBins; ibin++){
+    printf("%5.1f-%5.1f GeV: ",
+           hMassBinsv[0]->GetXaxis()->GetBinLowEdge(ibin+1),
+           hMassBinsv[0]->GetXaxis()->GetBinUpEdge(ibin+1));
+    // Data:
+    printf(" %7.0f+-%5.0f ",hMassBinsv[0]->GetBinContent(ibin+1),hMassBinsv[0]->GetBinError(ibin+1) );
+    // Individual MC samples
+    double total=0., totalError=0.;
+    for(UInt_t isam=1; isam<samplev.size(); isam++) {
+      double thisContent = hMassBinsv[isam]->GetBinContent(ibin+1);
+      double thisError = hMassBinsv[isam]->GetBinError(ibin+1);
+      printf(" %7.2f+-%5.2f ",thisContent, thisError);
+      if ( (isam!=0) && (snamev[isam]!=TString("zee"))) {
+	total+= thisContent;
+	totalError+=thisError*thisError;
+      }
+    }
+    totalError = sqrt(totalError);
+    // Total
+    printf("  %8.2f+-%6.2f",total, totalError);
+    printf("  %5.1f\n",100*total/hMassBinsv[0]->GetBinContent(ibin+1));
+  }
+  }
+
+
 
   gBenchmark->Show("prepareYields");      
 }
