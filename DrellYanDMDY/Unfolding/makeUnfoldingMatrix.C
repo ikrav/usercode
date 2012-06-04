@@ -64,6 +64,7 @@ void computeNormalizedBinContent(double subset, double subsetErr,
 				 double& ratio, double& ratioErr);
 void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TErrNeg,
 				   TMatrixD &TinvErr);
+
 //=== MAIN MACRO =================================================================================================
 
 void makeUnfoldingMatrix(const TString input, 
@@ -234,9 +235,10 @@ void makeUnfoldingMatrix(const TString input,
 //   }
 
   // MC spectra for storage in ROOT file
-  int nYBinsMax = DYTools::findMaxYBins();
+  //int nYBinsMax = DYTools::findMaxYBins(); // commented out - rely on DYTools.hh
   TMatrixD yieldsMcPostFsrGen(DYTools::nMassBins,nYBinsMax);
   TMatrixD yieldsMcPostFsrRec(DYTools::nMassBins,nYBinsMax);
+  TMatrixD yieldsMcGen(DYTools::nMassBins,nYBinsMax);
   // The errors 2D arrays are not filled at the moment. It needs
   // to be done carefully since events are weighted.
   // For each bin, the error would be sqrt(sum weights^2).
@@ -310,6 +312,12 @@ void makeUnfoldingMatrix(const TString input,
 
       if (ientry<20) std::cout<<"reweight="<<reweight<<std::endl;
 
+      int iMassBinGen = DYTools::findMassBin(gen->mass);
+      int iYBinGen = DYTools::findAbsYBin(iMassBinGen, gen->y);
+      if ( (iMassBinGen!=-1) && (iYBinGen!=-1) ) {
+	yieldsMcGen(iMassBinGen,iYBinGen) += reweight * scale * gen->weight;
+      }
+ 
       if( !(requiredTriggers.matchEventTriggerBit(info->triggerBits, 
 						  info->runNum))) 
 	continue;
@@ -658,18 +666,31 @@ void makeUnfoldingMatrix(const TString input,
   cout << endl; 
   
   // Printout of all constants, uncomment if needed
-//   DetCorrFactor.Print();
-//   DetResponse.Print();
-  
+  //printf("DetCorrFactor:\n"); DetCorrFactor.Print();
+  //printf("DetMigration:\n"); DetMigration.Print();
+  //printf("DetResponse:\n"); DetResponse.Print();
+
+  //printf("DetInvertedResponse:\n"); DetInvertedResponse.Print();
+  //printf("DetInvertedResponseErr:\n"); DetInvertedResponseErr.Print();
+  //printf("DetResponseArr:\n"); DetResponseArr.Print();
+  //printf("DetInvertedResponseArr:\n"); DetInvertedResponseArr.Print();
+  //printf("DetInvertedResonseErrArr:\n"); DetInvertedResponseErrArr.Print();
+
 //   printf("Detector corr factor numerator:\n");
 //   DetCorrFactorNumerator.Print();
-//   printf("yieldsMcRec:\n");
-//   yieldsMcRec.Print();
+  //printf("yieldsMcPostFsrRec:\n");
+  //yieldsMcPostFsrRec.Print();
+
+  //printf("yieldsMcPostFsrGen:\n");
+  //yieldsMcPostFsrGen.Print();
 
 //   printf("Detector corr factor denominator:\n");
 //   DetCorrFactorDenominator.Print();
-//   printf("yieldsMcFsrOfRec:\n");
-//   yieldsMcFsrOfRec.Print();
+//   printf("yieldsMcPostFsrRecArr:\n");
+//   yieldsMcPostFsrRecArr.Print();
+
+  //printf("yieldsMcGen:\n");
+  //yieldsMcGen.Print();
 
   gBenchmark->Show("makeUnfoldingMatrix");
 }
@@ -731,7 +752,7 @@ void calculateInvertedMatrixErrors(TMatrixD &T, TMatrixD &TErrPos, TMatrixD &TEr
 	double central = T(i,j);
 	double sigPos = TErrPos(i,j);
 	double sigNeg = TErrNeg(i,j);
-	// Switch to symmetric errors: approximation, but much simpler
+ 	// Switch to symmetric errors: approximation, but much simpler
 	double sig = (sigPos+sigNeg)/2.0;
 	Tsmeared(i,j) = gRandom->Gaus(central,sig);
       }
