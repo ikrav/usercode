@@ -380,7 +380,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     TString outName = ntupDir + TString("/") + snamev[isam] + analysisTag_USER + TString("_select.root");
     if (runMode==DYTools::ESCALE_STUDY) {
       if (isam==0) {
-	outName.Replace(outName.Index("_select."),sizeof("_select."),"_select_uncorrected.");
+	outName.Replace(outName.Index("_select."),sizeof("_select.")-1,"_select_uncorrected.");
       }
       else {
 	std::cout << "... runMode=EScale_Study, skipping the non-data files\n";
