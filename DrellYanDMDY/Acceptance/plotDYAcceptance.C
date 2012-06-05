@@ -195,14 +195,16 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   mithep::TGenInfo *gen  = new mithep::TGenInfo();
 
   int noFewz=0;//counter of events for which fewz weight was not found
-  
+ 
   // loop over samples  
   for(UInt_t ifile=0; ifile<fnamev.size(); ifile++) {
   
     // Read input file
+    std::cout<<"fnamev["<<ifile<<"]="<<fnamev[ifile]<<std::endl;
     cout << "Processing " << fnamev[ifile] << "..." << endl;
     infile = new TFile(fnamev[ifile]); 
     assert(infile);
+
     // Get the TTrees
     eventTree = (TTree*)infile->Get("Events"); assert(eventTree);
 
@@ -241,20 +243,19 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       else if ((mass-massPreFsr)>massLimit) reweight=1.0;
       else reweight=reweightFsr;
 
-      
-      int ibin = DYTools::findMassBin(mass);
-      int ibinPreFsr = DYTools::findMassBin(massPreFsr);
-      //std::cout<<"ibinPreFsr="<<ibinPreFsr<<std::endl;
+      //ibinM1DPreFsr is used to determine fewz_weights
+      //when new_fewz_code=0
+      int ibinM1DPreFsr = DYTools::_findMassBin2011(massPreFsr);
+
       int ibinMass = DYTools::findMassBin(mass);
-      //int ibinMassPreFsr = DYTools::findMassBin(massPreFsr);
+      int ibinMassPreFsr = DYTools::findMassBin(massPreFsr);
       int ibinY = DYTools::findAbsYBin(ibinMass, y);
-      //std::cout << "ibinY=" << ibinY << "\n";
       //int ibinYPreFsr = DYTools::findAbsYBin(ibinMassPreFsr, yPreFsr);
 
       // If mass is larger than the highest bin boundary
       // (last bin), use the last bin.
-      if(ibinPreFsr == -1 && mass >= massBinLimits[nMassBins] )
-	ibinPreFsr = nMassBins-1;
+      if(ibinM1DPreFsr == -1 && mass >= massBinLimits[nMassBins] );
+      ibinM1DPreFsr = nMassBins-1;
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
       double fewz_weight = 1.0;
@@ -263,38 +264,41 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
 	if (new_fewz_code) fewz_weight=fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
 	else
         {
-	  if(ibinPreFsr != -1 && ibinPreFsr < DYTools::nMassBins)
+
+	  if(ibinM1DPreFsr != -1 && ibinM1DPreFsr < DYTools::nMassBins)
             {
-	      int ptBin = weights[ibinPreFsr]->GetXaxis()->FindBin( gen->vpt );
-	      int yBin = weights[ibinPreFsr]->GetYaxis()->FindBin( gen->vy );
+	      int ptBin = weights[ibinM1DPreFsr]->GetXaxis()->FindBin( gen->vpt );
+	      int yBin = weights[ibinM1DPreFsr]->GetYaxis()->FindBin( gen->vy );
 	      // In case if pt or y are outside of the weight maps,
 	      // set them to the closest bin.
- 	      if(ptBin == weights[ibinPreFsr]->GetNbinsX() + 1)
- 	        ptBin = weights[ibinPreFsr]->GetNbinsX();
+ 	      if(ptBin == weights[ibinM1DPreFsr]->GetNbinsX() + 1)
+ 	        ptBin = weights[ibinM1DPreFsr]->GetNbinsX();
  	      if(ptBin == 0)
  	        ptBin = 1;
- 	      if(yBin == weights[ibinPreFsr]->GetNbinsY() + 1)
- 	        yBin = weights[ibinPreFsr]->GetNbinsY();
+ 	      if(yBin == weights[ibinM1DPreFsr]->GetNbinsY() + 1)
+ 	        yBin = weights[ibinM1DPreFsr]->GetNbinsY();
  	      if(yBin == 0)
  	        yBin = 1;
 	      // Apply PT cut if needed
 	      if( cutZPT100 ) 
-	        if( ptBin == weights[ibinPreFsr]->GetNbinsX() )
-	          ptBin = weights[ibinPreFsr]->GetNbinsX() - 1;
-	      fewz_weight = weights[ibinPreFsr]->GetBinContent( ptBin, yBin);
+	        if( ptBin == weights[ibinM1DPreFsr]->GetNbinsX() )
+	          ptBin = weights[ibinM1DPreFsr]->GetNbinsX() - 1;
+	      fewz_weight = weights[ibinM1DPreFsr]->GetBinContent( ptBin, yBin);
+
             }
           else
 	    //cout << "Error: binning problem" << endl;
             noFewz++;
+
 	}
 //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
       }
 
-      if(ibin != -1 && ibin < nEventsv.GetNoElements()){
+      if(ibinMass != -1 && ibinMass < nEventsv.GetNrows()){
 	double fullWeight = reweight * scale * gen->weight * fewz_weight;
 	nEventsv(ibinMass,ibinY) += fullWeight;
 	w2Eventsv(ibinMass,ibinY) += fullWeight*fullWeight;
-      }else if(ibin >= nEventsv.GetNoElements())
+      }else if(ibinMass >= nEventsv.GetNrows())
 	cout << "ERROR: binning problem" << endl;
 
       Bool_t isB1 = (fabs(gen->eta_1)<kECAL_GAP_LOW);
@@ -308,7 +312,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
          && ((fabs(gen->eta_2)<kECAL_GAP_LOW) || (fabs(gen->eta_2)>kECAL_GAP_HIGH))   
 	 && (fabs(gen->eta_1)<2.5) && (fabs(gen->eta_2)<2.5)) {
         
-	if(ibin != -1 && ibin < nPassv.GetNoElements()){
+	if(ibinMass != -1 && ibinMass < nPassv.GetNrows()){
 	  double fullWeight = reweight * scale * gen->weight * fewz_weight;
 	  nPassv(ibinMass,ibinY) += fullWeight;
 	  w2Passv(ibinMass,ibinY) += fullWeight*fullWeight;
@@ -466,7 +470,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   else
     printf("printout format for 2D not chosen");
   cout << endl;
-  
+ 
   gBenchmark->Show("plotDYAcceptance");
 }
 
