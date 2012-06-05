@@ -1,0 +1,22 @@
+DY_m10+pr+a05+o03+pr_4680pb
+#Date20120101_default  # Name of energy scale calibrations set. See ElectronEnergyScale.hh.
+/scratch/jbutt/DY/42X/f11-zeem20to500-powheg-v14b-pu_ntuple.root  1666.0    600 1 @Powheg 20-500
+/scratch/jbutt/DY/42X/f11-zeem500to800-powheg-v14b-pu_ntuple.root           0.02956   632 1 @Powheg 500-800
+/scratch/jbutt/DY/42X/f11-zeem800-powheg-v9b-pu_ntuple.root                 0.0037864 432 1 @Powheg 800+
+/scratch/jbutt/DY/42X/f11-zeem1020-powheg-v14b-pu_ntuple.root     3320.0    800 1 @Powheg 10-20
+
+#DY_m10+pr+a05+o03+pr_4680pb
+#Date20110901_EPS11_default   # Name of energy scale calibrations set. See ElectronEnergyScale.hh.
+#/data/blue/ikrav/EWK/Zee/42X/f11-zeem20to500-powheg-v14b-pu_tight-loose_skim.root 1666.0    600 1 @Powheg 20-500
+#/data/blue/ksung/DYAna2011/s11-zeem500-powheg-v11-pu_ntuple.root                  0.03335   632 1 @Powheg 500+
+#/data/blue/ikrav/EWK/Zee/42X/f11-zeem1020-powheg-v14b-pu_tight-loose_skim.root    3320.0    800 1 @Powheg 10-20
+#
+# /Scratch/ntuples/Zee/42X/s11-zeem20to500-powheg-v11-pu_tight-loose_skim.root 1666.0    600 1 @Powheg 20-500
+# /Scratch/ntuples/Zee/42X/s11-zeem500to800-powheg-v11-pu_ntuple.root          0.02956   632 1 @Powheg 500-800
+# /Scratch/ntuples/Zee/42X/s11-zeem800-powheg-v11-pu_ntuple.root               0.0037864 432 1 @Powheg 800+
+# /Scratch/ntuples/Zee/42X/s11-zeem1020-v11-pu_tight-loose_skim.root           3320.0    800 1 @Pythia 10-20
+#
+# /mnt/unl/home/ikrav/work/ntuples/42X/s11-zeem20to500-powheg-v11-pu_tight-loose_skim.root 1666.0    600 1 @Powheg 20-500
+# /mnt/unl/home/ikrav/work/ntuples/42X/s11-zeem500to800-powheg-v11-pu_ntuple.root          0.02956   632 1 @Powheg 500-800
+# /mnt/unl/home/ikrav/work/ntuples/42X/s11-zeem800-powheg-v11-pu_ntuple.root               0.0037864 432 1 @Powheg 800+
+# /mnt/unl/home/ikrav/work/ntuples/42X/s11-zeem1020-v11-pu_tight-loose_skim.root           3320.0    800 1 @Pythia 10-20
