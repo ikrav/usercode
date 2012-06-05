@@ -18,8 +18,9 @@
 Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
 Bool_t checkMatrixSize(TMatrixD m);
-const int correct_error_code=1;
 
+const int correct_error_code=1;
+const int wzzzSystError_is_100percent=1;
 
 TString subtractBackground(const TString conf){
 
@@ -203,7 +204,11 @@ TString subtractBackground(const TString conf){
                  {
                      wzzz(i,j)+=aux1(i,j);
                      wzzzError(i,j)+=aux2(i,j);
-                     wzzzErrorSyst(i,j)+=aux1(i,j)*aux1(i,j);
+		     if (wzzzSystError_is_100percent)
+		       wzzzErrorSyst(i,j)+=aux1(i,j);
+		     else 
+		       wzzzErrorSyst(i,j)+=aux1(i,j)*aux1(i,j);
+
 		     //std::cout << "wzzzErrorSyst(" << i << "," << j << ")+=" <<  aux1(i,j) << "^2=" << (aux1(i,j)*aux1(i,j)) << "\n";
                  }
            }
@@ -263,9 +268,16 @@ TString subtractBackground(const TString conf){
            totalBackgroundError(i,j)=sqrt( true2eBackgroundError(i,j) +
 					   wzzzError(i,j) +
 					   fakeEleBackgroundError(i,j) );
+	   if (wzzzSystError_is_100percent) {
+           totalBackgroundErrorSyst(i,j)=sqrt( true2eBackgroundErrorSyst(i,j) +
+				       wzzzErrorSyst(i,j)*wzzzErrorSyst(i,j) +
+					       fakeEleBackgroundErrorSyst(i,j) );
+	   }
+	   else {
            totalBackgroundErrorSyst(i,j)=sqrt( true2eBackgroundErrorSyst(i,j) +
 					       wzzzErrorSyst(i,j) +
 					       fakeEleBackgroundErrorSyst(i,j) );
+	   }
 	   }
 	   else {
            totalBackgroundError(i,j)=sqrt( true2eBackgroundError(i,j) * true2eBackgroundError(i,j) +
@@ -354,8 +366,14 @@ TString subtractBackground(const TString conf){
       if (correct_error_code){
       err = sqrt(true2eBackgroundError[i][yi]
 		 + wzzzError[i][yi]);
+      if (wzzzSystError_is_100percent) {
+      sys = sqrt(true2eBackgroundErrorSyst[i][yi]
+		 + wzzzErrorSyst[i][yi] * wzzzErrorSyst[i][yi]);
+      }
+      else {
       sys = sqrt(true2eBackgroundErrorSyst[i][yi]
 		 + wzzzErrorSyst[i][yi]);
+      }
       }
       else {
       err = sqrt(true2eBackgroundError[i][yi]*true2eBackgroundError[i][yi]
