@@ -219,7 +219,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       int ibinPreFsr = DYTools::findMassBin(massPreFsr);
       // If mass is larger than the highest bin boundary
       // (last bin), use the last bin.
-      if(ibinPreFsr == -1 && mass >= massBinLimits[nMassBins] )
+      if(ibinPreFsr == -1 && massPreFsr >= massBinLimits[nMassBins] )
 	ibinPreFsr = nMassBins-1;
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
