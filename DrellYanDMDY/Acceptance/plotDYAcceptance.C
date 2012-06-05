@@ -200,7 +200,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   for(UInt_t ifile=0; ifile<fnamev.size(); ifile++) {
   
     // Read input file
-    std::cout<<"fnamev["<<ifile<<"]="<<fnamev[ifile]<<std::endl;
+    //std::cout<<"fnamev["<<ifile<<"]="<<fnamev[ifile]<<std::endl;
     cout << "Processing " << fnamev[ifile] << "..." << endl;
     infile = new TFile(fnamev[ifile]); 
     assert(infile);
@@ -220,7 +220,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     // Set branch address to structures that will store the info  
     eventTree->SetBranchAddress("Gen",&gen);
     TBranch *genBr = eventTree->GetBranch("Gen");
-  
+ 
     // loop over events    
     nZv += scale * eventTree->GetEntries();
 
@@ -246,16 +246,18 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       //ibinM1DPreFsr is used to determine fewz_weights
       //when new_fewz_code=0
       int ibinM1DPreFsr = DYTools::_findMassBin2011(massPreFsr);
+      // If mass is larger than the highest bin boundary
+      // (last bin), use the last bin.
+      if(ibinM1DPreFsr == -1 && 
+	 massPreFsr >= DYTools::_massBinLimits2011[DYTools::_nMassBins2011] ) {
+	ibinM1DPreFsr = DYTools::_nMassBins2011-1;
+      }
 
       int ibinMass = DYTools::findMassBin(mass);
-      int ibinMassPreFsr = DYTools::findMassBin(massPreFsr);
+      //int ibinMassPreFsr = DYTools::findMassBin(massPreFsr);
       int ibinY = DYTools::findAbsYBin(ibinMass, y);
       //int ibinYPreFsr = DYTools::findAbsYBin(ibinMassPreFsr, yPreFsr);
 
-      // If mass is larger than the highest bin boundary
-      // (last bin), use the last bin.
-      if(ibinM1DPreFsr == -1 && mass >= massBinLimits[nMassBins] );
-      ibinM1DPreFsr = nMassBins-1;
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
       double fewz_weight = 1.0;
@@ -265,7 +267,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
 	else
         {
 
-	  if(ibinM1DPreFsr != -1 && ibinM1DPreFsr < DYTools::nMassBins)
+	  if(ibinM1DPreFsr != -1 && ibinM1DPreFsr < DYTools::_nMassBins2011)
             {
 	      int ptBin = weights[ibinM1DPreFsr]->GetXaxis()->FindBin( gen->vpt );
 	      int yBin = weights[ibinM1DPreFsr]->GetYaxis()->FindBin( gen->vy );
