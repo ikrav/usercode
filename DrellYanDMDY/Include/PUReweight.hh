@@ -21,7 +21,6 @@ protected:
   int FCreate; // whether a file is being created (1) or updated (2), otherwise - reading (0)
 public:
   PUReweight_t() : FName(), FFile(NULL), hRef(NULL), hActive(NULL), hWeight(NULL), FCreate(0) { }
-  ~PUReweight_t() { this->clear(); }
 
   void clear() {
     if (hRef) delete hRef;
