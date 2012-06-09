@@ -49,7 +49,15 @@ Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
 TMatrixD AdjustMatrixBinning(TMatrixD matrUsualBinning);
 
-void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, const TString &saveDir="plots")
+//for cross section
+void RShapePlot (TMatrixD relCrossSection, TMatrixD relCrossSectionStatErr, 
+TMatrixD relCrossSectionDET, TMatrixD relCrossSectionStatErrDET, 
+TMatrixD relPostFsrCrossSection, TMatrixD relPostFsrCrossSectionStatErr, 
+TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET);
+
+void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name, TString saveDir);
+
+void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, TString saveDir)
 {
 //acceptance, bkgRatesPercent, LEGO2,COLZ 
    TMatrixD matrDraw = AdjustMatrixBinning(matr);
@@ -122,4 +130,123 @@ Int_t minMutualMultipleTwo(Int_t n1, Int_t n2)
         subMultiple=i;
     }
   return subMultiple*(n1/subMultiple)*(n2/subMultiple);
+}
+
+  void RShapePlot (TMatrixD relCrossSection, TMatrixD relCrossSectionStatErr, 
+TMatrixD relCrossSectionDET, TMatrixD relCrossSectionStatErrDET, 
+TMatrixD relPostFsrCrossSection, TMatrixD relPostFsrCrossSectionStatErr, 
+TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
+{
+
+      // create first graph
+   //Pre-FSR -All phase space
+   double x[nMassBins];
+   double ex[nMassBins];
+   /*
+   double y1[nMassBins];
+   double ey1[nMassBins];
+   double y2[nMassBins];
+   double ey2[nMassBins];
+   double y3[nMassBins];
+   double ey3[nMassBins];
+   double y4[nMassBins];
+   double ey4[nMassBins];
+   */
+   double* y1;
+   double* ey1;
+   double* y2;
+   double* ey2;
+   double* y3;
+   double* ey3;
+   double* y4;
+   double* ey4;
+   for (int i=0; i<nMassBins; i++)
+     {
+       x[i]=(massBinLimits[i+1]+massBinLimits[i])/2;
+       ex[i]=(massBinLimits[i+1]-massBinLimits[i])/2;
+     }
+
+   TString saveDir="plots"+ DYTools::analysisTag;
+   if (DYTools::study2D==0)
+     {
+       y1=relCrossSection.GetMatrixArray();
+       ey1=relCrossSectionStatErr.GetMatrixArray();
+       y2=relCrossSectionDET.GetMatrixArray();
+       ey2=relCrossSectionStatErrDET.GetMatrixArray();
+       y3=relPostFsrCrossSection.GetMatrixArray();
+       ey3=relPostFsrCrossSectionStatErr.GetMatrixArray();
+       y4=relPostFsrCrossSectionDET.GetMatrixArray();
+       ey4=relPostFsrCrossSectionStatErrDET.GetMatrixArray();
+
+       Int_t n = nMassBins;
+       RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,"RShape","plots");
+     }
+}
+
+void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name, TString saveDir)
+{
+   TCanvas* canv=new TCanvas(name,name);
+   canv->SetGrid();
+   canv->SetLogx(1);
+   canv->SetLogy(1);
+   canv->SetFillColor(0);
+   // draw a frame to define the range
+   TMultiGraph *mg = new TMultiGraph();
+   TGraphErrors *gr1 = new TGraphErrors(n,x,y1,ex,ey1);
+   gr1->SetName("PreFSR (d#sigma /dM)/ (d#sigma /dM)_{z}");
+   gr1->SetTitle("Pre-FSR (d#sigma /dM)/ (d#sigma /dM)_{z}");
+   gr1->SetFillColor(0);
+   gr1->SetMarkerColor(kBlack);
+   gr1->SetMarkerStyle(20);
+   gr1->SetMarkerSize(1.0);
+
+   TGraphErrors *gr2 = new TGraphErrors(n,x,y2,ex,ey2);
+   gr2->SetName("PreFSR DET (d#sigma /dM)/ (d#sigma /dM)_{z}");
+   gr2->SetTitle("Pre-FSR DET (d#sigma /dM)/ (d#sigma /dM)_{z}");
+   gr2->SetFillColor(0);
+   gr2->SetMarkerColor(kBlue);
+   gr2->SetMarkerStyle(20);
+   gr2->SetMarkerSize(1.0);
+   gr2->SetLineColor(kBlue);
+
+   TGraphErrors *gr3 = new TGraphErrors(n,x,y3,ex,ey3);
+   gr3->SetName("PostFSR (d#sigma /dM)/ (d#sigma /dM)_{z}");
+   gr3->SetTitle("Post-FSR (d#sigma /dM)/ (d#sigma /dM)_{z}");
+   gr3->SetFillColor(0);
+   gr3->SetMarkerColor(kRed);
+   gr3->SetMarkerStyle(20);
+   gr3->SetMarkerSize(1.0);
+   gr3->SetLineColor(kRed);
+
+   TGraphErrors *gr4 = new TGraphErrors(n,x,y4,ex,ey4);
+   gr4->SetName("PostFSR DET(d#sigma /dM)/ (d#sigma /dM)_{z}");
+   gr4->SetTitle("Post-FSR DEt(d#sigma /dM)/ (d#sigma /dM)_{z}");
+   gr4->SetFillColor(0);
+   gr4->SetMarkerColor(kGreen);
+   gr4->SetMarkerStyle(20);
+   gr4->SetMarkerSize(1.0);
+   gr4->SetLineColor(kGreen);
+
+   mg->Add(gr4);
+   mg->Add(gr3);
+   mg->Add(gr2);
+   mg->Add(gr1);
+   mg->Draw("ap");
+   TAxis* yax=mg->GetYaxis();
+   yax->SetRangeUser(5e-6,2);
+   mg->GetXaxis()->SetTitle("M_{ee}");
+   mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dM");
+   mg->GetYaxis()->SetTitleOffset(1.20);
+   //mg->SetName("1/#sigma_z d#sigma /dM");
+
+   TLegend *leg = new TLegend(.60,.55,.95,.90);
+   leg->AddEntry(gr1,"Pre FSR All Phase Space");
+   leg->AddEntry(gr2,"Pre FSR Detector Phase space");
+   leg->AddEntry(gr3,"Post FSR All Phase Space");
+   leg->AddEntry(gr4,"Post FSR Detector Phase space");
+   leg->Draw();
+   
+   
+   SaveCanvas(canv, name, saveDir);
+
 }
