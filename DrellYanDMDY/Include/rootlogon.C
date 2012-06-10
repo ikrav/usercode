@@ -29,7 +29,7 @@
   gROOT->ProcessLine(".L ../Include/PUReweight.cc+");
 
   gROOT->ProcessLine(".L ../Unfolding/UnfoldingTools.C+");
-  //gROOT->ProcessLine(".L ../Include/plotFunctions.cc+");
+  gROOT->ProcessLine(".L ../Include/plotFunctions.cc+");
 
   //gROOT->ProcessLine(".L ../YieldsAndBackgrounds/plotFunctionsPrepareYields.C+");
 
