@@ -104,20 +104,8 @@ TMatrixD relPostFsrCrossSection, TMatrixD relPostFsrCrossSectionStatErr,
 TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
 {
 
-      // create first graph
-   //Pre-FSR -All phase space
-   double x[nMassBins];
-   double ex[nMassBins];
-   /*
-   double y1[nMassBins];
-   double ey1[nMassBins];
-   double y2[nMassBins];
-   double ey2[nMassBins];
-   double y3[nMassBins];
-   double ey3[nMassBins];
-   double y4[nMassBins];
-   double ey4[nMassBins];
-   */
+   double* x;
+   double* ex;
    double* y1;
    double* ey1;
    double* y2;
@@ -131,6 +119,8 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
    Int_t n;
    if (DYTools::study2D==0)
      {
+       x  = new double[DYTools::nMassBins];
+       ex = new double[DYTools::nMassBins];
        for (int i=0; i<nMassBins; i++)
          {
            x[i]=(massBinLimits[i+1]+massBinLimits[i])/2;
@@ -147,9 +137,13 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
 
        n = DYTools::nMassBins;
        RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,"RShape1D",saveDir);
+       delete x;
+       delete ex;
      }
    else if (DYTools::study2D==1)
      {
+       x  = new double[DYTools::nYBinsMax];
+       ex = new double[DYTools::nYBinsMax];       
        y1  = new double[DYTools::nYBinsMax];
        ey1 = new double[DYTools::nYBinsMax];
        y2  = new double[DYTools::nYBinsMax];
@@ -158,7 +152,7 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
        ey3 = new double[DYTools::nYBinsMax];
        y4  = new double[DYTools::nYBinsMax];
        ey4 = new double[DYTools::nYBinsMax];
-/*
+
         for (int i=0; i<DYTools::nMassBins; i++)
          {
            n = DYTools::nYBins[i];
@@ -180,9 +174,13 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
            name2D+=massBinLimits[i];
            name2D+="-";
            name2D+=massBinLimits[i+1];
+
            RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,name2D,saveDir);
+
          }
-*/
+
+       delete x;
+       delete ex;
        delete y1;
        delete ey1;
        delete y2;
@@ -200,7 +198,8 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
 
    TCanvas* canv=new TCanvas(name,name);
    canv->SetGrid();
-   canv->SetLogx(1);
+   //for 1D analysis x-axis is mass, for 2D analysis x-axis is |Y|
+   if (study2D==0) canv->SetLogx(1);
    canv->SetLogy(1);
    canv->SetFillColor(0);
    // draw a frame to define the range
@@ -247,7 +246,9 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
    mg->Draw("ap");
    TAxis* yax=mg->GetYaxis();
    yax->SetRangeUser(5e-6,2);
-   mg->GetXaxis()->SetTitle("M_{ee}");
+   if (study2D==0) mg->GetXaxis()->SetTitle("M_{ee}");
+   else if (study2D==1) mg->GetXaxis()->SetTitle("|Y|");
+   
    mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dM");
    mg->GetYaxis()->SetTitleOffset(1.20);
    //mg->SetName("1/#sigma_z d#sigma /dM");
