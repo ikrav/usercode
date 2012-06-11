@@ -551,11 +551,15 @@ void applyUnfoldingToMc() { //TString fullUnfoldingConstFileName, TString fullMc
   TVectorD yieldsMcFsrOfRecV = *yieldsMcFsrOfRecPtr;
   TVectorD yieldsMcRecV = *yieldsMcRecPtr;
 
+  //std::cout << "yieldsMcPostFsrRec:\n"; yieldsMcFsrOfRecV.Print();
+  //std::cout << "yieldsMcPostFsrGen:\n"; yieldsMcRecV.Print();
+
   int nUnfoldingBins = DYTools::getTotalNumberOfBins();
   TVectorD dNdMmcCheckV(nUnfoldingBins);
   dNdMmcCheckV = 0;
 
-  unfolding::unfold(yieldsMcRecV, dNdMmcCheckV, fullUnfoldingConstFileName);
+  //unfolding::unfold(yieldsMcRecV, dNdMmcCheckV, fullUnfoldingConstFileName);
+  unfolding::unfold(yieldsMcFsrOfRecV, dNdMmcCheckV, fullUnfoldingConstFileName);
 
   // Report results
   if (1) {
@@ -567,7 +571,8 @@ void applyUnfoldingToMc() { //TString fullUnfoldingConstFileName, TString fullMc
 	printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %10.0f    %10.0f\n",
 	       DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi],rapidityBinLimits[yi+1],
-	       yieldsMcFsrOfRecV[idx],
+	       yieldsMcRecV[idx],
+	       //yieldsMcFsrOfRecV[idx],
 	       dNdMmcCheckV[idx]);
       }
       delete rapidityBinLimits;
