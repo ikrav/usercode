@@ -818,7 +818,7 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   plotMass.Draw(c,kFALSE,format);
 
   c->Write();
-  outFileHistos->Close();
+  //outFileHistos->Close();
 
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out

@@ -21,13 +21,14 @@ protected:
   int FCreate; // whether a file is being created (1) or updated (2), otherwise - reading (0)
 public:
   PUReweight_t() : FName(), FFile(NULL), hRef(NULL), hActive(NULL), hWeight(NULL), FCreate(0) { }
+  ~PUReweight_t() { this->clear(); }
 
   void clear() {
-    if (hRef) delete hRef;
+    if (hRef) { delete hRef; hRef=0; }
     if ((FCreate!=0) && FFile && hActive) { FFile->cd(); hActive->Write(); }
-    if (hActive) delete hActive;
-    if (hWeight) delete hWeight;
-    if (FFile) delete FFile;
+    if (hActive) { delete hActive; hActive=0; }
+    if (hWeight) { delete hWeight; hWeight=0; }
+    if (FFile) { delete FFile; FFile=0; }
     FCreate=0;
   }
 
