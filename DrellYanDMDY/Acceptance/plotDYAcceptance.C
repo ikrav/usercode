@@ -387,6 +387,10 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   //==============================================================================================================  
 
   CPlot::sOutDir="plots" + analysisTag;
+  if (systematicsMode==DYTools::FSR_STUDY) {
+    CPlot::sOutDir += "_reweight";
+    CPlot::sOutDir += int(reweightFsr*100);
+  }
 
   TString outDir= TString("../root_files/");
   if (systematicsMode==DYTools::NORMAL)  outDir+=TString("constants/");
@@ -413,9 +417,9 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   }
   plotZMass1.SetLogy();
   plotZMass1.Draw(c);
-  SaveCanvas(c, "zmass1",CPlot::sOutDir);
+  SaveCanvas(c, "zmass1");
 
-  PlotMatrixVariousBinning(accv, "acceptance", "LEGO2",filePlots, CPlot::sOutDir);
+  PlotMatrixVariousBinning(accv, "acceptance", "LEGO2",filePlots);
   filePlots->Close();
   //delete filePlots;
   
