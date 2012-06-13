@@ -93,7 +93,7 @@ void makeUnfoldingMatrix(const TString input,
     std::cout<<"Running script in the RESOLUTION_STUDY mode"<<std::endl;
   else if (systematicsMode==DYTools::FSR_STUDY)
     std::cout<<"Running script in the FSR_STUDY mode"<<std::endl;
-  else if (systematicsMode==DYTools::ESCALE_RESIDUAL) 
+  else if (systematicsMode==DYTools::ESCALE_RESIDUAL)
     std::cout << "Running script in the ESCALE_RESIDUAL mode\n";
   else { 
     std::cout<<"requested mode not recognized"<<std::endl;
@@ -175,32 +175,31 @@ void makeUnfoldingMatrix(const TString input,
   int seed = randomSeed;
   random.SetSeed(seed);
   gRandom->SetSeed(seed);
-  // In the case of systematic studies, generate an array of random offsets
-  TVectorD shift(escale._nEtaBins); // temporary: this vector is outdated by the new features in the escale obj.class
-  shift = 0;
   if(systematicsMode==DYTools::RESOLUTION_STUDY) {
     escale.randomizeSmearingWidth(seed);
-    for(int i=0; i<escale._nEtaBins; i++)
-      shift[i] = gRandom->Gaus(0,1);
   }
 
   // prepare tools for ESCALE_RESIDUAL
-  /*
-  TH1F *shapeWeights=NULL;
+  TMatrixD *shapeWeights=NULL;
   if (systematicsMode==DYTools::ESCALE_RESIDUAL) {
-    TString shapeFName=TString("../root_files/yields/") + dirTag + TString("/shape_weights.root");
-    std::cout << "Obtaining shape_weights.root from <" << shapeFName << ">\n";
+    TString shapeFName=TString("../root_files/yields/") + dirTag + 
+      TString("/yields_bg-subtracted") + analysisTag + TString(".root");
+    std::cout << "Obtaining shape weights from <" << shapeFName << ">\n";
     TFile fshape(shapeFName);
     if (!fshape.IsOpen()) {
       std::cout << "failed to open a file <" << shapeFName << ">\n";
       throw 2;
     }
-    shapeWeights = (TH1F*)fshape.Get("weights");
-    shapeWeights->SetDirectory(0);
+    shapeWeights = (TMatrixD*)fshape.Get("ZeeMCShapeReweight");
+    if (!shapeWeights) {
+      std::cout << "failed to find object \"ZeeMCShapeReweight\"\n";
+      throw 2;
+    }
     dirTag += TString("_escale_residual");
     std::cout << "changing dirTag to <" << dirTag << ">\n";
+    (*shapeWeights)(0,0)=1; (*shapeWeights)(1,0)=1; (*shapeWeights)(2,0)=1;
+    std::cout << "shapeWeights:\n"; shapeWeights->Print(); // return;
   }
-  */
 
   //  
   // Set up histograms
@@ -238,7 +237,7 @@ void makeUnfoldingMatrix(const TString input,
   //int nYBinsMax = DYTools::findMaxYBins(); // commented out - rely on DYTools.hh
   TMatrixD yieldsMcPostFsrGen(DYTools::nMassBins,nYBinsMax);
   TMatrixD yieldsMcPostFsrRec(DYTools::nMassBins,nYBinsMax);
-  TMatrixD yieldsMcGen(DYTools::nMassBins,nYBinsMax);
+  TMatrixD yieldsMcGen(DYTools::nMassBins,nYBinsMax);       // to compare with DrellYan1D
   // The errors 2D arrays are not filled at the moment. It needs
   // to be done carefully since events are weighted.
   // For each bin, the error would be sqrt(sum weights^2).
@@ -300,7 +299,7 @@ void makeUnfoldingMatrix(const TString input,
   
     // loop over events    
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-      if (debugMode && (ientry>100000)) break;
+      if (debugMode && (ientry>10)) break;
 
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
@@ -310,7 +309,9 @@ void makeUnfoldingMatrix(const TString input,
       else if (((gen->mass)-(gen->vmass))>massLimit) reweight=1.0;
       else reweight=reweightFsr;
 
-      if (ientry<20) std::cout<<"reweight="<<reweight<<std::endl;
+      if (ientry<20) {
+	printf("reweight=%4.2lf, dE_fsr=%+6.4lf\n",reweight,(gen->mass-gen->vmass));
+      }
 
       int iMassBinGen = DYTools::findMassBin(gen->mass);
       int iYBinGen = DYTools::findAbsYBin(iMassBinGen, gen->y);
@@ -352,21 +353,9 @@ void makeUnfoldingMatrix(const TString input,
 
         // We have a Z candidate! HURRAY! 
 
-	// 
-	// THIS NEEDS TO BE REVISED, SYSTEMATICS FOR NOW IS COMMENTED OUT
-	//
 // 	// Apply extra smearing to MC reconstructed dielectron mass
 // 	// to better resemble the data
-// 	double smear1 = escale::extraSmearingSigma(dielectron->scEta_1);
-//         double smear2 = escale::extraSmearingSigma(dielectron->scEta_2);
-// 	// In systematics mode, overwrite the smear values with
-// 	// shifted ones.
-// 	if(systematicsMode==DYTools::RESOLUTION_STUDY){
-// 	  smear1 = escale::extraSmearingSigmaShifted(dielectron->scEta_1,shift);
-// 	  smear2 = escale::extraSmearingSigmaShifted(dielectron->scEta_2,shift);
-// 	}
-//         double smearTotal = sqrt(smear1*smear1 + smear2*smear2);
-//         double massResmeared = dielectron->mass + random.Gaus(0.0,smearTotal);
+// 	// In systematics mode, use randomized MC smear factors
 	double smearingCorrection = (systematicsMode == DYTools::RESOLUTION_STUDY) ?
           escale.generateMCSmearRandomized(dielectron->scEta_1,dielectron->scEta_2) :
           escale.generateMCSmear(dielectron->scEta_1,dielectron->scEta_2);
@@ -389,8 +378,14 @@ void makeUnfoldingMatrix(const TString input,
 	// Fill the matrix of the reconstruction level mass and rapidity
 	int iMassReco = DYTools::findMassBin(massResmeared);
 	int iYReco = DYTools::findAbsYBin(iMassReco, dielectron->y);
-	if( iMassReco != -1 && iYReco != -1)
+	double shape_weight = 1.0;
+	if( iMassReco != -1 && iYReco != -1) {
+	  if (shapeWeights) {
+	    shape_weight = (*shapeWeights)[iMassReco][iYReco];
+	    //std::cout << "massResmeared=" << massResmeared << ", iMassReco=" << iMassReco << ", shapeWeight=" << shape_weight << "\n";
+	  }
 	  yieldsMcPostFsrRec(iMassReco, iYReco) += reweight * scale * gen->weight;
+	}
 	
         // Unlike the mass vs Y reference yields matrices, to prepare the
 	// migration matrix we flatten (mass,Y) into a 1D array, and then
@@ -399,7 +394,8 @@ void makeUnfoldingMatrix(const TString input,
  	int iIndexFlatReco = DYTools::findIndexFlat(iMassReco, iYReco);
 	if( iIndexFlatReco != -1 && iIndexFlatReco < nUnfoldingBins
 	    && iIndexFlatGen != -1 && iIndexFlatGen < nUnfoldingBins ){
-	  double fullWeight = reweight * scale * gen->weight;
+	  double fullWeight = reweight * scale * gen->weight * shape_weight;
+	  //std::cout << "adding DetMig(" << iIndexFlatGen << "," << iIndexFlatReco << ") = " << reweight << "*" << scale << "*" << gen->weight << "*" << shape_weight << " = "  << (reweight * scale * gen->weight * shape_weight) << "\n";
           DetMigration(iIndexFlatGen,iIndexFlatReco) += fullWeight;
 	  // Accumulate sum of weights squared, sqrt of the sum is computed later
           DetMigrationErr(iIndexFlatGen,iIndexFlatReco) += fullWeight*fullWeight;
@@ -428,6 +424,8 @@ void makeUnfoldingMatrix(const TString input,
     infile=0, eventTree=0;
   } // end loop over files
   delete gen;
+
+  //return;
 
   // Compute the errors on the elements of migration matrix
   // by simply taking the square root over the accumulated sum(w^2)
@@ -501,22 +499,38 @@ void makeUnfoldingMatrix(const TString input,
   if((systematicsMode==DYTools::RESOLUTION_STUDY) || (systematicsMode==DYTools::FSR_STUDY))
     outputDir = TString("../root_files/systematics/")+dirTag;
   gSystem->mkdir(outputDir,kTRUE);
+
+  TString fnameTag="";
+  {
+    TString u="_";
+    switch(systematicsMode) {
+    case DYTools::NORMAL: 
+      fnameTag=analysisTag; 
+      break;
+    case DYTools::RESOLUTION_STUDY: 
+      fnameTag=TString("_seed_") + analysisTag + u;
+      fnameTag+=seed;
+      break;
+    case DYTools::FSR_STUDY:
+      fnameTag=TString("_reweight_") + analysisTag + u;
+      fnameTag+= int(100*reweightFsr);
+      break;
+    case DYTools::ESCALE_RESIDUAL:
+      fnameTag=analysisTag+TString("_escaleResidual");
+      break;
+    default:
+      std::cout<<"requested mode not recognized when determining fnameTag"<<std::endl;
+      assert(0);
+    }
+  }
+  std::cout << "fnameTag=<" << fnameTag << ">\n";
+  CPlot::sOutDir=TString("plots") + fnameTag;
+
   //TString unfoldingConstFileName(outputDir+TString("/unfolding_constants.root"));
   TString unfoldingConstFileName=outputDir+
-    TString("/unfolding_constants") + analysisTag 
-    + TString(".root");
-  if(systematicsMode==DYTools::RESOLUTION_STUDY){
-    unfoldingConstFileName = outputDir+TString("/unfolding_constants_seed_");
-    unfoldingConstFileName += analysisTag;
-    unfoldingConstFileName += seed;
-    unfoldingConstFileName += ".root";
-  }
-  if(systematicsMode==DYTools::FSR_STUDY){
-    unfoldingConstFileName = outputDir+TString("/unfolding_constants_reweight_");
-    unfoldingConstFileName += analysisTag;
-    unfoldingConstFileName += int(100*reweightFsr);
-    unfoldingConstFileName += ".root";
-  }
+    TString("/unfolding_constants") + fnameTag + TString(".root");
+  std::cout << "unfoldingConstFileName=<" << unfoldingConstFileName << ">\n";
+
   TFile fConst(unfoldingConstFileName, "recreate" );
   DetResponse             .Write("DetResponse");
   DetInvertedResponse     .Write("DetInvertedResponse");
@@ -664,33 +678,37 @@ void makeUnfoldingMatrix(const TString input,
   cout << "* SUMMARY" << endl;
   cout << "*--------------------------------------------------" << endl;
   cout << endl; 
-  
-  // Printout of all constants, uncomment if needed
-  //printf("DetCorrFactor:\n"); DetCorrFactor.Print();
-  //printf("DetMigration:\n"); DetMigration.Print();
-  //printf("DetResponse:\n"); DetResponse.Print();
 
-  //printf("DetInvertedResponse:\n"); DetInvertedResponse.Print();
-  //printf("DetInvertedResponseErr:\n"); DetInvertedResponseErr.Print();
-  //printf("DetResponseArr:\n"); DetResponseArr.Print();
-  //printf("DetInvertedResponseArr:\n"); DetInvertedResponseArr.Print();
-  //printf("DetInvertedResonseErrArr:\n"); DetInvertedResponseErrArr.Print();
+  if (0) {
+    // Printout of all constants, uncomment if needed
+    //printf("DetCorrFactor:\n"); DetCorrFactor.Print();
+    printf("DetMigration:\n"); DetMigration.Print();
+    printf("DetResponse:\n"); DetResponse.Print();
 
-//   printf("Detector corr factor numerator:\n");
-//   DetCorrFactorNumerator.Print();
-  //printf("yieldsMcPostFsrRec:\n");
-  //yieldsMcPostFsrRec.Print();
+    printf("DetInvertedResponse:\n"); DetInvertedResponse.Print();
+    //printf("DetInvertedResponseErr:\n"); DetInvertedResponseErr.Print();
+    //printf("DetResponseArr:\n"); DetResponseArr.Print();
+    //printf("DetInvertedResponseArr:\n"); DetInvertedResponseArr.Print();
+    //printf("DetInvertedResonseErrArr:\n"); DetInvertedResponseErrArr.Print();
 
-  //printf("yieldsMcPostFsrGen:\n");
-  //yieldsMcPostFsrGen.Print();
+    //   printf("Detector corr factor numerator:\n");
+    //   DetCorrFactorNumerator.Print();
 
-//   printf("Detector corr factor denominator:\n");
-//   DetCorrFactorDenominator.Print();
-//   printf("yieldsMcPostFsrRecArr:\n");
-//   yieldsMcPostFsrRecArr.Print();
+    printf("yieldsMcPostFsrGen:\n");
+    yieldsMcPostFsrGen.Print();
+    
+    printf("yieldsMcPostFsrRec:\n");
+    yieldsMcPostFsrRec.Print();
 
-  //printf("yieldsMcGen:\n");
-  //yieldsMcGen.Print();
+
+    //   printf("Detector corr factor denominator:\n");
+    //   DetCorrFactorDenominator.Print();
+    //   printf("yieldsMcPostFsrRecArr:\n");
+    //   yieldsMcPostFsrRecArr.Print();
+    
+    //printf("yieldsMcGen:\n");
+    //yieldsMcGen.Print();
+  }
 
   gBenchmark->Show("makeUnfoldingMatrix");
 }

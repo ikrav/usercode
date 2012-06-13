@@ -87,8 +87,10 @@ void eventDump(ofstream &ofs, const mithep::TDielectron *dielectron,
 
 //=== MAIN MACRO =================================================================================================
 
-void selectEvents(const TString conf, const TString triggerSetString="Full2011DatasetTriggers", 
-		  DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL, int debugMode=0) 
+void selectEvents(const TString conf, 
+		  const TString triggerSetString="Full2011DatasetTriggers", 
+		  DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL, 
+		  int debugMode=0) 
 {  
   gBenchmark->Start("selectEvents");
 
@@ -106,9 +108,11 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   switch(runMode) {
   case DYTools::NORMAL:
   case DYTools::ESCALE_STUDY:
+  case DYTools::ESCALE_STUDY_RND:
     break;
   default:
-    std::cout << "selectEvents is not ready for runMode=" << SystematicsStudyName(runMode) << "\n";
+    std::cout << "selectEvents is not ready for runMode=" 
+	      << SystematicsStudyName(runMode) << "\n";
     throw 2;
   }
   
@@ -140,7 +144,8 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
       if (line.find("generate_EEM_files=") != string::npos) {
 	generateEEMFile=line.substr(line.find('=')+1);
 	generateEEMFEWZFile=(line.find("FEWZ") != string::npos) ? 1:0;
-	std::cout << "\n\tEEM files will be generated, tag=<" << generateEEMFile 
+	std::cout << "\n\tEEM files will be generated, tag=<" 
+		  << generateEEMFile 
 		  << ">, with_FEWZ_weights=" << generateEEMFEWZFile << "\n\n";
 	continue;
       }
@@ -200,13 +205,12 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   // 
   // Set up energy scale corrections
   //
-  if (runMode==DYTools::ESCALE_STUDY) { 
-    std::cout << "Since runMode=EScale_Study, changing escaleTag=<" << escaleTag << "> to 'UNCORRECTED'\n";
-    escaleTag="UNCORRECTED";
-  }
+
   ElectronEnergyScale escale(escaleTag);
   assert(escale.isInitialized());
   escale.print();
+  TString escaleFileTag=escale.calibrationSetShortName();
+  std::cout << "escaleFileTag=<" << escaleFileTag << ">\n";
 
 
   // sOutDir is a static data member in the CPlot class.
@@ -217,7 +221,13 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
   //   The consequence of this variable is not set is that the plots
   // will be created in the local directory rather than the
   // one configured through sOutDir.
-//   CPlot::sOutDir        = outputDir + TString("/plots");   gSystem->mkdir(CPlot::sOutDir,kTRUE);
+  //   CPlot::sOutDir        = outputDir + TString("/plots");   gSystem->mkdir(CPlot::sOutDir,kTRUE);
+  if ((runMode==DYTools::ESCALE_STUDY) || 
+      (runMode==DYTools::ESCALE_STUDY_RND)) {
+    CPlot::sOutDir = "plots_escale";
+  }
+  else CPlot::sOutDir = "plots";
+  gSystem->mkdir(CPlot::sOutDir,kTRUE);
 
   const TString ntupDir = outputDir + TString("/ntuples"); gSystem->mkdir(ntupDir,kTRUE);
   
@@ -244,10 +254,9 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 
 #ifdef usePUReweight
   PUReweight_t puReweight;
-  //TString outNamePV = outputDir + TString("/npv") + analysisTag_USER + TString(".root");
-  //int res=puReweight.setFile(outNamePV,1); // create a file
   TString dirTag(outputDir(outputDir.Index("DY_"),outputDir.Length()));
-  int res=puReweight.setDefaultFile(dirTag,analysisTag_USER,1);
+  int append = (runMode==DYTools::NORMAL) ? 0 : 1;
+  int res=puReweight.setDefaultFile(dirTag,analysisTag_USER, 1+append);
   assert(res);
   TString outNamePV=puReweight.fileName();
 #endif
@@ -357,7 +366,8 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     TFile *eemFile=NULL;
     TTree *eemTree=NULL;
     if (generateEEMFile.size()) {
-      outEEMName = ntupDir + TString("/") + snamev[isam] + TString("_") + TString(generateEEMFile.c_str()) + TString("_EtaEtaM.root");
+      outEEMName = ntupDir + TString("/") + snamev[isam] + TString("_") + 
+	TString(generateEEMFile.c_str()) + TString("_EtaEtaM.root");
       eemFile = new TFile(outEEMName,"RECREATE");
       eemTree = new TTree("Data","Data");
       assert(eemTree);
@@ -377,13 +387,19 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
     //
     // Set up output ntuple file for the sample
     //
-    TString outName = ntupDir + TString("/") + snamev[isam] + analysisTag_USER + TString("_select.root");
-    if (runMode==DYTools::ESCALE_STUDY) {
+    TString outName = ntupDir + TString("/") + snamev[isam] + 
+      analysisTag_USER + TString("_select.root");
+
+    if ((runMode==DYTools::ESCALE_STUDY) || 
+	(runMode==DYTools::ESCALE_STUDY_RND)) {
       if (isam==0) {
-	outName.Replace(outName.Index("_select."),sizeof("_select.")-1,"_select_uncorrected.");
+	TString fnameTag= TString("_select_") + escaleFileTag;
+	outName.Replace(outName.Index("_select."),sizeof("_select.")-2,
+			fnameTag);
       }
       else {
-	std::cout << "... runMode=EScale_Study, skipping the non-data files\n";
+	std::cout << "... runMode=<" << SystematicsStudyName(runMode) 
+		  << ">, skipping the non-data files\n";
 	break;
       }
     }
@@ -566,10 +582,11 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 	    if (isam==0) {
 	      switch (runMode) {
 	      case DYTools::NORMAL: 
+	      case DYTools::ESCALE_STUDY:
 		escaleCorrType=DielectronSelector_t::_escaleData;
 		break;
-	      case DYTools::ESCALE_STUDY:
-		escaleCorrType=DielectronSelector_t::_escaleUncorrected;
+	      case DYTools::ESCALE_STUDY_RND:
+		escaleCorrType=DielectronSelector_t::_escaleDataRnd;
 		break;
 	      default:
 		std::cout << "does not know what escale to apply for runMode=" << SystematicsStudyName(runMode) << "\n";
@@ -602,8 +619,15 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 	  Double_t scEt2 = dielectron->scEt_2;
 	  // Electron energy scale correction
           if(isam==0) {            	    
-	    double corr1 = escale.getEnergyScaleCorrection(dielectron->scEta_1);
-	    double corr2 = escale.getEnergyScaleCorrection(dielectron->scEta_2);
+	    double corr1 = 1, corr2 = 1;
+	    if (runMode!=DYTools::ESCALE_STUDY_RND) {
+	      corr1=escale.getEnergyScaleCorrection(dielectron->scEta_1);
+	      corr2 = escale.getEnergyScaleCorrection(dielectron->scEta_2);
+	    }
+	    else {
+	      corr1=escale.getEnergyScaleCorrectionRandomized(dielectron->scEta_1);
+	      corr2 = escale.getEnergyScaleCorrectionRandomized(dielectron->scEta_2);
+	    }
 	    scEt1 = dielectron->scEt_1 * corr1;
 	    scEt2 = dielectron->scEt_2 * corr2;
 
@@ -748,6 +772,11 @@ void selectEvents(const TString conf, const TString triggerSetString="Full2011Da
 #ifdef usePUReweight
   puReweight.clear();
 #endif
+
+  if (runMode!=DYTools::NORMAL) {
+    std::cout << "\n\trunMode=" << SystematicsStudyName(runMode) << ". Terminating the macro\n";
+    return;
+  }
 
 
 #ifndef usePUReweight

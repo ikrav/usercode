@@ -40,8 +40,10 @@
 #include "../Include/ElectronEnergyScale.hh"        // energy scale correction
 
 #include "../Include/DYTools.hh"
+#include "../Include/DYToolsUI.hh"
 #include "../Include/plotFunctions.hh"
 #include "../Include/PUReweight.hh"
+#include "../Include/UnfoldingTools.hh"
 
 #endif
 
@@ -62,11 +64,23 @@ void SomeHistAttributes (TH1F* hist, TString samplename);
 
 //=== MAIN MACRO =================================================================================================
 
-void prepareYields(const TString conf  = "data_plot.conf") 
+void prepareYields(const TString conf  = "data_plot.conf",
+		   DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL,
+		   const TString plotsDirExtraTag="")
 {  
   gBenchmark->Start("prepareYields");
 
-  
+  std::cout << "\n\nRun mode: " << SystematicsStudyName(runMode) << "\n";
+  switch(runMode) {
+  case DYTools::NORMAL:
+  case DYTools::ESCALE_STUDY:
+  case DYTools::ESCALE_STUDY_RND:
+    break;
+  default:
+    std::cout << "prepareYields is not ready for runMode=" << SystematicsStudyName(runMode) << "\n";
+    throw 2;
+  }
+ 
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
   //==============================================================================================================
@@ -157,6 +171,12 @@ void prepareYields(const TString conf  = "data_plot.conf")
   // one configured through sOutDir.
 //   CPlot::sOutDir = outputDir + TString("/plots");
 
+  if ((runMode==DYTools::ESCALE_STUDY) || (runMode==DYTools::ESCALE_STUDY_RND)) {
+    CPlot::sOutDir = "plots_escale/";
+  }
+  else CPlot::sOutDir = "plots";
+  CPlot::sOutDir += plotsDirExtraTag;
+
   Bool_t hasData = (samplev[0]->fnamev.size()>0);
     
   //
@@ -217,6 +237,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
   // TString("/npv.root");
   PUReweight_t puWeight;
   const TString fnamePV = outputDir+TString("/npv") + analysisTag_USER + TString(".root");
+  std::cout << "fnamePV=<" << fnamePV << ">\n";
   TFile *pvfile = NULL;
   TH1F *hPVData = 0;
   if (puReweight_new_code) {
@@ -254,8 +275,14 @@ void prepareYields(const TString conf  = "data_plot.conf")
   
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     if((isam==0) && !hasData) continue;
-    
-    const TString fname = outputDir + TString("/ntuples/") + snamev[isam] + analysisTag_USER + TString("_select.root");
+
+    TString fname = outputDir + TString("/ntuples/") + snamev[isam] + analysisTag_USER + TString("_select.root");
+    if ((isam==0) && 
+	((runMode==DYTools::ESCALE_STUDY) || (runMode==DYTools::ESCALE_STUDY_RND))) {
+      // selectEvents corrects only data energies
+      TString fnameTag=TString("_select_") + escale.calibrationSetShortName();
+      fname.Replace(fname.Index("_select."),sizeof("_select.")-2,fnameTag);
+    }
     cout << "Processing " << fname << "..." << endl;   
     infile = new TFile(fname);
     assert(infile); 
@@ -389,6 +416,8 @@ void prepareYields(const TString conf  = "data_plot.conf")
       totalMCMass->Integral(totalMCMass->FindBin(massBinLimits[i]+0.001),totalMCMass->FindBin(massBinLimits[i+1]-0.001));
       printf("data to MC %i bin norm: %f\n",i,dataOverMcEachBin[i]);
     }
+
+  //std::cout << "\n\nsetting dataOverMc=1\n"; dataOverMc=1; // for 1_to_1 comparison with 1D
   
   // Rescale all MC samples. This is not totally proper for fake lepton
   // backgrounds, but ok for backgrounds with true leptons, and those are dominant
@@ -445,6 +474,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
     massBinLimits(i) = DYTools::massBinLimits[i];
     rapidityBinning(i) = DYTools::nYBins[i];
   }
+
   // This dummy object is only needed to convey the number
   // of samples considered. The method below is rather convoluted,
   // but I do not know a better one. Ideally, we would just store
@@ -459,6 +489,7 @@ void prepareYields(const TString conf  = "data_plot.conf")
   massBinLimits      .Write("massBinLimits");
   rapidityBinning    .Write("rapidityBinning");
   dummySampleCount   .Write("dummySampleCount");
+  unfolding::writeBinningArrays(fYields);
   char objName[100];
   for(UInt_t isam = 0; isam < yields.size(); isam++){
     sprintf(objName,"sample_name_%i",isam);

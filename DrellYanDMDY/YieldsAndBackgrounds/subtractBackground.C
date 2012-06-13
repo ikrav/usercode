@@ -7,7 +7,9 @@
 #include "TVectorD.h"
 #include "TStyle.h"
 #include "../Include/DYTools.hh"
+#include "../Include/DYToolsUI.hh"
 #include "../Include/MyTools.hh"
+#include "../Include/CPlot.hh"
 #include "../Include/plotFunctions.hh"
 #include "../Include/UnfoldingTools.hh"
 #include <iostream>
@@ -22,8 +24,25 @@ Bool_t checkMatrixSize(TMatrixD m);
 const int correct_error_code=1;
 const int wzzzSystError_is_100percent=1;
 
-TString subtractBackground(const TString conf){
+TString subtractBackground(const TString conf,
+		   DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL,
+			   const TString plotsDirExtraTag=""){
 
+
+  std::cout << "\n\nRun mode: " << SystematicsStudyName(runMode) << "\n";
+  switch(runMode) {
+  case DYTools::NORMAL:
+  case DYTools::ESCALE_STUDY:
+  case DYTools::ESCALE_STUDY_RND:
+    break;
+  default:
+    std::cout << "subtractBackground is not ready for runMode=" << SystematicsStudyName(runMode) << "\n";
+    throw 2;
+  }
+ 
+  //--------------------------------------------------------------------------------------------------------------
+  // Settings 
+  //==============================================================================================================
 
   // Read from configuration file only the location of the root files
   TString inputDir;
@@ -45,8 +64,36 @@ TString subtractBackground(const TString conf){
   ifs.close();
   inputDir.ReplaceAll("selected_events","yields");
 
+  // sOutDir is a static data member in the CPlot class.
+  // There is a strange crash of the whole ROOT session well after
+  // this script is executed when one attempts to exit ROOT, with 
+  // a dump of memory map. This happens only on UNL Tier3, but
+  // there is no sign of a problem on any other computer.
+  //   The consequence of this variable is not set is that the plots
+  // will be created in the local directory rather than the
+  // one configured through sOutDir.
+//   CPlot::sOutDir = outputDir + TString("/plots");
+
+  if ((runMode==DYTools::ESCALE_STUDY) || (runMode==DYTools::ESCALE_STUDY_RND)) {
+    CPlot::sOutDir = "plots_escale/";
+  }
+  else CPlot::sOutDir = "plots";
+  CPlot::sOutDir += plotsDirExtraTag;
+
+
+  //--------------------------------------------------------------------------------------------------------------
+  // Main analysis code 
+  //============================================================================================================== 
+
+
   // yields.root
-  TFile file(inputDir+TString("/yields") + analysisTag + TString(".root"));
+  TString yieldsFile=inputDir+TString("/yields") + analysisTag + TString(".root");
+  std::cout << "yieldsFile=<" << yieldsFile << ">\n";
+  TFile file(yieldsFile);
+  if (!file.IsOpen()) {
+    std::cout << "failed to open a file <" << yieldsFile << ">\n";
+    throw 2;
+  }
 
   TVectorD* vec=(TVectorD *)file.Get("dummySampleCount");
   Int_t NSamples=vec->GetNoElements();
@@ -314,8 +361,60 @@ TString subtractBackground(const TString conf){
   TMatrixD bkgRatesUsual(DYTools::nMassBins,nYBinsMax);
   for (int i=0; i<DYTools::nMassBins; i++)
       for (int j=0; j<DYTools::nYBins[i]; j++)
-           bkgRatesUsual(i,j)=100.0*totalBackground(i,j)/signalYields(i,j);     
+           bkgRatesUsual(i,j)=100.0*totalBackground(i,j)/signalYields(i,j);
 
+
+  //
+  // data-MC residual difference: 
+  // create weight factors to make MC prediction signal-like
+  //
+  TMatrixD zeePredictedYield(DYTools::nMassBins,nYBinsMax);
+  int zeeFound=0;
+  for (int i=0; i<NSamples; ++i) {
+    if (sn[i] == "zee") {
+      zeePredictedYield= *yields[i];
+      zeeFound=1;
+      break;
+    }
+  }
+  if (!zeeFound) {
+    std::cout << "failed to locate MC zee sample\n";
+    throw 2;
+  }
+
+  // 1. determine counts in Z-peak area in data and MC
+  double countDataNoBkg=0., countMCsignal=0.;
+  for (int i=0; i<DYTools::nMassBins; i++) {
+    if ((massBinLimits[i]>59.999) && (massBinLimits[i]<120.0001)) {
+      for (int yi=0; yi<nYBins[i]; ++yi) {
+	countDataNoBkg += signalYields[i][yi];
+      }
+      for (int yi=0; yi<nYBins[i]; ++yi) {
+	countMCsignal += zeePredictedYield[i][yi];
+      }
+    }
+  }
+  if (fabs(countDataNoBkg)<1e-7) {
+    std::cout << "found no data events in Z-peak region\n";
+    throw 2;
+  }
+  if (fabs(countMCsignal)<1e-7) {
+    std::cout << "found no data events in Z-peak region\n";
+    throw 2;
+  }
+  // 2. create weight maps
+  TMatrixD zeeMCShapeReweight(nMassBins,nYBinsMax);
+  zeeMCShapeReweight=0;
+  double ZpeakFactor = countMCsignal/double(countDataNoBkg);
+  for (int i=0; i<DYTools::nMassBins; i++) {
+    for (int yi=0; yi<nYBins[i]; ++yi) {
+      double mc = zeePredictedYield[i][yi];
+      double weight=(fabs(mc)<1e-7) ?  
+	0. :  ( ZpeakFactor * signalYields[i][yi] / mc );
+      zeeMCShapeReweight[i][yi] = weight;
+    }
+  }
+ 
 
  
   // Save sideband-subtracted signal yields
@@ -325,6 +424,7 @@ TString subtractBackground(const TString conf){
   signalYields         .Write("YieldsSignal");
   signalYieldsError    .Write("YieldsSignalErr");   // not squared
   signalYieldsErrorSyst.Write("YieldsSignalSystErr"); // not squared
+  zeeMCShapeReweight   .Write("ZeeMCShapeReweight");
   unfolding::writeBinningArrays(fileOut);
   fileOut.Close();
 
