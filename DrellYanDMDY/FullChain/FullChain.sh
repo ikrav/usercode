@@ -10,7 +10,8 @@
 # ------------------  Define some variables
 
 anTagUser=
-anTag="2D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
+anTagUser="ymax9"
+anTag="1D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
 filename_data="../config_files/data.conf"
 #filename_data="../config_files/data_vilnius_raw.conf"
 #filename_data="../config_files/data_evtTrig.conf"
@@ -41,10 +42,10 @@ do_selection=0
 do_prepareYields=0
 do_subtractBackground=0
 do_unfolding=0
-do_unfoldingSyst=0
-do_acceptance=1
+do_unfoldingSyst=1
+do_acceptance=0
 do_acceptanceSyst=0
-do_efficiency=1
+do_efficiency=0
 do_efficiencyScaleFactors=0
 do_plotFSRCorrections=0
 do_plotFSRCorrectionsSansAcc=0
@@ -279,7 +280,7 @@ cd ../Unfolding
 rm -f *.so ${expectUnfoldingSystematicsFile}
 echo
 checkFile evaluateUnfoldingSyst.sh
-source evaluateUnfoldingSyst.sh --debug${debugMode} | tee ${logDir}/out${timeStamp}-05-evaluateUnfoldingSyst${anTag}.log
+source evaluateUnfoldingSyst.sh --debug${debugMode} ${filename_mc} ${filename_cs} ${triggerSet} 1 | tee ${logDir}/out${timeStamp}-05-evaluateUnfoldingSyst${anTag}.log
 get_status ${expectUnfoldingSystematicsFile}
 statusUnfoldingSyst=$RUN_STATUS
 cd ../FullChain
