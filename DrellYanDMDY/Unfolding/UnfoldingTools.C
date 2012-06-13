@@ -15,16 +15,17 @@ namespace unfolding {
   {
     
     // Read unfolding constants
-    std::cout << "unfold: Load constants from <" << unfoldingConstFileName << ">" << std::endl;
+    std::cout << "unfold: Load constants from <" << unfoldingConstFileName 
+	      << ">" << std::endl;
     
     int res=checkBinningConsistency(unfoldingConstFileName);
     if (res!=1) return res;
     if (!checkFlatVectorRanges(vin,vout,unfoldingConstFileName," operates")) return 0;
     
     TFile fileConstants(unfoldingConstFileName); // file had to exist to reach this point
-    TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
+    //TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
     TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
-    TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
+    //TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
 
     // Apply unfolding matrix
     vout = 0;
@@ -39,6 +40,37 @@ namespace unfolding {
     fileConstants.Close();
     return 1;
   }
+
+  //-----------------------------------------------------------------
+ 
+ int  unfoldTrueToReco(TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName)
+  {
+
+    // Read unfolding constants
+    std::cout << "unfold: Load constants from <" << unfoldingConstFileName 
+	      << ">" << std::endl;
+
+    int res=checkBinningConsistency(unfoldingConstFileName);
+    if (res!=1) return res;
+    if (!checkFlatVectorRanges(vin,vout,unfoldingConstFileName," operates")) return 0;
+
+    TFile fileConstants(unfoldingConstFileName); // file had to exist to reach this point
+   TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
+   //TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
+   //TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
+
+   // Apply unfolding matrix
+   vout = 0;
+   int nBins = DYTools::getTotalNumberOfBins();
+   for(int i=0; i<nBins; i++){
+     for(int j=0; j<nBins; j++){
+       vout[i] += DetResponse(j,i) * vin[j];
+     }
+   }
+
+   fileConstants.Close();
+   return 1;
+ }
 
 
 //-----------------------------------------------------------------
@@ -322,8 +354,9 @@ namespace unfolding {
       std::cout << "unfold: ERROR: inconsistent binning in the inputs\n";
       if (result==1) result = 0;
     }else {
-      if (result==1) std::cout << "unfold: Binning in the inputs is consistent\n";
-      else std::cout << "unfold: CheckBinningConsistency -- Code ERROR\n";
+      //if (result==1) std::cout << "unfold: Binning in the inputs is consistent\n";
+      //else std::cout << "unfold: CheckBinningConsistency -- Code ERROR\n";
+      if (result!=1) std::cout << "unfold: CheckBinningConsistency -- Code ERROR\n";
     }
     
     if (DetResponsePtr) delete DetResponsePtr;
