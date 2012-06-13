@@ -35,14 +35,21 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
     Double_t scEt1 = dielectron->scEt_1;
     Double_t scEt2 = dielectron->scEt_2;
     // Electron energy scale correction
-    if(applyEScale==_escaleData) {
+    if((applyEScale==_escaleData) || (applyEScale==_escaleDataRnd)) {
       if (!fEScale) {
 	std::cout << "Error in testDielectron_default: escaleData is requested, but the pointer is null\n";
 	throw 2;
       }
 
-      double corr1 = fEScale->getEnergyScaleCorrection(dielectron->scEta_1);
-      double corr2 = fEScale->getEnergyScaleCorrection(dielectron->scEta_2);
+      double corr1 = 1, corr2= 1;
+      if (applyEScale==_escaleData) {
+	corr1=fEScale->getEnergyScaleCorrection(dielectron->scEta_1);
+	corr2=fEScale->getEnergyScaleCorrection(dielectron->scEta_2);
+      }
+      else {
+	corr1=fEScale->getEnergyScaleCorrectionRandomized(dielectron->scEta_1);
+	corr2=fEScale->getEnergyScaleCorrectionRandomized(dielectron->scEta_2);
+      }
       scEt1 = dielectron->scEt_1 * corr1;
       scEt2 = dielectron->scEt_2 * corr2;
 

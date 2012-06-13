@@ -19,7 +19,7 @@
 class DielectronSelector_t {
 public:
   typedef enum { _selectNone, _selectDefault } TSelectionType_t;
-  typedef enum { _escaleNone, _escaleUncorrected, _escaleData, _escaleMC } TEScaleCorrection_t;
+  typedef enum { _escaleNone, _escaleUncorrected, _escaleData, _escaleDataRnd, _escaleMC } TEScaleCorrection_t;
 protected:
   TSelectionType_t fSelection;
   ElectronEnergyScale *fEScale;
