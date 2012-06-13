@@ -79,7 +79,7 @@ void calcAcceptanceSystematics(const TString conf){
 
   //printing out to the screen
 
-  printf("            <acc>  rel-err-percent-Fsr\n");
+  printf("mass     rapidity    <acc>  rel-err-percent-Fsr\n");
   for(int i=0; i<nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
     for (int yi=0; yi<nYBins[i]; ++yi) {
