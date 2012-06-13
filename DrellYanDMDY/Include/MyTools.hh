@@ -7,6 +7,7 @@
 #include "TString.h"
 #include "TSystem.h" 
 #include <iostream>
+#include "../Include/CPlot.hh"
 
 //#include "RooStats/FeldmanCousins.h"
 
@@ -110,8 +111,8 @@ void PrintVec(const char *msg, const std::vector<T>& vec, int prneol=0) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
-void SaveCanvas(TCanvas* canv, const TString &canvName, const TString &destDir="plots")
-{        
+void SaveCanvas(TCanvas* canv, const TString &canvName, TString destDir=CPlot::sOutDir) 
+{
   gSystem->mkdir(destDir,kTRUE);
   gSystem->mkdir(destDir+TString("/png"),kTRUE);
   gSystem->mkdir(destDir+TString("/pdf"),kTRUE);
