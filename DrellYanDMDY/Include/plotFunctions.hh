@@ -1,3 +1,6 @@
+#ifndef plotFunctions_HH
+#define plotFunctions_HH
+
 #if !defined(__CINT__) || defined(__MAKECINT__)
 #include <TROOT.h>                  // access to gROOT, entry point to ROOT system
 #include <TTree.h>                  // class to access ntuples
@@ -48,7 +51,7 @@ void SetSomeHistAttributes (TH1F* hist, TString samplename);
 Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
 TMatrixD AdjustMatrixBinning(TMatrixD matrUsualBinning);
-void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, const TString &saveDir="plots");
+void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile);
 
 //for cross section
 void RShapePlot (TMatrixD relCrossSection, TMatrixD relCrossSectionStatErr, 
@@ -56,5 +59,7 @@ TMatrixD relCrossSectionDET, TMatrixD relCrossSectionStatErrDET,
 TMatrixD relPostFsrCrossSection, TMatrixD relPostFsrCrossSectionStatErr, 
 TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET);
 
-void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name, const TString &saveDir="plots");
+void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name);
 
+
+#endif
