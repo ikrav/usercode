@@ -337,11 +337,11 @@ void calcCrossSection(const TString conf="../config_files/xsecCalc.conf"){
    CPlot::sOutDir="plots" + DYTools::analysisTag;
 
  
-   PlotMatrixVariousBinning(relCrossSection, "relative_CS", "LEGO2",0, CPlot::sOutDir);
-   PlotMatrixVariousBinning(relCrossSectionDET, "relative_CS_DET", "LEGO2",0, CPlot::sOutDir);
-   PlotMatrixVariousBinning(relPostFsrCrossSection, "relative_postFSR_CS", "LEGO2",0, CPlot::sOutDir);
-   PlotMatrixVariousBinning(relPostFsrCrossSectionDET, "relative_postFSR_CS_DET", "LEGO2",0, CPlot::sOutDir);
-
+   PlotMatrixVariousBinning(relCrossSection, "relative_CS", "LEGO2",0);
+   PlotMatrixVariousBinning(relCrossSectionDET, "relative_CS_DET", "LEGO2",0);
+   PlotMatrixVariousBinning(relPostFsrCrossSection, "relative_postFSR_CS", "LEGO2",0);
+   PlotMatrixVariousBinning(relPostFsrCrossSectionDET, "relative_postFSR_CS_DET", "LEGO2",0);
+  }
 
 
 
@@ -531,6 +531,10 @@ void  applyUnfolding(TMatrixD &vinM, TMatrixD &vinStatErrM, TMatrixD &vinSystErr
   return;
 }
 
+
+inline  double asym(double x, double y) { return (x-y)/(x+y); }
+
+
 void applyUnfoldingToMc() { //TString fullUnfoldingConstFileName, TString fullMcRefYieldsFileName)
   TString fullUnfoldingConstFileName = TString("../root_files/constants/")+tagDirConstants+TString("/")+fileUnfoldingConstants;
   TString fullMcRefYieldsFileName    = TString("../root_files/constants/")+tagDirConstants+TString("/")+fileMcReferenceYields;
@@ -542,45 +546,65 @@ void applyUnfoldingToMc() { //TString fullUnfoldingConstFileName, TString fullMc
     std::cout << "failed to open a file <" << fullMcRefYieldsFileName << ">\n";
     assert(fileMcRef.IsOpen());
   }
-  TVectorD *yieldsMcFsrOfRecPtr        = (TVectorD *)fileMcRef.FindObjectAny("yieldsMcPostFsrRecFIArray");
-  TVectorD *yieldsMcRecPtr             = (TVectorD *)fileMcRef.FindObjectAny("yieldsMcPostFsrGenFIArray");
-  if (!yieldsMcFsrOfRecPtr || !yieldsMcRecPtr) {
+  TVectorD *yieldsMcRecPtr = (TVectorD *)fileMcRef.FindObjectAny("yieldsMcPostFsrRecFIArray");
+  TVectorD *yieldsMcGenPtr = (TVectorD *)fileMcRef.FindObjectAny("yieldsMcPostFsrGenFIArray");
+  if (!yieldsMcRecPtr || !yieldsMcGenPtr) {
     std::cout << "null pointers from <" << fullMcRefYieldsFileName << ">\n";
     assert(0);
   }
-  TVectorD yieldsMcFsrOfRecV = *yieldsMcFsrOfRecPtr;
   TVectorD yieldsMcRecV = *yieldsMcRecPtr;
+  TVectorD yieldsMcGenV = *yieldsMcGenPtr;
 
-  //std::cout << "yieldsMcPostFsrRec:\n"; yieldsMcFsrOfRecV.Print();
-  //std::cout << "yieldsMcPostFsrGen:\n"; yieldsMcRecV.Print();
+  //std::cout << "yieldsMcPostFsrRec:\n"; yieldsMcRecV.Print();
+  //std::cout << "yieldsMcPostFsrGen:\n"; yieldsMcGenV.Print();
 
   int nUnfoldingBins = DYTools::getTotalNumberOfBins();
-  TVectorD dNdMmcCheckV(nUnfoldingBins);
-  dNdMmcCheckV = 0;
+  TVectorD dNdMmcCheckVgen(nUnfoldingBins), dNdMmcCheckVreco(nUnfoldingBins);
+  dNdMmcCheckVgen = 0; 
+  dNdMmcCheckVreco = 0;
 
-  //unfolding::unfold(yieldsMcRecV, dNdMmcCheckV, fullUnfoldingConstFileName);
-  unfolding::unfold(yieldsMcFsrOfRecV, dNdMmcCheckV, fullUnfoldingConstFileName);
+  unfolding::unfold(yieldsMcRecV, dNdMmcCheckVgen, fullUnfoldingConstFileName);
+  unfolding::unfoldTrueToReco(yieldsMcGenV, dNdMmcCheckVreco, fullUnfoldingConstFileName);
 
   // Report results
   if (1) {
-    printf("\nUNFOLD: Check on the MC, yields:\n");
+    printf("\nUNFOLD: Check on the MC, yields reco->gen:\n");
+    printf(" mass      rapidity    yieldsGen     unfolded  asym(%%)\n");
     for(int i=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
       for (int yi=0; yi<nYBins[i]; ++yi) {
 	int idx=findIndexFlat(i,yi);
-	printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %10.0f    %10.0f\n",
+	printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %10.0f    %10.0f   %6.2f\n",
 	       DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi],rapidityBinLimits[yi+1],
-	       yieldsMcRecV[idx],
-	       //yieldsMcFsrOfRecV[idx],
-	       dNdMmcCheckV[idx]);
+	       yieldsMcGenV[idx],
+	       dNdMmcCheckVgen[idx],
+	       100*asym(yieldsMcGenV[idx],dNdMmcCheckVgen[idx])
+	       );
+      }
+      delete rapidityBinLimits;
+    }
+
+    printf("\nUNFOLD: Check on the MC, yields gen->reco:\n");
+    printf(" mass      rapidity    yieldsReco    unfolded  asym(%%)\n");
+    for(int i=0; i<DYTools::nMassBins; i++){
+      double *rapidityBinLimits=DYTools::getYBinLimits(i);
+      for (int yi=0; yi<nYBins[i]; ++yi) {
+        int idx=findIndexFlat(i,yi);
+        printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %10.0f    %10.0f  %6.2lf\n",
+               DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
+               rapidityBinLimits[yi],rapidityBinLimits[yi+1],
+               yieldsMcRecV[idx],
+               dNdMmcCheckVreco[idx],
+	       100*asym(yieldsMcRecV[idx],dNdMmcCheckVreco[idx])
+	       );
       }
       delete rapidityBinLimits;
     }
   }
 
   fileMcRef.Close();
-  if (yieldsMcFsrOfRecPtr) delete yieldsMcFsrOfRecPtr;
+  if (yieldsMcGenPtr) delete yieldsMcGenPtr;
   if (yieldsMcRecPtr) delete yieldsMcRecPtr;
 }
 
