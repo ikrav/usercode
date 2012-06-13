@@ -15,6 +15,7 @@
 namespace unfolding{
 
   int  unfold(TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName);
+  int  unfoldTrueToReco(TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName);
 
   // pack MatrixD to flat-indexed VectorD and apply the unfolding matrix 
   // from a file
