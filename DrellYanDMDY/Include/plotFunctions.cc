@@ -21,7 +21,7 @@
      
 #endif
 
-void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, const TString &saveDir)
+void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile)
 {
 
 //acceptance, bkgRatesPercent, LEGO2,COLZ 
@@ -55,7 +55,7 @@ void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, T
    canv->SetLogx();
 
   Hist->Draw(drawOption);
-  SaveCanvas(canv, name, saveDir);
+  SaveCanvas(canv, name, CPlot::sOutDir);
   if (histoFile) canv->Write();
 
 }
@@ -115,7 +115,6 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
    double* y4;
    double* ey4;
 
-   TString saveDir="plots"+ DYTools::analysisTag;
    Int_t n;
    if (DYTools::study2D==0)
      {
@@ -136,7 +135,7 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
        ey4=relPostFsrCrossSectionStatErrDET.GetMatrixArray();
 
        n = DYTools::nMassBins;
-       RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,"RShape1D",saveDir);
+       RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,"RShape1D");
        delete x;
        delete ex;
      }
@@ -175,7 +174,7 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
            name2D+="-";
            name2D+=massBinLimits[i+1];
 
-           RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,name2D,saveDir);
+           RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,name2D);
 
          }
 
@@ -193,7 +192,7 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
      }
 }
 
-void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name, const TString &saveDir)
+void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name)
 {
 
    TCanvas* canv=new TCanvas(name,name);
@@ -261,6 +260,9 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
    leg->Draw();
    
    
-   SaveCanvas(canv, name, saveDir);
+   SaveCanvas(canv, name);
 
 }
+
+
+#include "../YieldsAndBackgrounds/plotFunctionsPrepareYields.C"
