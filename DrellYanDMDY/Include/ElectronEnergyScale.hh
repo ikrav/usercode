@@ -106,6 +106,7 @@ public:
 
   TString calibrationSetName() const { return ElectronEnergyScale::CalibrationSetName(this->_calibrationSet, &this->_inpFileName); }
   TString calibrationSetFunctionName() const { return ElectronEnergyScale::CalibrationSetFunctionName(this->_calibrationSet); }
+  TString calibrationSetShortName() const;
 
   TH1F* createScaleHisto(const TString &namebase) const;
   TH1F* createSmearHisto(const TString &namebase, int parameterNo) const;
@@ -148,6 +149,7 @@ private:
   // randomized for systematics studies
   double *               _dataConstRandomized;
   bool                   _energyScaleCorrectionRandomizationDone;
+  int                    _dataSeed;
   
   // MC constants. The number of constants and the names depend
   // on particular calibration set. For now, maximum possible is four.
@@ -165,6 +167,7 @@ private:
   double *               _mcConst3Err;
   double *               _mcConst4Err;
   bool                   _smearingWidthRandomizationDone;
+  int                    _mcSeed;
 
 protected:
   // Functions to be used for extra smearing

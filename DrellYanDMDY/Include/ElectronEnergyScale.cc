@@ -16,8 +16,17 @@ ElectronEnergyScale::ElectronEnergyScale(CalibrationSet calibrationSet):
   _inpFileName(),
   _isInitialized(false),
   _randomizedStudy(false),
+  _nEtaBins(0),
+  _etaBinLimits(NULL),
+  _dataConst(NULL), _dataConstErr(NULL), _dataConstRandomized(NULL),
   _energyScaleCorrectionRandomizationDone(false),
-  _smearingWidthRandomizationDone(false)
+  _dataSeed(-1),
+  _nMCConstants(0),
+  _mcConst1Name(), _mcConst2Name(), _mcConst3Name(), _mcConst4Name(),
+  _mcConst1(NULL), _mcConst2(NULL), _mcConst3(NULL), _mcConst4(NULL),
+  _mcConst1Err(NULL), _mcConst2Err(NULL), _mcConst3Err(NULL), _mcConst4Err(NULL),
+  _smearingWidthRandomizationDone(false),
+  _mcSeed(-1)
 {
   this->init(calibrationSet);
 }
@@ -29,8 +38,17 @@ ElectronEnergyScale::ElectronEnergyScale(const TString &escaleTagName):
   _inpFileName(),
   _isInitialized(false),
   _randomizedStudy(false),
+  _nEtaBins(0),
+  _etaBinLimits(NULL),
+  _dataConst(NULL), _dataConstErr(NULL), _dataConstRandomized(NULL),
   _energyScaleCorrectionRandomizationDone(false),
-  _smearingWidthRandomizationDone(false)
+  _dataSeed(-1),
+  _nMCConstants(0),
+  _mcConst1Name(), _mcConst2Name(), _mcConst3Name(), _mcConst4Name(),
+  _mcConst1(NULL), _mcConst2(NULL), _mcConst3(NULL), _mcConst4(NULL),
+  _mcConst1Err(NULL), _mcConst2Err(NULL), _mcConst3Err(NULL), _mcConst4Err(NULL),
+  _smearingWidthRandomizationDone(false),
+  _mcSeed(-1)
 {
   this->init(escaleTagName);
 }
@@ -43,6 +61,8 @@ void ElectronEnergyScale::clear() {
     if (_dataConst) delete[] _dataConst;
     if (_dataConstErr) delete[] _dataConstErr;
     if (_dataConstRandomized) delete[] _dataConstRandomized;
+    _dataSeed=-1;
+    _mcSeed=-1;
     if (_mcConst1) delete[] _mcConst1;
     if (_mcConst2) delete[] _mcConst2;
     if (_mcConst3) delete[] _mcConst3;
@@ -58,6 +78,7 @@ void ElectronEnergyScale::clear() {
 
 void ElectronEnergyScale::init(const TString &stringWithEScaleTagName, int debug) {
   this->clear();
+  //std::cout << "stringWithEScaleTagName=<" << stringWithEScaleTagName << ">\n";
   this->init(ElectronEnergyScale::DetermineCalibrationSet(stringWithEScaleTagName,&_inpFileName),debug);
   if (this->isInitialized()) {
     Ssiz_t pos=stringWithEScaleTagName.Index("RANDOMIZE");
@@ -613,6 +634,7 @@ int   ElectronEnergyScale::randomizeEnergyScaleCorrections(int seed){
 
   TRandom rand;
   rand.SetSeed(seed);
+  _dataSeed=seed;
   _energyScaleCorrectionRandomizationDone = true;
   if (_calibrationSet==UNCORRECTED) return 1;
 
@@ -788,6 +810,7 @@ void ElectronEnergyScale::randomizeSmearingWidth(int seed){
 
   TRandom rand;
   rand.SetSeed(seed);
+  _mcSeed=seed;
   _smearingWidthRandomizationDone = true;
   switch( _calibrationSet ) {
   case UNCORRECTED: break;
@@ -945,6 +968,8 @@ void ElectronEnergyScale::print() const {
   printf("\nEnergy scale corrections used:\n");
   printf("   Calibration set (%d): %s\n", _calibrationSet, ElectronEnergyScale::CalibrationSetName(this->_calibrationSet,&this->_inpFileName).Data());
   printf("   Smearing function: %s\n",ElectronEnergyScale::CalibrationSetFunctionName(this->_calibrationSet).Data());
+  if (_randomizedStudy) printf("  Random data seed=%d\n",_dataSeed);
+  if (_smearingWidthRandomizationDone) printf("  Random MC seed=%d\n",_mcSeed);
   printf("   Constants:\n");
   printf("     eta-bin      Escale-const      MC-const-1");
   if ( _mcConst2 ) printf("          MC-const-2");
@@ -984,7 +1009,14 @@ TString ElectronEnergyScale::ExtractFileName(const TString &escaleTagName) {
   if (escaleTagName.Contains("File")) {
     std::string tmp=escaleTagName.Data();
     size_t pos1=tmp.find("File");
-    pos1=tmp.find_first_of(' ',pos1+1); pos1=tmp.find_first_not_of(" \t\n",pos1+1); // skip File* and spaces
+    char target[10];
+    sprintf(target," \t\n");
+    pos1=tmp.find_first_of(' ',pos1+1);
+    if (pos1==std::string::npos) { 
+      pos1=tmp.find_first_of('_',pos1+6); 
+      target[0]='_';
+    }
+    pos1=tmp.find_first_not_of(" \t\n",pos1+1); // skip File* and spaces
     size_t pos2=tmp.find_first_of(" \n\t",pos1+1);
     if (pos2==std::string::npos) pos2=tmp.size(); // should be -1, but +1 is a correction for the case when the string terminates with the file name only
     if ((pos1==std::string::npos) || (pos2==std::string::npos)) {
@@ -1111,6 +1143,39 @@ TString ElectronEnergyScale::CalibrationSetFunctionName(ElectronEnergyScale::Cal
   default:
     name="CalibrationSetFunctionName_undetermined";
   }
+  return name;
+}
+
+//------------------------------------------------------
+
+TString ElectronEnergyScale::calibrationSetShortName() const {
+  TString name;
+  switch (this->_calibrationSet) {
+  case ElectronEnergyScale::UNDEFINED: name="undefined"; break;
+  case ElectronEnergyScale::UNCORRECTED: name="uncorrected"; break;
+  case ElectronEnergyScale::Date20110901_EPS11_default: name="default20110901"; break; 
+  case ElectronEnergyScale::Date20120101_default: name="default20120101"; break;
+  case ElectronEnergyScale::CalSet_File_Gauss: name="Gauss"; break;
+  case ElectronEnergyScale::CalSet_File_Voigt: name="Voigt"; break;
+  case ElectronEnergyScale::CalSet_File_BreitWigner: name="BreitWigner"; break;
+  default:
+    name="calibrationSetShortName_undetermined";
+  }
+  int len=this->_inpFileName.Length();
+  if (len) {
+    int i=this->_inpFileName.Index("testESF");
+    if (i>0) {
+      TString temp=this->_inpFileName(i+7, len);
+      int idot=temp.Index(".");
+      //std::cout << "i=" << i << ", idot=" << idot << ": " << this->_inpFileName(i,100) << "\n";
+      TString temp2=temp(0,idot);
+      //std::cout << "\ntemp2=<" << temp2 << ">\n";
+      if (temp2.Index(name)>0) name=temp2(1,temp2.Length());
+      else name+=temp2;
+    }
+  }
+  if (_energyScaleCorrectionRandomizationDone) { name+="_DtRND"; name+=_dataSeed; }
+  if (_smearingWidthRandomizationDone) { name+="_McRND"; name+=_mcSeed; }
   return name;
 }
 
