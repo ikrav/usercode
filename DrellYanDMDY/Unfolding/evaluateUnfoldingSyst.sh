@@ -4,13 +4,24 @@
 # Check if the environment variables are set. Assign values if they are empty
 #
 
+debugMode=
+for arg in $@ ; do
+  tmp=${arg/--debug/}
+  if [ ${#arg} -ne ${#tmp} ] ; then
+    shift # shift argument list
+    debugMode=${arg:7:1}
+  fi
+done
+if [ ${#debugMode} -eq 0 ] ; then debugMode=0; fi
+
+
 mcConfInputFile=$1
 xsecConfInputFile=$2
 triggerSet=$3
 fullRun=$4
 
 if [ ${#triggerSet} -eq 0 ] ; then  
-    triggerSet="Full2011_hltEffNew"  # not used in this script yet
+    triggerSet="Full2011_hltEffOld"  # not used in this script yet
 fi
 if [ ${#mcConfInputFile} -eq 0 ] ; then
     mcConfInputFile="../config_files/fall11mcT3.input" 
@@ -37,10 +48,9 @@ echo
 #  Individual flags to control the calculation
 #
 
-doFsrStudy=1
-doResolutionStudy=1
-doCalcUnfoldingSyst=0
-debugMode=1
+doFsrStudy=0
+doResolutionStudy=0
+doCalcUnfoldingSyst=1
 
 #
 #  Modify flags if fullRun=1
@@ -61,12 +71,12 @@ noError=1
 
 runPlotDYUnfoldingMatrix() {
   loc_massLimit=-1
-  root -b -q -l ${LXPLUS_CORRECTION} makeUnfoldingMatrix.C+\(\"${mcConfInputFile}\",${StudyFlag},${RandomSeed},${ReweightFsr},${loc_massLimit},${debugMode}\)
+  root -b -q -l ${LXPLUS_CORRECTION} makeUnfoldingMatrix.C+\(\"${mcConfInputFile}\",\"${triggerSet}\",${StudyFlag},${RandomSeed},${ReweightFsr},${loc_massLimit},${debugMode}\)
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
      echo 
-     echo "DONE: makeUnfoldingMatrix.C(\"${mcConfInputFile}\",${StudyFlag},${RandomSeed},${ReweightFsr},${loc_massLimit},debug=${debugMode})"
+     echo "DONE: makeUnfoldingMatrix.C(\"${mcConfInputFile}\",\"${triggerSet}\",${StudyFlag},${RandomSeed},${ReweightFsr},${loc_massLimit},debug=${debugMode})"
      echo 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
   fi
