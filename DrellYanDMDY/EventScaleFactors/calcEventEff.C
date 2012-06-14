@@ -56,8 +56,9 @@ template<class T> T SQR(const T& x) { return x*x; }
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
-int fillEfficiencyConstants(const TnPInputFileMgr_t &mcMgr, 
-	 const TnPInputFileMgr_t &dataMgr, const TriggerSelection &triggers );
+int fillEfficiencyConstants( const TnPInputFileMgr_t &mcMgr, 
+    const TnPInputFileMgr_t &dataMgr, const TriggerSelection &triggers,
+			    int puReweight );
 int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, 
   UInt_t kindIdx, vector<TMatrixD*> &data, vector<TMatrixD*> &dataErrLo, 
   vector<TMatrixD*> &dataErrHi, vector<TMatrixD*> &dataAvgErr);
@@ -255,7 +256,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 
   // Read efficiency constants from ROOT files
   // This has to be done AFTER configuration file is parsed
-  if (!fillEfficiencyConstants( tnpMCMgr, tnpDataMgr, triggers )) {
+  if (!fillEfficiencyConstants( tnpMCMgr, tnpDataMgr, triggers, puReweight )) {
     return;
   }
 
@@ -1751,10 +1752,12 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
 // tag and probe in TMatrixD form and converts the matrices into 
 // more simple arrays.
 int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr, 
-      const TnPInputFileMgr_t &dataMgr, const TriggerSelection &triggers ) {
+     const TnPInputFileMgr_t &dataMgr, const TriggerSelection &triggers, 
+			      int puReweight) {
 
   TString fnStart="efficiency_TnP_"; //+ analysisTag;
   TString fnEnd=".root";
+  if (puReweight) fnEnd= TString("_PU.root");
 
   if (dataEff.size()) dataEff.clear();
   if (dataEffErrLo.size()) dataEffErrLo.clear();
