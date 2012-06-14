@@ -253,13 +253,16 @@ class TriggerSelection{
     _isData=false;
     bits |= this->getEventTriggerBit(0);
     bits |= this->getEventTriggerBit_SCtoGSF(0);
-    bits |= this->getEventTriggerBit_TagProbe(0);
-    _isData=true;
+    bits |= this->getEventTriggerBit_TagProbe(0,true);
+    bits |= this->getEventTriggerBit_TagProbe(0,false);
+     _isData=true;
     bits |= this->getEventTriggerBit(150000+1);
     bits |= this->getEventTriggerBit(170054+1);
     bits |= this->getEventTriggerBit_SCtoGSF(0);
-    bits |= this->getEventTriggerBit_TagProbe(0);
-    bits |= this->getEventTriggerBit_TagProbe(165088+1);
+    bits |= this->getEventTriggerBit_TagProbe(0,true);
+    bits |= this->getEventTriggerBit_TagProbe(165088+1,true);
+    bits |= this->getEventTriggerBit_TagProbe(0,false);
+    bits |= this->getEventTriggerBit_TagProbe(165088+1,false);
     _isData=keepIsData;
     return bits;
   }
@@ -351,7 +354,7 @@ class TriggerSelection{
     return bits;
   }
 
-  ULong_t getEventTriggerBit_TagProbe(UInt_t run) const {
+  ULong_t getEventTriggerBit_TagProbe(UInt_t run, bool idEffTrigger) const {
     if (_isData && !validRun(run)) return 0UL;
     ULong_t bits=
       kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30;
@@ -363,13 +366,13 @@ class TriggerSelection{
     //	kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_Ele17;      <---------- unknown (Jan 26, 2012)
     //kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
     //kHLT_Ele32_CaloIdL_CaloIsoVL_SC17                     // was defined in eff_IdHlt.C for 2011A(early)
-    if (_isData && (run>=165088) && (run<=170759)) {
+    if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
       bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30;
     }
     return bits;
   }
 
-  ULong_t getTagTriggerObjBit(UInt_t run) const { // no check whether the run is ok!
+  ULong_t getTagTriggerObjBit(UInt_t run, bool idEffTrigger) const { // no check whether the run is ok!
     ULong_t bits=
       kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj;
       //kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17_EleObj;
@@ -377,26 +380,26 @@ class TriggerSelection{
     //kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
     //kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj                 // was defined in eff_IdHlt.C for 2011A(early)
     //bits |= kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj;   // was defined in ieff_idHlt.C
-    if (_isData && (run>=165088) && (run<=170759)) {
+    if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
       bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
     }
     return bits;
   }
 
-  ULong_t getProbeTriggerObjBit_Tight(UInt_t run) const { // no check whether the run is ok!
+  ULong_t getProbeTriggerObjBit_Tight(UInt_t run, bool idEffTrigger) const { // no check whether the run is ok!
     ULong_t bits=
       kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
-    if (_isData && (run>=165088) && (run<=170759)) {
+    if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
       // kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 is DoubleEG in Fall11 MC
       bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
     }
     return bits;
   }
 
-  ULong_t getProbeTriggerObjBit_Loose(UInt_t run) const { // no check whether the run is ok!
+  ULong_t getProbeTriggerObjBit_Loose(UInt_t run, bool idEffTrigger) const { // no check whether the run is ok!
    ULong_t bits=
      kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
-   if (_isData && (run>=165088) && (run<=170759)) {
+   if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
       // kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 is DoubleEG in Fall11 MC
      bits |= kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele2Obj;
     }
@@ -437,27 +440,27 @@ class TriggerSelection{
     return kTRUE;    
   }
 
-  Bool_t matchEventTriggerBit_TagProbe(ULong_t bit, UInt_t run) const {
-    if( ! (bit & getEventTriggerBit_TagProbe(run) ) )
+  Bool_t matchEventTriggerBit_TagProbe(ULong_t bit, UInt_t run, bool idEffTrigger) const {
+    if( ! (bit & getEventTriggerBit_TagProbe(run,idEffTrigger) ) )
       return kFALSE;
     return kTRUE;    
   }
 
-  Bool_t matchTagTriggerObjBit(ULong_t bit, UInt_t run) const { 
-    if( ! (bit & getTagTriggerObjBit(run) ) )
+  Bool_t matchTagTriggerObjBit(ULong_t bit, UInt_t run, bool idEffTrigger) const { 
+    if( ! (bit & getTagTriggerObjBit(run,idEffTrigger) ) )
       return kFALSE;
     return kTRUE;    
   }
 
 
-  Bool_t matchProbeTriggerObjBit_Tight(ULong_t bit, UInt_t run) const {
-    if( ! (bit & getProbeTriggerObjBit_Tight(run) ) )
+  Bool_t matchProbeTriggerObjBit_Tight(ULong_t bit, UInt_t run, bool idEffTrigger) const {
+    if( ! (bit & getProbeTriggerObjBit_Tight(run,idEffTrigger) ) )
       return kFALSE;
     return kTRUE;    
   }
 
-  Bool_t matchProbeTriggerObjBit_Loose(ULong_t bit, UInt_t run) const { 
-     if( ! (bit & getProbeTriggerObjBit_Loose(run) ) )
+  Bool_t matchProbeTriggerObjBit_Loose(ULong_t bit, UInt_t run, bool idEffTrigger) const { 
+    if( ! (bit & getProbeTriggerObjBit_Loose(run,idEffTrigger) ) )
       return kFALSE;
     return kTRUE;    
   }

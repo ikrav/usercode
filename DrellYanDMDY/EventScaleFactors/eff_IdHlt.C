@@ -440,14 +440,15 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
       */
 
-      ULong_t eventTriggerBit= triggers.getEventTriggerBit_TagProbe(info->runNum);
+      bool idEffTrigger = (effType==ID) ? true:false;
+      ULong_t eventTriggerBit= triggers.getEventTriggerBit_TagProbe(info->runNum, idEffTrigger);
 
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event... 
       eventsAfterTrigger++;
 
-      ULong_t tagTriggerObjectBit= triggers.getTagTriggerObjBit(info->runNum);
-      ULong_t probeTriggerObjectBit_Tight= triggers.getProbeTriggerObjBit_Tight(info->runNum);
-      ULong_t probeTriggerObjectBit_Loose= triggers.getProbeTriggerObjBit_Loose(info->runNum);
+      ULong_t tagTriggerObjectBit= triggers.getTagTriggerObjBit(info->runNum,idEffTrigger);
+      ULong_t probeTriggerObjectBit_Tight= triggers.getProbeTriggerObjBit_Tight(info->runNum,idEffTrigger);
+      ULong_t probeTriggerObjectBit_Loose= triggers.getProbeTriggerObjBit_Loose(info->runNum,idEffTrigger);
       ULong_t probeTriggerObjectBit= probeTriggerObjectBit_Tight | probeTriggerObjectBit_Loose;
 
       // loop through dielectrons
