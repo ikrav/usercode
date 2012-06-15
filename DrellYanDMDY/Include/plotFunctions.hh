@@ -10,6 +10,7 @@
 #include <TStyle.h>                   
 #include <TMatrixD.h>
 #include <TString.h>
+#include <TLatex.h>
 
 
 #include <vector>                   // STL vector class
@@ -51,7 +52,8 @@ void SetSomeHistAttributes (TH1F* hist, TString samplename);
 Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
 TMatrixD AdjustMatrixBinning(TMatrixD matrUsualBinning);
-void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile);
+void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, bool SetLogz=0);
+void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, TString title, bool SetLogz);
 
 //for cross section
 void RShapePlot (TMatrixD relCrossSection, TMatrixD relCrossSectionStatErr, 
@@ -59,7 +61,7 @@ TMatrixD relCrossSectionDET, TMatrixD relCrossSectionStatErrDET,
 TMatrixD relPostFsrCrossSection, TMatrixD relPostFsrCrossSectionStatErr, 
 TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET);
 
-void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name);
+void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name, double mass1, double mass2);
 
 
 #endif

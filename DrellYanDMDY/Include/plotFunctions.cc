@@ -4,24 +4,44 @@
 #include <TCanvas.h>                // class for drawing
 #include <TH1F.h>                   // 1D histograms
 #include <TH2D.h>                   // 2D histograms
-#include <TStyle.h>                   
+#include <TStyle.h> 
+#include <THStack.h>                  
 #include <TMatrixD.h>
 #include <TString.h>
 #include <TMultiGraph.h>
 #include <TGraphErrors.h>
 #include <TLegend.h>
+#include <TLatex.h>
+#include <TBenchmark.h> 
+#include <TVector3.h>               // 3D vector class
+#include <TArrayD.h>
+#include <TVectorD.h>
+#include <TLorentzVector.h>         // 4-vector class
+#include <TRandom.h>
+#include <TDatime.h>                // time stamp
 
 
 #include <vector>                   // STL vector class
+#include <iostream>                 // standard I/O
+#include <iomanip>                  // functions to format standard I/O
+#include <fstream>                  // functions for file I/O
+#include <string>                   // C++ string class
+#include <sstream>                  // class for parsing strings
 
 #include "../Include/CSample.hh"        // helper class for organizing input ntuple files
 #include "../Include/DYTools.hh"        // helper class for organizing input ntuple files
 #include "../Include/MyTools.hh"        // helper class for organizing input ntuple files
+#include "../Include/CPlot.hh"          // helper class for plots
+#include "../Include/MitStyleRemix.hh"  // style settings for drawing
+#include "../Include/ZeeData.hh"
+#include "../Include/ElectronEnergyScale.hh"        // energy scale correction
+#include "../Include/DYTools.hh"
+#include "../Include/plotFunctions.hh"
 #include "plotFunctions.hh"
      
 #endif
 
-void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile)
+void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, TString title, bool SetLogz)
 {
 
 //acceptance, bkgRatesPercent, LEGO2,COLZ 
@@ -37,7 +57,7 @@ void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, T
    int nY=matr.GetNcols();
 
    TString histName = "Hist" + name;
-   TH2D* Hist= new TH2D(histName,name, nM, DYTools::massBinLimits, nY, DYTools::yRangeMin, DYTools::yRangeMax);
+   TH2D* Hist= new TH2D(histName,title, nM, DYTools::massBinLimits, nY, DYTools::yRangeMin, DYTools::yRangeMax);
    for (int i=0; i<nM; i++)
      for (int j=0; j<nY; j++)
        {
@@ -46,18 +66,26 @@ void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, T
   
    Hist->SetStats(0);
 
-   Hist->SetTitle(name);
+   Hist->SetTitle(title);
    TAxis* xAx=Hist->GetXaxis();
    xAx->SetTitle("mass, GeV");
    //xAx->SetMoreLogLabels(kTRUE);
    TAxis* yAx=Hist->GetYaxis();
    yAx->SetTitle("|Y|");
    canv->SetLogx();
+   if (SetLogz) canv->SetLogz(); //SetLogz=1 for calcCrossSection
 
   Hist->Draw(drawOption);
+  CPlot::sOutDir="plots" + DYTools::analysisTag;
   SaveCanvas(canv, name, CPlot::sOutDir);
   if (histoFile) canv->Write();
 
+}
+
+void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, bool SetLogz)
+{
+  //in case if we want names that we place on the plot and under what we save the plot to be the same
+  PlotMatrixVariousBinning(matr, name, drawOption, histoFile, name, SetLogz);
 }
 
 TMatrixD AdjustMatrixBinning(TMatrixD matrUsualBinning)
@@ -135,7 +163,7 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
        ey4=relPostFsrCrossSectionStatErrDET.GetMatrixArray();
 
        n = DYTools::nMassBins;
-       RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,"RShape1D");
+       RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,"RShape1D",0,0);
        delete x;
        delete ex;
      }
@@ -174,7 +202,7 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
            name2D+="-";
            name2D+=massBinLimits[i+1];
 
-           RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,name2D);
+           RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,name2D,massBinLimits[i],massBinLimits[i+1]);
 
          }
 
@@ -192,7 +220,7 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
      }
 }
 
-void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name)
+void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name, double mass1, double mass2)
 {
 
    TCanvas* canv=new TCanvas(name,name);
@@ -242,27 +270,503 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
    mg->Add(gr3);
    mg->Add(gr2);
    mg->Add(gr1);
+
    mg->Draw("ap");
+
    TAxis* yax=mg->GetYaxis();
-   yax->SetRangeUser(5e-6,2);
+   if (study2D==0) yax->SetRangeUser(5e-6,2);
+   else if (study2D==1) yax->SetRangeUser(3e-5,10);
    if (study2D==0) mg->GetXaxis()->SetTitle("M_{ee}");
    else if (study2D==1) mg->GetXaxis()->SetTitle("|Y|");
    
-   mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dM");
+   if (study2D==0) mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dM");
+   else if (study2D==1) mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dMd|Y|");
    mg->GetYaxis()->SetTitleOffset(1.20);
-   //mg->SetName("1/#sigma_z d#sigma /dM");
+ 
 
-   TLegend *leg = new TLegend(.60,.55,.95,.90);
+   TString massRange;
+   if (study2D==0) massRange="";
+   else if (study2D==1) 
+     {
+       massRange=mass1;
+       massRange+=" < Mee < ";
+       massRange+=mass2;
+       massRange+=" GeV";
+     }
+
+   mg->SetName(massRange);
+   mg->SetTitle(massRange);
+
+   TLegend *leg = new TLegend(.60,.75,.95,.95);
    leg->AddEntry(gr1,"Pre FSR All Phase Space");
    leg->AddEntry(gr2,"Pre FSR Detector Phase space");
    leg->AddEntry(gr3,"Post FSR All Phase Space");
    leg->AddEntry(gr4,"Post FSR Detector Phase space");
+   leg->SetFillColor(kWhite);
    leg->Draw();
    
-   
-   SaveCanvas(canv, name);
+   CPlot::sOutDir="plots" + DYTools::analysisTag;
+   SaveCanvas(canv, name, CPlot::sOutDir);
 
 }
 
+//for prepareYields
+void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString> snamev, TH1F* hMassDibosons, bool hasData, 
+		  bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext, bool actualBinning, TFile *histoFile)
+//for "actual binning": hMassv -> hMassBinsv, hMassDibosons -> hMassBinsDibosons
+{
 
-#include "../YieldsAndBackgrounds/plotFunctionsPrepareYields.C"
+  TString canvName="";
+  if (actualBinning) canvName="massBinning";
+  else canvName="massPeak";
+  TCanvas *c1 = MakeCanvas(canvName,canvName,800,600);
+  CPlot plotMass("mass","","m(e^{+}e^{-}) [GeV/c^{2}]", "Events");
+  plotMass.SetLogx();
+  if(hasData) { plotMass.AddHist1D(hMassv[0],samplev[0]->label,"E"); }
+  // Do not draw separately dibosons, but draw the merged histogram if needed
+  if(mergeDibosons)
+    plotMass.AddToStack(hMassDibosons, labelDibosons, colorDibosons);
+  for(UInt_t isam=1; isam<samplev.size(); isam++){
+    if( !(mergeDibosons && (snamev[isam]=="ww" || snamev[isam]=="wz" || snamev[isam]=="zz")))
+      plotMass.AddToStack(hMassv[isam],samplev[isam]->label,samplev[isam]->color);
+  }
+  plotMass.SetLegend(0.75,0.55,0.98,0.9);
+  if(lumi>0) plotMass.AddTextBox(lumitext,0.21,0.85,0.41,0.8,0);
+  if(hasData){
+    hMassv[0]->GetXaxis()->SetMoreLogLabels();
+    hMassv[0]->GetXaxis()->SetNoExponent();
+  }
+  SetSomeHistAttributes(hMassDibosons,"ewk");
+  for(UInt_t isam=0; isam<samplev.size(); isam++) {
+    SetSomeHistAttributes(hMassv[isam],snamev[isam]);
+  }
+  plotMass.SetLogy();
+  plotMass.SetLogx();
+  plotMass.Draw(c1);
+  if (actualBinning)
+    {
+      plotMass.SetYRange(1.0,2000000);  
+      plotMass.SetXRange(20,1500);
+    }
+  else
+    {
+      plotMass.SetYRange(1.0,300000);
+    }  
+  plotMass.Draw(c1,kFALSE);
+  SaveCanvas(c1, canvName);
+  if (histoFile) c1->Write();
+}
+
+// -----------------------------------------------------------
+
+//for prepareYields
+void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vector<CSample*> samplev, vector<TString> snamev, bool hasData, 
+                   bool mergeDibosons, TString labelDibosons, Int_t colorDibosons, Double_t lumi, char* lumitext,
+		   TFile *histoFile)
+{ 
+ //
+  // Draw flattened distribution
+  //
+  // Create the histograms from the yields arrays
+  int flatIndexMax = DYTools::getTotalNumberOfBins();
+  TH1F *hFlattened[samplev.size()];
+  for(UInt_t isam=0; isam < samplev.size(); isam++){
+    //sprintf(hname, "hFlattanedMass_%i", isam);
+    TString hname="flat-";
+    hname+=isam;
+    hFlattened[isam] = new TH1F(hname,"",flatIndexMax, 0.0, 1.0*flatIndexMax);
+    TMatrixD *thisSampleYields = yields.at(isam);
+    TMatrixD *thisSampleYieldsSumw2 = yieldsSumw2.at(isam);
+    for(int im = 0; im < DYTools::nMassBins; im++){
+      for(int iy = 0; iy < DYTools::nYBins[im]; iy++){
+	int iflat = findIndexFlat(im, iy);
+	hFlattened[isam]->SetBinContent(iflat, (*thisSampleYields)(im,iy) );
+	hFlattened[isam]->SetBinError(iflat, sqrt((*thisSampleYieldsSumw2)(im,iy)) );
+      }
+    }
+  }
+  // Merge dibosons
+  TH1F *hFlattenedDibosons = (TH1F*)hFlattened[1]->Clone("hFlattenedDibosons");
+  hFlattenedDibosons->Reset();
+  for(UInt_t isam=0; isam<samplev.size(); isam++) {
+    if( snamev[isam] == "ww" || snamev[isam] == "wz" || snamev[isam] == "zz"){
+      hFlattenedDibosons->Add(hFlattened[isam]);
+    }
+  }
+  
+  // Draw the flattened figure.
+  TCanvas *c3 = MakeCanvas("flattened","flattened",800,600);
+  CPlot plotFlattened("mass","","m(e^{+}e^{-}) [GeV/c^{2}]","Events");
+  if(hasData) { plotFlattened.AddHist1D(hFlattened[0],samplev[0]->label,"E"); }
+  // Do not draw separately dibosons, but draw the merged histogram if needed
+  if(mergeDibosons)
+    plotFlattened.AddToStack(hFlattenedDibosons, labelDibosons, colorDibosons);
+  for(UInt_t isam=1; isam<samplev.size(); isam++){
+    if( !(mergeDibosons && (snamev[isam]=="ww" || snamev[isam]=="wz" || snamev[isam]=="zz")))
+      plotFlattened.AddToStack(hFlattened[isam],samplev[isam]->label,samplev[isam]->color);
+  }
+  SetSomeHistAttributes(hFlattenedDibosons,"ewk");
+  for(UInt_t isam=0; isam<samplev.size(); isam++) {
+    SetSomeHistAttributes(hFlattened[isam],snamev[isam]);
+  }
+  plotFlattened.SetLegend(0.75,0.55,0.98,0.9);
+  if(lumi>0) plotFlattened.AddTextBox(lumitext,0.21,0.85,0.41,0.8,0);
+  if(hasData){
+    hFlattened[0]->GetXaxis()->SetMoreLogLabels();
+    hFlattened[0]->GetXaxis()->SetNoExponent();
+  }
+  plotFlattened.SetLogy();
+  plotFlattened.Draw(c3);
+  //plotFlattened.SetYRange(1.0,200000);  
+  plotFlattened.SetYMin(1.0);
+  plotFlattened.Draw(c3,kFALSE);
+  SaveCanvas(c3, "flattened");
+  if (histoFile) c3->Write();
+}
+
+// -----------------------------------------------------------
+
+//for prepareYields
+void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
+                    vector<CSample*> samplev, vector<TString> snamev, 
+		   bool hasData, double dataOverMc, double* dataOverMcEachBin, bool normEachBin, bool singleCanvas,
+		   TFile *histoFile) 
+{
+
+  int jStart;
+  if (hasData) jStart=0; 
+  else jStart=1;
+  TH1F* allHists[nMassBins][samplev.size()];
+
+  TH1F *totalMc[nMassBins];
+  TH1F *ewkHist[nMassBins];
+  TH1F *ratioHist[nMassBins];
+  TH1F *ratioClone[nMassBins];
+  THStack *mcHists[nMassBins]; 
+  TString normStr =(normEachBin) ? "normEachBin-" : "normZpeak-";
+  normStr.Append((singleCanvas) ? "sngl-" : "multi-");
+  std::cout << "normStr=" << normStr << "\n";
+
+  for (int i=1; i<nMassBins; i++)
+  // loop over mass bins starting from 1st (excluding underflow bin)
+    {
+      TString stackName="mcStack-" + normStr;
+      stackName+=i;
+      mcHists[i]=new THStack(stackName,"");
+      TString totalMcName="totalMC-" + normStr;
+      totalMcName+=i;
+      totalMc[i]=new TH1F(totalMcName,"",nYBins[i],yRangeMin,yRangeMax); 
+      TString ewkName="ewk-" + normStr;
+      ewkName+=i;
+      ewkHist[i]=new TH1F(ewkName,"",nYBins[i],yRangeMin,yRangeMax);
+
+
+ 
+      for (UInt_t j=0; j<samplev.size(); j++)
+      // loop over data, signal MC and background MC samples
+        {
+
+          TString histName="hist-" + normStr;
+          histName+=i; histName+="-"; histName+=j; 
+          allHists[i][j]=new TH1F(histName,"",nYBins[i],yRangeMin,yRangeMax);
+          //nYBins, YRangeMin, yRangeMax - from DYTools.hh
+
+          TMatrixD *thisSampleYields = yields.at(j);
+          TMatrixD *thisSampleYieldsSumw2 = yieldsSumw2.at(j);
+
+          for (int k=0; k<nYBins[i]; k++)
+          // loop over allHists bins
+            {
+              allHists[i][j]->SetBinContent(k+1,(*thisSampleYields)(i,k));
+              allHists[i][j]->SetBinError(k+1,sqrt((*thisSampleYieldsSumw2)(i,k)));        
+            }
+
+        SetSomeHistAttributes(allHists[i][j],snamev[j]);         
+
+          if (j!=0) 
+            {
+              if (normEachBin)  allHists[i][j]->Scale(dataOverMcEachBin[i]);
+              else allHists[i][j]->Scale(dataOverMc);             
+              totalMc[i]->Add(allHists[i][j]);
+              if (snamev[j]=="wjets" || snamev[j]=="ww" || snamev[j]=="wz" || snamev[j]=="zz")
+                 ewkHist[i]->Add(allHists[i][j]);
+              else if (snamev[j]!="zee")
+                 mcHists[i]->Add(allHists[i][j]);
+            }
+        }
+      TString ratioHistName="ratioHist-" + normStr;
+      ratioHistName+=i;
+      ratioHist[i]=(TH1F*)allHists[i][0]->Clone(ratioHistName);
+      ratioHist[i]->Add(totalMc[i],-1);
+      ratioHist[i]->Divide(ratioHist[i],allHists[i][0],1.0,1.0);
+
+      SetSomeHistAttributes(ewkHist[i],"ewk");
+
+      mcHists[i]->Add(ewkHist[i]);
+      for (UInt_t j=1; j<samplev.size(); j++)
+        {
+          if (snamev[j]=="zee") mcHists[i]->Add(allHists[i][j]);
+        }
+    }
+
+  TLegend *legend = new TLegend(0.70,0.38, 0.90,0.78);
+  legend->SetTextFont(42);
+  legend->SetTextSize(0.06);
+  legend->SetLineColor(0);
+  legend->SetFillColor(0);
+  legend->SetBorderSize(0);
+  if (hasData)
+      legend->AddEntry(allHists[1][0],"data","LP");
+
+  // Add signal MC first
+  for (UInt_t j=1; j<samplev.size(); j++)
+    {
+      if (snamev[j]=="zee") 
+	legend->AddEntry(allHists[1][j],"#gamma*/Z#rightarrow ee","PF");
+    }
+
+  for (UInt_t j=1; j<samplev.size(); j++)
+    {
+      if (snamev[j]=="zee") ;
+	// Do nothing, already handled signal MC before
+      else if (snamev[j]=="wjets" || snamev[j]=="ww" || snamev[j]=="wz" || snamev[j]=="zz"); 
+      else if (snamev[j] == "qcd" )
+	legend->AddEntry(allHists[1][j],"QCD","PF");
+      else if (snamev[j] == "ttbar" )
+	legend->AddEntry(allHists[1][j],"t#bar{t}","PF");
+      else if (snamev[j] == "ztt" )
+	legend->AddEntry(allHists[1][j],"#gamma*/Z#rightarrow#tau#tau","PF");
+    }
+
+  legend->AddEntry(ewkHist[1],"EWK","PF");
+
+  TLatex *cmsText = new TLatex();
+  cmsText->SetTextFont(42);
+  cmsText->SetTextSize(0.055);
+  cmsText->SetTextAlign(31);
+  cmsText->SetNDC();
+  cmsText->SetText(0.93, 0.94, "CMS Preliminary");
+
+  TLatex *lumiText = new TLatex();
+  lumiText->SetTextFont(42);
+  lumiText->SetTextSize(0.05);
+  lumiText->SetTextAlign(33);
+  lumiText->SetNDC();
+  lumiText->SetText(0.91, 0.90, DYTools::strLumiAtECMS);
+
+  TLatex *massLabels[nMassBins];
+  for (int i=1; i<nMassBins; i++)
+    {
+      TString massStr="";
+      massStr+=massBinLimits[i];
+      massStr+="<m<";
+      massStr+=massBinLimits[i+1];
+      massStr+=" GeV";
+      massLabels[i]=new TLatex();
+      massLabels[i]->SetTextFont(42);
+      massLabels[i]->SetTextSize(0.05);
+      massLabels[i]->SetTextAlign(33);
+      massLabels[i]->SetNDC();
+      massLabels[i]->SetText(0.91, 0.82, massStr);
+    }
+
+  TCanvas* canv[nMassBins];
+  TString canvName;
+  TString canvNames="y-Single-";
+  if (normEachBin) canvNames+="norm-each-mass-bin";
+  else canvNames+="norm-Z-peak";
+  TCanvas* canvSingle=(singleCanvas) ? MakeCanvas(canvNames,canvNames,1200,1800) : NULL;
+  if (canvSingle) canvSingle->Divide(2,6,0,0);
+  TPad* pad1[nMassBins];
+  TPad* pad2[nMassBins];
+
+  TLine *lineAtOne = new TLine(15.0, 1.0, 1500, 1.0);
+  lineAtOne->SetLineStyle(kDashed);
+  lineAtOne->SetLineWidth(1);
+  lineAtOne->SetLineColor(kBlue);
+    
+  for (int i=1; i<nMassBins; i++) {
+    int idx=(i-1)%6+1;
+
+      if (singleCanvas)
+       {
+          double xi=0,xf=0,yi=0,yf=0;
+          if ((idx%2)==1) {xi=0.0; xf=0.5;}
+          if ((idx%2)==0) {xi=0.5; xf=1.0;}
+          if (idx==1 || idx==2) {yi=0.66; yf=1.00;}
+          if (idx==3 || idx==4) {yi=0.33; yf=0.66;}
+          if (idx==5 || idx==6) {yi=0.00; yf=0.33;}
+
+          pad1[i] = (TPad*)canvSingle->GetPad(2*idx-1);
+          pad1[i]->SetPad(xi,yi+0.3*(yf-yi),xf,yf);
+          pad2[i] = (TPad*)canvSingle->GetPad(2*idx);
+          pad2[i]->SetPad(xi,yi,xf,yi+0.28*(yf-yi));
+       }
+      else
+       {
+          canvName="y-";
+          canvName+=i;
+          canvName+="-";
+          if (normEachBin) canvName+="norm-each-mass-bin";
+          else canvName+="norm-Z-peak";
+          canv[i]=MakeCanvas(canvName,canvName,600,600);
+          canv[i]->Divide(1,2,0,0);
+          pad1[i] = (TPad*)canv[i]->GetPad(1);
+          pad1[i]->SetPad(0,0.3,1.0,1.0);
+          pad2[i] = (TPad*)canv[i]->GetPad(2);
+          pad2[i]->SetPad(0,0,1.0,0.28);
+        }
+
+      pad1[i]->SetLeftMargin(0.18);
+      pad1[i]->SetTopMargin(0.08);
+      pad1[i]->SetRightMargin(0.07);
+      pad1[i]->SetBottomMargin(0.01); // All X axis labels and titles are thus cut off
+
+      pad2[i]->SetLeftMargin(0.18);
+      pad2[i]->SetTopMargin(0.01);
+      pad2[i]->SetRightMargin(0.07);
+      pad2[i]->SetBottomMargin(0.45);
+
+      pad1[i]->cd();
+      pad1[i]->SetTicky();
+      pad1[i]->SetFrameLineWidth(2);
+      // Have to draw stack to have axes defined
+      // but first ensure all data is visible
+      if (allHists[i][0]->GetMaximum() > mcHists[i]->GetMaximum()) {
+	mcHists[i]->SetMaximum(allHists[i][0]->GetMaximum());
+      }
+      mcHists[i]->Draw("hist");
+      mcHists[i]->GetXaxis()->SetMoreLogLabels();
+      mcHists[i]->GetXaxis()->SetNoExponent();
+      mcHists[i]->GetXaxis()->SetTitle("|Y|");
+      mcHists[i]->GetYaxis()->SetTitle("entries per bin");
+      mcHists[i]->GetYaxis()->SetTitleOffset(1.2);
+      mcHists[i]->GetXaxis()->SetLabelOffset(99);
+      mcHists[i]->SetMinimum(1.5);
+      mcHists[i]->Draw("hist");
+      allHists[i][0]->Draw("pe,same");
+      cmsText->Draw();
+      lumiText->Draw();
+      massLabels[i]->Draw();
+      legend->Draw();
+      
+      pad2[i]->cd();
+      pad2[i]->SetFrameLineWidth(2);
+    
+      // Set attributes
+      ratioHist[i]->SetLineColor(kBlack);
+      ratioHist[i]->SetLineWidth(1);
+      ratioHist[i]->SetMarkerSize(1.0);
+    
+      double ymin = -0.7;
+      double ymax = 0.7;
+      if(i == 6){
+	ymin = -1.5;
+	ymax = 1.5;
+      }
+      ratioHist[i]->GetYaxis()->SetRangeUser(ymin,ymax);
+      ratioHist[i]->GetYaxis()->SetNdivisions(3);
+      ratioHist[i]->GetYaxis()->SetLabelSize(0.15);
+      ratioHist[i]->GetYaxis()->SetTitle("(data-MC)/data");
+      ratioHist[i]->GetYaxis()->SetTitleSize(0.1);
+      ratioHist[i]->GetYaxis()->SetTitleOffset(0.7);
+      //ratioHist[i]->GetXaxis()->SetLabelOffset(1.2);
+      ratioHist[i]->GetXaxis()->SetLabelSize(0.15);
+      ratioHist[i]->GetXaxis()->SetTickLength(0.10);
+      ratioHist[i]->GetXaxis()->SetTitle(mcHists[i]->GetXaxis()->GetTitle());
+      ratioHist[i]->GetXaxis()->SetTitleSize(3 * mcHists[i]->GetXaxis()->GetTitleSize());
+      ratioHist[i]->SetMarkerColor(kOrange+7);
+      ratioHist[i]->SetMarkerStyle(kFullCircle);
+      ratioClone[i] = (TH1F*)ratioHist[i]->Clone("ratioClone");
+      ratioClone[i]->SetMarkerColor(kBlack);
+      ratioClone[i]->SetMarkerStyle(kOpenCircle);
+
+      ratioHist[i]->Draw("PE");
+      ratioClone[i]->Draw("PE,same");
+    
+      lineAtOne->Draw();
+      
+      if (!singleCanvas)
+        {
+	  if (histoFile) canv[i]->Write();
+          SaveCanvas(canv[i], canvName);
+        }
+
+      if (singleCanvas && ((i==nMassBins-1) || (idx==6)))
+	{
+	  TString name=canvNames;
+	  char buf[20];
+	  if (idx==6) sprintf(buf,"-%d",i/6);
+	  else if (i!=nMassBins-1) sprintf(buf,"-%d",i/6+1);
+	  else buf[0]='\0';
+	  name.Append(buf);
+	  canvSingle->SetName(name);
+	  canvSingle->SetTitle(name);
+	  if (idx!=6) {
+	    for (int pad_i=2*idx+1; pad_i<=12; ++pad_i) {
+	      std::cout << "clearing pad_i=" << pad_i << std::endl;
+	      canvSingle->GetPad(pad_i)->Clear();
+	    }
+	  }
+	  if (histoFile) canvSingle->Write();
+	  SaveCanvas(canvSingle, name);
+	}
+
+   }
+   
+  //if (singleCanvas)
+  //   {
+  //     if (histoFile) canvSingle->Write();
+  //     SaveCanvas(canvSingle, canvNames);
+  //   }
+
+   HERE("leaving");
+}
+
+// -----------------------------------------------------------
+
+//for prepareYields
+void SetSomeHistAttributes (TH1F* hist, TString samplename)
+{
+
+  if (samplename=="data") return;
+  else 
+    {
+       hist->SetFillStyle(1001);
+       hist->SetMarkerStyle(21);
+       hist->SetMarkerSize(1.8);
+       if (samplename=="zee")
+	{
+	  hist->SetFillColor(kOrange-2);
+          hist->SetMarkerColor(kOrange-2);
+          hist->SetLineColor(kOrange+3);
+	}        
+       else if (samplename=="ttbar")
+        {
+	  hist->SetFillColor(kRed+2);
+	  hist->SetMarkerColor(kRed+2);
+          hist->SetLineColor(kRed+4);
+	}
+       else if (samplename=="wjets" || samplename=="ww" || samplename=="wz" || samplename=="zz" || samplename=="ewk")
+	{
+          hist->SetFillColor(kOrange+10);
+	  hist->SetMarkerColor(kOrange+10);
+          hist->SetLineColor(kOrange+3);
+        }
+      else if (samplename=="ztt") 
+        {
+	  hist->SetFillColor(kOrange+7);
+	  hist->SetMarkerColor(kOrange+7);
+          hist->SetLineColor(kOrange+3);
+        }
+      else if (samplename=="qcd") 
+        {
+	  hist->SetFillColor(kViolet+5);
+	  hist->SetMarkerColor(kViolet+5);
+          hist->SetLineColor(kViolet+3);
+        }
+    }  
+  return;  
+}
+
+//#include "../YieldsAndBackgrounds/plotFunctionsPrepareYields.C"
