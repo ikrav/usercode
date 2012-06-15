@@ -115,20 +115,6 @@ void printTableForNotes(const TMatrixD &obs, const TMatrixD &obsErr,
 void printAllCorrections();
 void printRelativeSystErrors();
 
-////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////
-//Four plots of R-shape at the same picture
-
-//void RShapePlot
-//(TMatrixD relCrossSection, TMatrixD relCrossSectionStatErr, 
- //TMatrixD relCrossSectionDET, TMatrixD relCrossSectionDETStatErr, 
- //TMatrixD relPostFsrCrossSection, TMatrixD relPostFsrCrossSectionStatErr, 
- //TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionDETStatErr);
-
-////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////
-
-
 const double lowZMass = 60.0;
 const double highZMass = 120.0;
 void getNormBinRange(int &firstNormBin, int &lastNormBin);
@@ -322,31 +308,18 @@ void calcCrossSection(const TString conf="../config_files/xsecCalc.conf"){
 		     accCorrectedYields, accCorrectedYieldsStatErr,
 		     preFsrYields      , preFsrYieldsStatErr);
  
-   //draw and save plots
-
-/*
-   for(int i=0; i<DYTools::nMassBins; i++)
-    for (int j=0; j<nYBins[i]; j++)
-      {
-        relCrossSection(i,j)=i+j; 
-        relCrossSectionDET(i,j)=i+j;
-        relPostFsrCrossSection(i,j)=i+j;
-        relPostFsrCrossSectionDET(i,j)=i+j;
-      }
-*/
-   CPlot::sOutDir="plots" + DYTools::analysisTag;
-
- 
-   PlotMatrixVariousBinning(relCrossSection, "relative_CS", "LEGO2",0);
-   PlotMatrixVariousBinning(relCrossSectionDET, "relative_CS_DET", "LEGO2",0);
-   PlotMatrixVariousBinning(relPostFsrCrossSection, "relative_postFSR_CS", "LEGO2",0);
-   PlotMatrixVariousBinning(relPostFsrCrossSectionDET, "relative_postFSR_CS_DET", "LEGO2",0);
   }
 
-
-
   ////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////
+  //draw and save plots
+ 
+  PlotMatrixVariousBinning(relCrossSection, "relative_CS", "LEGO2", 0, "Pre FSR All Phase Space", 1);
+  PlotMatrixVariousBinning(relCrossSectionDET, "relative_CS_DET", "LEGO2", 0, "Pre FSR Detector Phase space", 1);
+  PlotMatrixVariousBinning(relPostFsrCrossSection, "relative_postFSR_CS", "LEGO2", 0, "Post FSR All Phase Space", 1);
+  PlotMatrixVariousBinning(relPostFsrCrossSectionDET, "relative_postFSR_CS_DET", "LEGO2", 0, "Post FSR Detector Phase space", 1);
+
+
   //Four plots of R-shape at the same picture
 
   std::cout << "\nRShapePlot" << std::endl;
