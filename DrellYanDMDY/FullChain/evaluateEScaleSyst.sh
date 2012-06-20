@@ -20,7 +20,7 @@ anTagUser="ymax9"
 anTag="1D${anTagUser}"
 triggerSet="Full2011_hltEffOld"
 
-copySelectedNTuples=0   # the main sequence has to be run before this script
+copySelectedNTuples=1   # the main sequence has to be run before this script
    # but the ntuples needs to be copied only once
 
 evaluateSystematics=1   # final calculation
@@ -30,6 +30,7 @@ doShapeSystematics=1    # part 2
 doEtaSystematics=1      # part 3
 doResidualShapeSystStudy=1   # part 4
 
+# at present (June 20, 2012) doCalculateReferenceShape is untested
 doCalculateReferenceShape=0   # if the main sequence was already run
                               #   doCalculateReferenceShape can be set to 0
 
@@ -182,11 +183,13 @@ cloneNTuples() {
       then mkdir ${selEventsDestDir}/ntuples; fi
 
   sets="data qcd ttbar wjets ww wz ztt zz zee"
-  set -x  # debug on
   for s in ${sets} ; do
     fname="${s}${anTagUser}_select.root"
+    set -x  # debug on
     cp ${srcDir}ntuples/${fname} ${selEventsDestDir}ntuples/${fname}
+    set +x  # debug off
   done
+  set -x  # debug on
   cp ${srcDir}/npv${anTagUser}.root ${selEventsDestDir}/npv${anTagUser}.root
   cp ${selEventsDestDir}npv${anTagUser}.root \
       ${selEventsDestDir}npv${anTagUser}-copy.root
@@ -410,7 +413,10 @@ if [ ${err} -eq 0 ] && [ ${doResidualShapeSystStudy} -eq 1 ] ; then
     unfoldingStudy=DYTOOLS::ESCALE_RESIDUAL
     constDir=${constDirT/TMPDIR/${dirTag}_escale_residual}
     plotsDirExtraTag="_residual"
+    saveAnTag=${anTag}
+    anTag="${anTag}_escaleResidual"
     deriveUnfoldedSpectrum
+    anTag=${saveAnTag}
   fi
   cd ${runPath}
 fi
