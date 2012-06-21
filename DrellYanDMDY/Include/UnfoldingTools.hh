@@ -75,6 +75,8 @@ namespace unfolding{
   // assume M[mass][rapidity]
   bool checkRangesMY(const TMatrixD &M, const TString &name, int verb=1);
   bool checkRangesMY(const TMatrixD &M1, const TString &name1, const TMatrixD &M2, const TString &name2, int verb=1);
+  // assume Vector[flat_index]
+  bool checkRangesFI(const TVectorD &M, const TString &name, int verb=1);
 
   // check that mass and rapidityCounts match massBinLimits and nYBins
   bool checkBinningRanges(const TVectorD &mass, const TVectorD &rapidityCounts, const TString &fname);
@@ -82,5 +84,6 @@ namespace unfolding{
   // check that the vectors have totalNumberOfBins elements
   bool checkFlatVectorRanges(const TVectorD &v1, const TVectorD &v2, const TString &info, const TString info2="");
 }
+
 
 #endif
