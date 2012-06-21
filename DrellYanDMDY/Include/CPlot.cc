@@ -93,6 +93,7 @@ void CPlot::AddHist1D(TH1F *h, TString drawopt, int color, int linesty, int fill
    
   h->SetLineColor(color);
   h->SetLineStyle(linesty);
+  h->SetMarkerColor(color);
   h->SetFillColor(color);
   h->SetFillStyle(fillsty);
   
