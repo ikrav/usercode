@@ -421,14 +421,20 @@ void plotDYEfficiency(const TString input,
     for(int j=0; j<DYTools::nYBins[i]; j++){
       if(nEventsv(i,j) != 0){
         effv(i,j) = nPassv(i,j)/nEventsv(i,j);
-        effErrv(i,j) = sqrt(effv(i,j)*(1-effv(i,j))/nEventsv(i,j)); 
+        effErrv(i,j) = sqrt(effv(i,j)*(1-effv(i,j))/nEventsv(i,j));
+      }
     
+      if (nEventsBBv(i,j) != 0) {
         effBBv(i,j) = nPassBBv(i,j)/nEventsBBv(i,j);
         effErrBBv(i,j) = sqrt(effBBv(i,j)*(1-effBBv(i,j))/nEventsBBv(i,j));
-      
+      }
+
+      if (nEventsBEv(i,j) != 0) {
         effBEv(i,j) = nPassBEv(i,j)/nEventsBEv(i,j);
         effErrBEv(i,j) = sqrt(effBEv(i,j)*(1-effBEv(i,j))/nEventsBEv(i,j));
+      }
       
+      if (nEventsEEv(i,j) != 0) {
         effEEv(i,j) = nPassEEv(i,j)/nEventsEEv(i,j);
         effErrEEv(i,j) = sqrt(effEEv(i,j)*(1-effEEv(i,j))/nEventsEEv(i,j));
       }
