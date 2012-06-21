@@ -186,11 +186,11 @@ void calcUnfoldingSystematics(const TString conf){
 
   TFile fa(unfoldingSystFileName,"recreate");
   unfolding::writeBinningArrays(fa);
-  unfoldedYieldsMean.Write("unfoldedYieldsMean");
-  unfoldedYieldsRMS.Write("unfoldedYieldsRMS");
-  unfoldingSystPercentSmear.Write("unfoldingSystPercentSmear");
-  unfoldingSystPercentFsr.Write("unfoldingSystPercentFsr");
-  unfoldingSystPercent.Write("unfoldingSystPercent");
+  unfoldedYieldsMean.Write("unfoldedYieldsMeanFI");
+  unfoldedYieldsRMS.Write("unfoldedYieldsRMSFI");
+  unfoldingSystPercentSmear.Write("unfoldingSystPercentSmearFI");
+  unfoldingSystPercentFsr.Write("unfoldingSystPercentFsrFI");
+  unfoldingSystPercent.Write("unfoldingSystPercentFI");
   fa.Close();
 
   return;
