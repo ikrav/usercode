@@ -57,6 +57,9 @@
 
 #include "../Include/EventSelector.hh"
 
+// lumi section selection with JSON files
+#include "../Include/JsonParser.hh"
+
 #endif
 
 using namespace mithep;
@@ -66,7 +69,7 @@ using namespace mithep;
 
 const int evaluate_efficiencies=0;
 //const int performPUReweight=0;
-const int performOppositeSignTest=0;
+const int performOppositeSignTest=1;
 
 //const Double_t kECAL_GAP_LOW  = 1.4442;
 //const Double_t kECAL_GAP_HIGH = 1.566;
@@ -133,6 +136,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   TString etaBinningString = "";
   TString dirTag;
   vector<TString> ntupleFileNames;
+  vector<TString> jsonFileNames;
   ifstream ifs;
   ifs.open(configFile.Data());
   if (!ifs.is_open()) {
@@ -176,7 +180,16 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
       dirTag = TString(line);
       state++;
     }else if(state==5) {
-      ntupleFileNames.push_back(TString(line));
+      if(sampleTypeString == "DATA"){
+	string fname;
+	string json;
+	stringstream ss(line);
+	ss >> fname >> json;
+	ntupleFileNames.push_back(TString(fname));
+	jsonFileNames.push_back(TString(json));
+      }else{
+	ntupleFileNames.push_back(TString(line));
+      }
     }
   }
   ifs.close();
@@ -353,6 +366,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   c1->Divide(2,nDivisions);
 
   int eventsInNtuple = 0;
+  int eventsAfterJson = 0;
   int eventsAfterTrigger = 0;
   int totalCand = 0;
   int totalCandInMassWindow = 0;
@@ -381,6 +395,17 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
     infile = new TFile(ntupleFileNames[ifile]); 
     assert(infile);
     
+    // Set up JSON for data
+    Bool_t hasJSON = kFALSE;
+    // mithep::RunLumiRangeMap rlrm;
+    JsonParser jsonParser;
+    if((jsonFileNames.size()>0) && (jsonFileNames[ifile].CompareTo("NONE")!=0)) { 
+      hasJSON = kTRUE;
+      // rlrm.AddJSONFile(samp->jsonv[ifile].Data());
+      std::cout << "JSON file " << jsonFileNames[ifile] << "\n";
+      jsonParser.Initialize(jsonFileNames[ifile].Data()); 
+    }
+
     // Get the TTrees
     eventTree = (TTree*)infile->Get("Events"); assert(eventTree);
 
@@ -440,6 +465,11 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	| kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
       */
 
+      // Apply JSON file selection to data
+      if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
+      eventsAfterJson++;
+
+      // Event level trigger cut
       bool idEffTrigger = (effType==ID) ? true:false;
       ULong_t eventTriggerBit= triggers.getEventTriggerBit_TagProbe(info->runNum, idEffTrigger);
 
@@ -680,6 +710,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   
 //   printf("Number of regular candidates:      %15.0f\n", hMass->GetSumOfWeights());
   printf("Total events in ntuple                                       %15d\n",eventsInNtuple);
+  printf("    events after JSON selection (data)                       %15d\n",eventsAfterJson);
   printf("    events after event level trigger cut                     %15d\n",eventsAfterTrigger);
   printf("\nTotal candidates (no cuts)                                   %15d\n",totalCand);
   printf("        candidates in 60-120 mass window                     %15d\n",totalCandInMassWindow);
