@@ -57,7 +57,7 @@ int saveTexTable=0){
   const int nFiles1 = 20;  // expected number of files
   if (1)
   for(int ifile=0; ifile<nFiles1; ifile++){
-    int seed = 1000+ifile;
+    int seed = 1001+ifile;
     escale.randomizeEnergyScaleCorrections(seed);
     TString fname = TString("../root_files/yields/") + lumiTag + 
       TString("_escale_randomized/yields_bg-subtracted") + analysisTag + 
@@ -327,7 +327,8 @@ int saveTexTable=0){
     printTexTable(texFName,headers,data,factors);
   }
 
-  TString finalFName=TString("../root_files/systematics/") + lumiTag + TString("/escale_systematics_tmp.root");
+  TString finalFName=TString("../root_files/systematics/") + lumiTag + 
+    TString("/escale_systematics") + analysisTag + TString("_tmp.root");
   TFile fout(finalFName,"recreate");
   escaleSystPercent.Write("escaleSystPercent");
   fout.Close();
