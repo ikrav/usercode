@@ -358,7 +358,8 @@ else
 fi
 
 #Event Scale Factors
-if [ ${do_efficiencyScaleFactors} -eq 1 ] && [ ${noError} -eq 1 ] ; then
+if [ ! -z ${do_efficiencyScaleFactors} ] &&
+    [ ${do_efficiencyScaleFactors} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusEventScaleFactors=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "WILL DO: evaluateESF.sh in EventScaleFactors"
