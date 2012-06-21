@@ -36,7 +36,7 @@ Double_t lumi = 0;
 const int nMassBinTh=518;
 
 const int includeEScaleSystematics=0;
-const int includeUnfoldingSystematics=0;
+const int includeUnfoldingSystematics=1;
 
 
 const int printFSRcorrectionTable=0;
@@ -174,7 +174,9 @@ void calcCrossSection(const TString conf="../config_files/xsecCalc.conf"){
   assert ( triggers.isDefined() );
   // update the name of the file with per-event scale factors
   fileScaleFactorConstants.Insert(fileScaleFactorConstants.Index(".root"),
-				  TString("_") + triggers.triggerConditionsName());
+				  TString("_") + triggers.triggerConditionsName()
+				  + TString("_PU")
+				  );
   std::cout << "using fileScaleFactorConstants=" << fileScaleFactorConstants << "\n";
 
   // Last, do a closure test on MC
@@ -434,18 +436,15 @@ void  applyUnfolding(TMatrixD &vinM, TMatrixD &vinStatErrM, TMatrixD &vinSystErr
     assert(0);
   }
   assert(unfolding::checkBinningArrays(fileEscaleSystematics));
-  TMatrixD *escaleSystematicsPercentPtr
-    = (TMatrixD *)fileEscaleSystematics.FindObjectAny("escaleSystPercent");
+  TVectorD *escaleSystematicsPercentPtr
+    = (TVectorD *)fileEscaleSystematics.FindObjectAny("escaleSystPercentFI");
   assert(escaleSystematicsPercentPtr);
-  assert(unfolding::checkRangesMY(*escaleSystematicsPercentPtr,"escaleSystPercent"));
-  TMatrixD escaleSystematicsPercent = *escaleSystematicsPercentPtr;
+  assert(unfolding::checkRangesFI(*escaleSystematicsPercentPtr,"escaleSystPercent"));
+  TVectorD escaleSystematicsPercent = *escaleSystematicsPercentPtr;
   
   systEscaleV=0;
-  for(int i=0; i<nMassBins; i++){
-    for (int yi=0; yi<nYBins[i]; ++yi) {
-      int idx=DYTools::findIndexFlat(i,yi);
-      systEscaleV[idx] = (escaleSystematicsPercent[i][yi]/100.0) * vout[idx];
-    }
+  for(int idx=0; idx<nUnfoldingBins; ++idx) {
+    systEscaleV[idx] = (escaleSystematicsPercent[idx]/100.0) * vout[idx];
   }
   }
 
