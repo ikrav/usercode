@@ -46,7 +46,7 @@ do_unfoldingSyst=1
 do_acceptance=0
 do_acceptanceSyst=0
 do_efficiency=0
-do_efficiencyScaleFactors=0
+#do_efficiencyScaleFactors=0  # long calculation!
 do_plotFSRCorrections=0
 do_plotFSRCorrectionsSansAcc=0
 do_theoryErrors=0
@@ -366,8 +366,9 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../EventScaleFactors
 rm -f *.so ${expectEventScaleFactorsFile}
 echo
-checkFile evaluateESF.sh
+checkFile evaluateESF.sh recalcESF.sh
 source evaluateESF.sh  | tee ${logDir}/out${timeStamp}-09-evaluateESF-efficiencyScaleFactors${anTag}.log
+source recalcESF.sh  | tee ${logDir}/out${timeStamp}-09-recalcESF-efficiencyScaleFactors${anTag}.log
 get_status ${expectEventScaleFactorsFile}
 statusEventScaleFactors=$RUN_STATUS
 cd ../FullChain
@@ -410,7 +411,7 @@ cd ../Fsr
 rm -f *.so ${expectFsrSansAcc1File}
 echo
 checkFile plotDYFSRCorrections.C 
-root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\",1,${debugMode}\)     | tee ${logDir}/out${timeStamp}-11-plotDYFSRCorrections-SansAcc${timeStamp}.out
+root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\",1,${debugMode}\)     | tee ${logDir}/out${timeStamp}-11-plotDYFSRCorrections-SansAcc${anTag}.out
 get_status ${expectFsrSansAcc1File}
 statusPlotDYFSRCorrectionsSansAcc=$RUN_STATUS
 cd ../FullChain
@@ -431,7 +432,7 @@ cd ../Theory
 rm -f *.so
 echo
 checkFile TheoryErrors.C
-root -b -q -l ${LXPLUS_CORRECTION} TheoryErrors.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-12-TheoryErrors${timeStamp}.out
+root -b -q -l ${LXPLUS_CORRECTION} TheoryErrors.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-12-TheoryErrors${anTag}.out
 get_status
 statusTheoryErrors=$RUN_STATUS
 cd ../FullChain
@@ -452,7 +453,7 @@ cd ../CrossSection
 rm -f *.so ${expectXSecFile} ${expectXSecThFile}
 echo
 checkFile calcCrossSection.C
-root -q -b -l ${LXPLUS_CORRECTION} calcCrossSection.C+\(\"$filename_cs\"\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${timeStamp}.out
+root -q -b -l ${LXPLUS_CORRECTION} calcCrossSection.C+\(\"$filename_cs\"\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${anTag}.out
 get_status ${expectXSecFile} ${expectXSecThFile}
 statusCrossSection=$RUN_STATUS
 cd ../FullChain
