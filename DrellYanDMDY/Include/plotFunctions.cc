@@ -37,11 +37,15 @@
 #include "../Include/ElectronEnergyScale.hh"        // energy scale correction
 #include "../Include/DYTools.hh"
 #include "../Include/plotFunctions.hh"
-#include "plotFunctions.hh"
+#include "../Include/UnfoldingTools.hh"
      
 #endif
 
-void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, TString title, bool SetLogz)
+// -----------------------------------------------------------------------------
+
+void PlotMatrixVariousBinning(const TMatrixD &matr, TString name, 
+			      TString drawOption, TFile *histoFile, TString title, 
+			      bool SetLogz)
 {
 
 //acceptance, bkgRatesPercent, LEGO2,COLZ 
@@ -57,7 +61,8 @@ void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, T
    int nY=matr.GetNcols();
 
    TString histName = "Hist" + name;
-   TH2D* Hist= new TH2D(histName,title, nM, DYTools::massBinLimits, nY, DYTools::yRangeMin, DYTools::yRangeMax);
+   TH2D* Hist= new TH2D(histName,title, nM, DYTools::massBinLimits, nY, 
+			DYTools::yRangeMin, DYTools::yRangeMax);
    for (int i=0; i<nM; i++)
      for (int j=0; j<nY; j++)
        {
@@ -76,19 +81,26 @@ void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, T
    if (SetLogz) canv->SetLogz(); //SetLogz=1 for calcCrossSection
 
   Hist->Draw(drawOption);
-  CPlot::sOutDir="plots" + DYTools::analysisTag;
+  //CPlot::sOutDir="plots" + DYTools::analysisTag;
   SaveCanvas(canv, name, CPlot::sOutDir);
   if (histoFile) canv->Write();
 
 }
 
-void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, bool SetLogz)
+// -----------------------------------------------------------------------------
+
+void PlotMatrixVariousBinning(const TMatrixD &matr, TString name, 
+			      TString drawOption, TFile *histoFile, bool SetLogz)
 {
-  //in case if we want names that we place on the plot and under what we save the plot to be the same
+  // in case if we want names that we place on the plot and under 
+  // what we save the plot to be the same
   PlotMatrixVariousBinning(matr, name, drawOption, histoFile, name, SetLogz);
 }
 
-TMatrixD AdjustMatrixBinning(TMatrixD matrUsualBinning)
+// -----------------------------------------------------------------------------
+
+
+TMatrixD AdjustMatrixBinning(const TMatrixD &matrUsualBinning)
 {
   TMatrixD matrOut(DYTools::nMassBins,minMutualMultiple());
   for (int i=0; i<DYTools::nMassBins; i++)
@@ -100,6 +112,8 @@ TMatrixD AdjustMatrixBinning(TMatrixD matrUsualBinning)
     }
   return matrOut;
 }
+
+// -----------------------------------------------------------------------------
 
 Int_t minMutualMultiple()
 {
@@ -288,9 +302,9 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
    if (study2D==0) massRange="";
    else if (study2D==1) 
      {
-       massRange=mass1;
+       massRange=int(mass1);
        massRange+=" < Mee < ";
-       massRange+=mass2;
+       massRange+=int(mass2);
        massRange+=" GeV";
      }
 
@@ -305,7 +319,7 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
    leg->SetFillColor(kWhite);
    leg->Draw();
    
-   CPlot::sOutDir="plots" + DYTools::analysisTag;
+   //CPlot::sOutDir="plots" + DYTools::analysisTag;
    SaveCanvas(canv, name, CPlot::sOutDir);
 
 }
@@ -768,5 +782,360 @@ void SetSomeHistAttributes (TH1F* hist, TString samplename)
     }  
   return;  
 }
+
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+
+void PlotMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
+			const std::vector<TMatrixD> &matrV,
+			const std::vector<TMatrixD> &matrErrV,
+			const std::vector<TString> &labelV,
+			TString name, TString drawOption, TFile *histoFile, 
+			TString title, TString yAxisLabel,
+			int ncolX, int ncolY,
+			double yAxisMin, double yAxisMax)
+{
+  if (indices.size()==0) {
+    std::cout << "PlotMatrixMYSlices: indices.size=0" << std::endl;
+    throw 2;
+  }
+  if (matrV.size()==0) {
+    std::cout << "PlotMatrixMYSlices: matrV.size=0" << std::endl;
+    throw 2;
+  }
+  if (matrErrV.size()==0) {
+    std::cout << "PlotMatrixMYSlices: matrErrV.size=0" << std::endl;
+    throw 2;
+  }
+  if ((matrV.size()!=matrErrV.size()) || (matrV.size()!=labelV.size())) {
+    std::cout << "PlotMatrixMYSlices: matrV.size=" << matrV.size() 
+	      << ", matrErrV.size=" << matrErrV.size() 
+	      << ", labelV.size=" << labelV.size()
+	      << std::endl;
+    throw 2;
+  }
+
+  gStyle->SetPalette(1);
+ 
+  if ((ncolX<=0) && (ncolY<=0)) {
+    ncolX=int(sqrt(indices.size()));
+    ncolY=ncolX;
+  }
+  else {
+    if (ncolX<=0) ncolX=indices.size()/ncolY;
+    else if (ncolY<=0) ncolY=indices.size()/ncolX;
+    if (ncolX==0) ncolX=1;
+    if (ncolY==0) ncolY=1;
+  }
+  
+  { 
+    int loop=0;
+    while (ncolX * ncolY < int(indices.size())) {
+      if (loop%2==0) ncolX++;
+      else ncolY++;
+      loop++;
+    }
+  }
+
+  int cX=800, cY=800;
+  if ((ncolX==2) && (ncolY==3)) { cX=600; cY=900; }
+  else if ((ncolX==3) && (ncolY==2)) { cX=900; cY=600; }
+  TCanvas* canv=MakeCanvas(name,name, cX, cY);
+  canv->Divide(ncolX,ncolY);
+  //canv->SetFillColor(0);
+  //canv->SetLeftMargin     (0.1);
+  //canv->SetRightMargin    (0.1);
+
+  int nM=matrV[0].GetNrows();
+  if (nM!=DYTools::nMassBins) {
+    std::cout << "PlotMatrixMYSlices: nM!=DYTools::nMassBins" << std::endl;
+    throw 2;
+  }
+  int nY=matrV[0].GetNcols();
+  if (nY!=nYBinsMax) {
+    std::cout << "PlotMatrixMYSlices: nN!=DYTools::nYBinsMax" << std::endl;
+    throw 2;
+  }
+  for (unsigned int i=0; i<matrV.size(); ++i) {
+    if (nM!=matrV[i].GetNrows()) {
+      std::cout << "PlotMatrixMYSlices: matrV[" << i << "].GetNrows!=DYTools::nMassBins" << std::endl;
+      throw 2;
+    }
+    if (nY!=matrV[i].GetNcols()) {
+      std::cout << "PlotMatrixMYSlices: matrV[" << i << "].GetNcols!=DYTools::nYBinsMax" << std::endl;
+      throw 2;
+    }
+  }
+  for (unsigned int i=0; i<matrErrV.size(); ++i) {
+    if (nM!=matrErrV[i].GetNrows()) {
+      std::cout << "PlotMatrixMYSlices: matrErrV[" << i << "].GetNrows!=DYTools::nMassBins" << std::endl;
+      throw 2;
+    }
+    if (nY!=matrErrV[i].GetNcols()) {
+      std::cout << "PlotMatrixMYSlices: matrErrV[" << i << "].GetNcols!=DYTools::nYBinsMax" << std::endl;
+      throw 2;
+    }
+  }
+
+  const int colorCount=4;
+  const int colors[colorCount] = { kBlack, kRed, kBlue, kGreen+2 };
+
+  TString histName = "Hist" + name;
+  const int hBufLen=100;
+  char histTextBuf[hBufLen+1],histBuf[hBufLen+1];
+  std::vector<CPlot*> cplots;
+  cplots.reserve(indices.size());
+
+  const int printData=0;
+  if (!functionOfRapidity) {
+    for (unsigned int ii=0; ii<indices.size(); ++ii) {
+      int iY=indices[ii];
+      double yMin=0, yMax=0;
+      DYTools::findAbsYValueRange(0, iY, yMin, yMax);
+      double yCenter=0.5*(yMin+yMax);
+
+      CPlot* cp=new CPlot();
+      cplots.push_back(cp);
+      snprintf(histTextBuf, hBufLen, "|Y|_{center}= %5.3f",yCenter);
+      cp->AddTextBox(TString(histTextBuf), 0.68, 0.4, 0.95, 0.46, 0);
+      cp->SetXTitle("mass, GeV");
+      cp->SetYTitle(yAxisLabel);
+      if (yAxisMin<yAxisMax) cp->SetYRange(yAxisMin,yAxisMax);
+
+      for (unsigned int iSet=0; iSet<matrV.size(); ++iSet) {
+	if (printData) printf("iSet=%d: %s, %s\n",iSet,labelV[iSet].Data(),histTextBuf);
+	TString drOpt=(iSet==0) ? drawOption : "LP";
+	snprintf(histBuf, hBufLen,"h%d_%s_y%5.3f",iSet,histName.Data(),yCenter);
+	TH1F* Hist= new TH1F(histName,title, nMassBins, DYTools::massBinLimits);
+	Hist->SetDirectory(0);
+	//Hist->GetXaxis()->SetTitle("mass, GeV");
+	Hist->SetMarkerColor(colors[iSet%colorCount]);
+	for (int i=0; i<nM; i++) {
+	  int iRap=findAbsYBin(i, yCenter);
+	  if (printData) printf(" %6.1f-%6.1f  %8.2lf  %8.2lf\n",massBinLimits[i],massBinLimits[i+1],matrV[iSet](i,iRap),matrErrV[iSet](i,iRap));
+	  Hist->SetBinContent(i+1,matrV[iSet](i,iRap));
+	  Hist->SetBinError(i+1,matrErrV[iSet](i,iRap));
+	}
+	cp->AddHist1D(Hist,labelV[iSet],drOpt,colors[iSet%colorCount]);
+	cp->SetLogx();
+      }
+    }
+  }
+  else {
+    for (unsigned int ii=0; ii<indices.size(); ++ii) {
+      int iMass=indices[ii];
+      CPlot* cp=new CPlot();
+      cplots.push_back(cp);
+      snprintf(histTextBuf, hBufLen, "mass= %1.0f - %1.0f",
+	       massBinLimits[iMass], massBinLimits[iMass+1]);
+      cp->AddTextBox(TString(histTextBuf), 0.58, 0.4, 0.95, 0.46, 0);
+      cp->SetXTitle("|Y|");
+      cp->SetYTitle(yAxisLabel);
+      if (yAxisMin<yAxisMax) cp->SetYRange(yAxisMin,yAxisMax);
+
+      for (unsigned int iSet=0; iSet<matrV.size(); ++iSet) {
+	if (printData) printf("iSet=%d: %s, %s\n",iSet,labelV[iSet].Data(),histTextBuf);
+	TString drOpt=(iSet==0) ? drawOption : "LP";
+	snprintf(histBuf, hBufLen,"h%d_%s_mass%1.0f_%1.0f",iSet,histName.Data(),
+		 massBinLimits[iMass], massBinLimits[iMass+1]);
+	TH1F* Hist= new TH1F(histName,"", nYBins[iMass], yRangeMin, yRangeMax);
+	Hist->SetDirectory(0);
+	//Hist->GetXaxis()->SetTitle("|Y|");
+	Hist->SetMarkerColor(colors[iSet%colorCount]);
+	for (int j=0; j<nYBins[iMass]; j++) {
+	  if (printData) {
+	    double yMin,yMax;
+	    DYTools::findAbsYValueRange(0, j, yMin,yMax);
+	    printf(" %6.1f-%6.1f  %8.2lf  %8.2lf\n",yMin,yMax,matrV[iSet](iMass,j),matrErrV[iSet](iMass,j));
+	  }
+	  Hist->SetBinContent(j+1,matrV[iSet](iMass,j));
+	  Hist->SetBinError(j+1,matrErrV[iSet](iMass,j));
+	}
+	cp->AddHist1D(Hist,labelV[iSet],drOpt,colors[iSet%colorCount]);
+      }
+    }
+  }
+  if (printData) fflush(stdout);
+
+  canv->cd();
+  for (unsigned int i=0; i<cplots.size(); ++i) {
+    cplots[i]->Draw(canv, false, "png", i+1);
+  }
+  //CPlot::sOutDir="plots" + DYTools::analysisTag;
+  SaveCanvas(canv, name, CPlot::sOutDir);
+  if (histoFile) canv->Write();
+
+}
+
+// -----------------------------------------------------------------------------
+
+void PlotMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
+			const std::vector<TVectorD> &matrFIV,
+			const std::vector<TVectorD> &matrErrFIV,
+			const std::vector<TString> &labelV,
+			TString name, TString drawOption, TFile *histoFile, 
+			TString title, TString yAxisLabel,
+			int ncolX, int ncolY,
+			double yAxisMin, double yAxisMax) {
+  if (matrFIV.size()!=matrErrFIV.size()) {
+    std::cout << "PlotMatrixMYSlices(FIV): matrFIV.size=" << matrFIV.size() 
+	      << ", matrErrFIV.size=" << matrErrFIV.size() << std::endl;
+  }
+  std::vector<TMatrixD> matrV, matrErrV;
+  matrV.reserve(matrFIV.size()); matrErrV.reserve(matrErrFIV.size());
+  int res=1;
+  for (unsigned int i=0; res && (i<matrFIV.size()); ++i) {
+    TMatrixD temp(nMassBins,nYBinsMax);
+    res=unfolding::deflattenMatrix(matrFIV[i], temp);
+    if (res) matrV.push_back(temp);
+  }
+  for (unsigned int i=0; res && (i<matrErrFIV.size()); ++i) {
+    TMatrixD temp(nMassBins,nYBinsMax);
+    res=unfolding::deflattenMatrix(matrErrFIV[i], temp);
+    if (res) matrErrV.push_back(temp);
+  }
+  PlotMatrixMYSlices(indices,functionOfRapidity,matrV,matrErrV,labelV,
+		   name, drawOption,histoFile,title, 
+		   yAxisLabel, ncolX,ncolY,
+		   yAxisMin, yAxisMax);
+}
+
+// -----------------------------------------------------------------------------
+
+void PrintMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
+			 const std::vector<TMatrixD> &matrV,
+			 const std::vector<TMatrixD> &matrErrV,
+			 const std::vector<TString> &labelV)
+{
+  if (indices.size()==0) {
+    std::cout << "PrintMatrixMYSlices: indices.size=0" << std::endl;
+    throw 2;
+  }
+  if (matrV.size()==0) {
+    std::cout << "PrintMatrixMYSlices: matrV.size=0" << std::endl;
+    throw 2;
+  }
+  if (matrErrV.size()==0) {
+    std::cout << "PrintMatrixMYSlices: matrErrV.size=0" << std::endl;
+    throw 2;
+  }
+  if ((matrV.size()!=matrErrV.size()) || (matrV.size()!=labelV.size())) {
+    std::cout << "PrintMatrixMYSlices: matrV.size=" << matrV.size() 
+	      << ", matrErrV.size=" << matrErrV.size() 
+	      << ", labelV.size=" << labelV.size()
+	      << std::endl;
+    throw 2;
+  }
+
+  int nM=matrV[0].GetNrows();
+  if (nM!=DYTools::nMassBins) {
+    std::cout << "PrintMatrixMYSlices: nM!=DYTools::nMassBins" << std::endl;
+    throw 2;
+  }
+  int nY=matrV[0].GetNcols();
+  if (nY!=nYBinsMax) {
+    std::cout << "PrintMatrixMYSlices: nN!=DYTools::nYBinsMax" << std::endl;
+    throw 2;
+  }
+  for (unsigned int i=0; i<matrV.size(); ++i) {
+    if (nM!=matrV[i].GetNrows()) {
+      std::cout << "PrintMatrixMYSlices: matrV[" << i << "].GetNrows!=DYTools::nMassBins" << std::endl;
+      throw 2;
+    }
+    if (nY!=matrV[i].GetNcols()) {
+      std::cout << "PrintMatrixMYSlices: matrV[" << i << "].GetNcols!=DYTools::nYBinsMax" << std::endl;
+      throw 2;
+    }
+  }
+  for (unsigned int i=0; i<matrErrV.size(); ++i) {
+    if (nM!=matrErrV[i].GetNrows()) {
+      std::cout << "PrintMatrixMYSlices: matrErrV[" << i << "].GetNrows!=DYTools::nMassBins" << std::endl;
+      throw 2;
+    }
+    if (nY!=matrErrV[i].GetNcols()) {
+      std::cout << "PrintMatrixMYSlices: matrErrV[" << i << "].GetNcols!=DYTools::nYBinsMax" << std::endl;
+      throw 2;
+    }
+  }
+
+  if (!functionOfRapidity) {
+    for (unsigned int ii=0; ii<indices.size(); ++ii) {
+      int iY=indices[ii];
+      double yMin=0, yMax=0;
+      DYTools::findAbsYValueRange(0, iY, yMin, yMax);
+      double yCenter=0.5*(yMin+yMax);
+
+      printf("\n\n|Y|_{center}= %5.3f\n",yCenter);
+      printf("   mass range   |");
+      for (unsigned int iSet=0; iSet<labelV.size(); ++iSet) {
+	printf(" %s |",labelV[iSet].Data());
+      }
+      printf("\n");
+
+      for (int i=0; i<nM; i++) {
+	int iRap=findAbsYBin(i, yCenter);
+	printf(" %6.1f-%6.1f  ",massBinLimits[i],massBinLimits[i+1]);
+	for (unsigned int iSet=0; iSet<matrV.size(); ++iSet) {
+	  printf("   %8.2lf +/- %8.2lf",matrV[iSet](i,iRap),matrErrV[iSet](i,iRap));
+	}
+	printf("\n");
+      }
+    }
+  }
+  else {
+    for (unsigned int ii=0; ii<indices.size(); ++ii) {
+      int iMass=indices[ii];
+      printf("\n\nmass= %1.0f - %1.0f\n",
+	     massBinLimits[iMass], massBinLimits[iMass+1]);
+      printf("   rapidity rng |");
+      for (unsigned int iSet=0; iSet<labelV.size(); ++iSet) {
+	printf(" %s |",labelV[iSet].Data());
+      }
+      printf("\n");
+
+      for (int j=0; j<nYBins[iMass]; j++) {
+	double yMin,yMax;
+	DYTools::findAbsYValueRange(0, j, yMin,yMax);
+	printf(" %6.1f-%6.1f  ",yMin,yMax);
+	for (unsigned int iSet=0; iSet<matrV.size(); ++iSet) {
+	  printf("   %8.2lf +/- %8.2lf",matrV[iSet](iMass,j),matrErrV[iSet](iMass,j));
+	}
+	printf("\n");
+      }
+    }
+  }
+  fflush(stdout);
+}
+
+// -----------------------------------------------------------------------------
+
+void PrintMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
+			 const std::vector<TVectorD> &matrFIV,
+			 const std::vector<TVectorD> &matrErrFIV,
+			 const std::vector<TString> &labelV) {
+  if (matrFIV.size()!=matrErrFIV.size()) {
+    std::cout << "PrintMatrixMYSlices(FIV): matrFIV.size=" << matrFIV.size() 
+	      << ", matrErrFIV.size=" << matrErrFIV.size() << std::endl;
+  }
+  std::vector<TMatrixD> matrV, matrErrV;
+  matrV.reserve(matrFIV.size()); matrErrV.reserve(matrErrFIV.size());
+  int res=1;
+  for (unsigned int i=0; res && (i<matrFIV.size()); ++i) {
+    TMatrixD temp(nMassBins,nYBinsMax);
+    res=unfolding::deflattenMatrix(matrFIV[i], temp);
+    if (res) matrV.push_back(temp);
+  }
+  for (unsigned int i=0; res && (i<matrErrFIV.size()); ++i) {
+    TMatrixD temp(nMassBins,nYBinsMax);
+    res=unfolding::deflattenMatrix(matrErrFIV[i], temp);
+    if (res) matrErrV.push_back(temp);
+  }
+  PrintMatrixMYSlices(indices,functionOfRapidity,matrV,matrErrV,labelV);
+}
+
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 //#include "../YieldsAndBackgrounds/plotFunctionsPrepareYields.C"

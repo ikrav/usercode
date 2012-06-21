@@ -51,9 +51,10 @@ void SetSomeHistAttributes (TH1F* hist, TString samplename);
 //for everything
 Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
-TMatrixD AdjustMatrixBinning(TMatrixD matrUsualBinning);
-void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, bool SetLogz=0);
-void PlotMatrixVariousBinning(TMatrixD matr, TString name, TString drawOption, TFile *histoFile, TString title, bool SetLogz);
+TMatrixD AdjustMatrixBinning(const TMatrixD &matrUsualBinning);
+void PlotMatrixVariousBinning(const TMatrixD &matr, TString name, TString drawOption, TFile *histoFile, bool SetLogz=0);
+void PlotMatrixVariousBinning(const TMatrixD &matr, TString name, TString drawOption, TFile *histoFile, TString title, bool SetLogz);
+
 
 //for cross section
 void RShapePlot (TMatrixD relCrossSection, TMatrixD relCrossSectionStatErr, 
@@ -63,5 +64,71 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET);
 
 void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,double* y2,double* ey2,double* y3,double* ey3,double* y4,double* ey4, TString name, double mass1, double mass2);
 
+
+// -----------------------------------------------------------
+//   Utility plots
+// -----------------------------------------------------------
+
+void PlotMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
+			const std::vector<TMatrixD> &matrV,
+			const std::vector<TMatrixD> &matrErrV,
+			const std::vector<TString> &labelV,
+			TString name, TString drawOption, TFile *histoFile, 
+			TString title, TString yAxisLabel="Count",
+			int ncolX=-1, int ncolY=-1,
+			double yAxisMin=99999, double yAxisMax=-99999);
+
+void PlotMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
+			const std::vector<TVectorD> &matrFIV,
+			const std::vector<TVectorD> &matrErrFIV,
+			const std::vector<TString> &labelV,
+			TString name, TString drawOption, TFile *histoFile, 
+			TString title, TString yAxisLabel="Count",
+			int ncolX=-1, int ncolY=-1,
+			double yAxisMin=99999, double yAxisMax=-99999);
+
+void PrintMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
+			 const std::vector<TMatrixD> &matrV,
+			 const std::vector<TMatrixD> &matrErrV,
+			 const std::vector<TString> &labelV);
+
+void PrintMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
+		       const std::vector<TVectorD> &matrFIV,
+		       const std::vector<TVectorD> &matrErrFIV,
+		       const std::vector<TString> &labelV);
+
+// ------------------------------------------------------------------
+
+template<class Container_t>
+inline
+void PlotMatrixMYSlices(int idx, int functionOfRapidity,
+			const Container_t &arr,
+			const TString label,
+			const TString yAxisLabel="Count") {
+  std::vector<int> indices; indices.push_back(idx);
+  std::vector<Container_t> arrV; arrV.push_back(arr);
+  Container_t err=arr; err=0;
+  std::vector<Container_t> errV; errV.push_back(err);
+  std::vector<TString> labelV; labelV.push_back(label);
+  PlotMatrixMYSlices(indices,functionOfRapidity,arrV,errV,labelV,
+		     label, "hist", NULL, "hist", yAxisLabel);
+}
+
+// ------------------------------------------------------------------
+
+template<class Container_t>
+inline
+void PrintMatrixMYSlices(int idx, int functionOfRapidity,
+			 const Container_t &arr,
+			 const TString label) {
+  std::vector<int> indices; indices.push_back(idx);
+  std::vector<Container_t> arrV; arrV.push_back(arr);
+  Container_t err=arr; err=0;
+  std::vector<Container_t> errV; errV.push_back(err);
+  std::vector<TString> labelV; labelV.push_back(label);
+  PrintMatrixMYSlices(indices,functionOfRapidity,arrV,errV,labelV);
+}
+
+// ------------------------------------------------------------------
 
 #endif
