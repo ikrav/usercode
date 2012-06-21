@@ -360,6 +360,26 @@ void selectEvents(const TString conf,
     if(isam==0 && !hasData) continue;
 
     //
+    // Prepare ntuple file name
+    //
+    TString outName = ntupDir + TString("/") + snamev[isam] + 
+      analysisTag_USER + TString("_select.root");
+
+    if ((runMode==DYTools::ESCALE_STUDY) || 
+	(runMode==DYTools::ESCALE_STUDY_RND)) {
+      if (isam==0) {
+	TString fnameTag= TString("_select_") + escaleFileTag;
+	outName.Replace(outName.Index("_select."),sizeof("_select.")-2,
+			fnameTag);
+      }
+      else {
+	std::cout << "... runMode=<" << SystematicsStudyName(runMode) 
+		  << ">, skipping the non-data files\n";
+	break;
+      }
+    }
+
+    //
     // Set up output (eta,eta,mass) EEM file, if needed
     //
     TString outEEMName;
@@ -387,22 +407,7 @@ void selectEvents(const TString conf,
     //
     // Set up output ntuple file for the sample
     //
-    TString outName = ntupDir + TString("/") + snamev[isam] + 
-      analysisTag_USER + TString("_select.root");
 
-    if ((runMode==DYTools::ESCALE_STUDY) || 
-	(runMode==DYTools::ESCALE_STUDY_RND)) {
-      if (isam==0) {
-	TString fnameTag= TString("_select_") + escaleFileTag;
-	outName.Replace(outName.Index("_select."),sizeof("_select.")-2,
-			fnameTag);
-      }
-      else {
-	std::cout << "... runMode=<" << SystematicsStudyName(runMode) 
-		  << ">, skipping the non-data files\n";
-	break;
-      }
-    }
     TFile *outFile = new TFile(outName,"RECREATE");
     TTree *outTree = new TTree("Events","Events");
 #ifdef ZeeData_is_TObject
