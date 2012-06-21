@@ -297,18 +297,19 @@ namespace unfolding {
 	     extraUnfoldingErrorsFileName.Data());
       return -1;
     }
-    TMatrixD* systOtherSourcesPercentPtr
-      = (TMatrixD *)fileExtraUnfoldingErrors.FindObjectAny("unfoldingSystPercent");
+    TVectorD* systOtherSourcesPercentPtr
+      = (TVectorD *)fileExtraUnfoldingErrors.FindObjectAny("unfoldingSystPercentFI");
     assert(systOtherSourcesPercentPtr);
-    assert(checkRangesMY(*systOtherSourcesPercentPtr,
-			 TString("unfoldingSystPercent from ") + extraUnfoldingErrorsFileName));
+    assert(checkRangesFI(*systOtherSourcesPercentPtr,
+	 TString("unfoldingSystPercent from ") + extraUnfoldingErrorsFileName));
 
     // For absolute errors we need to know unfolded yields
     TVectorD yieldsAfterUnfolding(nBins);
     unfold(yieldsBeforeUnfolding, yieldsAfterUnfolding, fullUnfoldingConstFileName);
     // Calculate absolute error from other sources
     TVectorD systOtherSourcesPercentV(nBins),systOtherSourcesV(nBins);
-    flattenMatrix(*systOtherSourcesPercentPtr, systOtherSourcesPercentV);
+    //flattenMatrix(*systOtherSourcesPercentPtr, systOtherSourcesPercentV);
+    systOtherSourcesPercentV = *systOtherSourcesPercentPtr;
     for(int i=0; i<nBins; i++){
       systOtherSourcesV[i] = (systOtherSourcesPercentV[i]/100.0) * yieldsAfterUnfolding[i];
     }
@@ -466,6 +467,21 @@ namespace unfolding {
   bool checkRangesMY(const TMatrixD &M1, const TString &name1, const TMatrixD &M2, const TString &name2, int verb) {
     if (verb) std::cout << "checkRangesMY(" << name1 << ',' << name2 << ")\n";
     bool ok= (checkRangesMY(M1,name1,verb) && checkRangesMY(M2,name2,verb));
+    return ok;
+  }
+
+ // -----------------------------------------
+
+  bool checkRangesFI(const TVectorD &v, const TString &name, int verb) {
+    bool ok=true;
+    if (verb) std::cout << "checkRangesFI: check vector with name=<" << name << ">\n";
+    int nBins= DYTools::getTotalNumberOfBins();
+    if ( v.GetNoElements() != nBins ) {
+      std::cout << "checkRangesFI(TVectorD): " << name << " is not good: "
+		<< v.GetNoElements() << " instead of "
+		<< nBins << "\n";
+      ok=false;
+    }
     return ok;
   }
 
