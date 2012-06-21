@@ -191,6 +191,39 @@ namespace DYTools {
   int findAbsYBin(int massBin, double y){ return findYBin(massBin,fabs(y)); }
   int findYBin(double mass, double y) { return findYBin(findMassBin(mass),y); }
   int findAbsYBin(double mass, double y) { return findYBin(findMassBin(mass),fabs(y)); }
+
+  // return rapidity value at the Ybin center
+  double findAbsYValue(int massBin, int yBin) {
+    if (massBin>=nMassBins) {
+      std::cout << "ERROR in findAbsYValue: massBin=" << massBin << ", nMassBins=" << nMassBins << "\n";
+      return 0;
+    }
+    int ybinCount=nYBins[massBin];
+    if (yBin>ybinCount) {
+      std::cout << "ERROR in findAbsYValue: massBin=" << massBin << ", yBin=" << yBin << ", nYBins[massBin]=" << ybinCount << "\n";
+      return 0;
+    }
+    double yh=(yRangeMax-yRangeMin)/double(ybinCount);
+    return (yBin+0.5)*yh;
+  }
+  
+  // return rapidity range of Ybin
+  void findAbsYValueRange(int massBin, int yBin, double &absYMin, double &absYMax) {
+    absYMin=0.; absYMax=0.;
+    if (massBin>=nMassBins) {
+      std::cout << "ERROR in findAbsYValueRange: massBin=" << massBin << ", nMassBins=" << nMassBins << "\n";
+      return;
+    }
+    int ybinCount=nYBins[massBin];
+    if (yBin>ybinCount) {
+      std::cout << "ERROR in findAbsYValueRange: massBin=" << massBin << ", yBin=" << yBin << ", nYBins[massBin]=" << ybinCount << "\n";
+      return;
+    }
+    double yh=(yRangeMax-yRangeMin)/double(ybinCount);
+    absYMin=yBin*yh;
+    absYMax=yBin*yh+yh;
+    return;
+  }
   
 
   // This function finds a unique 1D index for (index_m, index_y) pair
