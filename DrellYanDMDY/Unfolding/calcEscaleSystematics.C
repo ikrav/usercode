@@ -110,7 +110,7 @@ int saveTexTable=0){
   // had been applied to data and MC. "Residual differences"
   //
   TVectorD unfoldedYieldsVariation(nUnfoldingBins);
-  TVectorD escaleShapeSystRelative(nUnfoldingBins);
+  TVectorD escaleResidualDiffSystRelative(nUnfoldingBins);
   TString fname = TString("../root_files/yields/") + lumiTag + 
     TString("/yields_bg-subtracted") + analysisTag + TString(".root");
   int res=1;
@@ -142,7 +142,7 @@ int saveTexTable=0){
   }
   if (res==1) {
     for(int idx=0; idx<nUnfoldingBins; idx++){
-      escaleShapeSystRelative[idx] = 
+      escaleResidualDiffSystRelative[idx] = 
 	fabs(unfoldedYields[idx] - unfoldedYieldsVariation[idx])
 	/(unfoldedYields[idx] + unfoldedYieldsVariation[idx]);
     }
@@ -270,7 +270,7 @@ int saveTexTable=0){
     escaleSystPercent[idx] = 100.0 *
       sqrt(
 	   escaleRandomizedSystRelative[idx]*escaleRandomizedSystRelative[idx]
-	   + escaleShapeSystRelative[idx]*escaleShapeSystRelative[idx]
+	   + escaleResidualDiffSystRelative[idx]*escaleResidualDiffSystRelative[idx]
 	   + escaleFitShapeSystRelative[idx]*escaleFitShapeSystRelative[idx]
 	   + escaleEtaBinSystRelative[idx]*escaleEtaBinSystRelative[idx]
 	   );
@@ -286,7 +286,7 @@ int saveTexTable=0){
 	     rapidityBinLimits[yi],rapidityBinLimits[yi+1],
 	     escaleRandomizedSystRelative[idx]*100.0,
 	     escaleFitShapeSystRelative[idx]*100.0,
-	     escaleShapeSystRelative[idx]*100.0,
+	     escaleResidualDiffSystRelative[idx]*100.0,
 	     escaleEtaBinSystRelative[idx]*100.0,
 	     escaleSystPercent[idx]
 	     );
@@ -318,7 +318,7 @@ int saveTexTable=0){
     headers.push_back("rapidity range");
     headers.push_back("statistical, \\%"); data.push_back(&escaleRandomizedSystRelative); factors.push_back(100.);
     headers.push_back("shape, \\%"); data.push_back(&escaleFitShapeSystRelative); factors.push_back(100.);
-    headers.push_back("residual, \\%"); data.push_back(&escaleShapeSystRelative); factors.push_back(100.);
+    headers.push_back("residual, \\%"); data.push_back(&escaleResidualDiffSystRelative); factors.push_back(100.);
     headers.push_back("$\\eta$ binning, \\%"); data.push_back(&escaleEtaBinSystRelative); factors.push_back(100.);
     headers.push_back("total, \\%"); data.push_back(&escaleSystPercent); factors.push_back(1.);
     
@@ -330,7 +330,12 @@ int saveTexTable=0){
   TString finalFName=TString("../root_files/systematics/") + lumiTag + 
     TString("/escale_systematics") + analysisTag + TString("_tmp.root");
   TFile fout(finalFName,"recreate");
-  escaleSystPercent.Write("escaleSystPercent");
+  unfolding::writeBinningArrays(fout);
+  escaleRandomizedSystRelative.Write("escaleRandomizedSystRelativeFI");
+  escaleFitShapeSystRelative.Write("escaleFitShapeSystRelativeFI");
+  escaleResidualDiffSystRelative.Write("escaleResidualDiffSystRelativeFI");
+  escaleEtaBinSystRelative.Write("escaleEtaBinSystRelativeFI");
+  escaleSystPercent.Write("escaleSystPercentFI");
   fout.Close();
 
   return;
