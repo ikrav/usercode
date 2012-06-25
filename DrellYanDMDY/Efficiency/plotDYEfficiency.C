@@ -479,6 +479,8 @@ void plotDYEfficiency(const TString input,
 
   PlotMatrixVariousBinning(effv, "efficiency", "LEGO2", filePlots);
   filePlots->Close();
+  if (DYTools::study2D==0)
+    Plot1D(effv,effErrv,"efficiency1D","efficiency");
 
   // Store constants in the file
   //TString effConstFileName(outputDir+TString("/event_efficiency_constants.root"));
