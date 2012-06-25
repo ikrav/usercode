@@ -49,6 +49,7 @@ void SetSomeHistAttributes (TH1F* hist, TString samplename);
 //void PlotAccMatrix(TMatrixD accv);
 
 //for everything
+void Plot1D(const TMatrixD &matrValues, const TMatrixD &matrErrors, TString name, TString title);
 Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
 TMatrixD AdjustMatrixBinning(const TMatrixD &matrUsualBinning);

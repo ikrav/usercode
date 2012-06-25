@@ -43,19 +43,65 @@
 
 // -----------------------------------------------------------------------------
 
+void Plot1D(const TMatrixD &matrValues, const TMatrixD &matrErrors, TString name, TString title)
+{
+
+//acceptance, bkgRatesPercent, LEGO2,COLZ 
+   TCanvas* canv=new TCanvas(name,name);
+   canv->SetFillColor(0);
+   canv->SetLeftMargin     (0.1);
+   canv->SetRightMargin    (0.1);
+   
+   if (DYTools::study2D==1) 
+     {
+        std::cout<<"Plot1D is not for 2D studies"<<std::endl;
+        return;
+     }
+
+   if (nMassBins!=matrValues.GetNrows() || nMassBins!=matrErrors.GetNrows()) 
+     {
+        std::cout<<"for 1D study, length of vector is not equal to the number of mass bins"<<std::endl;
+        return;
+     }
+   double yVals[DYTools::nMassBins];
+   double yErrs[DYTools::nMassBins];
+   double xVals[DYTools::nMassBins];
+   double xErrs[DYTools::nMassBins];
+
+   for (int i=0; i<DYTools::nMassBins; i++)
+     {
+        yVals[i]=matrValues(i,0);
+        yErrs[i]=matrErrors(i,0);
+        xVals[i]=(massBinLimits[i+1]+massBinLimits[i])/2;
+        xErrs[i]=(massBinLimits[i+1]-massBinLimits[i])/2;
+     }
+
+   TGraphErrors *gr = new TGraphErrors(DYTools::nMassBins,xVals,yVals,xErrs,yErrs);
+   gr->SetTitle(title);
+   TAxis* xAx=gr->GetXaxis();
+   xAx->SetTitle("mass, GeV");
+   canv->SetLogx();
+   gr->SetMarkerStyle(1);
+   gr->Draw("AP");
+   SaveCanvas(canv, name, CPlot::sOutDir);
+
+}
+
 void PlotMatrixVariousBinning(const TMatrixD &matr, TString name, 
 			      TString drawOption, TFile *histoFile, TString title, 
 			      bool SetLogz)
 {
 
 //acceptance, bkgRatesPercent, LEGO2,COLZ 
-   TMatrixD matrDraw = AdjustMatrixBinning(matr);
-   gStyle->SetPalette(1);
-
    TCanvas* canv=new TCanvas(name,name);
    canv->SetFillColor(0);
    canv->SetLeftMargin     (0.1);
    canv->SetRightMargin    (0.1);
+   
+    
+
+   TMatrixD matrDraw = AdjustMatrixBinning(matr);
+   gStyle->SetPalette(1);
 
    int nM=matr.GetNrows();
    int nY=matr.GetNcols();

@@ -225,7 +225,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     nZv += scale * eventTree->GetEntries();
 
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-      if (debugMode && (ientry>10000)) break;
+      if (debugMode && (ientry>1000)) break;
 
       genBr->GetEntry(ientry);
 
@@ -421,6 +421,8 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
 
   PlotMatrixVariousBinning(accv, "acceptance", "LEGO2",filePlots);
   filePlots->Close();
+  if (DYTools::study2D==0)
+    Plot1D(accv,accErrv,"acceptance1D","acceptance");
   //delete filePlots;
   
 

@@ -386,7 +386,9 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   PlotMatrixVariousBinning(corrv, NoverN, "LEGO2",filePlots);
 
   if (filePlots) filePlots->Close();
-
+  NoverN+="_1D";
+  if (DYTools::study2D==0)
+    Plot1D(corrv, corrErrv,NoverN,NoverN);
 
   // Store constants in the file
   TString fsrConstFileName(outputDir+fsr_constants);
