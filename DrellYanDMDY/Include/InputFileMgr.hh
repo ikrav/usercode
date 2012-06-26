@@ -261,6 +261,16 @@ public:
   
   std::vector<std::string> _info;
 
+  void print() const {
+    std::cout << std::string(80,'-') << "\n";
+    std::cout << "File info " << _info.size() << " lines:\n";
+    for (unsigned int i=0; i<_info.size(); ++i) {
+      std::cout << _info[i];
+      if (_info[i].find('\n')==std::string::npos) std::cout << "\n";
+    }
+    std::cout << std::string(80,'-') << "\n";
+  }
+
   ClassDef(TDescriptiveInfo_t,1)
 };
 
