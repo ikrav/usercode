@@ -2,6 +2,8 @@
 #include "TFile.h"
 #include "TString.h"
 #include "TSystem.h"
+#include <TTree.h>
+#include <TBranch.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -10,6 +12,7 @@
 #include "../Include/UnfoldingTools.hh"
 #include "calcUnfoldingSystematics.C"
 #include "../Include/ElectronEnergyScale.hh"
+#include "../Include/InputFileMgr.hh"
 
 // returns 1 - ok, 0 - binning failure, -1 - file failure
 int applyUnfoldingLocal(TVectorD &vin, TVectorD &vout, TString matrixFileName, int printLoadedData=1);
@@ -276,39 +279,44 @@ int saveTexTable=0){
 	   );
   }
 
-  printf("\n\n");
-  printf("mass_range y_range stat_part shape-fit residual binning total,%% \n");
-   for(int i=0, idx=0; i<nMassBins; i++){
-    double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi, ++idx) {
-      printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f\n",
-	     massBinLimits[i],massBinLimits[i+1],
-	     rapidityBinLimits[yi],rapidityBinLimits[yi+1],
-	     escaleRandomizedSystRelative[idx]*100.0,
-	     escaleFitShapeSystRelative[idx]*100.0,
-	     escaleResidualDiffSystRelative[idx]*100.0,
-	     escaleEtaBinSystRelative[idx]*100.0,
-	     escaleSystPercent[idx]
-	     );
-    }
-    delete rapidityBinLimits;
-  }
+  // Don't write TObject part of the objects
+  TDescriptiveInfo_t::Class()->IgnoreTObjectStreamer();
+  TDescriptiveInfo_t *info= new TDescriptiveInfo_t();
+  std::vector<std::string> *lines = (info) ? (& info->_info) : NULL;
 
-  std::cout << "\n\n";
-  std::cout << std::string(80,'-') << "\n";
-  std::cout << " Summary of successful loads:\n";
-  std::cout << "  escale systematics   file count=  " << countEScaleSyst << "\n";
-  std::cout << "  residual shape syst. file count=  " << countResidualShape << "\n";
-  std::cout << "  eta systematics      file count=  " << countEtaSyst << "\n";
-  std::cout << "  fitting shape        file count=  " << countFittingShape << "\n";
+  const int bufsize=300;
+  char buf[bufsize];
+  std::string sbuf;
+
+
+  snprintf(buf,bufsize," Summary of successful loads:\n");
+  printf(buf);
+  if (lines) lines->push_back(buf);
+  snprintf(buf,bufsize,"  escale systematics   file count=  %2d\n", countEScaleSyst);
+  printf(buf);
+  if (lines) lines->push_back(buf);
+  snprintf(buf,bufsize,"  residual shape syst. file count=  %2d\n", countResidualShape);
+  printf(buf);
+  if (lines) lines->push_back(buf);
+  snprintf(buf,bufsize,"  eta systematics      file count=  %2d\n", countEtaSyst);
+  printf(buf);
+  if (lines) lines->push_back(buf);
+  snprintf(buf,bufsize,"  fitting shape        file count=  %2d\n", countFittingShape);
+  printf(buf);
+  if (lines) { lines->push_back(buf); lines->push_back("\n"); }
   std::cout << "\n";
-  if (1) {
-    std::cout << " Loaded files:\n";
-    for (unsigned int i=0; i<usedFiles.size(); ++i) {
-      std::cout << " " << usedFiles[i] << "\n";
-    }
-    std::cout << std::endl;
+
+  int listFilesOnScreen=1;
+  snprintf(buf,bufsize," Loaded files:\n");
+  if (listFilesOnScreen) printf(buf);
+  if (lines) lines->push_back(buf);
+  for (unsigned int i=0; i<usedFiles.size(); ++i) {
+    snprintf(buf,bufsize," %s\n",usedFiles[i].Data());
+    if (listFilesOnScreen) printf(buf);
+    if (lines) lines->push_back(buf);
   }
+  std::cout << std::endl;
+
 
   if (saveTexTable) {
     std::vector<TString> headers;
@@ -336,6 +344,13 @@ int saveTexTable=0){
   escaleResidualDiffSystRelative.Write("escaleResidualDiffSystRelativeFI");
   escaleEtaBinSystRelative.Write("escaleEtaBinSystRelativeFI");
   escaleSystPercent.Write("escaleSystPercentFI");
+
+  if (info) {
+    TTree *infoTree = new TTree("Description","description");
+    infoTree->Branch("description","TDescriptiveInfo_t",&info);
+    infoTree->Fill();
+    infoTree->Write();
+  }
   fout.Close();
 
   return;
