@@ -1,6 +1,11 @@
 #ifndef EWKANA_NTUPLER_EWKANADEFS_HH 
 #define EWKANA_NTUPLER_EWKANADEFS_HH
 
+#include <TROOT.h>
+#include <TTree.h>
+#include <TFile.h>
+#include <iostream>
+
 enum EMuType 
 { 
   kGlobal     = 1, 
@@ -145,4 +150,23 @@ kHLT_Ele17_SW_L1R_EleObj = 1UL<<31,
   kHLT_Photon125_PhoObj         = 1UL<<42,
   kHLT_Photon135_PhoObj         = 1UL<<43  
 };
+
+
+// --------------------------------------------------------
+// --------------------------------------------------------
+
+class TDescriptiveInfo_t : public TObject {
+  public:
+  TDescriptiveInfo_t() : TObject(), _info() {}
+  ~TDescriptiveInfo_t() {}
+
+  std::vector<std::string> _info;
+
+  ClassDef(TDescriptiveInfo_t,1)
+};
+
+// --------------------------------------------------------
+// --------------------------------------------------------
+
+
 #endif

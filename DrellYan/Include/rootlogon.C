@@ -8,7 +8,7 @@
   // The ones below have class definitions and need to be compiled
   gROOT->ProcessLine(".L ../Include/TDielectron.hh+");
   gROOT->ProcessLine(".L ../Include/TElectron.hh+");
-  //gROOT->ProcessLine(".L ../Include/EWKAnaDefs.hh+");
+  gROOT->ProcessLine(".L ../Include/EWKAnaDefs.hh+");
   gROOT->ProcessLine(".L ../Include/DYTools.hh+");
   gROOT->ProcessLine(".L ../Include/TMuon.hh+");
   gROOT->ProcessLine(".L ../Include/TEventInfo.hh+");
