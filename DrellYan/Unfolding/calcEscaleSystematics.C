@@ -10,7 +10,7 @@
 #include "../Include/UnfoldingTools.hh"
 
 // returns 1 - ok, 0 - binning failure, -1 - file failure
-int applyUnfoldingShort(TVectorD &vin, TVectorD &vout, TString matrixFileName, int printLoadedData=0);
+int applyUnfoldingShort(const TVectorD &vin, TVectorD &vout, TString matrixFileName, int printLoadedData=0);
 
 // save texTable
 int printTexTable(const TString &texFileName, int nMassBins, const double *massBins, const std::vector<TString>& headers, const std::vector<TVectorD*> &data, const std::vector<double> &factors);
@@ -47,6 +47,7 @@ int saveTexTable=1){
 
   TString matrixFileName = TString("../root_files/constants/") + lumiTag + TString("/unfolding_constants.root");
   const int nFiles1 = 20;  // expected number of files
+  if (1)
   for(int ifile=0; ifile<nFiles1; ifile++){
     int seed = 1001+ifile;
     TString fname = TString("../root_files/yields/") + lumiTag + TString("_escale_randomized/yields_bg-subtracted_seed");
@@ -96,8 +97,9 @@ int saveTexTable=1){
   TVectorD unfoldedYieldsVariation(nMassBins);
   TVectorD escaleShapeSystRelative(nMassBins);
   TString fname = TString("../root_files/yields/") + lumiTag + TString("/yields_bg-subtracted.root");
-  TFile file(fname);
   int res=1;
+  {
+  TFile file(fname);
   if (file.IsOpen()) {
     observedYields = *(TVectorD*)file.Get("YieldsSignal");
   //
@@ -114,6 +116,7 @@ int saveTexTable=1){
 	usedFiles.push_back(matrixFileName);
       }
     }
+  }
   }
   if (res==1) {
     for(int i=0; i<nMassBins; i++){
@@ -134,8 +137,10 @@ int saveTexTable=1){
     TString shapeFName=TString("../root_files/yields/") + lumiTag + TString("_escale_shape/yields_bg-subtracted") + shapeNames[i] + TString(".root");
     TFile fShape(shapeFName);
     if (fShape.IsOpen()) {
+      std::cout << "loaded YieldsSignal from <" << shapeFName << ">\n";
       usedFiles.push_back(shapeFName);
-      observedYieldsShape = *(TVectorD*)file.Get("YieldsSignal");
+      observedYieldsShape = *(TVectorD*)fShape.Get("YieldsSignal");
+      std::cout << "observedYieldsShape=\n"; observedYieldsShape.Print();
       TString matrixFileNameShape = TString("../root_files/constants/") + lumiTag + TString("_escale_shape/unfolding_constants") + shapeNames[i] + TString(".root");
       TVectorD *shapeYields=new TVectorD(nMassBins);
       res=applyUnfoldingShort(observedYieldsShape, *shapeYields, matrixFileNameShape);
@@ -173,13 +178,14 @@ int saveTexTable=1){
   etaBinNames.push_back("_6bins_Gauss_20120119");
   std::vector<TVectorD*> unfoldedYieldsEta;
   unfoldedYieldsEta.reserve(etaBinNames.size());
+  if (1)
   for (unsigned int i=0; i<etaBinNames.size(); ++i) {
     TString fEtaFileName=TString("../root_files/yields/") + lumiTag + TString("_escale_eta/yields_bg-subtracted") + etaBinNames[i] + TString(".root");
     TFile fEta(fEtaFileName);
     if (fEta.IsOpen()) {
       usedFiles.push_back(fEtaFileName);
       TVectorD observedYieldsEta(nMassBins);
-      observedYieldsEta = *(TVectorD*)file.Get("YieldsSignal");
+      observedYieldsEta = *(TVectorD*)fEta.Get("YieldsSignal");
       matrixFileName = TString("../root_files/constants/") + lumiTag + TString("_escale_eta/unfolding_constants") + etaBinNames[i] + TString(".root");
       TVectorD *unfYields = new TVectorD(nMassBins);
       res=applyUnfoldingShort(observedYieldsEta, *unfYields, matrixFileName);
@@ -241,7 +247,7 @@ int saveTexTable=1){
   std::cout << "  eta systematics      file count=  " << flagEtaSyst << "\n";
   std::cout << "  fitting shape        file count=  " << flagFittingShape << "\n";
   std::cout << "\n";
-  if (0) {
+  if (1) {
     std::cout << " Loaded files:\n";
     for (unsigned int i=0; i<usedFiles.size(); ++i) {
       std::cout << " " << usedFiles[i] << "\n";
@@ -274,9 +280,8 @@ int saveTexTable=1){
 //-----------------------------------------------------------------
 // Unfold
 //-----------------------------------------------------------------
-int  applyUnfoldingShort(TVectorD &vin, TVectorD &vout, TString matrixFileName, int printLoadedData)
+int  applyUnfoldingShort(const TVectorD &vin, TVectorD &vout, TString matrixFileName, int printLoadedData)
 {
-
   // Read unfolding constants
   std::cout << "unfold: Load constants from <" << matrixFileName << ">" << std::endl;
 
