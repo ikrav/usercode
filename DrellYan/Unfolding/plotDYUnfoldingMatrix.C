@@ -417,7 +417,7 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
 
 	int ibinRec = DYTools::findMassBin(massResmeared);
 	double shape_weight = (shapeWeights && (ibinRec!=-1)) ? 
-	  shapeWeights->GetBinContent(ibinRec) : 1.0;
+	  shapeWeights->GetBinContent(ibinRec+1) : 1.0;
 	if(ibinRec != -1 && ibinRec < yieldsMcRec.GetNoElements()){
 	    yieldsMcRec[ibinRec] += reweight * scale * gen->weight;
 	    DetCorrFactorNumerator(ibinRec) += reweight * scale * gen->weight * shape_weight;
@@ -712,6 +712,11 @@ void plotDYUnfoldingMatrix(const TString input, int systematicsMode = DYTools::N
   cout << endl; 
   
   // Printout of all constants, uncomment if needed
+
+  //printf("DetMigration:\n"); DetMigration.Print();
+  //printf("DetResponse:\n"); DetResponse.Print();
+  //printf("DetInvertedResponse:\n"); DetInvertedResponse.Print();
+
 //   DetCorrFactor.Print();
 //   DetResponse.Print();
   
