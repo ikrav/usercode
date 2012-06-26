@@ -12,7 +12,7 @@ namespace unfolding {
 //-----------------------------------------------------------------
 // Function that executes unfolding
 //-----------------------------------------------------------------
-  int  unfold(TVectorD &vin, TVectorD &vout, TString unfoldingConstFileName)
+  int  unfold(const TVectorD &vin, TVectorD &vout, TString unfoldingConstFileName)
   {
     
     // Read unfolding constants
@@ -44,7 +44,7 @@ namespace unfolding {
 //-----------------------------------------------------------------
 // Function that propagates systematic errors through unfolding
 //-----------------------------------------------------------------
- int  propagateErrorThroughUnfolding(TVectorD &errorIn, 
+ int  propagateErrorThroughUnfolding(const TVectorD &errorIn, 
 					TVectorD &errorPropagated,
 					TString unfoldingConstFileName)
   {
@@ -78,7 +78,7 @@ namespace unfolding {
   // ------------------------------------------
 
   // This function adds together all pieces of unfolding systematics
-  int calculateTotalUnfoldingSystError(TVectorD &yieldsBeforeUnfolding, 
+  int calculateTotalUnfoldingSystError(const TVectorD &yieldsBeforeUnfolding, 
 				   TVectorD &systUnfolding, 
 				   TString fullUnfoldingConstFileName,
 				   TString extraUnfoldingErrorsFileName){

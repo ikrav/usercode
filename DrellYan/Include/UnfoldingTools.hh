@@ -11,13 +11,13 @@
 
 namespace unfolding{
 
-  int  unfold(TVectorD &vin, TVectorD &vout, TString unfoldingConstFileName);
+  int  unfold(const TVectorD &vin, TVectorD &vout, TString unfoldingConstFileName);
 
-  int  propagateErrorThroughUnfolding(TVectorD &errorIn, 
+  int  propagateErrorThroughUnfolding(const TVectorD &errorIn, 
 					TVectorD &errorPropagated,
 					TString unfoldingConstFileName);
   
-  int calculateTotalUnfoldingSystError(TVectorD &yieldsBeforeUnfolding, 
+  int calculateTotalUnfoldingSystError(const TVectorD &yieldsBeforeUnfolding, 
 				   TVectorD &systUnfolding, 
 					TString fullUnfoldingConstFileName,
 					TString extraUnfoldingErrorsFileName);
