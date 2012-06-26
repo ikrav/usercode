@@ -140,6 +140,31 @@ int AdjustXSectionForSkim(TFile *infile, Double_t &xsec, UInt_t numEntries, int 
   return 1;
 }
 
+//------------------------------------------------------------------------------------------------------------------------
+
+void HERE(const char *msg) {
+  std::cout << ((msg) ? msg : "HERE") << std::endl;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+int printHisto(std::ostream& out, const TH1F* histo) {
+  if (!histo) {
+    out << "printHisto: histo is null\n";
+    return 0;
+  }
+  char buf[100];
+  out << "values of " << histo->GetName() << "\n";
+  for(int i=1; i<=histo->GetNbinsX(); i++) {
+    double x=histo->GetBinLowEdge(i);
+    double w=histo->GetBinWidth(i);
+    sprintf(buf," %5.2f-%5.2f    %f    %f\n",
+	    x,x+w,histo->GetBinContent(i),histo->GetBinError(i));
+    out << buf;
+  }
+  return 1;
+}
+
 // -------------------------------------------------
 // -------------------------------------------------
 
