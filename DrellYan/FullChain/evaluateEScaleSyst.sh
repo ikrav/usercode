@@ -129,7 +129,8 @@ deriveUnfoldedSpectrum() {
 #
   if [ ${err} -eq 0 ] && [ ${calculateUnfolding} -ne 0 ] ; then
     cd ../Unfolding
-    root -b -q -l plotDYUnfoldingMatrix.C+\(\"${workMCConfInputFile}\",${unfoldingStudy}\)
+    root -b -q -l plotDYUnfoldingMatrix.C+\(\"${workMCConfInputFile}\",${unfoldingStudy}\) \
+	| tee ${logPath}/log-${model}-unfolding.out
     testFileExists ${constDirTmp}/unfolding_constants.root
   fi
   
@@ -311,7 +312,8 @@ if [ ${err} -eq 0 ] && [ ${doResidualShapeSystStudy} -eq 1 ] ; then
   fi
   if [ ${err} -eq 0 ] ; then
     cd ${extraPath}../Unfolding
-    root -l -q -b create_mass_shape_weights.C+\(\"${dirTag}\"\)
+    root -l -q -b create_mass_shape_weights.C+\(\"${dirTag}\",1\) \
+	| tee ${logPath}/log-create_mass_shape_weights.log
     testFileExists ${yieldsDir}shape_weights.root
   fi
   if [ ${err} -eq 0 ] ; then
@@ -327,7 +329,8 @@ fi
 if [ ${err} -eq 0 ] && [ ${evaluateSystematics} -eq 1 ] ; then
   cd ${extraPath}
   cd ../Unfolding
-  root -l -q -b calcEscaleSystematics.C+\(\"${dirTag}\",1\)
+  root -l -q -b calcEscaleSystematics.C+\(\"${dirTag}\",1\) \
+      | tee  ${logPath}/log-calcEscaleSystematics.out
   cd ${runPath}
 fi
 
