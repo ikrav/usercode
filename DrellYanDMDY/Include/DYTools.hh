@@ -1,4 +1,5 @@
-#ifndef DYTools
+#ifndef DYTools_HH
+#define DYTools_HH
 #define DYTools
 
 #include <iostream>
