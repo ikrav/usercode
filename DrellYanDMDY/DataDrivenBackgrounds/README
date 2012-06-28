@@ -1,0 +1,42 @@
+This directory produces the background distributions using the emu-method found in the eMuMethod directory and the fake rate found in the Fakes directory
+
+EMUMETHOD
+========
+
+#Setup environment
+
+source /afs/cern.ch/sw/lcg/external/gcc/4.4.3/x86_64-slc5/setup.csh
+source /afs/cern.ch/sw/lcg/app/releases/ROOT/5.27.06/x86_64-slc5-gcc43-opt/root/bin/thisroot.csh
+
+
+#generate reduced ntuples
+
+root -l (shared libraries should compile if they have not already done so)  
+root [0] .L selectEmuEvents.C+
+root [1] selectEmuEvents("../config_files/data_emu.conf")
+
+// You will have to edit data_emu.conf to point to your local ntuples
+root [2].q 
+//quit ROOT
+
+#The ntuples should be output to a directory (../root_files/selected_events/DY_m10+pr+a05+o03+pr_4680pb/ntuples/EMU/)
+
+#You also need to run selectEvents.C to generate reduced electron ntuples.These ntuples must contain two branches, mass (dilepton invariant mass) and weight
+
+#run the EMU-METHOD
+
+> cd eMuMethod
+#compile code
+> gmake eMuBkgExe
+#This should produce the binary eMuBkgExe. There are many options to run it. See the the possible options below
+
+./eMuBkgExe #run emu method for 1D analysis and produce plots
+./eMuBkgExe --doDMDY #run 2D analysis and produce plots
+./eMuBkgExe --doDMDY --saveRootFile #same as above but output ROOT file with yield, statistical and systematic info as true2eBkgDataPoints.root 
+
+TODOs:
+#####
+
+* A lot of cleaning up of code
+* Code uses a python config so you can make changes without having to recompile, ie change output/input directories. This does not work at CERN. Hence "gmake" fails. Need to run "gmake eMuBkgExe" to build only the C++ part
+
