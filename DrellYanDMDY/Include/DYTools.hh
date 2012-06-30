@@ -23,7 +23,7 @@ namespace DYTools {
 
   const int study2D=1;
   const int extendYRangeFor1D=1; // whether |ymax|=9 for 1D study
-  const TString analysisTag_USER=(!study2D && extendYRangeFor1D) ? "ymax9" : "";  // extra name to differentiate the analysis files
+  const TString analysisTag_USER=""; //(!study2D && extendYRangeFor1D) ? "ymax9" : "";  // extra name to differentiate the analysis files
 
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
