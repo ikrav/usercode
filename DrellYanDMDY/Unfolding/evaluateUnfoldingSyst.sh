@@ -32,7 +32,7 @@ fi
 
 # check whether the full run was requested, overriding internal settings
 if [ ${#fullRun} -eq 0 ] ; then
-  fullRun=0
+  fullRun=1
 fi
 
 echo
