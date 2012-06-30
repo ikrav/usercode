@@ -10,8 +10,8 @@
 # ------------------  Define some variables
 
 anTagUser=
-anTagUser="ymax9"
-anTag="1D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
+#anTagUser="ymax9"
+anTag="2D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
 filename_data="../config_files/data.conf"
 #filename_data="../config_files/data_vilnius_raw.conf"
 #filename_data="../config_files/data_evtTrig.conf"
@@ -110,7 +110,7 @@ if [ ${do_post_selection_steps} -eq 1 ] ; then
     do_prepareYields=1
     do_subtractBackground=1
     do_unfolding=1
-#    do_unfoldingSyst=1
+    do_unfoldingSyst=1
     do_acceptance=1
     do_acceptanceSyst=1
     do_efficiency=1
