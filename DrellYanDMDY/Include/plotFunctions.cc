@@ -407,10 +407,14 @@ void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString
     {
       plotMass.SetYRange(1.0,2000000);  
       plotMass.SetXRange(20,1500);
+      double plotMassMin=(study2D) ? 20. : 15.;
+      plotMass.SetXRange(plotMassMin,1500);
     }
   else
     {
       plotMass.SetYRange(1.0,300000);
+      double plotMassMin=(study2D) ? 20. : 15.;
+      plotMass.SetXRange(plotMassMin,1500);
     }  
   plotMass.Draw(c1,kFALSE);
   SaveCanvas(c1, canvName);
