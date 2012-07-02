@@ -372,6 +372,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
   // Merge diboson histograms if needed
   TH1F *hMassBinsDibosons = (TH1F*)hMassBinsv[1]->Clone("hMassBinsDibosons");
   TH1F *hMassDibosons = (TH1F*)hMassv[1]->Clone("hMassDibosons");
+  hMassBinsDibosons->Reset();
   hMassDibosons->Reset();
   Int_t colorDibosons = 1;
   TString labelDibosons = "WW/WZ/ZZ";
@@ -502,6 +503,20 @@ void prepareYields(const TString conf  = "data_plot.conf",
   }
   fYields.Close();
   
+  /*
+  // Save mass histograms into a separate file for a direct comparison 
+  // with DrellYan(1D) package
+  TString fNameOutHists(outputDirYields+"/massHist");
+  fNameOutHists += analysisTag + TString(".root");
+  TFile fMassHists(fNameOutHists,"recreate");
+  for(UInt_t isam=0; isam<samplev.size(); isam++) {
+    hMassBinsv[isam]->Write(snamev[isam]);
+  }
+  std::cout << "file <" << fNameOutHists << "> created\n";
+  fMassHists.Close();
+  */
+
+
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out
   //==============================================================================================================
