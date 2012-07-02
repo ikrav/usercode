@@ -258,6 +258,14 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       int ibinY = DYTools::findAbsYBin(ibinMass, y);
       //int ibinYPreFsr = DYTools::findAbsYBin(ibinMassPreFsr, yPreFsr);
 
+      // We are only interested in the events, reconstructed with 
+      // good mass and rapidity 
+      // Note: this eliminates the need to check ranges later on
+      if (ibinMass==-1 || ibinMass>=DYTools::nMassBins || ibinY==-1) {
+	//printf(".. skipping mass=%6.4lf, y=%6.4lf. ibinMass=%d, ibinY=%d\n",mass,y,ibinMass,ibinY);
+	continue;
+      }
+
       // Find FEWZ-powheg reweighting factor 
       // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
       double fewz_weight = 1.0;
