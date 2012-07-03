@@ -378,7 +378,7 @@ void selectEmuEvents(const TString conf)
 	if(ientry >= maxEvents) break;
 	
 	infoBr->GetEntry(ientry);
-      if( snamev[isam] == "zee" )
+        //if( snamev[isam] == "zee" )
 	//genBr->GetEntry(ientry);
 
         if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
