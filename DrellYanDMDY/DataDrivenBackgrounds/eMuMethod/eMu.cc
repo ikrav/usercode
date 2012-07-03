@@ -35,13 +35,13 @@ using DYTools::_nYBinsMax2D;
 eMu::eMu():doDMDY(false),doPUreWeight(false),saveToRootFile(false), verbose(false), reWeight(1.00){
   //set default parameters
   //These params can be overidden via python interface
-  emuNtupleDir = "../../root_files/selected_events/DY_m10+pr+a05+o03+pr_4680pb/ntuples/EMU";
-  eeNtupleDir = "../../root_files/selected_events/DY_m10+pr+a05+o03+pr_4680pb/ntuples/EE";
+  emuNtupleDir = "../../root_files/selected_events/DY_m10+pr+a05+o03+pr_4680pb/ntuples_emu";
+  eeNtupleDir = "../../root_files/selected_events/DY_m10+pr+a05+o03+pr_4680pb/ntuples";
   //emuNtupleDir = "EMU_TEST";
   //eeNtupleDir = "EE_TEST";
   subDir = "/";
   filePostfix = "_select.root";
-  outFileName = "true2eBkgDataPoints.root";
+  outFileName = "true2eBkgDataPoints_tmp.root";
   xmax = 600;
   xmin = 0;
   nBins = 30;
