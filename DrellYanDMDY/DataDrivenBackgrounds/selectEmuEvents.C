@@ -77,11 +77,13 @@ template < typename T > std::ostream& bin(T& value, std::ostream &o);
 
 //=== MAIN MACRO =================================================================================================
 
-void selectEmuEvents(const TString conf) 
+void selectEmuEvents(const TString conf, 
+		  int debugMode=0) 
 {  
   gBenchmark->Start("selectEvents");
 
-  
+  if (debugMode) std::cout << "\n\n\tDEBUG MODE is ON\n\n";
+
   //--------------------------------------------------------------------------------------------------------------
   // Settings 
   //==============================================================================================================
@@ -184,7 +186,7 @@ void selectEmuEvents(const TString conf)
   // one configured through sOutDir.
 //   CPlot::sOutDir        = outputDir + TString("/plots");   gSystem->mkdir(CPlot::sOutDir,kTRUE);
 
-  const TString ntupDir = outputDir + TString("/ntuples/EMU"); gSystem->mkdir(ntupDir,kTRUE);
+  const TString ntupDir = outputDir + TString("/ntuples_emu"); gSystem->mkdir(ntupDir,kTRUE);
   
   Bool_t hasData = (samplev[0]->fnamev.size()>0);
 
@@ -376,12 +378,13 @@ void selectEmuEvents(const TString conf)
       Double_t nsel=0, nselvar=0;
       for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {       
 	if(ientry >= maxEvents) break;
-	
+	if (debugMode && (ientry>10000)) break; // debug option
+	    
 	infoBr->GetEntry(ientry);
-        //if( snamev[isam] == "zee" )
+	//if( snamev[isam] == "zee" )
 	//genBr->GetEntry(ientry);
 
-        if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
+       if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
 
 	// Configure the object for trigger matching	
 	//bool isData = (isam == 0 && hasData);
