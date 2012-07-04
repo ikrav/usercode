@@ -49,6 +49,7 @@ public:
 //"runNum/i:evtNum:lumiSec:nTracks0:nCaloTowers0:nPV:nJets:caloMEx/F:caloMEy:caloSumET:tcMEx:tcMEy:tcSumET:pfMEx:pfMEy:pfSumET:mass:pt:y:phi:pt_1:eta_1:phi_1:scEt_1:scEta_1:scPhi_1:hltMatchBits_1/i:q_1/I:pt_2/F:eta_2:phi_2:scEt_2:scEta_2:scPhi_2:hltMatchBits_2/i:q_2/I:weight/F"
 
 #ifdef ZeeData_is_TObject
+inline
 void fillData(ZeeData_t *data, const mithep::TEventInfo *info, const mithep::TDielectron *dielectron, 
               const UInt_t npv, const UInt_t nGoodPV, const UInt_t njets, const Double_t weight) {
   data->runNum         = info->runNum;
