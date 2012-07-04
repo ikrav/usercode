@@ -4,13 +4,13 @@
 # some variables
 #
 
-debugMode=1
+debugMode=0
 fullRun=0
 study2D=1
+reselectEvents=1   # change of study2D does not require reselection, in general
 
 # 1) user-defined
 
-reselectEvents=1   # study2D does not require reselection, in general
 #extraPath="../"
 extraPath="./"
 dirTag="DY_m10+pr+a05+o03+pr_4680pb";
@@ -40,11 +40,12 @@ selectionRunMode=DYTOOLS::NORMAL
 
 eeSelEventsDirT="../root_files/selected_events/TMPDIR/ntuples"
 emuSelEventsDirT="../root_files/selected_events/TMPDIR/ntuples_emu"
-resultDirT="../root_files/resultants/TMPDIR/"
+#resultDirT="../root_files/resultants/TMPDIR/"
 
 eeNtuplesDirMain=${eeSelEventsDirT/TMPDIR/${dirTag}}
 emuNtuplesDirMain=${emuSelEventsDirT/TMPDIR/${dirTag}}
-resultDirMain=${resultDirT/TMPDIR/${dirTag}}
+#resultDirMain=${resultDirT/TMPDIR/${dirTag}}
+resultDirMain="./"
 
 runPath=${PWD}
 logPath=${PWD}/dir-dataDrivenBkg-logs
@@ -66,44 +67,33 @@ err=0
 
 checkDirs() {
   if [ ${err} -eq 1 ] ; then return; fi
-  if [ ${#ntuplesDir} -eq 0 ] || [ ${#yieldsDir} -eq 0 ] || [ ${#resultDir} -eq 0 ] ; then
+  if [ ${#eeNtuplesDirMain} -eq 0 ] || [ ${#emuNtuplesDirMain} -eq 0 ] || [ ${#yieldsDir} -eq 0 ] || [ ${#resultDirMain} -eq 0 ] ; then
     echo " one of the directories' variables is empty:"
-    echo "   ntuplesDir=${ntuplesDir}"
-    echo "   resultDir=${resultDir}"
+    echo "   ntuplesDirs: <${eeNtuplesDirMain}>, <${emuNtuplesDirMain}>"
+    echo "   resultDir: <${resultDirMain}>"
     exit 1
   fi
 }
 
 
 # -------------------- main cycle
-#
-# the calculation is performed in temporary directory, then the files
-# may be moved to the destination directory
-# In some cases the calculation is immediately performed in destination dirs
-#
-
 
 cleanFiles() {
 #
 #  clean up the files to make sure we are producing them now
 #
-echo -e "\n\tcleanFiles inactive\n"
-return
-  rm -f ${resultDirMain}/
-  rm -f ${yieldsDirTmp}yields${anTag}.root
-  rm -f ${yieldsDirTmp}yields_bg-subtracted${anTag}.root
-  rm -f ${resultDirTmp}unfolding_resultants${anTag}.root
-  #rm -f ${ntuplesDir}*root 
-  rm -f ${yieldsDir}yields${anTag}.root
-  rm -f ${yieldsDir}yields_bg-subtracted${anTag}.root
-  rm -f ${resultDir}unfolding_resultants${anTag}.root
+    runCase=$1
+    if [ ${runCase} == "true2e" ] ; then
+	echo "remove true2e file"
+	rm -f ${resultDirMain}/true2eBkgDataPoints_tmp.root
+    fi
 }
 
 
 # -----------------  selectEvents ----------------
 evaluateTrue2eBkg() {
 
-  cleanFiles
+  cleanFiles "true2e"
 #
 #  first try to compile the needed code
 #
@@ -121,20 +111,24 @@ evaluateTrue2eBkg() {
   if [ ${err} -eq 0 ] && [ ${reselectEvents} -eq 1 ] ; then 
     root -l -b -q selectEmuEvents.C+\(\"${workConfFile}\",${debugMode}\) \
         | tee ${logPath}/log-selectEmuEvents.out
-    testFileExists ${emuNtuplesDirMain}data${anTagUser}_select.root \
-	${emuNtuplesDirMain}zee${anTagUser}_select.root
   fi
+  testFileExists ${emuNtuplesDirMain}/data${anTagUser}_select.root \
+      ${emuNtuplesDirMain}/zee${anTagUser}_select.root
+  testFileExists ${eeNtuplesDirMain}/data${anTagUser}_select.root \
+      ${eeNtuplesDirMain}/zee${anTagUser}_select.root
+
 #
 #   evaluate true2e backgrounds
 #
   if [ ${err} -eq 0 ] ; then
       cd eMuMethod
       flags=" --saveRootFile"
+      flags="${flags} --verbose" # debug
       if [ ${study2D} -eq 1 ] ; then
 	  flags="--doDMDY ${flags}"
       fi
       ./eMuBkgExe ${flags} 2>&1 | tee ${logPath}/log-emu.out
-      testFileExists ${resultDir}/true2eBkgDataPoints_tmp.root
+      testFileExists ${resultDirMain}/true2eBkgDataPoints_tmp.root
       cd ..
   fi
   
@@ -147,7 +141,7 @@ evaluateTrue2eBkg() {
 testFileExists() {
   if [ $? != 0 ] ; then err=1; fi
   file=$1
-  echo "test file=${file}"
+  echo "evaluateDataDrivenBkg.sh: test file <${file}>"
   if [ ! -f ${file} ] ; then echo "${file} is missing"; err=1; fi
   if [ ! -z ${2} ] && [ "${2}" = "terminate" ] && [ ${err} -eq 1 ] ; then echo "stopping"; exit 1; fi
   echo "....ok"
