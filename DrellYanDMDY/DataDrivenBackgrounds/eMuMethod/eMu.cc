@@ -1,4 +1,5 @@
 #include <TROOT.h>
+#include <TSystem.h>
 #include <TStyle.h>
 #include <TFile.h>
 #include <TTree.h>
@@ -23,6 +24,9 @@ using std::setprecision;
 using std::make_pair;
 using std::for_each;
 
+const TString _saveFormat(".png");
+const TString _plotsPath("plots/");
+
 /*
 using DYTools::_massBinLimits2011;
 using DYTools::_massBinLimits2D;
@@ -37,11 +41,13 @@ eMu::eMu():doDMDY(false),doPUreWeight(false),saveToRootFile(false), verbose(fals
   //These params can be overidden via python interface
   emuNtupleDir = "../../root_files/selected_events/DY_m10+pr+a05+o03+pr_4680pb/ntuples_emu";
   eeNtupleDir = "../../root_files/selected_events/DY_m10+pr+a05+o03+pr_4680pb/ntuples";
+  gSystem->mkdir(_plotsPath,kFALSE);
+
   //emuNtupleDir = "EMU_TEST";
   //eeNtupleDir = "EE_TEST";
   subDir = "/";
   filePostfix = "_select.root";
-  outFileName = "true2eBkgDataPoints_tmp.root";
+  outFileName="true2eBkgDataPoints.root";
   xmax = 600;
   xmin = 0;
   nBins = 30;
@@ -95,6 +101,10 @@ int eMu::run(){
   gROOT->SetStyle("Plain");
   gStyle->SetOptStat(0);
   gStyle->SetHistMinimumZero(kTRUE) ;
+
+  TString localAnTag = (doDMDY) ? "2D" : "1D";
+  outFileName = 
+    TString("true2eBkgDataPoints_") + localAnTag + TString(".root");
 
   string d_array[dataMap.size()];// = {"data"};
   string emu_array[eebkgMap.size()];// = {"ttbar","ww","ztt"}; //need to add wtop
@@ -430,7 +440,10 @@ int eMu::run(){
     }
   
     //rapCan->Write();
-    rapCan->SaveAs("rapidity.png");
+    //rapCan->SaveAs("rapidity.png");
+    TString rapidityFName=
+      _plotsPath + TString("rapidity_") + localAnTag + _saveFormat;
+    rapCan->SaveAs(rapidityFName);
 
     //apply emu method to get ee rapidity distributions
 
@@ -469,7 +482,11 @@ int eMu::run(){
       }
     }
 
-    rapCan2->SaveAs("eeRapidity.png");
+    //rapCan2->SaveAs("eeRapidity.png");
+    TString rapidityFName2=
+      _plotsPath + TString("eeRapidity_") + localAnTag + _saveFormat;
+    rapCan2->SaveAs(rapidityFName2);
+
     //should delete all the eeRapidity objects I have newed (memory leaks)
   }
 
@@ -572,8 +589,12 @@ int eMu::run(){
   txtptr->Draw();
   //gPad->RedrawAxis();
 
-  emuDataVMC->SaveAs("emu_emumass_MC_v_Data.png");
+  //emuDataVMC->SaveAs("emu_emumass_MC_v_Data.png");
   //emuDataVMC->SaveAs("emu_emumass_MC_v_Data.C");
+  TString emuDataVsMCFName=
+    _plotsPath + TString("emu_emumass_MC_vs_Data_") + localAnTag + _saveFormat;
+  emuDataVMC->SaveAs(emuDataVsMCFName);
+
   //===============================================================
   //Estimate ee distro using emu MC
   //================================================================
@@ -610,8 +631,11 @@ int eMu::run(){
 
   txtptr->Draw();
 
-  eeEstimatePad2->SaveAs("emu_eemass_MC.png");
+  //eeEstimatePad2->SaveAs("emu_eemass_MC.png");
   //eeEstimatePad2->SaveAs("emu_eemass_MC.C");
+  TString eeEstimateFName=
+    _plotsPath + TString("emu_eemass_MC_") + localAnTag + _saveFormat;
+  eeEstimatePad2->SaveAs(eeEstimateFName);
 
   //==============================================
   //Plot emu MC
@@ -629,7 +653,10 @@ int eMu::run(){
   //eMuVMassTot.SetXTitle("e#mu mass GeV/c^{2}");
 
   eMuVMassTot.Draw("");
-  emuEst->SaveAs("emuMassStackedMC.png");
+  //emuEst->SaveAs("emuMassStackedMC.png");
+  TString emuEstStackFName=
+    _plotsPath + TString("emuMassStackedMC_") + localAnTag + _saveFormat;
+  emuEst->SaveAs(emuEstStackFName);
 
   //===============================================================
   //Estimate ee distro using emu Data
@@ -667,7 +694,11 @@ int eMu::run(){
   stLeg3->Draw(); 
 
   txtptr->Draw();
-  eeEstimatePad6->SaveAs("emu_eemass_MC_v_Data.png");
+  //eeEstimatePad6->SaveAs("emu_eemass_MC_v_Data.png");
+  TString eeMassMCvsDataFName=
+    _plotsPath + TString("emu_eemass_MC_vs_Data_") + localAnTag + _saveFormat;
+  eeEstimatePad6->SaveAs(eeMassMCvsDataFName);
+
   //Write out ee data info to a file
   if (saveToRootFile){
     TFile *outFile = new TFile(outFileName,"RECREATE");
