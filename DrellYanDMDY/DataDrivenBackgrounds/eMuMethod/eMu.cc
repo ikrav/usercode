@@ -246,6 +246,7 @@ int eMu::run(){
       vector<TTree*> treev;
 
       string fname = *iter_path + subDir + *iter + filePostfix;//make the path configurable. ie. be able to choose "/ntuples/" and "_select.root"
+      if (verbose) cout << "working with file <" << fname << ">\n";
       TString TS_fname(fname);
       //should use smart pointers
       filev.push_back(new TFile(TS_fname));
@@ -282,12 +283,14 @@ int eMu::run(){
       float mass, weight, pu_weight(1.00),rapidity;
       //double reWeight(1.00);//rather than running the MC everytime a new weight is required, just use the reweight variable
       
+      bool eeCandidates= (*iter_path == eeNtupleDir) ? true : false;
       treev.back()->SetBranchAddress("mass", &mass);
       treev.back()->SetBranchAddress("weight", &weight);
       if (doPUreWeight){
         treev.back()->SetBranchAddress("pu_weight", &(pu_weight));
       }
       if (doDMDY){
+	if (eeCandidates) treev.back()->SetBranchAddress("y", &(rapidity));
 	treev.back()->SetBranchAddress("rapidity", &(rapidity));
       }
       //number of entries in ntuple
