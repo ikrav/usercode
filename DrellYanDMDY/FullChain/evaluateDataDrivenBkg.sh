@@ -4,10 +4,11 @@
 # some variables
 #
 
-debugMode=0
+debugMode=0    # affects only event (re)selectionStep 
 fullRun=0
-study2D=1
+study2D=1        # study2D does not match DYTools.hh!
 reselectEvents=1   # change of study2D does not require reselection, in general
+                   # note that only emu events are selected
 
 # 1) user-defined
 
@@ -85,7 +86,7 @@ cleanFiles() {
     runCase=$1
     if [ ${runCase} == "true2e" ] ; then
 	echo "remove true2e file"
-	rm -f ${resultDirMain}/true2eBkgDataPoints_tmp.root
+	rm -f ${resultDirMain}/true2eBkgDataPoints_${anTag}.root
     fi
 }
 
@@ -128,7 +129,7 @@ evaluateTrue2eBkg() {
 	  flags="--doDMDY ${flags}"
       fi
       ./eMuBkgExe ${flags} 2>&1 | tee ${logPath}/log-emu.out
-      testFileExists ${resultDirMain}/true2eBkgDataPoints_tmp.root
+      testFileExists ${resultDirMain}/true2eBkgDataPoints_${anTag}.root
       cd ..
   fi
   
