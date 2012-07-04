@@ -291,7 +291,7 @@ int eMu::run(){
       }
       if (doDMDY){
 	if (eeCandidates) treev.back()->SetBranchAddress("y", &(rapidity));
-	treev.back()->SetBranchAddress("rapidity", &(rapidity));
+	else treev.back()->SetBranchAddress("rapidity", &(rapidity));
       }
       //number of entries in ntuple
       const unsigned int numEntries = treev.back()->GetEntries(); 
