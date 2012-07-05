@@ -532,9 +532,9 @@ void selectEmuEvents(const TString conf,
 	    fillData(&data, info, electron, muon, emu4v, pvArr->GetEntriesFast(), njets, weightSave);
 	    outTree->Fill();
 
-	  
-	    nsel    += weight;
-	    nselvar += weight*weight;
+	    // double counting!!
+	    //nsel    += weight;
+	    //nselvar += weight*weight;
 	  }
         }	 
       }           
