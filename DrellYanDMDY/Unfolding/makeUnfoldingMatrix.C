@@ -54,6 +54,9 @@
 
 #include "../Include/EventSelector.hh"
 
+//for getting matrix condition number
+#include <TDecompLU.h>
+
 #endif
 
 
@@ -490,6 +493,17 @@ void makeUnfoldingMatrix(const TString input,
     assert(0);
   }
 
+  //Calculation of Unfolding matrix errors using different method
+  TMatrixD DetInvertedResponseErr2(nUnfoldingBins,nUnfoldingBins);
+  DetInvertedResponseErr2=DetInvertedResponse;
+  DetInvertedResponseErr2*=DetInvertedResponse;
+  DetInvertedResponseErr2*=DetResponseErrNeg;
+  for (int i=0; i<nUnfoldingBins; i++)
+    for (int j=0; j<nUnfoldingBins; j++)
+      {
+         if (DetInvertedResponseErr2(i,j)<0) DetInvertedResponseErr2(i,j)=-DetInvertedResponseErr2(i,j);
+      }
+
   std::cout << "store constants in a file" << std::endl;
 
   //
@@ -670,6 +684,17 @@ void makeUnfoldingMatrix(const TString input,
     std::cout << "plots saved to a file <" << unfoldingConstantsPlotFName << ">\n";
   }
 
+  //draw errors of Unfolding matrix
+  TCanvas *cErrors = new TCanvas("cErrors","DetInvertedResponseErr");
+  cErrors->Divide(2,2);
+  cErrors->cd(1);
+  DetInvertedResponseErr.Draw("LEGO2");
+  cErrors->cd(2);
+  DetInvertedResponseErr2.Draw("LEGO2");
+
+
+  
+
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out
   //==============================================================================================================
@@ -678,6 +703,33 @@ void makeUnfoldingMatrix(const TString input,
   cout << "* SUMMARY" << endl;
   cout << "*--------------------------------------------------" << endl;
   cout << endl; 
+
+  //matrix condition number
+  TDecompLU lu(DetResponse);
+  std::cout << " condition number = " << lu.Condition() << std::endl << std::endl;
+
+  //Print errors of the Unfolding matrix when they exceed 0.1
+  for (int iM=0; iM<nMassBins; iM++)
+    for (int iY=0; iY<nYBins[iM]; iY++)
+      for (int jM=0; jM<nMassBins; jM++)
+        for (int jY=0; jY<nYBins[jM]; jY++)
+          {
+             int i=findIndexFlat(iM,iY);
+             int j=findIndexFlat(jM,jY);           
+             if (DetInvertedResponseErr(i,j)>0.1)
+                {
+                   std::cout<<"DetInvertedResponseErr("<<i<<","<<j<<")="<<DetInvertedResponseErr(i,j);
+                   std::cout<<", DetInvertedResponse("<<i<<","<<j<<")="<<DetInvertedResponse(i,j)<<std::endl;
+                   std::cout<<"(iM="<<iM<<", iY="<<iY<<", jM="<<jM<<", jY="<<jY<<")"<<std::endl<<std::endl;
+                }
+             if (DetInvertedResponseErr2(i,j)>0.1)
+                {
+                   std::cout<<"DetInvertedResponseErr2("<<i<<","<<j<<")="<<DetInvertedResponseErr2(i,j);
+                   std::cout<<", DetInvertedResponse("<<i<<","<<j<<")="<<DetInvertedResponse(i,j)<<std::endl;
+                   std::cout<<"(iM="<<iM<<", iY="<<iY<<", jM="<<jM<<", jY="<<jY<<")"<<std::endl<<std::endl;
+                }
+          }
+
 
   if (0) {
     // Printout of all constants, uncomment if needed
@@ -709,6 +761,7 @@ void makeUnfoldingMatrix(const TString input,
     //printf("yieldsMcGen:\n");
     //yieldsMcGen.Print();
   }
+
 
   gBenchmark->Show("makeUnfoldingMatrix");
 }
