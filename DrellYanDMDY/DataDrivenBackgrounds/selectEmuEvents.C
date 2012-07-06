@@ -35,6 +35,8 @@
 #include "../Include/CSample.hh"        // helper class for organizing input ntuple files
 #include "../Include/DYTools.hh"
 #include "../Include/TriggerSelection.hh"
+#include "../Include/FEWZ.hh"   // FEWZ correction wrapper
+#include "../Include/PUReweight.hh"  // nPVs container
 
 // define structures to read in ntuple
 #include "../Include/EWKAnaDefs.hh"
@@ -54,16 +56,19 @@
 #include "../Include/XemuData.hh"
 
 #include "../Include/ElectronEnergyScale.hh" //energy scale correction
-#include "../Include/EtaEtaMass.hh" // EtaEtaMassData_t definition
 
 #endif
+
+#define usePUReweight
+
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 // fill ntuple of selected events
 void fillData(XemuData *data, const mithep::TEventInfo *info, const mithep::TElectron *electron, 
 	      const mithep::TMuon *muon, const TLorentzVector &emu4v,
-              const UInt_t npv, const UInt_t njets, const Double_t weight);
+              const UInt_t npv, const UInt_t nGoodPV,
+	      const UInt_t njets, const Double_t weight);
 
 // print event dump
 void eventDump(ofstream &ofs, const mithep::TElectron *electron, 
@@ -105,17 +110,7 @@ void selectEmuEvents(const TString conf,
   assert(ifs.is_open());
   string line;
   Int_t state=0;
-  string generateEEMFile;
-  int generateEEMFEWZFile=0;
   while(getline(ifs,line)) {
-    if ((line[0]=='#') && (line[1]=='$') && (line[2]=='$')) {
-      if (line.find("generate_EEM_files=") != string::npos) {
-	generateEEMFile=line.substr(line.find('=')+1);
-	generateEEMFEWZFile=(line.find("FEWZ") != string::npos) ? 1:0;
-	std::cout << "\n\tEEM files will be generated, tag=<" << generateEEMFile << ">, with_FEWZ_weights=" << generateEEMFEWZFile << "\n\n";
-	continue;
-      }
-    }
     if(line[0]=='#') continue;
     if(line[0]=='%') { 
       state++; 
@@ -209,6 +204,15 @@ void selectEmuEvents(const TString conf,
   vector<TH1F*> hMassv, hMass2v, hMass3v, hMass4v;
   vector<TH1F*> hyv;   
 
+#ifdef usePUReweight
+  PUReweight_t puReweight;
+  TString dirTag(outputDir(outputDir.Index("DY_"),outputDir.Length()));
+  TString outNamePV= TString("../root_files/selected_events/") + 
+    dirTag + TString("/npv_emu.root");
+  std::cout << "outNamePV=<" << outNamePV << ">\n";
+  int res=puReweight.setFile(outNamePV, 1);
+  assert(res);
+#endif
   vector<TH1F*> hNGoodPVv;
   
   vector<Double_t> nSelv, nSelVarv;  
@@ -225,9 +229,18 @@ void selectEmuEvents(const TString conf,
     sprintf(hname,"hMass2_%i",isam);  hMass2v.push_back(new TH1F(hname,"",35,20,160));  hMass2v[isam]->Sumw2();
     sprintf(hname,"hMass3_%i",isam);  hMass3v.push_back(new TH1F(hname,"",50,0,500));   hMass3v[isam]->Sumw2();
     sprintf(hname,"hy_%i",isam);      hyv.push_back(new TH1F(hname,"",20,-3,3));        hyv[isam]->Sumw2();
+#ifndef usePUReweight // if puReweight_t is not used
     sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());       hNGoodPVv.push_back(new TH1F(hname,"",15,-0.5,14.5));        hNGoodPVv[isam]->Sumw2();
+    hNGoodPVv[isam]->SetDirectory(0);
+#endif
     sprintf(hname,"hMass4_%i",isam);   hMass4v.push_back(new TH1F(hname,"",275,0,1100));   hMass4v[isam]->Sumw2();
     
+    hMassv[isam]->SetDirectory(0);
+    hMass2v[isam]->SetDirectory(0);
+    hMass3v[isam]->SetDirectory(0);
+    hMass4v[isam]->SetDirectory(0);
+    hyv[isam]->SetDirectory(0);
+
     nSelv.push_back(0);
     nSelVarv.push_back(0);
     nPosSSv.push_back(0);
@@ -237,20 +250,14 @@ void selectEmuEvents(const TString conf,
   // 
   // Read weights from a file
   //
-  //const bool useFewzWeights = true;
+  const bool useFewzWeights = true;
   const bool cutZPT100 = true;
-  if(cutZPT100)
-    cout << "NOTE: in MC, for Z/gamma* PT>100 the FEWZ weights for 80<PT<100 GeV are used!" << endl;
-  TH2D *weights[DYTools::nMassBins];
-  TH2D *weightErrors[DYTools::nMassBins];
-  TFile fweights("../root_files/fewz/weights_stepwise_prec10-5_fine12.root");
-  if( !fweights.IsOpen() ) assert(0);
-  for(int i=0; i<DYTools::nMassBins; i++){
-    TString hnames = TString::Format("weight_%02d",i+1);
-    weights[i] = (TH2D*)fweights.Get(hnames);
-    hnames = TString::Format("h_weighterror_%02d",i+1);
-    weightErrors[i] = (TH2D*)fweights.Get(hnames);
+  FEWZ_t fewz(useFewzWeights,cutZPT100);
+  if (useFewzWeights && !fewz.isInitialized()) {
+    std::cout << "failed to prepare FEWZ correction\n";
+    throw 2;
   }
+
 
 
   //
@@ -261,21 +268,23 @@ void selectEmuEvents(const TString conf,
   
   // Data structures to store info from TTrees
   mithep::TEventInfo *info    = new mithep::TEventInfo();
-  //mithep::TGenInfo *gen       = new mithep::TGenInfo();
+  mithep::TGenInfo *gen       = new mithep::TGenInfo();
   TClonesArray *muonArr = new TClonesArray("mithep::TMuon");
   TClonesArray *electronArr = new TClonesArray("mithep::TElectron");
   TClonesArray *pvArr         = new TClonesArray("mithep::TVertex");
-  //EtaEtaMassData_t *eem = new EtaEtaMassData_t();
   
   //
   // Set up event dump to file
   //
+  const int dump_events=0;
   ofstream evtfile;
   char evtfname[100];    
-  sprintf(evtfname,"%s/events.txt",outputDir.Data());
-  printf("Checking that file can be written: %s\n",evtfname);
-  evtfile.open(evtfname);
-  assert(evtfile.is_open());
+  sprintf(evtfname,"%s/events_emu.txt",outputDir.Data());
+  if (dump_events) {
+    printf("Checking that file can be written: %s\n",evtfname);
+    evtfile.open(evtfname);
+    assert(evtfile.is_open());
+  }
   
   //
   // loop over samples
@@ -283,22 +292,12 @@ void selectEmuEvents(const TString conf,
   for(UInt_t isam=0; isam<samplev.size(); isam++) {        
     if(isam==0 && !hasData) continue;
     
-    /*  DONT USE THIS. REMOVE WHEN SURE IT IS NOT REQUIRED
+#ifdef usePUReweight
+    // prepare histogram for nPV
+    sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());
+    if (!puReweight.setActiveSample(hname)) assert(0);
+#endif
 
-    //
-    // Set up output (eta,eta,mass) EEM file, if needed
-    //
-    TString outEEMName;
-    TFile *eemFile=NULL;
-    TTree *eemTree=NULL;
-    if (generateEEMFile.size()) {
-      outEEMName = ntupDir + TString("/") + snamev[isam] + TString("_") + TString(generateEEMFile.c_str()) + TString("_EtaEtaM.root");
-      eemFile = new TFile(outEEMName,"RECREATE");
-      eemTree = new TTree("Data","Data");
-      assert(eemTree);
-      eemTree->Branch("Data","EtaEtaMassData_t",&eem);
-    }
-    */
     //
     // Set up output ntuple file for the sample
     //
@@ -312,6 +311,7 @@ void selectEmuEvents(const TString conf,
     outTree->Branch("weight", &data.weight, "data.weight/F");
     outTree->Branch("pt_e", &(data.pt_e), "data.pt_e/F");   
     outTree->Branch("rapidity", &(data.rapidity), "data.rapidity/F");
+    outTree->Branch("nGoodPV", &(data.nGoodPV), "data.nGoodPV/i");
 
     //
     // loop through files
@@ -344,14 +344,11 @@ void selectEmuEvents(const TString conf,
       // Generator information is present only for MC. Moreover, we
       // need to look it up only for signal MC in this script
 
-      //REMOVE THIS *genBr STUFF BELOW
-      /*
       TBranch *genBr = 0;
       if( snamev[isam] == "zee" ){
 	eventTree->SetBranchAddress("Gen",&gen);
 	genBr = eventTree->GetBranch("Gen");
       }
-      */
 
       // Determine maximum number of events to consider
       // *** CASES ***
@@ -378,13 +375,18 @@ void selectEmuEvents(const TString conf,
       Double_t nsel=0, nselvar=0;
       for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {       
 	if(ientry >= maxEvents) break;
-	if (debugMode && (ientry>10000)) break; // debug option
+	if (debugMode && (ientry>100000)) break; // debug option
 	    
 	infoBr->GetEntry(ientry);
-	//if( snamev[isam] == "zee" )
-	//genBr->GetEntry(ientry);
 
        if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
+
+	// Load FEWZ weights for signal MC
+	double fewz_weight=1.0;
+	if(( snamev[isam] == "zee" ) && useFewzWeights) {
+	  genBr->GetEntry(ientry);
+	  fewz_weight=fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
+	}
 
 	// Configure the object for trigger matching	
 	//bool isData = (isam == 0 && hasData);
@@ -499,15 +501,15 @@ void selectEmuEvents(const TString conf,
 	  
 	    //DO NOT USE EVENT DUMP, UNLESS i MODIFY CODE TO TAKE EMU PAIRS. EASY TO DO
 	    // event printout
-	    /*if(isam==0)
+	    /*if((isam==0) && evtfile.is_open())
 	      eventDump(evtfile, dielectron, info->runNum, info->lumiSec, info->evtNum, 
 	      leadingTriggerObjectBit, trailingTriggerObjectBit);*/
 	  
 	    //
 	    // Fill histograms
 	    // 
-	    hMassv[isam]->Fill(mass,weight);
-            hMass4v[isam]->Fill(mass,weight);
+	    hMassv[isam]->Fill(mass,weight*fewz_weight);
+            hMass4v[isam]->Fill(mass,weight*fewz_weight);
 	    
 	    pvArr->Clear();
 	    pvBr->GetEntry(ientry);
@@ -520,19 +522,24 @@ void selectEmuEvents(const TString conf,
 	      if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
 	      nGoodPV++;
 	    }
+#ifdef usePUReweight
+	    assert(puReweight.Fill(nGoodPV,weight));
+#else
 	    hNGoodPVv[isam]->Fill(nGoodPV,weight);
+#endif
 	  
 	    // fill ntuple data
-	    double weightSave = weight;
-	    //eem->weight(weight);
+	    double weightSave = weight * fewz_weight;
 	  
 	    // Note: we do not need jet count at the moment. It can be found
 	    // by looping over PFJets list if needed. See early 2011 analysis.
 	    int njets = -1;
-	    fillData(&data, info, electron, muon, emu4v, pvArr->GetEntriesFast(), njets, weightSave);
+	    fillData(&data, info, electron, muon, emu4v, 
+		     pvArr->GetEntriesFast(), nGoodPV,
+		     njets, weightSave);
 	    outTree->Fill();
 
-	    // double counting!!
+	  
 	    //nsel    += weight;
 	    //nselvar += weight*weight;
 	  }
@@ -548,20 +555,32 @@ void selectEmuEvents(const TString conf,
     delete outTree;
     outFile->Close();        
     delete outFile;
+
+#ifdef usePUReweight
+    const TH1F *hTmp=puReweight.getHActive();
+    hNGoodPVv.push_back((TH1F*)hTmp->Clone(hTmp->GetName() + TString("_1")));
+    hNGoodPVv.back()->SetDirectory(0);
+#endif
   }
   delete info;
   delete pvArr;
-  evtfile.close();
+  delete gen;
+  if (evtfile.is_open()) evtfile.close();
+#ifdef usePUReweight
+  puReweight.clear();
+#endif
 
 
+#ifndef usePUReweight // if puReweight_t class is not used
   // Write useful histograms
-  TString outNamePV = outputDir + TString("/npv.root");
+  TString outNamePV = outputDir + TString("/npv_emu.root");
   TFile *outFilePV = new TFile(outNamePV,"RECREATE");
   outFilePV->cd();
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     hNGoodPVv[isam]->Write();
   }
   outFilePV->Close();
+#endif
 
   //--------------------------------------------------------------------------------------------------------------
   // Make plots
@@ -696,14 +715,17 @@ void selectEmuEvents(const TString conf,
 
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
-void fillData(XemuData *data, const mithep::TEventInfo *info, const mithep::TElectron *electron,
+void fillData(XemuData *data, const mithep::TEventInfo *info, 
+	      const mithep::TElectron *electron,
 	      const mithep::TMuon *muon, const TLorentzVector &emu4v,
-              const UInt_t npv, const UInt_t njets, const Double_t weight)
+              const UInt_t npv, const UInt_t nGoodPV,
+	      const UInt_t njets, const Double_t weight)
 {
   data->runNum         = info->runNum;
   data->evtNum         = info->evtNum;
   data->lumiSec        = info->lumiSec;
   data->nPV            = npv;
+  data->nGoodPV        = nGoodPV;
   data->nJets          = njets;                                        
   data->pfSumET        = info->pfSumET;
   data->mass           = emu4v.M();
