@@ -20,8 +20,10 @@ workConfFile="../config_files/data_emu.conf"    # needed to select events
 anTagUser="" #"ymax9"
 #triggerSet="Full2011_hltEffOld"
 
-copySelectedNTuples=1   # the main sequence has to be run before this script
-   # but the ntuples needs to be copied only once
+# if you do not want to have the time stamp, comment the line away 
+# or set timeStamp=
+timeStamp="`date +%Y%m%d-%H%M`-"
+#timeStamp=
 
 # two individual parts 
 doTrue2eBkg=1    # part 1
@@ -102,7 +104,7 @@ evaluateTrue2eBkg() {
   if [ ${err} -eq 0 ] ; then
       cd eMuMethod
       rm -f eMuBkgExe
-      gmake eMuBkgExe 2>&1 | tee ${logPath}/log-gMake-eMu.out
+      gmake eMuBkgExe 2>&1 | tee ${logPath}/log${timeStamp}-gMake-eMu.out
       testFileExists eMuBkgExe
       cd ..
   fi
@@ -111,7 +113,7 @@ evaluateTrue2eBkg() {
 # 
   if [ ${err} -eq 0 ] && [ ${reselectEvents} -eq 1 ] ; then 
     root -l -b -q selectEmuEvents.C+\(\"${workConfFile}\",${debugMode}\) \
-        | tee ${logPath}/log-selectEmuEvents.out
+        | tee ${logPath}/log${timeStamp}-selectEmuEvents.out
   fi
   testFileExists ${emuNtuplesDirMain}/data${anTagUser}_select.root \
       ${emuNtuplesDirMain}/zee${anTagUser}_select.root
@@ -124,11 +126,12 @@ evaluateTrue2eBkg() {
   if [ ${err} -eq 0 ] ; then
       cd eMuMethod
       flags=" --saveRootFile"
+      flags="${flags} --doPUreWeight"
       flags="${flags} --verbose" # debug
       if [ ${study2D} -eq 1 ] ; then
 	  flags="--doDMDY ${flags}"
       fi
-      ./eMuBkgExe ${flags} 2>&1 | tee ${logPath}/log-emu.out
+      ./eMuBkgExe ${flags} 2>&1 | tee ${logPath}/log${timeStamp}-emu.out
       testFileExists ${resultDirMain}/true2eBkgDataPoints_${anTag}.root
       cd ..
   fi
