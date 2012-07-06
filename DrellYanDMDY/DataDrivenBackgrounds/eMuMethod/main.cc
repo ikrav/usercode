@@ -1,5 +1,6 @@
 #include "eMu.hh"
 #include "CmdLineOpts.hh"
+#include <iostream>
 
 int main(int argc, char** argv){
 
@@ -34,6 +35,7 @@ int main(int argc, char** argv){
   emuMethod.setVerbose(activateVerbose);
 
   //run the program
-  emuMethod.run();
-  return 0;
+  int res=emuMethod.run();
+  if (res!=1) std::cout << "error from emuMethod.run. code=" << res << "\n";
+  return res;
 }
