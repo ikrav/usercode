@@ -7,21 +7,22 @@
 #include "TString.h"
 #include "TSystem.h" 
 #include <iostream>
+#include <math.h>
 #include "../Include/CPlot.hh"
 
 //#include "RooStats/FeldmanCousins.h"
 
-namespace toolbox 
-{
+//namespace toolbox 
+//{
 // Double_t calcEff(const Int_t    pass, const Int_t    total, Double_t *errl=0, Double_t *errh=0, Int_t method=0);
 // Double_t calcEff(const Double_t pass, const Double_t total, Double_t *errl=0, Double_t *errh=0, Int_t method=0);
 
-Double_t deltaR(const Double_t eta1, const Double_t phi1, const Double_t eta2, const Double_t phi2);
+//Double_t deltaR(const Double_t eta1, const Double_t phi1, const Double_t eta2, const Double_t phi2);
 
-Double_t deltaPhi(const Double_t phi1, const Double_t phi2);
+//Double_t deltaPhi(const Double_t phi1, const Double_t phi2);
 
-Int_t roundToInt(const Double_t x);
-}
+//Int_t roundToInt(const Double_t x);
+//}
 
 //------------------------------------------------------------------------------------------------------------------------
 // Double_t toolbox::calcEff(Int_t pass, Int_t total, Double_t *errl, Double_t *errh, Int_t method)
@@ -62,7 +63,10 @@ Int_t roundToInt(const Double_t x);
 // }
 
 //------------------------------------------------------------------------------------------------------------------------
-Double_t toolbox::deltaR(Double_t eta1, Double_t phi1, Double_t eta2, Double_t phi2)
+namespace toolbox {
+
+inline
+Double_t deltaR(Double_t eta1, Double_t phi1, Double_t eta2, Double_t phi2)
 {
   const Double_t pi = 3.14159265358979;
   Double_t dphi = fabs(phi1-phi2);
@@ -74,8 +78,13 @@ Double_t toolbox::deltaR(Double_t eta1, Double_t phi1, Double_t eta2, Double_t p
   return sqrt(dphi*dphi + deta*deta);
 }
 
+}
+
 //------------------------------------------------------------------------------------------------------------------------
-Double_t toolbox::deltaPhi(Double_t phi1, Double_t phi2) 
+namespace toolbox {
+
+inline
+Double_t deltaPhi(Double_t phi1, Double_t phi2) 
 {
   // Compute dPhi between two given angles. Results is in [0,pi].
   const Double_t pi = 3.14159265358979;
@@ -86,9 +95,12 @@ Double_t toolbox::deltaPhi(Double_t phi1, Double_t phi2)
   return dphi;
 }
 
+}
 //------------------------------------------------------------------------------------------------------------------------
+namespace toolbox {
 
-Int_t toolbox::roundToInt(Double_t x)
+inline
+Int_t roundToInt(Double_t x)
 {
   if(x>0)
     return ((x-floor(x)) < (ceil(x)-x)) ? (Int_t)floor(x) : (Int_t)ceil(x);
@@ -96,9 +108,11 @@ Int_t toolbox::roundToInt(Double_t x)
     return ((x-floor(x)) < (ceil(x)-x)) ? (Int_t)ceil(x) : (Int_t)floor(x);
 }
 
+}
 //------------------------------------------------------------------------------------------------------------------------
 
 template<class T>
+inline
 void PrintVec(const char *msg, const std::vector<T>& vec, int prneol=0) {
   if (msg) std::cout << msg;
   std::cout << "vec[" << vec.size() << "]: ";
@@ -111,6 +125,7 @@ void PrintVec(const char *msg, const std::vector<T>& vec, int prneol=0) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
+inline
 void SaveCanvas(TCanvas* canv, const TString &canvName, TString destDir=CPlot::sOutDir) 
 {
   gSystem->mkdir(destDir,kTRUE);
@@ -131,6 +146,7 @@ void SaveCanvas(TCanvas* canv, const TString &canvName, TString destDir=CPlot::s
 // ----------------------------------------------------------
 
 template<class T>
+inline
 void ClearVec(std::vector<T*> &vec) {
   for (unsigned int i=0; i<vec.size(); ++i) if (vec[i]) delete vec[i];
   vec.clear();
@@ -138,12 +154,14 @@ void ClearVec(std::vector<T*> &vec) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
+inline
 void HERE(const char *msg) {
   std::cout << ((msg) ? msg : "HERE") << std::endl;
 }
 
 //------------------------------------------------------------------------------------------------------------------------
 
+inline
 int printHisto(std::ostream& out, const TH1F* histo) {
   if (!histo) {
     out << "printHisto: histo is null\n";
