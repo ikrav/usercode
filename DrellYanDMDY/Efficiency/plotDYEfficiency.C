@@ -556,6 +556,9 @@ void plotDYEfficiency(const TString input,
 	   effZPeakPU[i], effErrZPeakPU[i]);
   }
 
+  //sanity check printout
+  printSanityCheck(effv, effErrv, "eff");
+
   cout << endl;
   
   gBenchmark->Show("plotDYEfficiency");

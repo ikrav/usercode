@@ -5,10 +5,12 @@
 #include <TH1F.h>
 #include "TCanvas.h"
 #include "TString.h"
-#include "TSystem.h" 
+#include "TSystem.h"
+#include "TMatrixD.h"
 #include <iostream>
 #include <math.h>
 #include "../Include/CPlot.hh"
+#include "../Include/DYTools.hh"
 
 //#include "RooStats/FeldmanCousins.h"
 
@@ -79,7 +81,6 @@ Double_t deltaR(Double_t eta1, Double_t phi1, Double_t eta2, Double_t phi2)
 }
 
 }
-
 //------------------------------------------------------------------------------------------------------------------------
 namespace toolbox {
 
@@ -180,5 +181,35 @@ int printHisto(std::ostream& out, const TH1F* histo) {
 }
 
 //------------------------------------------------------------------------------------------------------------------------
+
+inline
+void printSanityCheck(TMatrixD val, TMatrixD err, TString name)
+{
+  std::cout<<"Sanity check printout"<<std::endl;
+  if (val.GetNrows()!=nMassBins || val.GetNcols()!=findMaxYBins())
+    {
+      std::cout<<name<<" matrix has wrong size"<<std::cout;
+      return;
+    }
+  if (err.GetNrows()!=nMassBins || err.GetNcols()!=findMaxYBins())
+    {
+      std::cout<<name<<"Err matrix has wrong size"<<std::cout;
+      return;
+    }
+  std::cout<<"Nan values of "<<name<<" or/and "<<name<<"Err:"<<std::endl;
+  for(int i=0; i<DYTools::nMassBins; i++)
+    for (int yi=0; yi<nYBins[i]; ++yi) 
+      {
+        if ( (val(i,yi)!=val(i,yi)) || (err(i,yi)!=err(i,yi)) )
+           std::cout<<name<<"("<<i<<","<<yi<<")="<<val(i,yi)<<", "<<name<<"Err("<<i<<","<<yi<<")="<<err(i,yi)<<std::endl;
+      }
+  std::cout<<"Large errors ("<<name<<"Errv>0.1*"<<name<<" or "<<name<<"Err>0.1) :"<<std::endl;
+  for(int i=0; i<DYTools::nMassBins; i++)
+    for (int yi=0; yi<nYBins[i]; ++yi) 
+      {
+        if ( fabs(err(i,yi))>0.1*fabs(val(i,yi)) || fabs(err(i,yi))>0.1)
+           std::cout<<name<<"("<<i<<","<<yi<<")="<<val(i,yi)<<", "<<name<<"Err("<<i<<","<<yi<<")="<<err(i,yi)<<std::endl;
+      }
+}
 
 #endif

@@ -428,5 +428,9 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
     printf("printout way for 2D was not chosen");
   cout << endl;
 
+  //sanity check printout
+  if (sansAcc) printSanityCheck(corrv, corrErrv, "sansAccFsrYields");
+  else printSanityCheck(corrv, corrErrv, "NOsansAccFsrYields");
+
   gBenchmark->Show("plotDYFSRCorrections");
 }

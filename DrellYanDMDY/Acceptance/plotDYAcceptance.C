@@ -486,6 +486,10 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   else
     printf("printout format for 2D not chosen");
   cout << endl;
+
+  //sanity check printout
+  printSanityCheck(accv, accErrv, "acc");
+
  
   gBenchmark->Show("plotDYAcceptance");
 }
