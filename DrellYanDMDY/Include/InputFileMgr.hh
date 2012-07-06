@@ -122,7 +122,7 @@ public:
   friend std::ostream& operator<< (std::ostream& out, const TnPInputFileMgr2011_t &mgr) {
     out << "EffStudyInputMgr2011 (sampleType=" << mgr.FSampleTypeStr << ", effType=" << mgr.FEffTypeStr << ", calcMethod=" << mgr.FCalcMethodStr << ", etBinning=" << mgr.FEtBinsKindStr << ", etaBinning=" << mgr.FEtaBinsKindStr << ", dirTag=<" << mgr.FDirTag << ">, " << mgr.FFileNames.size() << " ntuple files):\n";
     for (unsigned int i=0; i<mgr.FFileNames.size(); ++i) {
-      out << "  " << mgr.FFileNames[i] << "\n";
+      out << (i+1) << " -  " << mgr.FFileNames[i] << "\n";
     }
     return out;
   }

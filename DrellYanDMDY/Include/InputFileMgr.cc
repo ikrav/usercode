@@ -221,6 +221,8 @@ int TnPInputFileMgr_t::Load(const TString &configFile) {
     std::cout << "Load: did not reach state=5\n";
     return 0;
   }
+
+  //std::cout << "Loaded:\n" << *this << "\n";
   return 1;
 }
 
@@ -258,15 +260,18 @@ int MCInputFileMgr_t::Load(const TString& inputFileName) {
       Double_t xsec1;
       ss >> fname >> xsec1 >> color1 >> linesty;
       string label1 = line.substr(line.find('@')+1);
-      FFileNames.push_back(fname);
-      FLabels.push_back(label1);
-      FColors.push_back(color1);
-      FLineStyles.push_back(linesty);
-      FXSecs.push_back(xsec1);
-      FLumis.push_back(0);
+      if (label1.size()) {
+	FFileNames.push_back(fname);
+	FLabels.push_back(label1);
+	FColors.push_back(color1);
+	FLineStyles.push_back(linesty);
+	FXSecs.push_back(xsec1);
+	FLumis.push_back(0);
+      }
     }
   }
   ifs.close();
+  std::cout << "Loaded:\n" << *this << "\n";
   return FFileNames.size();
 }
 
