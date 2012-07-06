@@ -8,12 +8,13 @@ CERNLIB       = /cern/pro/lib
 CXX = g++
 LD  = g++
 
-CXXFLAGS      = -g -O2 -Wall -fPIC -pg
+CXXFLAGS      = -g -O2 -Wall -fPIC -pg -D__noRooFit
 #CXXFLAGS      = -O2 -Wall -fPIC
 LDFLAGS       = -g 
 SOFLAGS       = -shared
 
-CXX           += -I${PWD}/../../Include
+INC           = ../../Include/
+CXX           += -I${INC} 
 CXX     	+= -I/usr/include/python2.6
 CXXFLAGS      += $(ROOTCFLAGS)
 
@@ -36,10 +37,14 @@ CLIBS       = -L$(CERNLIB) -lpacklib -lmathlib -lkernlib -lpawlib -lg2c -lnsl
 #vpath %.cc ../../src
 #vpath %.hh ../../include
 
+auxOBJS=CPlot.o PUReweight.o
+
+default: eMuBkgExe
+
 # ================================================================================
 run:	bkg.so eMuBkgExe
 # -------------------------
-eMuBkgExe: main.o eMu.o	CmdLineOpts.o
+eMuBkgExe: main.o eMu.o	CmdLineOpts.o ${auxOBJS}
 	$(LD) $(LDFLAGS) -o $@ $^ $(GLIBS) 
 bkg.so: eMu_pyConf.o eMu.o
 	$(LD) $(LDFLAGS) $(SOFLAGS) $(ADDROOTLIBS) $(SLIB) $(GLIBS) -o $@ $^
@@ -50,3 +55,9 @@ ${OBJDIR}/%.o:	%.cc
 clean:
 	rm -rf eMuBkgExe eMu.o bkg.so main.o eMu_pyConf.o CmdLineOpts.o
 
+
+PUReweight.o: ${INC}PUReweight.cc ${INC}PUReweight.hh ${INC}MyTools.hh CPlot.o
+	${CXX} ${CXXFLAGS} -c $< -o $@
+
+CPlot.o: ${INC}CPlot.cc ${INC}CPlot.hh
+	${CXX} ${CXXFLAGS} -c $< -o $@
