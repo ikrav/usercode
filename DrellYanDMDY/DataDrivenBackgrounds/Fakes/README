@@ -1,8 +1,8 @@
 The fake background estimation is split into 3 parts:
 
 1. Estimatng the fake rate and then applying the fake rate to data to obtain the fake distribution (fakeRate.cc). This distribution has real dielectrons in it, weighted by the fake rate. 
-2. Taking the fake rate calculated in 1. and applying it to real dielectron MC events (DY->ee, DY->tautau ,ttbar, WW etc. ). (BgFakerate.cc)
-3. The last step does all the plotting. Plot the distribution of 1.-2. ie the fake distribution - the dielectrons
+2. Takes the fake rate calculated in 1. and applies it to real dielectron MC events (DY->ee, DY->tautau ,ttbar, WW etc. ). (BgFakerate.cc). The calculates the contribution from weighting real di-electron events
+3. The last step does all the plotting. Plots the distribution of 1.-2. ie the fake distribution - the dielectrons and plots the 1 and 2D distributions
 
 To Run 1.
 ========
@@ -34,6 +34,6 @@ I compiled the code here to generate an executable to generate the plots. A 1D m
 To Dos
 ======
 
-1. The json files are hardwired into the code for fakeRate.cc Would be nice to read a list of JSONs that can be modified instead
+1. The json files are hardwired into the code for fakeRate.cc Would be nice to read a list of JSONs that can be modified instead. How ntuples and json files are specified could be done better and be more straighforward
 2. The list of files to be run over are hardwired in fakeRate.cc and BgfakeRate.cc. Need to change this so files can be specified
 3. Need to be provide options for generating plots for the MakePlots executable. 
