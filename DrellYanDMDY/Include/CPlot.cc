@@ -5,6 +5,9 @@
 int CPlot::sCount = 0;
 TString CPlot::sOutDir = "./plots";
 
+using std::cout;
+using std::endl;
+
 // -------------------------------------------------
 
 CPlot::CPlot():
@@ -25,8 +28,10 @@ fRebin(1),
 fLeg(0),
 fShowStats(0),
 fStatsX(0.68),
-fStatsY(0.90),
-fRooPlot(0)
+fStatsY(0.90)
+#ifndef __noRooFit
+, fRooPlot(0)
+#endif
 {
   TString name = "plot"; 
   name += sCount;
@@ -51,12 +56,15 @@ fRebin(1),
 fLeg(0),
 fShowStats(0),
 fStatsX(0.68),
-fStatsY(0.90),
-fRooPlot(0)
+fStatsY(0.90)
+#ifndef __noRooFit
+, fRooPlot(0)
+#endif
 {
   sCount++;
 }
 
+#ifndef __noRooFit
 CPlot::CPlot(TString name, RooPlot* frame, TString title, TString xtitle, TString ytitle):
 fStack(0),
 fName(name),
@@ -83,7 +91,7 @@ fRooPlot(frame)
   fRooPlot->GetYaxis()->SetTitle(ytitle);
   sCount++;
 }
-
+#endif
 
 //--------------------------------------------------------------------------------------------------
 void CPlot::AddHist1D(TH1F *h, TString drawopt, int color, int linesty, int fillsty)
@@ -472,12 +480,16 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
   c->GetPad(subpad)->SetLogy(fLogy);
   c->GetPad(subpad)->SetLogx(fLogx);
   
+#ifndef __noRooFit
   if(!fItems.size() && !fRooPlot)
     return;   
   
   if(fRooPlot) {        
     fRooPlot->Draw();   
   }
+#else
+  if (!fItems.size()) return;
+#endif
       
   int nHist1D=0, nHist2D=0, nGraph=0, nProf=0;
   for(UInt_t i=0; i<fItems.size(); i++) {

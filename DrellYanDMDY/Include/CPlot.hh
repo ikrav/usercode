@@ -34,11 +34,17 @@
 #include <vector>
 #include <assert.h>
 
+#ifndef __noRooFit
 #include "RooGlobalFunc.h"
 #include "RooPlot.h"
 #endif
 
+#endif
+
+#ifndef __noRooFit
 using namespace RooFit;
+#endif
+
 using std::vector;
 using std::string;
 
@@ -59,7 +65,9 @@ class CPlot {
 public:
   CPlot();
   CPlot(TString name, TString title, TString xtitle, TString ytitle);
+#ifndef __noRooFit
   CPlot(TString name, RooPlot* frame, TString title, TString xtitle, TString ytitle);
+#endif
   ~CPlot(){}
   
   static TString sOutDir;  // output directory
@@ -181,7 +189,9 @@ protected:
   
   vector<TLegendEntry*> fStackEntries;  // pointer to legend entry objects for histograms in a stack
   
+#ifndef __noRooFit
   RooPlot *fRooPlot;
+#endif
   
   static int sCount;                    // number of CPlot instances
 };
