@@ -17,6 +17,7 @@
 
 #include "eMu.hh"
 #include "DYTools.hh"
+#include "PUReweight.hh"
 
 using std::cout;
 using std::ostringstream;
@@ -190,6 +191,41 @@ int eMu::run(){
     }
   }
 
+  // get PU weights, if needed
+  PUReweight_t *puEEDistr=NULL;
+  PUReweight_t *puEMuDistr=NULL;
+  
+  if (doPUreWeight) {
+    const TString eeNpvFName="npv.root";
+    const TString emuNpvFName="npv_emu.root";
+    // get the ee distribution of nPVs
+    puEEDistr = new PUReweight_t();
+    assert(puEEDistr);
+    TString fnameEEPV=eeNtupleDir;
+    Ssiz_t idx=fnameEEPV.Last('/');
+    if (idx==-1) {
+      std::cout << "error: no '/' in eeNTupleDir=<" << eeNtupleDir << ">\n";
+      return 0;
+    }
+    fnameEEPV.Replace(idx+1,fnameEEPV.Length()-idx,eeNpvFName);
+    std::cout << "fnameEEPV=<" << fnameEEPV << ">\n";
+    assert(puEEDistr->setFile(fnameEEPV));
+    assert(puEEDistr->setReference("hNGoodPV_data"));
+    // get the emu distribution of nPVs
+    puEMuDistr = new PUReweight_t();
+    assert(puEMuDistr);
+    TString fnameEMuPV=emuNtupleDir;
+    idx=fnameEMuPV.Last('/');
+    if (idx==-1) {
+      std::cout << "error: no '/' in emuNTupleDir=<" << emuNtupleDir << ">\n";
+      return 0;
+    }
+    fnameEMuPV.Replace(idx+1,fnameEMuPV.Length()-idx,emuNpvFName);
+    std::cout << "fnameEMuPV=<" << fnameEMuPV << ">\n";
+    assert(puEMuDistr->setFile(fnameEMuPV));
+    assert(puEMuDistr->setReference(puEEDistr->getHRef()));
+  }
+
   vector<TCanvas*> canv;  
 
   typedef vector<string>::iterator sIter;
@@ -214,6 +250,8 @@ int eMu::run(){
 	if (i == 6) rap_Bins = 10;
 	data_dmdyHistv[massB].push_back(shared_ptr<TH1F>(new TH1F(histoName,"",rap_Bins, rap_Min, rap_Max)));
 	sum_dmdyHistv[massB].push_back(shared_ptr<TH1F>(new TH1F(histoName+"sum","",rap_Bins, rap_Min, rap_Max)));
+	data_dmdyHistv[massB].back()->SetDirectory(0);
+	sum_dmdyHistv[massB].back()->SetDirectory(0);
 	if (i == 6) rap_Bins = _nYBinsMax2D;
 	// need to use correct binning
 	//need to change binning in last vector
@@ -235,6 +273,11 @@ int eMu::run(){
     sumVMassv.push_back(shared_ptr<TH1F>(new TH1F("sumVMassv","",numMassBins,_massBinLimits2011)));
     sumMassv.push_back(shared_ptr<TH1F>(new TH1F("sumMassv","",nBins,xmin,xmax)));
 
+    datahistv.back()->SetDirectory(0);
+    datahMassv.back()->SetDirectory(0);
+    sumVMassv.back()->SetDirectory(0);
+    sumMassv.back()->SetDirectory(0);
+
     //select the list of strings to loop over;  emu_modesv or ee_modesv?
     vector<string>* sv;
     sv = (s_pathv.at(0) == *iter_path) ? emu_modesv : ee_modesv; 
@@ -248,6 +291,16 @@ int eMu::run(){
       } else {
 	isData = false; 
       }
+
+      bool eeCandidates= (*iter_path == eeNtupleDir) ? true : false;
+      PUReweight_t *puWeight=NULL;
+      if (doPUreWeight) {
+	puWeight=(eeCandidates) ? puEEDistr : puEMuDistr;
+	assert(puWeight->setActiveSample(TString("hNGoodPV_") + TString(*iter)));
+	puWeight->printActiveDistr_and_Weights(std::cout);
+	//puWeight.printWeights(std::cout);
+      }
+
  
       //should use smart pointers everywhere
       // memory leaked for 2nd iteration and above
@@ -289,15 +342,16 @@ int eMu::run(){
 	}
 
       } 
-   
+ 
       float mass, weight, pu_weight(1.00),rapidity;
+      UInt_t nGoodPV;
       //double reWeight(1.00);//rather than running the MC everytime a new weight is required, just use the reweight variable
       
-      bool eeCandidates= (*iter_path == eeNtupleDir) ? true : false;
       treev.back()->SetBranchAddress("mass", &mass);
       treev.back()->SetBranchAddress("weight", &weight);
       if (doPUreWeight){
-        treev.back()->SetBranchAddress("pu_weight", &(pu_weight));
+        //treev.back()->SetBranchAddress("pu_weight", &(pu_weight));
+	treev.back()->SetBranchAddress("nGoodPV", &nGoodPV);
       }
       if (doDMDY){
 	if (eeCandidates) treev.back()->SetBranchAddress("y", &(rapidity));
@@ -309,6 +363,12 @@ int eMu::run(){
       //loop over entries in ntuple
       for(unsigned int i =0; i < numEntries; ++i){//loop     
         treev.back()->GetEntry(i);
+
+	// determine the PU weight factor
+	if (doPUreWeight) {
+	  pu_weight= puWeight->getWeight( nGoodPV );
+	}
+
         //fill histo with events
 	if (isData) {
 	  datahMassv.back()->Fill(mass,weight);
@@ -378,6 +438,13 @@ int eMu::run(){
     }//end of loop over channel names
   }//end of loop over directories 
 
+  if (puEEDistr) delete puEEDistr;
+  if (puEMuDistr) delete puEMuDistr;
+
+  // ---------------------------------------------
+  //     Make plots
+  // ---------------------------------------------
+
   TCanvas* emuCan = new TCanvas("emuCan","emu distro");
   emuCan->cd();
   eMuVMassTot.Draw("");
@@ -413,6 +480,8 @@ int eMu::run(){
       double massB = massBins2D[i];
       //change section in pad
       rapPad1->cd(i);
+      assert(data_dmdyHistv[massB].at(0));
+      assert(data_dmdyHistv[massB].at(0)->GetXaxis());
       data_dmdyHistv[massB].at(0)->GetXaxis()->SetTitleSize(0.08);
       data_dmdyHistv[massB].at(0)->GetXaxis()->SetLabelSize(0.07);
       data_dmdyHistv[massB].at(0)->SetXTitle("rapidity"); 
@@ -520,10 +589,10 @@ int eMu::run(){
   emuDistov.push_back(datahistv.at(0));
 
   vector<shared_ptr<TH1F> > eMuMassScaledv;// this becomes the calculated ee distro
-  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo1","",nBins,xmin,xmax)));
-  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo2","",numMassBins,_massBinLimits2011)));
-  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo3","",nBins,xmin,xmax)));
-  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo4","",numMassBins,_massBinLimits2011)));
+  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo1sc","",nBins,xmin,xmax)));
+  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo2sc","",numMassBins,_massBinLimits2011)));
+  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo3sc","",nBins,xmin,xmax)));
+  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo4sc","",numMassBins,_massBinLimits2011)));
   //Fill above using a loop
 
   if ( emuDistov.size() != eMuMassScaledv.size()) 
@@ -556,6 +625,12 @@ int eMu::run(){
   emupad1->cd();
  
   setEMUhistoStyle(datahistv.at(0).get());
+  {
+    // correct the maximal value on the plot
+    const double ymax=eMuVMassTot.GetMaximum();
+    const double ymax1=datahistv.at(0)->GetMaximum();
+    if (ymax1>ymax) eMuVMassTot.SetMaximum(ymax1);
+  }
   eMuVMassTot.Draw("");
   //datahistv.at(0)->SetXTitle("e^{+}e^{-} mass GeV/c^{2}");
   eMuVMassTot.GetXaxis()->SetTitle("e#mu mass GeV/c^{2}");
@@ -715,7 +790,7 @@ int eMu::run(){
   //  graphicsPlease.Run();
   
   //=====================================================================
-  return 0;
+  return 1;
 }
 
 TH1F* eMu::subtractEMubackground3(TH1F *inputHisto, vector<vector<shared_ptr<TH1F> >* >& vvHist, vector<vector<shared_ptr<TH1F> >* >& statHist)
