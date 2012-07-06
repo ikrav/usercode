@@ -1,0 +1,9 @@
+/tmp/olaiya/EE/f11-zeem20to500-powheg-v14b-pu_tight-loose_skim.root 1666.0
+/tmp/olaiya/EE/f11-zttm20-powheg-v14b-pu_tight-loose_skim.root 1666.0
+/tmp/olaiya/EE/f11-ttj-v14b2-pu_ntuple.root 157.5
+/tmp/olaiya/EE/f11-ww2l-v14b-pu_ntuple.root 4.514
+#/tmp/olaiya/EE/f11-wtop-powheg-v14b-pu_ntuple.root 7.87
+#/tmp/olaiya/EE/f11-wtopb-powheg-v14b-pu_ntuple.root 7.87
+#/tmp/olaiya/EE/f11-wz-v14b-pu_ntuple.root 0.596
+#/tmp/olaiya/EE/f11-zz-v14b-pu_tight-loose_skim.root 7.406
+#/tmp/olaiya/EE/f11-wjets-v14b-pu_tight-loose_skim.root 31314.0

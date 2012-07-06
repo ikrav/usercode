@@ -1,0 +1,6 @@
+/tmp/olaiya/PHO/r11a-pho-a05-v1_ntuple.root
+/tmp/olaiya/PHO/r11a-pho-m10-v1_ntuple.root
+/tmp/olaiya/PHO/r11a-pho-n30-v1_ntuple.root
+/tmp/olaiya/PHO/r11a-pho-o03-v1_ntuple.root
+/tmp/olaiya/PHO/r11a-pho-pr-v4_ntuple.root
+/tmp/olaiya/PHO/r11b-pho-pr-v1_ntuple.root

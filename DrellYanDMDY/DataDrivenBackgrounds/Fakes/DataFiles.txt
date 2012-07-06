@@ -1,0 +1,5 @@
+/tmp/olaiya/EE/r11a-del-m10-v1_tight-loose_skim.root
+/tmp/olaiya/EE/r11a-del-pr-v4_tight-loose_skim.root
+/tmp/olaiya/EE/r11a-del-a05-v1_tight-loose_skim.root
+/tmp/olaiya/EE/r11a-del-o03-v1_tight-loose_skim.root
+/tmp/olaiya/EE/r11b-del-pr-v1_tight-loose_skim.root

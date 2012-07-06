@@ -1,0 +1,39 @@
+The fake background estimation is split into 3 parts:
+
+1. Estimatng the fake rate and then applying the fake rate to data to obtain the fake distribution (fakeRate.cc). This distribution has real dielectrons in it, weighted by the fake rate. 
+2. Taking the fake rate calculated in 1. and applying it to real dielectron MC events (DY->ee, DY->tautau ,ttbar, WW etc. ). (BgFakerate.cc)
+3. The last step does all the plotting. Plot the distribution of 1.-2. ie the fake distribution - the dielectrons
+
+To Run 1.
+========
+
+root -l
+root [0] .L fakeRate.cc+
+root [1] fakeRate()
+
+In fakeRate.cc the JSON files are specified. fakeRate.cc runs over FakeDateSource.txt and DataFiles.txt which contains a list of datasets for the fake rate and the data respectiviely. Modify these files to point to where your ntuples are
+
+To Run 2.
+========
+
+root -l
+root [0] .L BgfakeRate.cc+
+root [1] BgfakeRate()
+
+BgFakeRate.cc read a file called BgfakeR.txt which is a list of files and cross sections for the MC events. You need to modify this file to point to where your ntuples are.
+
+To Run 3.
+========
+
+> gmake
+>./MakePlots
+
+I compiled the code here to generate an executable to generate the plots. A 1D mass plot and rapidity plots in mass bins should be genenerated to name but a few.
+
+
+To Dos
+======
+
+1. The json files are hardwired into the code for fakeRate.cc Would be nice to read a list of JSONs that can be modified instead
+2. The list of files to be run over are hardwired in fakeRate.cc and BgfakeRate.cc. Need to change this so files can be specified
+3. Need to be provide options for generating plots for the MakePlots executable. 
