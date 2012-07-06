@@ -7,6 +7,7 @@ struct XemuData
   UInt_t  evtNum;                          // event number in data
   UInt_t  lumiSec;                         // lumi section      
   UInt_t  nPV;                             // number of valid reconstructed primary vertices in event                                          
+  UInt_t  nGoodPV;                         // number of good reconstructed primary vertices in the event                                          
   UInt_t  nJets;                           // number of jets (with some requirements)
 
   Float_t pfSumET;
