@@ -4,12 +4,18 @@
 #endif
 
 int performWeightedFit=1;
-int bkgPassContainsErrorFunction=1;
-int bkgFailContainsErrorFunction=1;
+int debugWeightedFit=0; // extra datasets are created if this is 1
+int bkgPassContainsErrorFunction=0;
+int bkgFailContainsErrorFunction=0;
+bool unbinnedFit=false;
 
 
 void printCorrelations(ostream& os, RooFitResult *res)
 {
+  if (!res) {
+    os << "printCorrelations: fit result ptr is null" << endl;
+    return;
+  }
   ios_base::fmtflags flags = os.flags();
   const RooArgList *parlist = res->correlation("eff");
   
@@ -38,7 +44,7 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
 	     TPad *passPad, TPad *failPad, TFile *plotsRootFile, 
 	     ofstream &fitLog, int NsetBins, bool isRECO, 
 	     const char* setBinsType, TString dirTag){
-  
+
   // meaningless check, saving from compiler complaints
   if (dirTag.Length() && 0) 
     std::cout << "fitMass : dirTag=" << dirTag << "\n";
@@ -131,54 +137,74 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   RooRealVar weight("weight","weight",0.,100.);
   RooFormulaVar rooCut("rooCut","rooCut",cut,RooArgSet(et,eta));
   RooArgSet dsetArgs(mass,et,eta);
-  int weightedFit=0;
-  if (performWeightedFit && (passTree->GetBranch("weight")!=NULL)) {
-    weightedFit=1;
-    dsetArgs.add(weight);
+  if (performWeightedFit && (passTree->GetBranch("weight")==NULL)) {
+    std::cout << "fitMass: perforkWeightedFit=1, "
+	      << "but the tree has no branch \"weight\"\n";
   }
-  RooDataSet  *dataUnbinnedPass = 
+  RooDataSet  *dataUnbinnedPass = NULL;
+  RooDataSet  *dataUnbinnedFail = NULL;
+  RooDataSet *dataUnbinnedPassUnweighted= (!debugWeightedFit) ? NULL :
     new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
 		   passTree,dsetArgs, rooCut);
-  RooDataSet *dataUnbinnedPassUnweighted=NULL;
-  RooDataSet  *dataUnbinnedFail = 
+  RooDataSet *dataUnbinnedFailUnweighted= (!debugWeightedFit) ? NULL :
     new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
-						 failTree,dsetArgs, rooCut);
-  RooDataSet *dataUnbinnedFailUnweighted=NULL;
+		   failTree,dsetArgs, rooCut);
   std::string dline(70,'-'); dline+='\n';
 
-  if (weightedFit) {
+  if (!performWeightedFit) {
+    dataUnbinnedPass = 
+      new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
+		     passTree,dsetArgs, rooCut);
+    dataUnbinnedFail = 
+      new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
+		     failTree,dsetArgs, rooCut);
+    std::cout << "\n\n\tunweighted Fit" << std::endl;
+  }
+  else {
     std::cout << "\n\n\tweighted Fit\n\n";
-    dataUnbinnedPassUnweighted=dataUnbinnedPass;
-    RooDataSet *dSet=dataUnbinnedPassUnweighted;
-    dataUnbinnedPass= 
-      new RooDataSet("dataUnbinnedPassWeighted","dataUnbinnedPassWeighted",
-		     dSet, *dSet->get(), 0, "weight");
-    dataUnbinnedFailUnweighted=dataUnbinnedFail;
-    dSet=dataUnbinnedFailUnweighted;
-    dataUnbinnedFail=
-      new RooDataSet("dataUnbinnedFailWeighted","dataUnbinnedFailWeighted",
-		     dSet, *dSet->get(), 0, "weight");
+    fitLog << "\n\n\tweighted Fit\n\n";
+    dsetArgs.add(weight);
+    dataUnbinnedPass = 
+      new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
+		     passTree,dsetArgs, rooCut, "weight");
+    dataUnbinnedFail = 
+      new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
+		     failTree,dsetArgs, rooCut, "weight");
+
     std::cout << dline; dataUnbinnedPass->Print("V"); std::cout << dline;
     std::cout << dline; dataUnbinnedFail->Print("V"); std::cout << dline;
-    std::cout << std::endl;    
+    std::cout << std::endl;
   }
-  else std::cout << "\n\n\tunweighted Fit\n\n";
 
-  RooDataHist *dataBinnedPass   = dataUnbinnedPass->binnedClone("dataBinnedPass","dataBinnedPass");
-  RooDataHist *dataBinnedFail   = dataUnbinnedFail->binnedClone("dataBinnedFail","dataBinnedFail");
+  RooDataHist *dataBinnedPass   = (unbinnedFit) ? NULL :
+    dataUnbinnedPass->binnedClone("dataBinnedPass","dataBinnedPass");
+  RooDataHist *dataBinnedFail   = (unbinnedFit) ? NULL :
+    dataUnbinnedFail->binnedClone("dataBinnedFail","dataBinnedFail");
+  RooDataHist *dataBinnedPassUnweighted   = (!debugWeightedFit) ? NULL :
+    dataUnbinnedPassUnweighted->binnedClone("dataBinnedPassNoW","dataBinnedPassNoW");
+  RooDataHist *dataBinnedFailUnweighted   = (!debugWeightedFit) ? NULL :
+    dataUnbinnedFailUnweighted->binnedClone("dataBinnedFailNoW","dataBinnedFailNoW");
   RooCategory probeType("probeType","probeType");
   probeType.defineType("pass");
   probeType.defineType("fail");
   RooAbsData *data;
 
   // If needed do binned fit
-  bool unbinnedFit = true;
+  //bool unbinnedFit = false;
   if(unbinnedFit){
     RooArgSet combiDSetArgs(mass);
-    if (weightedFit) combiDSetArgs.add(weight);
-    data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
-			  Import("pass",*dataUnbinnedPass), 
-			  Import("fail",*dataUnbinnedFail));
+    if (performWeightedFit) {
+      combiDSetArgs.add(weight);
+      data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
+			    Import("pass",*dataUnbinnedPass), 
+			    Import("fail",*dataUnbinnedFail),
+			    RooFit::WeightVar("weight"));
+    }
+    else {
+      data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
+			    Import("pass",*dataUnbinnedPass), 
+			    Import("fail",*dataUnbinnedFail));
+    }
     std::cout << dline; data->Print("V"); std::cout << dline;
     cout << endl << "Setting up UNBINNED fit" << endl << endl;
   }else{
@@ -296,10 +322,33 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   cbNFail    .setVal(5.0);
   cbAlphaFail.setConstant(kTRUE);
   cbNFail    .setConstant(kTRUE);
-  RooFitResult *result = fullPdf.fitTo(*data,
-				       Extended(kTRUE),
-				       Save(),
-				       NumCPU(2,true));
+
+  /*
+ [#0] WARNING:InputArguments -- RooAbsPdf::fitTo(fullPdf) WARNING: a likelihood 
+ fit is request of what appears to be weighted data.
+ While the estimated values of the parameters will always be calculated taking 
+ the weights into account,
+ there are multiple ways to estimate the errors on these parameter values. You 
+ are advised to make an explicit choice on the error calculation:
+ - Either provide SumW2Error(kTRUE), to calculate a sum-of-weights corrected 
+ HESSE error matrix (error will be proportional to the number of events)
+ - Or provide SumW2Error(kFALSE), to return errors from original HESSE error 
+ matrix (which will be proportional to the sum of the weights)
+ If you want the errors to reflect the information contained in the provided 
+ dataset, choose kTRUE.
+ If you want the errors to reflect the precision you would be able to obtain 
+ with an unweighted dataset with 'sum-of-weights' events, choose kFALSE.
+  */
+
+  std::cout << "fitting \n\n";
+  Bool_t sumw2error= kFALSE;
+  RooFitResult *result = 
+    fullPdf.fitTo(*data,
+		  Extended(kTRUE),
+		  Save(),
+		  NumCPU(2,true)
+		  , RooFit::SumW2Error(sumw2error)
+		  );
 
   // Release shape parameters and refine the fit
   if( mode == FITnFIT ){
@@ -312,7 +361,9 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
 			 Extended(kTRUE),
 			 Minos(RooArgSet(eff)),
 			 Save(),
-			 NumCPU(2,true));
+			 NumCPU(2,true)
+			 , RooFit::SumW2Error(sumw2error)
+			 );
   // If minos fails, refit without minos
   if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5) || 
      (fabs(eff.getAsymErrorLo())<5e-5) || (eff.getAsymErrorHi()<5e-5)) {
@@ -321,7 +372,9 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
     result = fullPdf.fitTo(*data,
 			   Extended(kTRUE),
 			   Save(),
-			   NumCPU(2,true));
+			   NumCPU(2,true)
+			   , RooFit::SumW2Error(sumw2error)
+			   );
     if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5) || 
        (fabs(eff.getAsymErrorLo())<5e-5) || (eff.getAsymErrorHi()<5e-5)) {
        cout << "SECOND FIT FAILURE" << endl;
@@ -337,7 +390,10 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   passPad->cd();
   passPad->Clear();
   RooPlot *framePass = mass.frame();
-  dataUnbinnedPass->plotOn(framePass);
+
+  if (unbinnedFit) dataUnbinnedPass->plotOn(framePass);
+  else dataBinnedPass->plotOn(framePass);
+
   if(mode == FITnFIT){
     passPdf->plotOn(framePass);
     passPdf->plotOn(framePass,Components("bgPassPdf"),LineStyle(kDashed));
@@ -350,7 +406,10 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   failPad->cd();
   failPad->Clear();
   RooPlot *frameFail = mass.frame();
-  dataUnbinnedFail->plotOn(frameFail);
+
+  if (unbinnedFit) dataUnbinnedFail->plotOn(frameFail);
+  else dataBinnedFail->plotOn(frameFail);
+  
   failPdf->plotOn(frameFail);
   failPdf->plotOn(frameFail,Components("bgFailPdf"),LineStyle(kDashed));
   frameFail->Draw();
@@ -372,6 +431,8 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   if (dataUnbinnedFailUnweighted) delete dataUnbinnedFailUnweighted;
   if (dataBinnedPass) delete dataBinnedPass;
   if (dataBinnedFail) delete dataBinnedFail;
+  if (dataBinnedPassUnweighted) delete dataBinnedPassUnweighted;
+  if (dataBinnedFailUnweighted) delete dataBinnedFailUnweighted;
   if (data) delete data;
   //if (simpleSignal) delete simpleSignal;
   //if (simpleSignalExtended) delete simpleSignalExtended;
@@ -472,57 +533,133 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   RooRealVar weight("weight","weight",0.,100.);
   RooFormulaVar rooCut("rooCut","rooCut",cut,RooArgSet(et,eta));
   RooArgSet dsetArgs(mass,et,eta);
-  int weightedFit=0;
-  if (performWeightedFit && (passTree->GetBranch("weight")!=NULL)) {
-    weightedFit=1;
-    dsetArgs.add(weight);
+  if (performWeightedFit && (passTree->GetBranch("weight")==NULL)) {
+    std::cout << "fitMassWithTemplates: perforkWeightedFit=1, "
+	      << "but the tree has no branch \"weight\"\n";
   }
-  RooDataSet  *dataUnbinnedPass = 
-    new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
-		   passTree,dsetArgs, rooCut);
-  RooDataSet *dataUnbinnedPassUnweighted=NULL;
-  RooDataSet  *dataUnbinnedFail = 
-    new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
-		   failTree,dsetArgs, rooCut);
-  RooDataSet *dataUnbinnedFailUnweighted=NULL;
+  RooDataSet  *dataUnbinnedPass = NULL;
+  RooDataSet  *dataUnbinnedFail = NULL;
   std::string dline(70,'-'); dline+='\n';
 
-  if (weightedFit) {
+  RooDataSet *dataUnbinnedPassNoWeight = (!debugWeightedFit) ? NULL :
+    new RooDataSet("dataUnbinnedPassNoWeight","dataUnbinnedPassNoWeight",
+		   passTree,dsetArgs, rooCut);
+  RooDataSet *dataUnbinnedFailNoWeight = (!debugWeightedFit) ? NULL :
+    new RooDataSet("dataUnbinnedFailNoWeight","dataUnbinnedFailNoWeight",
+		   failTree,dsetArgs, rooCut);
+ 
+  if (!performWeightedFit) {
+    dataUnbinnedPass = 
+      new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
+		     passTree,dsetArgs, rooCut);
+    dataUnbinnedFail = 
+      new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
+		     failTree,dsetArgs, rooCut);
+    std::cout << "\n\n\tunweighted Fit (" << dataUnbinnedPass->numEntries() 
+	      << "p," << dataUnbinnedFail->numEntries() << "f)\n\n";
+  }
+  else {
     std::cout << "\n\n\tweighted Fit\n\n";
     fitLog << "\n\n\tweighted Fit\n\n";
-    dataUnbinnedPassUnweighted=dataUnbinnedPass;
-    RooDataSet *dSet=dataUnbinnedPassUnweighted;
-    dataUnbinnedPass= 
-      new RooDataSet("dataUnbinnedPassWeighted","dataUnbinnedPassWeighted",
-		     dSet, *dSet->get(), 0, "weight");
-    dataUnbinnedFailUnweighted=dataUnbinnedFail;
-    dSet=dataUnbinnedFailUnweighted;
-    dataUnbinnedFail=
-      new RooDataSet("dataUnbinnedFailWeighted","dataUnbinnedFailWeighted",
-		     dSet, *dSet->get(), 0, "weight");
+    dsetArgs.add(weight);
+    dataUnbinnedPass = 
+      new RooDataSet("dataUnbinnedPass","dataUnbinnedPass",
+		     passTree,dsetArgs, rooCut, "weight");
+    dataUnbinnedFail = 
+      new RooDataSet("dataUnbinnedFail","dataUnbinnedFail",
+		     failTree,dsetArgs, rooCut, "weight");
+
     std::cout << dline; dataUnbinnedPass->Print("V"); std::cout << dline;
     std::cout << dline; dataUnbinnedFail->Print("V"); std::cout << dline;
     std::cout << std::endl;
   }
-  else std::cout << "\n\n\tunweighted Fit (" << dataUnbinnedPass->numEntries() << "p," << dataUnbinnedFail->numEntries() << "f)\n\n";
-
-  RooDataHist *dataBinnedPass   = 
+ 
+  RooDataHist *dataBinnedPass   = (unbinnedFit) ? NULL :
     dataUnbinnedPass->binnedClone("dataBinnedPass","dataBinnedPass");
-  RooDataHist *dataBinnedFail   = 
+  RooDataHist *dataBinnedFail   = (unbinnedFit) ? NULL :
     dataUnbinnedFail->binnedClone("dataBinnedFail","dataBinnedFail");
+  RooDataHist *dataBinnedPassNoWeight   = (!debugWeightedFit) ? NULL :
+    dataUnbinnedPassNoWeight->binnedClone("dataBinnedPassNoWeight","dataBinnedPassNoWeight");
+  RooDataHist *dataBinnedFailNoWeight   = (!debugWeightedFit) ? NULL :
+    dataUnbinnedFailNoWeight->binnedClone("dataBinnedFailNoWeight","dataBinnedFailNoWeight");
   RooCategory probeType("probeType","probeType");
   probeType.defineType("pass");
   probeType.defineType("fail");
   RooAbsData *data;
+  
+  if (0 && debugWeightedFit) {
+    // test pass
+    TCanvas *cTest=new TCanvas("cTestPass","cTestPass",800,800);
+    cTest->Divide(2,2);
+    RooPlot *frameTest1 = mass.frame(RooFit::Title("unB W pass (r) vs unB noW pass (v)"));
+    dataUnbinnedPass->plotOn(frameTest1,RooFit::LineColor(kRed),RooFit::MarkerColor(kRed));
+    dataUnbinnedPassNoWeight->plotOn(frameTest1,RooFit::LineColor(kViolet),RooFit::MarkerColor(kViolet),RooFit::MarkerStyle(24));
+    cTest->cd(1);
+    frameTest1->Draw();
+    RooPlot *frameTest2 = mass.frame(RooFit::Title("unB W pass (r) vs B W pass (g)"));
+    dataUnbinnedPass->plotOn(frameTest2,RooFit::LineColor(kRed),RooFit::MarkerColor(kRed));
+    dataBinnedPass->plotOn(frameTest2,RooFit::LineColor(kGreen+1),RooFit::MarkerColor(kGreen+1),RooFit::MarkerStyle(24));
+    cTest->cd(2);
+    frameTest2->Draw();
+    RooPlot *frameTest3 = mass.frame(RooFit::Title("B noW pass (b) vs unB noW pass (v)"));
+    dataBinnedPassNoWeight->plotOn(frameTest3,RooFit::LineColor(kBlue+1),RooFit::MarkerColor(kBlue+1));
+    dataUnbinnedPassNoWeight->plotOn(frameTest3,RooFit::LineColor(kViolet),RooFit::MarkerColor(kViolet),RooFit::MarkerStyle(24));
+    cTest->cd(3);
+    frameTest3->Draw();
+    RooPlot *frameTest4 = mass.frame(RooFit::Title("B noW pass (b) vs B W pass (g)"));
+    dataBinnedPassNoWeight->plotOn(frameTest4,RooFit::LineColor(kBlue+1),RooFit::MarkerColor(kBlue+1));
+    dataBinnedPass->plotOn(frameTest4,RooFit::LineColor(kGreen+1),RooFit::MarkerColor(kGreen+1),RooFit::MarkerStyle(24));
+    cTest->cd(4);
+    frameTest4->Draw();
+    cTest->Update();
+    return;
+  } // debugWeightedFit
+
+  if (0 && debugWeightedFit) {
+    // test fail
+    TCanvas *cTest=new TCanvas("cTestFail","cTestFail",800,800);
+    cTest->Divide(2,2);
+    RooPlot *frameTest1 = mass.frame(RooFit::Title("unB W fail (r) vs unB noW fail (v)"));
+    dataUnbinnedFail->plotOn(frameTest1,RooFit::LineColor(kRed),RooFit::MarkerColor(kRed));
+    dataUnbinnedFailNoWeight->plotOn(frameTest1,RooFit::LineColor(kViolet),RooFit::MarkerColor(kViolet),RooFit::MarkerStyle(24));
+    cTest->cd(1);
+    frameTest1->Draw();
+    RooPlot *frameTest2 = mass.frame(RooFit::Title("unB W fail (r) vs B W fail (g)"));
+    dataUnbinnedFail->plotOn(frameTest2,RooFit::LineColor(kRed),RooFit::MarkerColor(kRed));
+    dataBinnedFail->plotOn(frameTest2,RooFit::LineColor(kGreen+1),RooFit::MarkerColor(kGreen+1),RooFit::MarkerStyle(24));
+    cTest->cd(2);
+    frameTest2->Draw();
+    RooPlot *frameTest3 = mass.frame(RooFit::Title("B noW fail (b) vs unB noW fail (v)"));
+    dataBinnedFailNoWeight->plotOn(frameTest3,RooFit::LineColor(kBlue+1),RooFit::MarkerColor(kBlue+1));
+    dataUnbinnedFailNoWeight->plotOn(frameTest3,RooFit::LineColor(kViolet),RooFit::MarkerColor(kViolet),RooFit::MarkerStyle(24));
+    cTest->cd(3);
+    frameTest3->Draw();
+    RooPlot *frameTest4 = mass.frame(RooFit::Title("B noW fail (b) vs B W fail (g)"));
+    dataBinnedFailNoWeight->plotOn(frameTest4,RooFit::LineColor(kBlue+1),RooFit::MarkerColor(kBlue+1));
+    dataBinnedFail->plotOn(frameTest4,RooFit::LineColor(kGreen+1),RooFit::MarkerColor(kGreen+1),RooFit::MarkerStyle(24));
+    cTest->cd(4);
+    frameTest4->Draw();
+    cTest->Update();
+    return;
+  } // debugWeightedFit
+
 
   // If needed do binned fit
-  bool unbinnedFit = true;
+  //bool unbinnedFit = true;
   if(unbinnedFit){
     RooArgSet combiDSetArgs(mass);
-    if (weightedFit) combiDSetArgs.add(weight);
-    data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
-			  Import("pass",*dataUnbinnedPass), 
-			  Import("fail",*dataUnbinnedFail));
+    if (performWeightedFit) {
+      combiDSetArgs.add(weight);
+      data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
+			    Import("pass",*dataUnbinnedPass), 
+			    Import("fail",*dataUnbinnedFail),
+			    RooFit::WeightVar("weight"));
+    }
+    else {
+      data = new RooDataSet("data","data",combiDSetArgs,Index(probeType),
+			    Import("pass",*dataUnbinnedPass), 
+			    Import("fail",*dataUnbinnedFail));
+    }
     std::cout << dline; data->Print("V"); std::cout << dline;
     cout << endl << "Setting up UNBINNED fit" << endl << endl;
   }else{
@@ -531,6 +668,47 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
 			   Import("fail",*dataBinnedFail));    
     cout << endl << "Setting up BINNED fit" << endl << endl;
   }
+
+  if (0 && debugWeightedFit) {
+    // test combined dset
+    RooDataSet *dataNoWeight = 
+      new RooDataSet("dataNoWeight","dataNoWeight",
+		     RooArgSet(mass),Index(probeType),
+		     Import("pass",*dataUnbinnedPassNoWeight), 
+		     Import("fail",*dataUnbinnedFailNoWeight));
+    RooDataHist *dataBinnedNoWeight =
+      new RooDataHist("dataBinnedNoWeight","dataBinnedNoWeight",
+		     RooArgSet(mass),Index(probeType),
+		     Import("pass",*dataBinnedPassNoWeight), 
+		     Import("fail",*dataBinnedFailNoWeight));
+
+    TCanvas *cTest=new TCanvas("cTestCombi","cTestCombi",800,400);
+    cTest->Divide(2,1);
+    TString title=((unbinnedFit) ? "UNBINNED ":"BINNED ");
+    RooPlot *frameTest1 = mass.frame(RooFit::Title(title + TString("W pass (r) vs noW pass (v)")));
+    data->plotOn(frameTest1,RooFit::Cut("probeType==probeType::pass"),RooFit::LineColor(kRed),RooFit::MarkerColor(kRed));
+    if (unbinnedFit)
+      dataNoWeight->plotOn(frameTest1,RooFit::Cut("probeType==probeType::pass"),RooFit::LineColor(kViolet),RooFit::MarkerColor(kViolet),RooFit::MarkerStyle(24));
+    else
+      dataBinnedNoWeight->plotOn(frameTest1,RooFit::Cut("probeType==probeType::pass"),RooFit::LineColor(kViolet),RooFit::MarkerColor(kViolet),RooFit::MarkerStyle(24));
+    cTest->cd(1);
+    frameTest1->Draw();
+
+    RooPlot *frameTest2 = mass.frame(RooFit::Title(title + TString("W fail (r) vs noW fail (v)")));
+    data->plotOn(frameTest2,RooFit::Cut("probeType==probeType::fail"),RooFit::LineColor(kRed),RooFit::MarkerColor(kRed));
+    if (unbinnedFit) 
+      dataNoWeight->plotOn(frameTest2,RooFit::Cut("probeType==probeType::fail"),RooFit::LineColor(kViolet),RooFit::MarkerColor(kViolet),RooFit::MarkerStyle(24));
+
+    else 
+      dataBinnedNoWeight->plotOn(frameTest2,RooFit::Cut("probeType==probeType::fail"),RooFit::LineColor(kViolet),RooFit::MarkerColor(kViolet),RooFit::MarkerStyle(24));
+    cTest->cd(2);
+    frameTest2->Draw();
+    cTest->Update();
+    if (dataNoWeight) delete dataNoWeight;
+    if (dataBinnedNoWeight) delete dataBinnedNoWeight;
+    return;
+  } // debugWeightedFit
+
   // Define the PDFs
   //
   // Common pieces
@@ -631,9 +809,30 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   }
   nbgFail.setVal(0.01*total);
 
-  RooFitResult *result;  
+  /*
+ [#0] WARNING:InputArguments -- RooAbsPdf::fitTo(fullPdf) WARNING: a likelihood 
+ fit is request of what appears to be weighted data.
+ While the estimated values of the parameters will always be calculated taking 
+ the weights into account,
+ there are multiple ways to estimate the errors on these parameter values. You 
+ are advised to make an explicit choice on the error calculation:
+ - Either provide SumW2Error(kTRUE), to calculate a sum-of-weights corrected 
+ HESSE error matrix (error will be proportional to the number of events)
+ - Or provide SumW2Error(kFALSE), to return errors from original HESSE error 
+ matrix (which will be proportional to the sum of the weights)
+ If you want the errors to reflect the information contained in the provided 
+ dataset, choose kTRUE.
+ If you want the errors to reflect the precision you would be able to obtain 
+ with an unweighted dataset with 'sum-of-weights' events, choose kFALSE.
+  */
+
   std::cout << "fitting \n\n";
-  result = fullPdf.fitTo(*data, Extended(kTRUE), Minos(RooArgSet(eff)), Save(), NumCPU(2,true));
+  Bool_t sumw2error= kFALSE;
+  RooFitResult *result=
+    fullPdf.fitTo(*data, Extended(kTRUE), 
+		  Minos(RooArgSet(eff)), Save(), NumCPU(2,true)
+		  , RooFit::SumW2Error(sumw2error)
+		  );
   
   
   
@@ -642,7 +841,9 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
      (fabs(eff.getAsymErrorLo())<5e-5) || (eff.getAsymErrorHi()<5e-5)) {
     cout << "\n\n\tMINOS FAILS\n\n" << endl;
     fitLog << "\n\n\tMINOS FAILS\n\n" << endl;
-    result = fullPdf.fitTo(*data, Extended(kTRUE), Save(), NumCPU(2,true));
+    result = fullPdf.fitTo(*data, Extended(kTRUE), Save(), NumCPU(2,true)
+			   , RooFit::SumW2Error(sumw2error)
+			   );
     if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5)) {
        cout << "\n\n\tSECOND FIT FAILURE\n\n" << endl;
        fitLog << "\n\n\tSECOND FIT FAILURE\n\n" << endl;
@@ -657,7 +858,10 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   passPad->cd();
   passPad->Clear();
   RooPlot *framePass = mass.frame();
-  dataUnbinnedPass->plotOn(framePass);
+
+  if (unbinnedFit) dataUnbinnedPass->plotOn(framePass);
+  else dataBinnedPass->plotOn(framePass);
+
   if(mode == FITnFIT){
     passPdf->plotOn(framePass);
     passPdf->plotOn(framePass,Components("bgPassPdf"),LineStyle(kDashed));
@@ -678,7 +882,10 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   cutF=cutF.ReplaceAll("__","_");
 
   TString pngFilePath=TString("../root_files/tag_and_probe/") + dirTag + TString("/");
-  TString pngFileBase=TString("fit-") + picFileExtraTag;
+  TString pngFileBase="fit-";
+  if (performWeightedFit) pngFileBase.Append("weighted-");
+  if (unbinnedFit) pngFileBase.Append("binned-"); else pngFileBase.Append("unbinned-");
+  pngFileBase.Append(picFileExtraTag);
   if (isRECO) pngFileBase+="-reco-"; else pngFileBase+="-id-";
   pngFileBase += cutF;
   
@@ -720,9 +927,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   // Clean-up
 
   if (dataUnbinnedPass) delete dataUnbinnedPass;
-  if (dataUnbinnedPassUnweighted) delete dataUnbinnedPassUnweighted;
   if (dataUnbinnedFail) delete dataUnbinnedFail;
-  if (dataUnbinnedFailUnweighted) delete dataUnbinnedFailUnweighted;
   if (dataBinnedPass) delete dataBinnedPass;
   if (dataBinnedFail) delete dataBinnedFail;
   if (data) delete data;
@@ -733,6 +938,11 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   //if (framePass) delete framePass;
   //if (frameFail) delete frameFail;
   if (result) delete result;
+
+  if (dataUnbinnedPassNoWeight) delete dataUnbinnedPassNoWeight;
+  if (dataUnbinnedFailNoWeight) delete dataUnbinnedFailNoWeight;
+  if (dataBinnedPassNoWeight) delete dataBinnedPassNoWeight;
+  if (dataBinnedFailNoWeight) delete dataBinnedFailNoWeight;
 
   return;
 }
