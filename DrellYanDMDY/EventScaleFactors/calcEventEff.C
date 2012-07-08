@@ -1471,16 +1471,17 @@ void drawEfficiencies(TFile *fRoot){
 
   double effData[etBinCount],effDataErr[etBinCount];
   double effMC[etBinCount],effMCErr[etBinCount];
-  char bufEta[30];
-  char plotLabel[30];
+  const int bufsize=30;
+  char bufEta[bufsize+1];
+  char plotLabel[bufsize+1];
 
   for (int kind=0; kind<3; ++kind) {
     for (int iEta=0; iEta<etaBinCount; ++iEta) {
-      sprintf(bufEta,"_abs_eta_%5.3lf__%5.3lf",
+      snprintf(bufEta,bufsize,"_abs_eta_%5.3lf__%5.3lf",
 	      etaBinLimits[iEta],etaBinLimits[iEta+1]);
       TString etaStr=bufEta;
       etaStr.ReplaceAll(".","_");
-      sprintf(plotLabel,"%5.3lf < |#eta| < %5.3lf",
+      snprintf(plotLabel,bufsize,"%5.3lf < |#eta| < %5.3lf",
 	      etaBinLimits[iEta],etaBinLimits[iEta+1]);
 
       for (int iEt=0; iEt<etBinCount; ++iEt) {
@@ -1762,9 +1763,11 @@ int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr,
   if (dataEff.size()) dataEff.clear();
   if (dataEffErrLo.size()) dataEffErrLo.clear();
   if (dataEffErrHi.size()) dataEffErrHi.clear();
+  if (dataEffAvgErr.size()) dataEffAvgErr.clear();
   if (mcEff.size()) mcEff.clear();
   if (mcEffErrLo.size()) mcEffErrLo.clear();
   if (mcEffErrHi.size()) mcEffErrHi.clear();
+  if (mcEffAvgErr.size()) mcEffAvgErr.clear();
   dataEff.reserve(3); dataEffErrLo.reserve(3); dataEffErrHi.reserve(3);
   mcEff.reserve(3); mcEffErrLo.reserve(3); mcEffErrHi.reserve(3);
 
