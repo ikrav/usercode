@@ -2,7 +2,7 @@
 
 debugMode=0
 fullRun=1
-puReweight=0
+puReweight=1
 
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
 if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
@@ -20,6 +20,11 @@ tnpDataFile="../config_files/sf_data_eta2.conf"
 
 
 collectEvents=1 # recommended to have it set to 1. calcEventEff prepares skim fil
+
+# if you do not want to have the time stamp, comment the line away 
+# or set timeStamp=
+timeStamp="-`date +%Y%m%d-%H%M`"
+#timeStamp=
 
 #
 # Check if the environment variables are set. Assign values if they are empty
@@ -50,6 +55,7 @@ echo "    triggerSet=${triggerSet}"
 echo "    mcConfInputFile=${mcConfInputFile}"
 echo "    tnpMCFile=${tnpMCFile}"
 echo "    tnpDataFile=${tnpDataFile}"
+echo "    timeStamp=${timeStamp}"
 echo "    debugMode=${debugMode}"
 echo 
 echo
@@ -127,7 +133,11 @@ checkFile() {
 
 
 runEffReco() {
- root -b -q -l  eff_Reco.C+\(\"${inpFile}\",\"RECO\",\"${triggerSet}\",${puReweight},${debugMode}\)
+ dataKind=${inpFile/data/}
+ if [ ${#dataKind} -eq ${#inpFile} ] ; then dataKind="mc"; else dataKind="data"; fi
+# calculate
+ root -b -q -l  eff_Reco.C+\(\"${inpFile}\",\"RECO\",\"${triggerSet}\",${puReweight},${debugMode}\) \
+     | tee log${timeStamp}-${dataKind}-RECO-puW${puReweight}.out
   if [ $? != 0 ] ; then noError=0;
   else
      checkFile eff_Reco_C.so
@@ -142,7 +152,10 @@ runEffReco() {
 
 runEffIdHlt() {
  effKind=$1
- root -b -q -l  eff_IdHlt.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puReweight},${debugMode}\)
+ if [ ${#dataKind} -eq ${#inpFile} ] ; then dataKind="mc"; else dataKind="data"; fi
+# calculate
+ root -b -q -l  eff_IdHlt.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puReweight},${debugMode}\) \
+     | tee log${timeStamp}-${dataKind}-${effKind}-puW${puReweight}.out
   if [ $? != 0 ] ; then noError=0;
   else 
      checkFile eff_IdHlt_C.so
@@ -157,7 +170,8 @@ runEffIdHlt() {
 runCalcEventEff() {
  _collectEvents=$1
  if [ ${#_collectEvents} -eq 0 ] ; then _collectEvents=1; fi
- root -b -q -l  calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${puReweight},${debugMode}\)
+ root -b -q -l  calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${puReweight},${debugMode}\) \
+     | tee log${timeStamp}-calcEventEff-puW${puReweight}.out
   if [ $? != 0 ] ; then noError=0;
   else 
      echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
@@ -190,6 +204,7 @@ if [ ${doIdHlt} -gt 0 ] && [ ${noError} -eq 1 ] ; then runEffIdHlt "ID"; fi
 if [ ${runCalcEventEff} -eq 1 ] && [ ${noError} -eq 1 ] ; then runCalcEventEff; fi
 if [ ${noError} -eq 1 ] ; then echo; echo "  -=- Resuming normal calculation -=-"; echo; fi
 triggerSet=${storeTriggerSet}
+
 
 
 # Process MC

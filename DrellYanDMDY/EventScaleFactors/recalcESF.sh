@@ -7,7 +7,7 @@
 
 debugMode=0
 fullRun=1
-puReweight=0
+puReweight=1
 
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
 if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
@@ -26,6 +26,11 @@ tnpDataFile="../config_files/sf_data_eta2.conf"
 #tnpDataFile="../config_files/sf_data_evtTrig_eta2_test11.conf"
 
 collectEvents=0  # it is recommended to have collectEvents=1 in evaluateESF!
+
+# if you do not want to have the time stamp, comment the line away 
+# or set timeStamp=
+timeStamp="-`date +%Y%m%d-%H%M`"
+#timeStamp=
 
 #
 # Check if the environment variables are set. Assign values if they are empty
@@ -58,6 +63,7 @@ echo "    triggerSet=${triggerSet}"
 echo "    mcConfInputFile=${mcConfInputFile}"
 echo "    tnpMCFile=${tnpMCFile}"
 echo "    tnpDataFile=${tnpDataFile}"
+echo "    timeStamp=${timeStamp}"
 echo "    debugMode=${debugMode}"
 echo 
 echo
@@ -66,7 +72,7 @@ echo
 #  Individual flags to control the calculation
 #
 
-puDependence=0
+puDependence=0  # as a function of nPV's
 
 
 runMC_Reco=1
@@ -138,7 +144,11 @@ checkFile() {
 
 runCalcEff() {
  effKind=$1
- root -l -q -b  ${LXPLUS_CORRECTION} calcEff.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puReweight},${puDependence}\)
+ dataKind=${inpFile/data/}
+ if [ ${#dataKind} -eq ${#inpFile} ] ; then dataKind="mc"; else dataKind="data"; fi
+# calculate
+ root -l -q -b  ${LXPLUS_CORRECTION} calcEff.C+\(\"${inpFile}\",\"${effKind}\",\"${triggerSet}\",${puReweight},${puDependence}\) \
+     | tee log${timeStamp}-calcEff-${dataKind}-${effKind}-puW${puReweight}.out
   if [ $? != 0 ] ; then noError=0;
   else 
      checkFile calcEff_C.so
@@ -154,7 +164,8 @@ runCalcEventEff() {
  _collectEvents=$1
  echo "_collectEvents=${_collectEvents}"
  if [ ${#_collectEvents} -eq 0 ] ; then _collectEvents=1; fi
- root -l -b -q ${LXPLUS_CORRECTION} calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${puReweight},${debugMode}\)
+ root -l -b -q ${LXPLUS_CORRECTION} calcEventEff.C+\(\"${mcConfInputFile}\",\"${tnpDataFile}\",\"${tnpMCFile}\",\"${triggerSet}\",${_collectEvents},${puReweight},${debugMode}\) \
+     | tee log${timeStamp}-calcEventEff-puW${puReweight}.out
   if [ $? != 0 ] ; then noError=0;
   else 
       checkFile calcEventEff_C.so
