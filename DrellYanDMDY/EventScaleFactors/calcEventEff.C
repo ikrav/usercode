@@ -61,7 +61,7 @@ int fillEfficiencyConstants( const TnPInputFileMgr_t &mcMgr,
 			    int puReweight );
 int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, 
   UInt_t kindIdx, vector<TMatrixD*> &data, vector<TMatrixD*> &dataErrLo, 
-  vector<TMatrixD*> &dataErrHi, vector<TMatrixD*> &dataAvgErr);
+  vector<TMatrixD*> &dataErrHi, vector<TMatrixD*> &dataAvgErr, int weightedCnC);
 
 
 Bool_t matchedToGeneratorLevel(const TGenInfo *gen, 
@@ -1472,8 +1472,8 @@ void drawEfficiencies(TFile *fRoot){
   double effData[etBinCount],effDataErr[etBinCount];
   double effMC[etBinCount],effMCErr[etBinCount];
   const int bufsize=30;
-  char bufEta[bufsize+1];
-  char plotLabel[bufsize+1];
+  char bufEta[bufsize];
+  char plotLabel[bufsize];
 
   for (int kind=0; kind<3; ++kind) {
     for (int iEta=0; iEta<etaBinCount; ++iEta) {
@@ -1769,7 +1769,9 @@ int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr,
   if (mcEffErrHi.size()) mcEffErrHi.clear();
   if (mcEffAvgErr.size()) mcEffAvgErr.clear();
   dataEff.reserve(3); dataEffErrLo.reserve(3); dataEffErrHi.reserve(3);
+  dataEffAvgErr.reserve(3);
   mcEff.reserve(3); mcEffErrLo.reserve(3); mcEffErrHi.reserve(3);
+  mcEffAvgErr.reserve(3);
 
   int res=1;
   for (int kind=0; res && (kind<3); ++kind) {
@@ -1777,8 +1779,10 @@ int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr,
       getLabel(DATA,TEfficiencyKind_t(kind),dataMgr.effCalcMethod(kind),
 	       etBinning, etaBinning, triggers)
       + fnEnd;
+    int weightedCnC= (kind==2) ? puReweight : 0;
     res=fillOneEfficiency(dataMgr, dataFName, kind, 
-			  dataEff, dataEffErrLo, dataEffErrHi, dataEffAvgErr);
+			  dataEff, dataEffErrLo, dataEffErrHi, dataEffAvgErr,
+			  weightedCnC);
   }
   for (int kind=0; res && (kind<3); ++kind) {
     TString mcFName=fnStart + 
@@ -1786,7 +1790,7 @@ int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr,
 	       etBinning, etaBinning, triggers)
       + fnEnd;
     res=fillOneEfficiency(mcMgr, mcFName, kind, 
-			  mcEff, mcEffErrLo, mcEffErrHi, mcEffAvgErr);
+			  mcEff, mcEffErrLo, mcEffErrHi, mcEffAvgErr, puReweight);
   }
   if (res!=1) std::cout << "Error in fillEfficiencyConstants\n"; 
   else std::cout << "fillEfficiencyConstants ok\n";
@@ -1797,16 +1801,27 @@ int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr,
 
 int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename, 
    UInt_t kindIdx, vector<TMatrixD*> &effV, vector<TMatrixD*> &errLoV, 
-   vector<TMatrixD*> &errHiV, vector<TMatrixD*> &avgErrV) {
+   vector<TMatrixD*> &errHiV, vector<TMatrixD*> &avgErrV, 
+   int weightedCnC) {
 
   TFile f(TString("../root_files/tag_and_probe/")+mgr.dirTag()+TString("/")+
 	  filename);
   if(!f.IsOpen()) assert(0);
   std::cout << "reading <" << filename << ">\n";
-
-  TMatrixD *effMatrix        = (TMatrixD*)f.Get("effArray2D");
-  TMatrixD *effMatrixErrLow  = (TMatrixD*)f.Get("effArrayErrLow2D");
-  TMatrixD *effMatrixErrHigh = (TMatrixD*)f.Get("effArrayErrHigh2D");
+  
+  TMatrixD *effMatrix        = NULL;
+  TMatrixD *effMatrixErrLow  = NULL;
+  TMatrixD *effMatrixErrHigh = NULL;
+  if (weightedCnC) {
+    effMatrix        = (TMatrixD*)f.Get("effArray2DWeighted");
+    effMatrixErrLow  = (TMatrixD*)f.Get("effArrayErrLow2DWeighted");
+    effMatrixErrHigh = (TMatrixD*)f.Get("effArrayErrHigh2DWeighted");
+  }
+  else {
+    effMatrix        = (TMatrixD*)f.Get("effArray2D");
+    effMatrixErrLow  = (TMatrixD*)f.Get("effArrayErrLow2D");
+    effMatrixErrHigh = (TMatrixD*)f.Get("effArrayErrHigh2D");
+  }
   f.Close();
 
   // Make sure that the objects are present
