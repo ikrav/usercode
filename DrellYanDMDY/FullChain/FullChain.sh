@@ -46,7 +46,7 @@ do_unfoldingSyst=1
 do_acceptance=0
 do_acceptanceSyst=0
 do_efficiency=0
-#do_efficiencyScaleFactors=0  # long calculation!
+do_efficiencyScaleFactors=0 # long calculation! Beware of the result file name!
 do_plotFSRCorrections=0
 do_plotFSRCorrectionsSansAcc=0
 do_theoryErrors=0
@@ -62,7 +62,7 @@ expectBkgSubtractedFile="../root_files/yields/${crossSectionTag}/yields_bg-subtr
 expectUnfoldingFile="../root_files/constants/${crossSectionTag}/unfolding_constants${anTag}.root"
 expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics${anTag}.root"
 expectEfficiencyFile="../root_files/constants/${crossSectionTag}/event_efficiency_constants${anTag}.root"
-expectEventScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${triggerSet}.root"
+expectEventScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${anTag}_${triggerSet}.root"
 expectAcceptanceSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/acceptance_FSR_systematics${anTag}.root"
 expectFsrSansAcc0File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}.root"
 expectFsrSansAcc1File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}_sans_acc.root"
@@ -114,7 +114,7 @@ if [ ${do_post_selection_steps} -eq 1 ] ; then
     do_acceptance=1
     do_acceptanceSyst=1
     do_efficiency=1
-#    do_efficiencyScaleFactors=1
+    do_efficiencyScaleFactors=1
     do_plotFSRCorrections=1
     do_plotFSRCorrectionsSansAcc=1
     do_theoryErrors=1
@@ -357,29 +357,6 @@ else
     statusEfficiency=skipped
 fi
 
-#Event Scale Factors
-if [ ! -z ${do_efficiencyScaleFactors} ] &&
-    [ ${do_efficiencyScaleFactors} -eq 1 ] && [ ${noError} -eq 1 ] ; then
-statusEventScaleFactors=OK
-echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: evaluateESF.sh in EventScaleFactors"
-echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-cd ../EventScaleFactors
-rm -f *.so ${expectEventScaleFactorsFile}
-echo
-checkFile evaluateESF.sh recalcESF.sh
-source evaluateESF.sh  | tee ${logDir}/out${timeStamp}-09-evaluateESF-efficiencyScaleFactors${anTag}.log
-source recalcESF.sh  | tee ${logDir}/out${timeStamp}-09-recalcESF-efficiencyScaleFactors${anTag}.log
-get_status ${expectEventScaleFactorsFile}
-statusEventScaleFactors=$RUN_STATUS
-cd ../FullChain
-echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: evaluateESF.sh from EventScaleFactors"
-echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-else 
-    statusEventScaleFactors=skipped
-fi
-
 
 #PlotDYFSRCorrections
 if [ ${do_plotFSRCorrections} -eq 1 ] && [ ${noError} -eq 1 ] ; then
@@ -391,7 +368,7 @@ cd ../Fsr
 rm -f *.so ${expectFsrSansAcc0File}
 echo
 checkFile plotDYFSRCorrections.C
-root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\",0,${debugMode}\)     | tee ${logDir}/out${timeStamp}-10-plotDYFSRCorrections${anTag}.log
+root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\",0,${debugMode}\)     | tee ${logDir}/out${timeStamp}-09-plotDYFSRCorrections${anTag}.log
 get_status ${expectFsrSansAcc0File}
 statusPlotDYFSRCorrections=$RUN_STATUS
 cd ../FullChain
@@ -412,7 +389,7 @@ cd ../Fsr
 rm -f *.so ${expectFsrSansAcc1File}
 echo
 checkFile plotDYFSRCorrections.C 
-root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\",1,${debugMode}\)     | tee ${logDir}/out${timeStamp}-11-plotDYFSRCorrections-SansAcc${anTag}.out
+root -b -q -l ${LXPLUS_CORRECTION} plotDYFSRCorrections.C+\(\"$filename_mc\",1,${debugMode}\)     | tee ${logDir}/out${timeStamp}-10-plotDYFSRCorrections-SansAcc${anTag}.out
 get_status ${expectFsrSansAcc1File}
 statusPlotDYFSRCorrectionsSansAcc=$RUN_STATUS
 cd ../FullChain
@@ -433,7 +410,7 @@ cd ../Theory
 rm -f *.so
 echo
 checkFile TheoryErrors.C
-root -b -q -l ${LXPLUS_CORRECTION} TheoryErrors.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-12-TheoryErrors${anTag}.out
+root -b -q -l ${LXPLUS_CORRECTION} TheoryErrors.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-11-TheoryErrors${anTag}.out
 get_status
 statusTheoryErrors=$RUN_STATUS
 cd ../FullChain
@@ -442,6 +419,29 @@ echo "DONE: TheoryErrors(\"${filename_mc}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else
     statusTheoryErrors=skipped
+fi
+
+#Event Scale Factors
+if [ ! -z ${do_efficiencyScaleFactors} ] &&
+    [ ${do_efficiencyScaleFactors} -eq 1 ] && [ ${noError} -eq 1 ] ; then
+statusEventScaleFactors=OK
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+echo "WILL DO: evaluateESF.sh in EventScaleFactors"
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+cd ../EventScaleFactors
+rm -f *.so ${expectEventScaleFactorsFile}
+echo
+checkFile evaluateESF.sh recalcESF.sh
+source evaluateESF.sh  | tee ${logDir}/out${timeStamp}-12-evaluateESF-efficiencyScaleFactors${anTag}.log
+source recalcESF.sh  | tee ${logDir}/out${timeStamp}-12-recalcESF-efficiencyScaleFactors${anTag}.log
+get_status ${expectEventScaleFactorsFile}
+statusEventScaleFactors=$RUN_STATUS
+cd ../FullChain
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+echo "DONE: evaluateESF.sh from EventScaleFactors"
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+else 
+    statusEventScaleFactors=skipped
 fi
 
 #CrossSection
@@ -476,10 +476,10 @@ echo "         Syst Unfolding:    " $statusUnfoldingSyst
 echo "             Acceptance:    " $statusAcceptance
 echo "        Syst Acceptance:    " $statusAcceptanceSyst
 echo "             Efficiency:    " $statusEfficiency
-echo "      EventScaleFactors:    " $statusEventScaleFactors
 echo "         FSRCorrections:    " $statusPlotDYFSRCorrections
 echo "  FSRCorrectionsSansAcc:    " $statusPlotDYFSRCorrectionsSansAcc
 echo "           TheoryErrors:    " $statusTheoryErrors
+echo "      EventScaleFactors:    " $statusEventScaleFactors
 echo "           CrossSection:    " $statusCrossSection
 
 
@@ -490,4 +490,3 @@ if [ ${noError} -eq 0 ] ; then
 
 
 fi
-
