@@ -529,7 +529,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     useTemplates = true;
 
   int NsetBins=30;
-  bool isRECO=1;
+  bool isRECO=(effType == RECO) ? true : false;
   const char* setBinsType="cache";
 
   int nDivisions = getNEtBins(etBinning)*getNEtaBins(etaBinning);
