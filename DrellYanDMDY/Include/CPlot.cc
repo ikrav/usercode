@@ -245,6 +245,7 @@ void CPlot::AddGraph(TGraph *gr, TString drawopt, int color, int marksty, int li
   
   gr->SetMarkerColor(color);
   gr->SetLineColor(color);
+  gr->SetFillColor(color);
   gr->SetLineStyle(linesty);
   gr->SetLineWidth(2);
   gr->SetMarkerStyle(marksty);
