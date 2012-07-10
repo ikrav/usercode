@@ -508,7 +508,8 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
       lims[7].av=1.0;   lims[7].lo=0.1;   lims[7].hi=6.0;
       lims[8].av=1.0;   lims[8].lo=0.0;   lims[8].hi=1.0e5;
       lims[9].av=-0.1;  lims[9].lo=-0.5;  lims[9].hi=0.5;
-      lims[10].av=0.0;  lims[10].lo=-3.0; lims[10].hi=3.0;
+      //lims[10].av=0.0;  lims[10].lo=-3.0; lims[10].hi=3.0; 
+      lims[10].av=0.0;  lims[10].lo=-5.0; lims[10].hi=5.0; // 2012.07.10
       lims[11].av=1.0;  lims[11].lo=0.0;  lims[11].hi=1.0e5;
       
     }
@@ -836,7 +837,28 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   
   
   
-  // If minos fails, refit without minos
+  // If minos fails, check if we can remove the background component in 
+  // the passing sample
+  if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5) || 
+     (fabs(eff.getAsymErrorLo())<5e-5) || (eff.getAsymErrorHi()<5e-5)) {
+    if (nbgPass.getVal()<1e-5) {
+      cout << "\n\n\tMINOS FAILS (removing nbgPass) eff=" 
+	   << eff.getVal() << "\n\n" << endl;
+      fitLog << "\n\n\tMINOS FAILS (removing nbgPass) eff=" 
+	     << eff.getVal() << "\n\n" << endl;
+      nbgPass.setVal(0.);
+      nbgPass.setConstant(kTRUE);
+      lambdaBgPass.setConstant(kTRUE);
+
+      result=
+	fullPdf.fitTo(*data, Extended(kTRUE), 
+		      Minos(RooArgSet(eff)), Save(), NumCPU(2,true)
+		      , RooFit::SumW2Error(sumw2error)
+		      );
+    }
+  }
+
+ // If minos fails, refit without minos
   if((fabs(eff.getErrorLo())<5e-5) || (eff.getErrorHi()<5e-5) || 
      (fabs(eff.getAsymErrorLo())<5e-5) || (eff.getAsymErrorHi()<5e-5)) {
     cout << "\n\n\tMINOS FAILS\n\n" << endl;
@@ -849,6 +871,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
        fitLog << "\n\n\tSECOND FIT FAILURE\n\n" << endl;
      }
   }
+  
   
   efficiency     = eff.getVal();
   efficiencyErrHi  = eff.getErrorHi();
@@ -884,7 +907,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   TString pngFilePath=TString("../root_files/tag_and_probe/") + dirTag + TString("/");
   TString pngFileBase="fit-";
   if (performWeightedFit) pngFileBase.Append("weighted-");
-  if (unbinnedFit) pngFileBase.Append("binned-"); else pngFileBase.Append("unbinned-");
+  if (unbinnedFit) pngFileBase.Append("unbinned-"); else pngFileBase.Append("binned-");
   pngFileBase.Append(picFileExtraTag);
   if (isRECO) pngFileBase+="-reco-"; else pngFileBase+="-id-";
   pngFileBase += cutF;
