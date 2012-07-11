@@ -204,15 +204,18 @@ public:
 
 class MCInputFileMgr_t {
 protected:
-  TString FDirTag;
+  TString FDirTag, FEScaleTag;
   std::vector<TString> FFileNames,FLabels;
   std::vector<Int_t> FColors,FLineStyles;
   std::vector<Double_t> FXSecs,FLumis;
 public:
-  MCInputFileMgr_t() : FDirTag(),FFileNames(),FLabels(),FColors(),FLineStyles(),FXSecs(),FLumis() {}
+  MCInputFileMgr_t() : FDirTag(),FEScaleTag("20120101_default"),
+		       FFileNames(),FLabels(),FColors(),
+		       FLineStyles(),FXSecs(),FLumis() {}
 
   unsigned int size() const { return FFileNames.size(); }
   const TString& dirTag() const { return FDirTag; }
+  const TString& escaleTag() const { return FEScaleTag; }
   const std::vector<TString>& fileNames() const { return FFileNames; }
   const std::vector<TString>& labels() const { return FLabels; }
   const std::vector<Int_t>& colors() const { return FColors; }
@@ -245,7 +248,9 @@ public:
 	  << " lumi=" << m.FLumis[i]
 	  << "\n";
     }
-    std::cout << " dirTag=<" << m.FDirTag << ">\n";
+    std::cout << " dirTag=<" << m.FDirTag << ">"
+	      << ", escaleTag=<" << m.FEScaleTag 
+	      << ">\n";
     return out;
   }
 };

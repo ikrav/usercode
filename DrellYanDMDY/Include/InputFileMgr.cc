@@ -251,6 +251,8 @@ int MCInputFileMgr_t::Load(const TString& inputFileName) {
     if(line[0]=='#') continue;
     if(state == 0){
       FDirTag = TString(line);
+      getline(ifs,line);
+      stringstream ss3(line); ss3 >> FEScaleTag;
       state++;
       continue;
     }else{
