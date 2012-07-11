@@ -428,6 +428,9 @@ void prepareYields(const TString conf  = "data_plot.conf",
     printf("  MC %s IS RESCALED for plotting\n", snamev[isam].Data());
   }
 
+  hMassDibosons->Scale(dataOverMc); printf(" compound MC %s IS RESCALED for plotting\n", hMassDibosons->GetName());
+  hMassBinsDibosons->Scale(dataOverMc); printf("  compound MC %s IS RESCALED for plotting\n", hMassBinsDibosons->GetName());
+
   //
   // Prepare outputDir and the plot file
   //
