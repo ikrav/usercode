@@ -53,6 +53,7 @@
 #include "../Include/TriggerSelection.hh"
 
 #include "../Include/EventSelector.hh"
+#include "../Include/InputFileMgr.hh"
 
 //for getting matrix condition number
 #include <TDecompLU.h>
@@ -111,7 +112,7 @@ void makeUnfoldingMatrix(const TString input,
   
 //   Bool_t doSave  = false;    // save plots?
   TString format = "png";   // output file format
-  
+
   vector<TString> fnamev;   // file names   
   vector<TString> labelv;   // legend label
   vector<Int_t>   colorv;   // color in plots
@@ -121,6 +122,22 @@ void makeUnfoldingMatrix(const TString input,
   TString          dirTag;
   TString          escaleTag; // Energy scale calibrations tag
 
+  if (1) {
+    MCInputFileMgr_t mcInp; // avoid errors from empty lines
+    if (!mcInp.Load(input)) {
+      std::cout << "Failed to load mc input file <" << input << ">\n";
+      return;
+    }
+    fnamev=mcInp.fileNames();
+    labelv=mcInp.labels();
+    colorv=mcInp.colors();
+    linev=mcInp.lineStyles();
+    xsecv=mcInp.xsecs();
+    lumiv=mcInp.lumis();
+    dirTag=mcInp.dirTag();
+    escaleTag=mcInp.escaleTag();
+  }
+  else {
   ifstream ifs;
   ifs.open(input.Data());
   assert(ifs.is_open());
@@ -150,6 +167,7 @@ void makeUnfoldingMatrix(const TString input,
     }
   }
   ifs.close();
+  }
   
   // 
   // Set up energy scale corrections
@@ -706,7 +724,10 @@ void makeUnfoldingMatrix(const TString input,
 
   //matrix condition number
   TDecompLU lu(DetResponse);
-  std::cout << " condition number = " << lu.Condition() << std::endl << std::endl;
+  double condLU=lu.Condition();
+  std::cout << " condition number from TDecompLU condLU= " << condLU << std::endl;
+  std::cout << " condition number ||DetResponse||*||DetResponseInv||=" << DetResponse.Norm1()*DetInvertedResponse.Norm1() << std::endl;
+  std::cout << " chk ROOT bug: -condLU*||DetResponse||=" << (-condLU*DetResponse.Norm1()) << "\n" << std::endl;
 
   //Print errors of the Unfolding matrix when they exceed 0.1
   for (int iM=0; iM<nMassBins; iM++)
