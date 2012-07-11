@@ -112,8 +112,10 @@ evaluateTrue2eBkg() {
 #   select events
 # 
   if [ ${err} -eq 0 ] && [ ${reselectEvents} -eq 1 ] ; then 
+    rm selectEmuEvents_C.so
     root -l -b -q selectEmuEvents.C+\(\"${workConfFile}\",${debugMode}\) \
         | tee ${logPath}/log${timeStamp}-selectEmuEvents.out
+    testFileExists selectEmuEvents_C.so
   fi
   testFileExists ${emuNtuplesDirMain}/data${anTagUser}_select.root \
       ${emuNtuplesDirMain}/zee${anTagUser}_select.root
