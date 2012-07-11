@@ -38,6 +38,7 @@
 
 #include "../Include/EventSelector.hh"
 #include "../Include/PUReweight.hh"
+#include "../Include/InputFileMgr.hh"
 
 #endif
 
@@ -71,6 +72,22 @@ void plotDYEfficiency(const TString input,
   vector<Double_t> lumiv;
   TString          dirTag;
 
+  if (1) {
+    MCInputFileMgr_t mcInp; // avoid errors from empty lines
+    if (!mcInp.Load(input)) {
+      std::cout << "Failed to load mc input file <" << input << ">\n";
+      return;
+    }
+    fnamev=mcInp.fileNames();
+    labelv=mcInp.labels();
+    colorv=mcInp.colors();
+    linev=mcInp.lineStyles();
+    xsecv=mcInp.xsecs();
+    lumiv=mcInp.lumis();
+    dirTag=mcInp.dirTag();
+    //escaleTag=mcInp.escaleTag();
+  }
+  else {
   ifstream ifs;
   ifs.open(input.Data());
   assert(ifs.is_open());
@@ -98,6 +115,7 @@ void plotDYEfficiency(const TString input,
     }
   }
   ifs.close();
+  }
   
   //const Double_t kGAP_LOW  = 1.4442; in DYTools
   //const Double_t kGAP_HIGH = 1.566;  in DYTools

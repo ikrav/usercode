@@ -32,6 +32,7 @@
 #include "../Include/EventSelector.hh"
 #include "../Include/FEWZ.hh"
 #include "../Include/UnfoldingTools.hh"
+#include "../Include/InputFileMgr.hh"
 #endif
 
 //=== FUNCTION DECLARATIONS ======================================================================================
@@ -83,6 +84,22 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   Double_t massLow  = DYTools::massBinLimits[0];
   Double_t massHigh = DYTools::massBinLimits[DYTools::nMassBins];
   
+  if (1) {
+    MCInputFileMgr_t mcInp; // avoid errors from empty lines
+    if (!mcInp.Load(input)) {
+      std::cout << "Failed to load mc input file <" << input << ">\n";
+      return;
+    }
+    fnamev=mcInp.fileNames();
+    labelv=mcInp.labels();
+    colorv=mcInp.colors();
+    linev=mcInp.lineStyles();
+    xsecv=mcInp.xsecs();
+    lumiv=mcInp.lumis();
+    dirTag=mcInp.dirTag();
+    //escaleTag=mcInp.escaleTag();
+  }
+  else {
   ifstream ifs;
   ifs.open(input.Data());
   assert(ifs.is_open());
@@ -110,6 +127,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     }
   }
   ifs.close();
+  }
   
   //const Double_t kGAP_LOW  = 1.4442; - shifted to DYTools.hh
   //const Double_t kGAP_HIGH = 1.566;  - shifted to DYTools.hh
