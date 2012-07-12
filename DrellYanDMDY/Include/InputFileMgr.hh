@@ -54,6 +54,12 @@ public:
   const TString& sampleName(unsigned int i) const { return FSampleNames[i]; }
   const CSample* sampleInfo(unsigned int i) const { return FSampleInfos[i]; }
 
+  const TString dirTag() const {
+    int idx=FOutputDir.Index("/DY");
+    TString tag= (idx==-1) ? FOutputDir : FOutputDir(idx,FOutputDir.Length());
+    return tag;
+  }
+
   // Load
   int Load(const TString &inputFile);
 
