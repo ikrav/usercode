@@ -326,6 +326,21 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
    gr4->SetMarkerSize(1.0);
    gr4->SetLineColor(kGreen);
 
+
+   TString massRange;
+   if (study2D==0) massRange="";
+   else if (study2D==1) 
+     {
+       massRange="Mee: ";
+       massRange+=int(mass1);
+       massRange+=" - ";
+       massRange+=int(mass2);
+       massRange+=" GeV";
+     }
+
+
+   mg->SetTitle(massRange);
+
    mg->Add(gr4);
    mg->Add(gr3);
    mg->Add(gr2);
@@ -333,7 +348,9 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
 
    mg->Draw("ap");
 
+
    TAxis* yax=mg->GetYaxis();
+
    if (study2D==0) yax->SetRangeUser(5e-6,2);
    else if (study2D==1) yax->SetRangeUser(3e-5,10);
    if (study2D==0) mg->GetXaxis()->SetTitle("M_{ee}");
@@ -342,20 +359,6 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
    if (study2D==0) mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dM");
    else if (study2D==1) mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dMd|Y|");
    mg->GetYaxis()->SetTitleOffset(1.20);
- 
-
-   TString massRange;
-   if (study2D==0) massRange="";
-   else if (study2D==1) 
-     {
-       massRange=int(mass1);
-       massRange+=" < Mee < ";
-       massRange+=int(mass2);
-       massRange+=" GeV";
-     }
-
-   mg->SetName(massRange);
-   mg->SetTitle(massRange);
 
    TLegend *leg;
    if (study2D==0 || mass2>massBinLimits[nMassBins-2]) 
@@ -370,6 +373,7 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
    
    //CPlot::sOutDir="plots" + DYTools::analysisTag;
    SaveCanvas(canv, name, CPlot::sOutDir);
+
 
 }
 
