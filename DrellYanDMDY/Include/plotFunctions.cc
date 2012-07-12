@@ -357,7 +357,10 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
    mg->SetName(massRange);
    mg->SetTitle(massRange);
 
-   TLegend *leg = new TLegend(.60,.75,.95,.95);
+   TLegend *leg;
+   if (study2D==0 || mass2>massBinLimits[nMassBins-2]) 
+      leg = new TLegend(.50,.55,.95,.95);
+   else leg = new TLegend(.60,.75,.95,.95);
    leg->AddEntry(gr1,"Pre FSR All Phase Space");
    leg->AddEntry(gr2,"Pre FSR Detector Phase space");
    leg->AddEntry(gr3,"Post FSR All Phase Space");
