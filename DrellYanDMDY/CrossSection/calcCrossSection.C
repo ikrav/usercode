@@ -1033,20 +1033,22 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
   if (printPreFSRCrossSectionTable) {
     printf("\nPre FSR cross sections: :\n");
     printf("                    absolute                       normalized +- stat +- sys (total)           (1/sigma)(1/dM)norm +-stat +-syst (total) \n");
-    for(int i=0; i<nMassBins; i++){
-      double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi) {
-	double binw = massBinLimits[i+1] - massBinLimits[i];
-	normXSec[i][yi]=voutNorm[i][yi];
-	normXSecErrStat[i][yi]=voutNormStatErr[i][yi];
-	normXSecErrSyst[i][yi]=voutNormSystErr[i][yi];
-	normXSecErr[i][yi]=sqrt( SQR(voutNormStatErr[i][yi]) + SQR(voutNormSystErr[i][yi]) );
+  }
+  for(int i=0; i<nMassBins; i++){
+    double *rapidityBinLimits=DYTools::getYBinLimits(i);
+    for (int yi=0; yi<nYBins[i]; ++yi) {
+      double binw = massBinLimits[i+1] - massBinLimits[i];
+      normXSec[i][yi]=voutNorm[i][yi];
+      normXSecErrStat[i][yi]=voutNormStatErr[i][yi];
+      normXSecErrSyst[i][yi]=voutNormSystErr[i][yi];
+      normXSecErr[i][yi]=sqrt( SQR(voutNormStatErr[i][yi]) + SQR(voutNormSystErr[i][yi]) );
+      
+      normXSecByBin[i][yi]=voutNorm[i][yi]/binw;
+      normXSecErrByBinStat[i][yi]=voutNormStatErr[i][yi]/binw;
+      normXSecErrByBinSyst[i][yi]=voutNormSystErr[i][yi]/binw;
+      normXSecErrByBin[i][yi]=sqrt( SQR(voutNormStatErr[i][yi]) + SQR(voutNormSystErr[i][yi]) )/binw;
 
-	normXSecByBin[i][yi]=voutNorm[i][yi]/binw;
-	normXSecErrByBinStat[i][yi]=voutNormStatErr[i][yi]/binw;
-	normXSecErrByBinSyst[i][yi]=voutNormSystErr[i][yi]/binw;
-	normXSecErrByBin[i][yi]=sqrt( SQR(voutNormStatErr[i][yi]) + SQR(voutNormSystErr[i][yi]) )/binw;
-
+      if (printPreFSRCrossSectionTable) {
 	printf("%4.0f-%4.0f  %4.2f-%4.2f    %6.1f +- %4.1f +- %4.1f      %1.6f +- %1.6f +- %1.6f  ( %1.6f )     %1.8f +- %1.8f +- %1.8f  ( %1.8f )    \n",
 	       massBinLimits[i],massBinLimits[i+1],
 	       rapidityBinLimits[yi],rapidityBinLimits[yi+1],
