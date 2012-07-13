@@ -9,15 +9,7 @@ if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
 if [ ${#3} -gt 0 ] ; then debugMode=$3; fi
 
 tnpMCFile="../config_files/sf_mc_eta2.conf"
-#tnpMCFile="../config_files/sf_mc_evtTrig.conf"
-#tnpMCFile="../config_files/sf_mc_evtTrig_eta2.conf"
-#tnpMCFile="../config_files/sf_mc_spektras_evtTrig_eta2.conf"
-
 tnpDataFile="../config_files/sf_data_eta2.conf"
-#tnpDataFile="../config_files/sf_data_evtTrig.conf"
-#tnpDataFile="../config_files/sf_data_evtTrig_eta2.conf"
-#tnpDataFile="../config_files/sf_data_spektras_evtTrig_eta2.conf"
-
 
 collectEvents=1 # recommended to have it set to 1. calcEventEff prepares skim fil
 
@@ -111,7 +103,7 @@ lumiWeighting=0
 checkFile() { 
   if [ ${noError} -eq 0 ] ; then 
       noError=0
-      echo "error present before checking for the file(s) $@"
+      echo "! evaluateESF.sh: error present before checking for the file(s) $@"
       return
   fi
 
@@ -122,10 +114,10 @@ checkFile() {
 # 2. else... echo ".. ok" can be removed
   if [ ${#__fname} -gt 0 ] ; then 
       if [ ! -f ${__fname} ] ; then 
-	  echo "file ${__fname} is missing"
+	  echo "! evaluateESF.sh: file ${__fname} is missing"
 	  noError=0
       else
-	  echo "file <${__fname}> checked ok"
+	  echo "! evaluateESF.sh: file <${__fname}> checked ok"
       fi
   fi
   done
