@@ -1,24 +1,50 @@
 #!/bin/bash 
 
+echo -e "\nstarting evaluateEscaleSyst.sh \"$@\"\n"
+
+
 #
 # some variables
 #
 
+_sourceConfigFile=$1
+_mcConfInputFile=$2
+_anTag=$3
+_anTagUser=$4
+
+
 # 1) user-defined
 
-#extraPath="../"
 extraPath="./"
 debugMode=0
 dirTag="DY_m10+pr+a05+o03+pr_4680pb";
 sourceConfigFile="../config_files/data.conf"       # needed to prepare yields
-#sourceConfigFile="../config_files/data_evtTrig.conf"       # needed to prepare yields
 mcConfInputFile="../config_files/fall11mc.input"   # needed for unfolding
-#mcConfInputFile="../config_files/fall11mc_evtTrig.input"   # needed for unfolding
 tmpConfFilePath="../config_files/escale"
 
-anTagUser="ymax9"
-anTag="1D${anTagUser}"
+anTagUser=""
+anTag="2D${anTagUser}"
 triggerSet="Full2011_hltEffOld"
+
+if [ ${#_sourceConfigFile} -gt 0 ] ; then
+  echo -e " ... setting sourceConfigFile to <${_sourceConfigFile}>"
+  sourceConfigFile=${_sourceConfigFile}
+fi
+if [ ${#_mcConfInputFile} -gt 0 ] ; then
+  echo -e " ... setting mcConfInputFile to <${_mcConfInputFile}>"
+  mcConfInputFile=${_mcConfInputFile}
+fi
+if [ ${#_anTag} -gt 0 ] ; then
+  echo -e " ... setting anTag to <${_anTag}>"
+  anTag=${_anTag}
+fi
+if [ ${#_anTagUser} -gt 0 ] ; then
+  tmp=${_anTagUser/\"/}
+  _anTagUser=${tmp/\"/}
+  echo -e " ... setting anTagUser to <${_anTagUser}>"
+  anTagUser=${_anTagUser}
+fi
+
 
 copySelectedNTuples=1   # the main sequence has to be run before this script
    # but the ntuples needs to be copied only once
