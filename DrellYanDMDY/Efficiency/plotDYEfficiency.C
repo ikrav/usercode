@@ -470,6 +470,8 @@ void plotDYEfficiency(const TString input,
   // Make plots 
   //==============================================================================================================  
 
+  CPlot::sOutDir = TString("plots") + analysisTag;
+
   // destination dir
   TString outputDir(TString("../root_files/constants/")+dirTag);
   gSystem->mkdir(outputDir,kTRUE);
