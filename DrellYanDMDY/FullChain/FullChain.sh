@@ -10,13 +10,9 @@
 # ------------------  Define some variables
 
 anTagUser=
-#anTagUser="ymax9"
 anTag="2D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
 filename_data="../config_files/data.conf"
-#filename_data="../config_files/data_vilnius_raw.conf"
-#filename_data="../config_files/data_evtTrig.conf"
 filename_mc="../config_files/fall11mc.input"
-#filename_mc="../config_files/fall11mc_evtTrig.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffOld"
 tnpFileStart="../config_files/sf"
@@ -42,15 +38,21 @@ do_selection=0
 do_prepareYields=0
 do_subtractBackground=0
 do_unfolding=0
-do_unfoldingSyst=1
+do_unfoldingSyst=0    # long calculation!  (also, some steps are skipped)
 do_acceptance=0
 do_acceptanceSyst=0
 do_efficiency=0
-do_efficiencyScaleFactors=0 # long calculation! Beware of the result file name!
 do_plotFSRCorrections=0
 do_plotFSRCorrectionsSansAcc=0
 do_theoryErrors=0
 do_crossSection=0
+
+#          check EventScaleFactors/*sh script settings! 
+#          long calculation!
+do_efficiencyScaleFactors=0   
+
+do_escaleSystematics=0  # very long calculation!
+
 
 
 # the variables below are more persistent
@@ -62,12 +64,14 @@ expectBkgSubtractedFile="../root_files/yields/${crossSectionTag}/yields_bg-subtr
 expectUnfoldingFile="../root_files/constants/${crossSectionTag}/unfolding_constants${anTag}.root"
 expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics${anTag}.root"
 expectEfficiencyFile="../root_files/constants/${crossSectionTag}/event_efficiency_constants${anTag}.root"
-expectEventScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${anTag}_${triggerSet}.root"
+expectEventScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${anTag}_${triggerSet}_PU.root"
 expectAcceptanceSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/acceptance_FSR_systematics${anTag}.root"
 expectFsrSansAcc0File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}.root"
 expectFsrSansAcc1File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}_sans_acc.root"
 expectXSecFile="../root_files/xSec_results_${anTag}_${triggerSet}.root"
 expectXSecThFile="../root_files/xSecTh_results_${anTag}_${triggerSet}.root"
+expectEScaleSystFile="../root_files/systematics/${crossSectionTag}/escale_systematics${anTag}_tmp.root"
+finalEScaleSystFile="../root_files/systematics/${crossSectionTag}/escale_systematics${anTag}.root"
 
 # export some variables
 
@@ -110,15 +114,16 @@ if [ ${do_post_selection_steps} -eq 1 ] ; then
     do_prepareYields=1
     do_subtractBackground=1
     do_unfolding=1
-    do_unfoldingSyst=1
+    do_unfoldingSyst=1  # long calculation
     do_acceptance=1
     do_acceptanceSyst=1
     do_efficiency=1
-    do_efficiencyScaleFactors=1
+    do_efficiencyScaleFactors=1  # long calculation
     do_plotFSRCorrections=1
     do_plotFSRCorrectionsSansAcc=1
     do_theoryErrors=1
-#    do_crossSection=1
+    do_crossSection=1
+#   do_escaleSystematics=0   # very long calculation
 fi
 
 
@@ -138,10 +143,10 @@ checkFile() {
 # 2. else... echo ".. ok" can be removed
   if [ ${#__fname} -gt 0 ] ; then 
       if [ ! -f ${__fname} ] ; then 
-	  echo "file ${__fname} is missing"
+	  echo "! FullChain.sh: file <${__fname}> is missing"
 	  noError=0
       else
-	  echo "file <${__fname}> checked ok"
+	  echo "! FullChain.sh: file <${__fname}> checked ok"
       fi
   fi
   done
@@ -224,7 +229,7 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "DONE: prepareYields.C(\"${filename_data}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else 
-    statusPlotSelectDY=skipped
+    statusPrepareYields=skipped
 fi
 
 #SubtractBackground
@@ -432,8 +437,8 @@ cd ../EventScaleFactors
 rm -f *.so ${expectEventScaleFactorsFile}
 echo
 checkFile evaluateESF.sh recalcESF.sh
-source evaluateESF.sh  | tee ${logDir}/out${timeStamp}-12-evaluateESF-efficiencyScaleFactors${anTag}.log
-source recalcESF.sh  | tee ${logDir}/out${timeStamp}-12-recalcESF-efficiencyScaleFactors${anTag}.log
+source evaluateESF.sh ${filename_mc} ${triggerSet}  | tee ${logDir}/out${timeStamp}-12-evaluateESF-efficiencyScaleFactors${anTag}.log
+source recalcESF.sh ${filename_mc} ${triggerSet} | tee ${logDir}/out${timeStamp}-12-recalcESF-efficiencyScaleFactors${anTag}.log
 get_status ${expectEventScaleFactorsFile}
 statusEventScaleFactors=$RUN_STATUS
 cd ../FullChain
@@ -443,6 +448,35 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else 
     statusEventScaleFactors=skipped
 fi
+
+
+# escale systematics
+if [ ${do_escaleSystematics} -eq 1 ] && [ ${noError} -eq 1 ] ; then
+statusEScaleSyst=OK
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+echo "WILL DO: evaluateEScaleSyst.sh \"${filename_data}\" \"${filename_mc}\" ${anTag} \"${anTagUser}\""
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+cd ../FullChain
+rm -f *.so ${expectEScaleSystFile}
+echo
+checkFile evaluateEScaleSyst.sh
+source evaluateEScaleSyst.sh \
+    ${filename_data} ${filename_mc} ${anTag} \"${anTagUser}\" \
+    | tee ${logDir}/out${timeStamp}-13-escaleSystematics${anTag}.out
+get_status ${expectEScaleSystFile}
+if [ -f ${expectEScaleSystFile} ] ; then
+  cp ${finalEScaleSystFile} ${finalEScaleSystFile}.bak${timeStamp}
+  cp ${expectEScaleSystFile} ${finalEScaleSystFile}
+fi
+statusCrossSection=$RUN_STATUS
+cd ../FullChain
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+echo "DONE: evaluateEScaleSyst.sh \"${filename_data}\" \"${filename_mc}\" ${anTag} \"${anTagUser}\""
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+else
+    statusEScaleSyst=skipped
+fi
+
 
 #CrossSection
 if [ ${do_crossSection} -eq 1 ] && [ ${noError} -eq 1 ] ; then
@@ -454,7 +488,7 @@ cd ../CrossSection
 rm -f *.so ${expectXSecFile} ${expectXSecThFile}
 echo
 checkFile calcCrossSection.C
-root -q -b -l ${LXPLUS_CORRECTION} calcCrossSection.C+\(\"$filename_cs\"\)     | tee ${logDir}/out${timeStamp}-13-CrossSection${anTag}.out
+root -q -b -l ${LXPLUS_CORRECTION} calcCrossSection.C+\(\"$filename_cs\"\)     | tee ${logDir}/out${timeStamp}-14-CrossSection${anTag}.out
 get_status ${expectXSecFile} ${expectXSecThFile}
 statusCrossSection=$RUN_STATUS
 cd ../FullChain
@@ -480,6 +514,7 @@ echo "         FSRCorrections:    " $statusPlotDYFSRCorrections
 echo "  FSRCorrectionsSansAcc:    " $statusPlotDYFSRCorrectionsSansAcc
 echo "           TheoryErrors:    " $statusTheoryErrors
 echo "      EventScaleFactors:    " $statusEventScaleFactors
+echo "      EScaleSystematics:    " $statusEScaleSyst
 echo "           CrossSection:    " $statusCrossSection
 
 
