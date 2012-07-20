@@ -103,8 +103,8 @@ void PlotMatrixVariousBinning(const TMatrixD &matr, TString name,
    TMatrixD matrDraw = AdjustMatrixBinning(matr);
    gStyle->SetPalette(1);
 
-   int nM=matr.GetNrows();
-   int nY=matr.GetNcols();
+   int nM=matrDraw.GetNrows();
+   int nY=matrDraw.GetNcols();
 
    TString histName = "Hist" + name;
    TH2D* Hist= new TH2D(histName,title, nM, DYTools::massBinLimits, nY, 
@@ -126,7 +126,7 @@ void PlotMatrixVariousBinning(const TMatrixD &matr, TString name,
    canv->SetLogx();
    if (SetLogz) canv->SetLogz(); //SetLogz=1 for calcCrossSection
 
-  Hist->Draw(drawOption);
+   Hist->Draw(drawOption);
   //CPlot::sOutDir="plots" + DYTools::analysisTag;
   SaveCanvas(canv, name, CPlot::sOutDir);
   if (histoFile) canv->Write();
@@ -154,8 +154,9 @@ TMatrixD AdjustMatrixBinning(const TMatrixD &matrUsualBinning)
       int nTheSameCells=minMutualMultiple()/DYTools::nYBins[i];
       for (int j=0; j<DYTools::nYBins[i]; j++)
         for (int l=0; l<nTheSameCells; l++)          
-           matrOut(i,j*nTheSameCells+l)=matrUsualBinning(i,j);     
-    }
+           matrOut(i,j*nTheSameCells+l)=matrUsualBinning(i,j); 
+
+     }
   return matrOut;
 }
 
