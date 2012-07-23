@@ -129,6 +129,12 @@ void PlotMatrixVariousBinning(const TMatrixD &matr, TString name,
    Hist->Draw(drawOption);
   //CPlot::sOutDir="plots" + DYTools::analysisTag;
   SaveCanvas(canv, name, CPlot::sOutDir);
+
+  name+="_Rotated";
+  canv->SetPhi(120);
+  canv->SetTheta(30);
+  SaveCanvas(canv, name, CPlot::sOutDir);
+
   if (histoFile) canv->Write();
 
 }
