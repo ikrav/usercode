@@ -164,6 +164,12 @@ void plotDYEfficiency(const TString input,
   nPassBEv = 0;
   nPassEEv = 0;
 
+  TMatrixD sumWeightsPassSq (DYTools::nMassBins,nYBinsMax);
+  TMatrixD sumWeightsTotaSq (DYTools::nMassBins,nYBinsMax);
+  sumWeightsPassSq = 0;
+  sumWeightsTotaSq = 0;
+
+
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
     sprintf(hname,"hZMass_%i",ifile); 
@@ -334,6 +340,7 @@ void plotDYEfficiency(const TString input,
       // Accumulate denominator for efficiency calculations
       if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= nYBins[ibinGenM]){
 	nEventsv(ibinGenM,ibinGenY) += totalWeight;
+        sumWeightsTotaSq(ibinGenM,ibinGenY) += totalWeight*totalWeight;
 	// Split events barrel/endcap using matched supercluster or particle eta
 	if(isBGen1 && isBGen2)                                  { nEventsBBv(ibinGenM,ibinGenY) += totalWeight; } 
 	else if(!isBGen1 && !isBGen2)                           { nEventsEEv(ibinGenM,ibinGenY) += totalWeight; } 
@@ -414,6 +421,7 @@ void plotDYEfficiency(const TString input,
 	}
 	if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= nYBins[ibinGenM]){
 	  nPassv(ibinGenM,ibinGenY) += totalWeight;
+          sumWeightsPassSq(ibinGenM,ibinGenY) += totalWeight*totalWeight;
 	  if(isB1 && isB2)                            { nPassBBv(ibinGenM,ibinGenY) += totalWeight; } 
 	  else if(!isB1 && !isB2)                     { nPassEEv(ibinGenM,ibinGenY) += totalWeight; } 
 	  else if((isB1 && !isB2) || (!isB1 && isB2)) { nPassBEv(ibinGenM,ibinGenY) += totalWeight; }
@@ -438,8 +446,14 @@ void plotDYEfficiency(const TString input,
   for(int i=0; i<DYTools::nMassBins; i++)
     for(int j=0; j<DYTools::nYBins[i]; j++){
       if(nEventsv(i,j) != 0){
+        double nPass, nFail, nPassErr, nFailErr;
+        nPass=nPassv(i,j);
+        nFail=nEventsv(i,j)-nPassv(i,j); 
+        nPassErr=sqrt(sumWeightsPassSq(i,j));
+        nFailErr=sqrt(sumWeightsTotaSq(i,j)-sumWeightsPassSq(i,j));
         effv(i,j) = nPassv(i,j)/nEventsv(i,j);
-        effErrv(i,j) = sqrt(effv(i,j)*(1-effv(i,j))/nEventsv(i,j));
+        //effErrv(i,j) = sqrt(effv(i,j)*(1-effv(i,j))/nEventsv(i,j));
+        effErrv(i,j) = sqrt(( nFail*nFail * nPassErr*nPassErr + nPass*nPass * nFailErr*nFailErr)) / (nEventsv(i,j)*nEventsv(i,j));
       }
     
       if (nEventsBBv(i,j) != 0) {
@@ -470,9 +484,8 @@ void plotDYEfficiency(const TString input,
   // Make plots 
   //==============================================================================================================  
 
-  CPlot::sOutDir = TString("plots") + analysisTag;
-
   // destination dir
+  CPlot::sOutDir="plots" + analysisTag;
   TString outputDir(TString("../root_files/constants/")+dirTag);
   gSystem->mkdir(outputDir,kTRUE);
   TString fnamePlots=outputDir + TString("/event_efficiency_plots") + analysisTag + TString(".root");
@@ -491,6 +504,7 @@ void plotDYEfficiency(const TString input,
   sprintf(ylabel,"a.u. / %.1f GeV/c^{2}",hZMassv[0]->GetBinWidth(1));
   CPlot plotZMass1("zmass1","","m(Z) [GeV/c^{2}]",ylabel);
   for(UInt_t i=0; i<fnamev.size(); i++) { 
+    plotZMass1.SetYRange(1, 10000000);
     plotZMass1.AddHist1D(hZMassv[i],labelv[i],"hist",colorv[i],linev[i]); 
   }
   plotZMass1.SetLogy();

@@ -174,7 +174,9 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
 
   char hname[100];
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
-    sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,500)); hZMassv[ifile]->Sumw2();
+    sprintf(hname,"hZMass_%i",ifile); 
+    hZMassv.push_back(new TH1F(hname,"",500,0,1500)); 
+    hZMassv[ifile]->Sumw2();
   }
 
   // 
@@ -439,6 +441,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   sprintf(ylabel,"a.u. / %.1f GeV/c^{2}",hZMassv[0]->GetBinWidth(1));
   CPlot plotZMass1("zmass1","","m(Z) [GeV/c^{2}]",ylabel);
   for(UInt_t i=0; i<fnamev.size(); i++) { 
+    plotZMass1.SetYRange(1, 10000000);
     plotZMass1.AddHist1D(hZMassv[i],labelv[i],"hist",colorv[i],linev[i]); 
   }
   plotZMass1.SetLogy();

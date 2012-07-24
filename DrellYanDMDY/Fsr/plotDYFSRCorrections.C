@@ -364,6 +364,7 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   sprintf(ylabel,"a.u. / %.1f GeV/c^{2}",hZMassv[0]->GetBinWidth(1));
   CPlot plotZMass1("zmass1","","m(Z) [GeV/c^{2}]",ylabel);
   for(UInt_t i=0; i<fnamev.size(); i++) { 
+    plotZMass1.SetYRange(1, 10000000);
     plotZMass1.AddHist1D(hZMassv[i],labelv[i],"hist",colorv[i],linev[i]); 
   }
   plotZMass1.SetLogy();
