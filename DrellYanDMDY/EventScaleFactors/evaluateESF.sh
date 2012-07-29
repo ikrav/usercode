@@ -8,8 +8,8 @@ if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
 if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
 if [ ${#3} -gt 0 ] ; then debugMode=$3; fi
 
-tnpMCFile="../config_files/sf_mc_eta2.conf"
-tnpDataFile="../config_files/sf_data_eta2.conf"
+tnpMCFile="../config_files/sf_mc_eta2_MIT.conf"
+tnpDataFile="../config_files/sf_data_eta2_MIT.conf"
 
 collectEvents=1 # recommended to have it set to 1. calcEventEff prepares skim fil
 

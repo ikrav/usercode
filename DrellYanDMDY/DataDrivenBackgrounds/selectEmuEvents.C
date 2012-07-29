@@ -437,12 +437,14 @@ void selectEmuEvents(const TString conf,
 	  if(    electron->scEt < 20      )   continue;
 	  if((fabs(electron->scEta)>kGAP_LOW) && (fabs(electron->scEta)<kGAP_HIGH)) continue;
 	  if( fabs(electron->scEta) > 2.5 )   continue;  // outside eta range? Skip to next event...
-	  if( !(electron->isEcalDriven)   )   continue;  // not ECAL seeded electrons? Skip to next event...
-	  if( ! passSmurf(electron)        )   continue;  
+	  // Is this cut still relevant about ECAL driven? We are using all PF electrons now...
+	  if( !(electron->typeBits & kEcalDriven)   )   continue;  // not ECAL seeded electrons? Skip to next event...
+// 	  if( ! passSmurf(electron)        )   continue;  
+          if( !passEGM2011(electron, WP_MEDIUM, info->rhoLowEta)) continue;  
 	  if( !(electron->hltMatchBits & electronTriggerObjectBit)) continue;  // electron matched to HLT object? 
           //cout << "electron hlt match: " <<  electron->hltMatchBits << "\n";
 	  if( fabs(electron->d0)>0.02 ) continue;
-	  //if( fabs(electron->dz)>1.0 ) continue;//smurf cut is actually tighter <0.1
+	  //if( fabs(electron->dz)>1.0 ) continue;//real cut is actually tighter <0.1
 	  
 	  // loop through muons
 	  for(Int_t j=0; j<muonArr->GetEntriesFast(); j++) {

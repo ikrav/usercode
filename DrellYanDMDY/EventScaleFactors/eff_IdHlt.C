@@ -374,6 +374,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   int totalCandEtAbove10GeV = 0;
   int totalCandMatchedToGen = 0;
   int totalCandOppositeSign = 0;
+  int totalTagProbePairs = 0;
 
   // Loop over files
   for(UInt_t ifile=0; ifile<ntupleFileNames.size(); ifile++){
@@ -441,9 +442,14 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
      for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
        if (debugMode && (ientry>100000)) break;
        
-      if(sample != DATA)
+       if(sample != DATA){
 	genBr->GetEntry(ientry);
-      
+	// If the Z->ll leptons are not electrons, discard this event.
+	// This is needed for signal MC samples such as Madgraph Z->ll
+	// where all 3 lepton flavors are possible
+	if(abs(gen->lid_1) != 11 || abs(gen->lid_2) != 11)
+	  continue;
+       }
       // Check that the whole event has fired the appropriate trigger
       infoBr->GetEntry(ientry);
       
@@ -502,7 +508,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
 	totalCandInEtaAcceptance++;
 	// None of the electrons should be below 10 GeV
-	if((dielectron->scEt_1 < 10)               || (dielectron->scEt_2 < 10))	      continue;  // below supercluster ET cut? Skip to next event...
+	if((dielectron->pt_1 < 10)               || (dielectron->pt_2 < 10))	      continue;  // below supercluster ET cut? Skip to next event...
 	totalCandEtAbove10GeV++;
 	
 	// Next, we will do a loose kinematic matching to generator level
@@ -528,20 +534,20 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	
 	TElectron *ele1 = extractElectron(dielectron, 1);
 	TElectron *ele2 = extractElectron(dielectron, 2);
-	bool isTag1 = isTag(ele1, tagTriggerObjectBit);
-	bool isTag2 = isTag(ele2, tagTriggerObjectBit);
+	bool isTag1 = isTag(ele1, tagTriggerObjectBit, info->rhoLowEta);
+	bool isTag2 = isTag(ele2, tagTriggerObjectBit, info->rhoLowEta);
 	
 	// Any electron that made it here is eligible to be a probe
 	// for ID cuts.
 	bool isIDProbe1     = true;
 	bool isIDProbe2     = true;
-	bool isIDProbePass1 = passID(ele1);
-	bool isIDProbePass2 = passID(ele2);
+	bool isIDProbePass1 = passID(ele1, info->rhoLowEta);
+	bool isIDProbePass2 = passID(ele2, info->rhoLowEta);
 	
 	// Probes for HLT cuts:
 
-	bool isHLTProbe1     = passID(ele1);
-	bool isHLTProbe2     = passID(ele2);
+	bool isHLTProbe1     = passID(ele1, info->rhoLowEta);
+	bool isHLTProbe2     = passID(ele2, info->rhoLowEta);
 	bool isHLTProbePass1 = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit) );
 	bool isHLTProbePass2 = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit) );
 
@@ -597,6 +603,11 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 
 	storeMass = dielectron->mass;
 	double event_weight=1.0;
+
+	if(isTag1)
+	  totalTagProbePairs++;
+	if(isTag2)
+	  totalTagProbePairs++;
 
 	// First electron is the tag, second is the probe
 	if( isTag1 && isProbe2){
@@ -719,6 +730,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   printf("        candidates matched to GEN level (if MC)              %15d\n",totalCandMatchedToGen);
   if (performOppositeSignTest) 
     printf("        candidates opposite sign                             %15d\n",totalCandOppositeSign);
+  printf("Number of tag-probe pairs                                    %15d\n", totalTagProbePairs);
   printf("\nNumber of probes, total                                      %15.0f\n", hMassTotal->GetSumOfWeights());
   printf("Number of probes, passed                                     %15.0f\n", hMassPass->GetSumOfWeights());
   printf("Number of probes, failed                                     %15.0f\n", hMassFail->GetSumOfWeights());

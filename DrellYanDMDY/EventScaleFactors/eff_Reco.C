@@ -494,7 +494,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 
 	// ECAL driven: this condition is NOT applied	
 	
-	if( !isTag( electron, tagTriggerObjectBit) ) continue;
+	if( !isTag( electron, tagTriggerObjectBit, info->rhoLowEta) ) continue;
 
 	tagCandFinalCount++;
 	
@@ -544,9 +544,11 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 	  const TElectron *electronMatch = 0;
 	  for(int iele2 = 0; iele2 < eleArr->GetEntriesFast(); iele2++){
 	    const TElectron *electron2 = (TElectron*)((*eleArr)[iele2]);
-	    if( sc->scID == electron2->scID )
-	      if( electron2->isEcalDriven )
+	    if( sc->scID == electron2->scID ){
+	      // Check ecal driven bits
+	      if( electron2->typeBits & kEcalDriven )
 		electronMatch = electron2;
+	    }
 	  } // end loop over electrons searching for SC match
 	  
 	  // get the number of goodPVs

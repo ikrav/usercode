@@ -367,10 +367,15 @@ void makeUnfoldingMatrix(const TString input,
 							       dielectron->hltMatchBits_2,
 							       info->runNum) ) continue;
 	
-	// The Smurf electron ID package is the same as used in HWW analysis
-	// and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
-	// with some customization, plus impact parameter cuts dz and dxy
-	if(!passSmurf(dielectron)) continue;  
+	// *** Smurf ID is superseeded by new selection ***
+// 	// The Smurf electron ID package is the same as used in HWW analysis
+// 	// and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
+// 	// with some customization, plus impact parameter cuts dz and dxy
+// 	if(!passSmurf(dielectron)) continue;  
+
+	// The selection below is for the EGM working points from spring 2012
+	// recommended for both 2011 and 2012 data
+	if(!passEGM2011(dielectron, WP_MEDIUM, info->rhoLowEta)) continue;  
 
         // We have a Z candidate! HURRAY! 
 

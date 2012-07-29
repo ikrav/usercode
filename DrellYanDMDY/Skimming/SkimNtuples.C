@@ -165,8 +165,10 @@ void SkimNtuples(const TString input = "skim.input")
 	    etCut = true;
 	  // Require at least one dielectron to pass full ID
 	  bool idCut = false;
-	  if( passSmurf(extractElectron(dielectron,1)) ||
-	      passSmurf(extractElectron(dielectron,2)) )
+// 	  if( passSmurf(extractElectron(dielectron,1)) ||
+// 	      passSmurf(extractElectron(dielectron,2)) )
+	  if( passEGM2011(extractElectron(dielectron,1), WP_MEDIUM, info->rhoLowEta)
+	      || passEGM2011(extractElectron(dielectron,2), WP_MEDIUM, info->rhoLowEta) )
 	    idCut = true;
 	  if( etCut && idCut )
 	    nDielectronsPass++;

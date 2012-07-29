@@ -14,7 +14,10 @@ DielectronSelector_t::DielectronSelector_t(TSelectionType_t set_selection, Elect
 
 // ---------------------------------------------------------------
 
-bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, ULong_t leadingTriggerObjectBit, ULong_t trailingTriggerObjectBit) {
+bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, 
+						  ULong_t leadingTriggerObjectBit, 
+						  ULong_t trailingTriggerObjectBit,
+						  double rho) { // the last parameter: rho for PU correction for isolation
 
   fTotalCandidates++;
 
@@ -92,11 +95,15 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
     fCandidatesHLTMatched++;
 
     // Other cuts to both electrons
-    
-    // The Smurf electron ID package is the same as used in HWW analysis
-    // and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
-    // with some customization, plus impact parameter cuts dz and dxy
-    if(!passSmurf(dielectron)) continue;
+
+    // OLDER 2011 VERSION
+//     // The Smurf electron ID package is the same as used in HWW analysis
+//     // and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
+//     // with some customization, plus impact parameter cuts dz and dxy
+//     if(!passSmurf(dielectron)) continue;
+
+    // Present EGM recommended for 2011 and 2012: WP Medium
+    if(!passEGM2011(dielectron,WP_MEDIUM,rho)) continue;
 
     fCandidatesIDPassed++;
 

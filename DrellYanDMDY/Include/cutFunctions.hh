@@ -19,8 +19,8 @@ Bool_t electronMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep
 
 Bool_t scMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TPhoton *sc);
 
-bool passID(const mithep::TElectron *electron);
+bool passID(const mithep::TElectron *electron, double rho);
 
-bool isTag(const mithep::TElectron *electron, ULong_t trigger);
+bool isTag(const mithep::TElectron *electron, ULong_t trigger, double rho);
 
 TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, const TriggerSelection &trigSet);

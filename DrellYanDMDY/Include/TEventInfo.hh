@@ -8,7 +8,12 @@ namespace mithep
   class TEventInfo : public TObject
   {
     public:
-      TEventInfo(){}
+      TEventInfo():
+      runNum(0), evtNum(0), lumiSec(0), nPU(0), nPUminus(0), nPUplus(0),
+      pvx(0), pvy(0), pvz(0), bsx(0), bsy(0), bsz(0), 
+      pfMET(0), pfMETphi(0), pfSumET(0), trkMET(0), trkMETphi(0), trkSumET(0),
+      rhoLowEta(0), rhoHighEta(0), triggerBits(0), hasGoodPV(0)		    
+      {}
       ~TEventInfo(){}
 
       UInt_t  runNum; 			             // run number in data
@@ -23,7 +28,7 @@ namespace mithep
       ULong_t triggerBits;		             // HLT trigger bits
       Bool_t  hasGoodPV;                             // event has a good PV?
 
-    ClassDef(TEventInfo,1)
+    ClassDef(TEventInfo,2)
   };
 }
 #endif

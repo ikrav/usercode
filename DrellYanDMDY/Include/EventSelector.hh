@@ -27,14 +27,18 @@ protected:
 public:
   DielectronSelector_t(TSelectionType_t set_selection, ElectronEnergyScale *escale=NULL);
 
-  bool testDielectron_default(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, ULong_t leadingTriggerObjectBit, ULong_t trailingTriggerObjectBit);
+  bool testDielectron_default(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, 
+			      ULong_t leadingTriggerObjectBit, ULong_t trailingTriggerObjectBit, 
+			      double rho); // the last argument is rho for PU correction of the isolaiton
 
   // dielectron may be modified by escale corrections
-  bool testDielectron(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, ULong_t leadingTriggerObjectBit, ULong_t trailingTriggerObjectBit) {
+  bool testDielectron(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, 
+		      ULong_t leadingTriggerObjectBit, ULong_t trailingTriggerObjectBit,
+		      double rho) {// the last argument is rho for PU correction of the isolaiton
     bool ok=kFALSE;
     switch(fSelection) {
     case _selectNone: break;
-    case _selectDefault: ok=testDielectron_default(dielectron,applyEScale,leadingTriggerObjectBit,trailingTriggerObjectBit); break;
+    case _selectDefault: ok=testDielectron_default(dielectron,applyEScale,leadingTriggerObjectBit,trailingTriggerObjectBit,rho); break;
     default:
       ok=kFALSE;
     }
@@ -51,8 +55,12 @@ public:
     return name;
   }
 
-  bool operator()(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, ULong_t leadingTriggerObjectBit, ULong_t trailingTriggerObjectBit) {
-    return testDielectron(dielectron,applyEScale,leadingTriggerObjectBit,trailingTriggerObjectBit);
+  bool operator()(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, 
+		  ULong_t leadingTriggerObjectBit, ULong_t trailingTriggerObjectBit,
+		  double rho) {
+    return testDielectron(dielectron,applyEScale,
+			  leadingTriggerObjectBit,trailingTriggerObjectBit,
+			  rho);
   }
 
   std::ostream& printCounts(std::ostream&);

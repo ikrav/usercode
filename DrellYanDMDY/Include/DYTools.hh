@@ -21,7 +21,7 @@ namespace DYTools {
   //             nMassBins, massBinLimits, nYBins
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
 
-  const int study2D=0;
+  const int study2D=1;
   const int extendYRangeFor1D=1; // whether |ymax|=9 for 1D study
   const TString analysisTag_USER=""; //(!study2D && extendYRangeFor1D) ? "ymax9" : "";  // extra name to differentiate the analysis files
 
@@ -499,10 +499,27 @@ namespace DYTools {
       ele-> emIso03             = dielectron-> emIso03_1            ;             
       ele-> hadIso03            = dielectron-> hadIso03_1           ;            
 
-      ele->pfIso03              = dielectron-> pfIso03_1 ;          
-      ele->pfIso04              = dielectron-> pfIso04_1 ;          
-      ele->pfPx                 = dielectron->pfPx_1 ;
-      ele->pfPy                 = dielectron->pfPy_1 ;
+      ele-> chIso_00_01         = dielectron-> chIso_00_01_1        ;
+      ele-> chIso_01_02         = dielectron-> chIso_01_02_1        ;
+      ele-> chIso_02_03         = dielectron-> chIso_02_03_1        ;
+      ele-> chIso_03_04         = dielectron-> chIso_03_04_1        ;
+      ele-> chIso_04_05         = dielectron-> chIso_04_05_1        ;
+
+      ele-> gammaIso_00_01      = dielectron-> gammaIso_00_01_1        ;
+      ele-> gammaIso_01_02      = dielectron-> gammaIso_01_02_1        ;
+      ele-> gammaIso_02_03      = dielectron-> gammaIso_02_03_1        ;
+      ele-> gammaIso_03_04      = dielectron-> gammaIso_03_04_1        ;
+      ele-> gammaIso_04_05      = dielectron-> gammaIso_04_05_1        ;
+
+      ele-> neuHadIso_00_01     = dielectron-> neuHadIso_00_01_1        ;
+      ele-> neuHadIso_01_02     = dielectron-> neuHadIso_01_02_1        ;
+      ele-> neuHadIso_02_03     = dielectron-> neuHadIso_02_03_1        ;
+      ele-> neuHadIso_03_04     = dielectron-> neuHadIso_03_04_1        ;
+      ele-> neuHadIso_04_05     = dielectron-> neuHadIso_04_05_1        ;
+
+      ele->pfPt                 = dielectron->pfPt_1 ;
+      ele->pfEta                = dielectron->pfEta_1 ;
+      ele->pfPhi                = dielectron->pfPhi_1 ;
 
       ele-> d0                  = dielectron-> d0_1                 ;
       ele-> dz                  = dielectron-> dz_1                 ;       
@@ -510,6 +527,7 @@ namespace DYTools {
       ele-> scEt                = dielectron-> scEt_1               ;
       ele-> scEta               = dielectron-> scEta_1              ;
       ele-> scPhi               = dielectron-> scPhi_1              ;  
+      ele-> ecalE               = dielectron-> ecalE_1             ;              
       ele-> HoverE              = dielectron-> HoverE_1             ;              
       ele-> EoverP              = dielectron-> EoverP_1             ;              
       ele-> fBrem               = dielectron-> fBrem_1             ;              
@@ -517,31 +535,48 @@ namespace DYTools {
       ele-> deltaEtaIn          = dielectron-> deltaEtaIn_1         ;          
       ele-> deltaPhiIn          = dielectron-> deltaPhiIn_1         ;          
       ele-> sigiEtaiEta         = dielectron-> sigiEtaiEta_1        ;         
-      ele-> nExpHitsInner       = dielectron-> nExpHitsInner_1      ;       
       ele-> partnerDeltaCot     = dielectron-> partnerDeltaCot_1    ;     
       ele-> partnerDist         = dielectron-> partnerDist_1        ;         
-//       ele->ellhID               = dielectron->ellhID_1 ;
       ele->mva                  = dielectron->mva_1                 ;
 
       ele-> q                   = dielectron-> q_1                  ;                 
+      ele-> nExpHitsInner       = dielectron-> nExpHitsInner_1      ;       
+      ele->  scID               = dielectron-> scID_1               ;               
+      ele->  trkID              = dielectron-> trkID_1              ;
+      ele->  typeBits           = dielectron-> typeBits_1           ;
+
       ele-> hltMatchBits        = dielectron-> hltMatchBits_1       ;       
       ele-> isConv              = dielectron-> isConv_1             ;             
-      ele-> isEcalDriven        = dielectron-> isEcalDriven_1       ;       
-      ele->  scID               = -1                                ;               
-      ele->  trkID              = -1 ;
     }else{
       ele-> pt                  = dielectron-> pt_2                 ;
       ele-> eta                 = dielectron-> eta_2                ;
       ele-> phi                 = dielectron-> phi_2                ;        
-      
+
       ele-> trkIso03            = dielectron-> trkIso03_2           ;            
       ele-> emIso03             = dielectron-> emIso03_2            ;             
       ele-> hadIso03            = dielectron-> hadIso03_2           ;            
 
-      ele->pfIso03              = dielectron-> pfIso03_2 ;          
-      ele->pfIso04              = dielectron-> pfIso04_2 ;          
-      ele->pfPx                 = dielectron->pfPx_2 ;
-      ele->pfPy                 = dielectron->pfPy_2 ;
+      ele-> chIso_00_01         = dielectron-> chIso_00_01_2        ;
+      ele-> chIso_01_02         = dielectron-> chIso_01_02_2        ;
+      ele-> chIso_02_03         = dielectron-> chIso_02_03_2        ;
+      ele-> chIso_03_04         = dielectron-> chIso_03_04_2        ;
+      ele-> chIso_04_05         = dielectron-> chIso_04_05_2        ;
+
+      ele-> gammaIso_00_01      = dielectron-> gammaIso_00_01_2        ;
+      ele-> gammaIso_01_02      = dielectron-> gammaIso_01_02_2        ;
+      ele-> gammaIso_02_03      = dielectron-> gammaIso_02_03_2        ;
+      ele-> gammaIso_03_04      = dielectron-> gammaIso_03_04_2        ;
+      ele-> gammaIso_04_05      = dielectron-> gammaIso_04_05_2        ;
+
+      ele-> neuHadIso_00_01     = dielectron-> neuHadIso_00_01_2        ;
+      ele-> neuHadIso_01_02     = dielectron-> neuHadIso_01_02_2        ;
+      ele-> neuHadIso_02_03     = dielectron-> neuHadIso_02_03_2        ;
+      ele-> neuHadIso_03_04     = dielectron-> neuHadIso_03_04_2        ;
+      ele-> neuHadIso_04_05     = dielectron-> neuHadIso_04_05_2        ;
+
+      ele->pfPt                 = dielectron->pfPt_2 ;
+      ele->pfEta                = dielectron->pfEta_2 ;
+      ele->pfPhi                = dielectron->pfPhi_2 ;
 
       ele-> d0                  = dielectron-> d0_2                 ;
       ele-> dz                  = dielectron-> dz_2                 ;       
@@ -549,6 +584,7 @@ namespace DYTools {
       ele-> scEt                = dielectron-> scEt_2               ;
       ele-> scEta               = dielectron-> scEta_2              ;
       ele-> scPhi               = dielectron-> scPhi_2              ;  
+      ele-> ecalE               = dielectron-> ecalE_2             ;              
       ele-> HoverE              = dielectron-> HoverE_2             ;              
       ele-> EoverP              = dielectron-> EoverP_2             ;              
       ele-> fBrem               = dielectron-> fBrem_2             ;              
@@ -556,18 +592,18 @@ namespace DYTools {
       ele-> deltaEtaIn          = dielectron-> deltaEtaIn_2         ;          
       ele-> deltaPhiIn          = dielectron-> deltaPhiIn_2         ;          
       ele-> sigiEtaiEta         = dielectron-> sigiEtaiEta_2        ;         
-      ele-> nExpHitsInner       = dielectron-> nExpHitsInner_2      ;       
       ele-> partnerDeltaCot     = dielectron-> partnerDeltaCot_2    ;     
       ele-> partnerDist         = dielectron-> partnerDist_2        ;         
-//       ele->ellhID               = dielectron->ellhID_2 ;
       ele->mva                  = dielectron->mva_2                 ;
 
       ele-> q                   = dielectron-> q_2                  ;                 
+      ele-> nExpHitsInner       = dielectron-> nExpHitsInner_2      ;       
+      ele->  scID               = dielectron-> scID_2               ;               
+      ele->  trkID              = dielectron-> trkID_2              ;
+      ele->  typeBits           = dielectron-> typeBits_2           ;
+
       ele-> hltMatchBits        = dielectron-> hltMatchBits_2       ;       
       ele-> isConv              = dielectron-> isConv_2             ;             
-      ele-> isEcalDriven        = dielectron-> isEcalDriven_2       ;       
-      ele->  scID               = -1                                ;               
-      ele->  trkID              = -1 ;
     }      
     
     return ele;

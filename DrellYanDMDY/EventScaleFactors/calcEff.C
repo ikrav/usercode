@@ -425,7 +425,9 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     if (new_store_data_code) {
       isBsc = isBarrel(storeData.eta);
       isEsc = isEndcap(storeData.eta);
-      if( ! isBsc && ! isEsc) continue;
+      // Not really great solution: if we work with 5 eta bins,
+      // probably means we are not dropping transition region.
+      if( ! isBsc && ! isEsc  && (etaBinning!=ETABINS5) ) continue;
       numTagProbePairsPassEta++;
 
       // Tag and probe is done around the Z peak

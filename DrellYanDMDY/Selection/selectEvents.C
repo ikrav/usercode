@@ -506,8 +506,15 @@ void selectEvents(const TString conf,
 	if(ientry >= maxEvents) break;
 	
 	infoBr->GetEntry(ientry);
-      if( snamev[isam] == "zee" )
+	if( snamev[isam] == "zee" ) {
+	  // Load generator level info
 	  genBr->GetEntry(ientry);
+	  // If the Z->ll leptons are not electrons, discard this event.
+	  // This is needed for signal MC samples such as Madgraph Z->ll
+	  // where all 3 lepton flavors are possible
+	  if(abs(gen->lid_1) != 11 || abs(gen->lid_2) != 11)
+	    continue;
+	}
 
 	// Load FEWZ weights for signal MC
 	double fewz_weight = 1.0;
@@ -601,7 +608,8 @@ void selectEvents(const TString conf,
 	    if (!eeSelector(dielectron,
 			    escaleCorrType,
 			    leadingTriggerObjectBit,
-			    trailingTriggerObjectBit)) continue;
+			    trailingTriggerObjectBit,
+			    info->rhoLowEta)) continue;
 	  
 	    hMass2v[isam]->Fill(dielectron->mass,weight);
 	    hMass3v[isam]->Fill(dielectron->mass,weight);
@@ -670,11 +678,16 @@ void selectEvents(const TString conf,
 		  dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
 	  // Other cuts to both electrons
 
-	  // The Smurf electron ID package is the same as used in HWW analysis
-	  // and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
-	  // with some customization, plus impact parameter cuts dz and dxy
-	  if(!passSmurf(dielectron)) continue;  
-	  
+	  // *** Smurf ID is superseeded by new selection ***
+// 	  // The Smurf electron ID package is the same as used in HWW analysis
+// 	  // and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
+// 	  // with some customization, plus impact parameter cuts dz and dxy
+// 	  if(!passSmurf(dielectron)) continue;  
+
+	  // The selection below is for the EGM working points from spring 2012
+	  // recommended for both 2011 and 2012 data
+	  if(!passEGM2011(dielectron, WP_MEDIUM, info->rhoLowEta)) continue;  
+
 	  hMass2v[isam]->Fill(dielectron->mass,weight);
 	  hMass3v[isam]->Fill(dielectron->mass,weight);
 	  

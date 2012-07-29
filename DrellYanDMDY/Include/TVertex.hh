@@ -8,7 +8,9 @@ namespace mithep
   class TVertex : public TObject
   {
     public:
-      TVertex(){}
+      TVertex():
+      nTracksFit(0), ndof(0), chi2(0), sumPt(0), x(0), y(0), z(0)
+      {}
       ~TVertex(){}
 
       UInt_t  nTracksFit;
@@ -17,7 +19,7 @@ namespace mithep
       Float_t sumPt;
       Float_t x,y,z;					 
 
-    ClassDef(TVertex,1)
+    ClassDef(TVertex,2)
   };
 }
 #endif

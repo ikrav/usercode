@@ -5,24 +5,31 @@
 Bool_t dielectronMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TDielectron *dielectron){
 
   Bool_t result = kTRUE;
+
+  // Matching is done as prescribed in AN-12-116
+  //   - dR < 0.2
+  //   - match to status 1 (post-FSR)
+  //   - no charge matching
+
   // In the generator branch of this ntuple, first particle is always
   // negative, and second always positive. In the Dielectron block
   // of the ntuple, the first particle is always the one with larger Pt.
-  double dR1=999, dR2=999;
+  double dR1_1=999, dR2_1=999;
+  double dR1_2=999, dR2_2=999;
   TLorentzVector v1reco, v2reco, v1gen, v2gen;
   v1reco.SetPtEtaPhiM(dielectron->pt_1, dielectron->eta_1, dielectron->phi_1, 0.000511);
   v2reco.SetPtEtaPhiM(dielectron->pt_2, dielectron->eta_2, dielectron->phi_2, 0.000511);
   v1gen .SetPtEtaPhiM(gen->pt_1, gen->eta_1, gen->phi_1, 0.000511);
   v2gen .SetPtEtaPhiM(gen->pt_2, gen->eta_2, gen->phi_2, 0.000511);
-  if( dielectron->q_1 < 0 ){
-    dR1 = v1reco.DeltaR(v1gen);
-    dR2 = v2reco.DeltaR(v2gen);
-  }else{
-    dR1 = v1reco.DeltaR(v2gen);
-    dR2 = v2reco.DeltaR(v1gen);
-  }
-  // Require that both are within loose dR of 0.4, otherwise bail out
-  if( fabs(dR1) > 0.4 || fabs(dR2) > 0.4 ) result = kFALSE; 
+  // Try both assignments, at least one assignment should match
+  dR1_1 = v1reco.DeltaR(v1gen);
+  dR2_1 = v2reco.DeltaR(v2gen);
+  dR1_2 = v1reco.DeltaR(v2gen);
+  dR2_2 = v2reco.DeltaR(v1gen);
+  // Require that both are within the required cone
+  bool matchAssignment1 = (fabs(dR1_1) < 0.2 && fabs(dR2_1) < 0.2 );
+  bool matchAssignment2 = (fabs(dR1_2) < 0.2 && fabs(dR2_2) < 0.2 );
+  if( ! (matchAssignment1 || matchAssignment2) ) result = kFALSE; 
   
   return result;
 }
@@ -31,21 +38,25 @@ Bool_t electronMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep
   
   Bool_t result = kTRUE;
   
+  // Matching is done as prescribed in AN-12-116
+  //   - dR < 0.2
+  //   - match to status 1 (post-FSR)
+  //   - no charge matching
+
   // In the generator branch of this ntuple, first particle is always
-  // negative, and second always positive. 
-  double dR=999;
+  // negative, and second always positive (but this is not used at present
+  // as there is no charge matching).
+  double dR1=999;
+  double dR2=999;
   TLorentzVector vreco, v1gen, v2gen;
   vreco.SetPtEtaPhiM(electron->pt, electron->eta, electron->phi, 0.000511);
   v1gen .SetPtEtaPhiM(gen->pt_1, gen->eta_1, gen->phi_1, 0.000511);
   v2gen .SetPtEtaPhiM(gen->pt_2, gen->eta_2, gen->phi_2, 0.000511);
   
-  if( electron->q < 0 ){
-    dR = vreco.DeltaR(v1gen);
-  }else{
-    dR = vreco.DeltaR(v2gen);
-  }
-  // Require that both are within loose dR of 0.4, otherwise bail out
-  if( fabs(dR) > 0.4 ) result = kFALSE; 
+  dR1 = vreco.DeltaR(v1gen);
+  dR2 = vreco.DeltaR(v2gen);
+
+  if( !( fabs(dR1) < 0.2 || fabs(dR2) < 0.2 ) ) result = kFALSE; 
   
   return result;
 }
@@ -68,18 +79,24 @@ Bool_t scMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TPho
   return result;
 }
 
-bool passID(const mithep::TElectron *electron){
+bool passID(const mithep::TElectron *electron, double rho){
 
-  bool result = passSmurf(electron);
+  bool result = passEGM2011(electron, WP_TIGHT, rho);
   return result;
 }
 
-bool isTag(const mithep::TElectron *electron, ULong_t trigger){
+bool passIDTag(const mithep::TElectron *electron, double rho){
 
-  bool elePassID  = passID(electron);
+  bool result = passEGM2011(electron, WP_TIGHT, rho);
+  return result;
+}
+
+bool isTag(const mithep::TElectron *electron, ULong_t trigger, double rho){
+
+  bool elePassID  = passIDTag(electron, rho);
   bool elePassHLT =  (electron ->hltMatchBits & trigger);
 
-  bool result = ( elePassID && elePassHLT && (electron->scEt > 20) );
+  bool result = ( elePassID && elePassHLT && (electron->pt > 25) );
 
   return result;
 }

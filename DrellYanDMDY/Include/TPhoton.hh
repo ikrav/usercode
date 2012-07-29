@@ -8,7 +8,11 @@ namespace mithep
   class TPhoton : public TObject
   {
     public:
-      TPhoton(){}
+      TPhoton():
+      pt(0), eta(0), phi(0), scEt(0), scEta(0), scPhi(0), trkIso04(0), trkIso04NoPV(0), emIso04(0), hadIso04(0), HoverE(0),
+      R9(0), sigiEtaiEta(0), sigiPhiiPhi(0), scID(0), hasPixelSeed(0), passSpikeFilter(0), passEleVetoConvRec(0), 
+      passConvId(0), hltMatchBits(0)  
+      {}
       ~TPhoton(){}
 
       Float_t pt, eta, phi; 	              // kinematics
@@ -28,7 +32,7 @@ namespace mithep
       Bool_t  passConvId;                     // 
       ULong_t hltMatchBits;  	              // bits from matching with HLT primitives 
     
-    ClassDef(TPhoton,1)
+    ClassDef(TPhoton,2)
   };  
 }
 #endif
