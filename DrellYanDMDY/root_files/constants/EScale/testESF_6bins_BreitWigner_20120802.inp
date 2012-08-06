@@ -1,0 +1,21 @@
+! g_esfWorkCase=6 (6 bins)
+! g_esfWorkCaseShortName= 6bins
+! g_esfFitModel=6 (fit model breitWigner)
+scaling sqrt
+! bins  0.00 0.40 0.80 1.20 1.50 2.00 2.50
+MCOverData=61194.265501
+EtaDivisionCount=6
+ScalingFactorsCount=6
+SmearingFactorsCount=6
+scale_0      1.00457 -9.11786e-05
+scale_1      1.00523 -9.54689e-05
+scale_2      1.01131 -0.000111322
+scale_3      1.02142 -0.000185954
+scale_4     0.988357 -0.000174269
+scale_5      1.01355 -0.000186024
+smear_0     0.184864   -0.0119454
+smear_1     0.171352    -0.012652
+smear_2     0.299734   -0.0126775
+smear_3     0.572059   -0.0184813
+smear_4     0.785218    -0.018056
+smear_5      1.26095   -0.0180382

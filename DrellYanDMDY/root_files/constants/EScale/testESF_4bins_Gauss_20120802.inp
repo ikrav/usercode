@@ -1,0 +1,17 @@
+! g_esfWorkCase=4 (4 bins)
+! g_esfWorkCaseShortName= 4bins
+! g_esfFitModel=1 (fit model Gauss)
+scaling sqrt
+! bins  0.00 1.00 1.50 2.00 2.50
+MCOverData=128508.130325
+EtaDivisionCount=4
+ScalingFactorsCount=4
+SmearingFactorsCount=4
+scale_0       1.0055 -6.54569e-05
+scale_1      1.01875 -0.000165586
+scale_2     0.988709 -0.000170717
+scale_3      1.01439 -0.000183315
+smear_0     0.492726  -0.00917679
+smear_1      1.04595   -0.0145458
+smear_2      1.53301   -0.0181249
+smear_3      1.94182   -0.0145133

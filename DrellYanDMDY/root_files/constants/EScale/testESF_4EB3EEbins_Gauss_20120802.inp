@@ -1,0 +1,23 @@
+! g_esfWorkCase=9 (4 EB and 3 EE bins)
+! g_esfWorkCaseShortName= 4EB3EEbins
+! g_esfFitModel=1 (fit model Gauss)
+scaling sqrt
+! bins  0.00 0.40 0.80 1.20 1.50 1.90 2.20 2.50
+MCOverData=45895.211481
+EtaDivisionCount=7
+ScalingFactorsCount=7
+SmearingFactorsCount=7
+scale_0      1.00577   -8.061e-05
+scale_1       1.0059 -4.32395e-05
+scale_2      1.01188 -0.000107748
+scale_3      1.02164 -0.000176149
+scale_4     0.986258 -0.000194338
+scale_5     0.997703 -0.000202852
+scale_6      1.02773 -0.000280467
+smear_0     0.521451   -0.0154332
+smear_1     0.462623    -0.018473
+smear_2     0.760146   -0.0152928
+smear_3      1.18223     -0.01972
+smear_4      1.56694   -0.0210714
+smear_5      1.55825   -0.0194956
+smear_6      2.11357    -0.019632

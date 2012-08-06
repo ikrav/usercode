@@ -1,0 +1,13 @@
+! g_esfWorkCase=2 (2 bins)
+! g_esfWorkCaseShortName= 2bins
+! g_esfFitModel=1 (fit model Gauss)
+scaling sqrt
+! bins  0.00 1.50 2.50
+MCOverData=428366.608228
+EtaDivisionCount=2
+ScalingFactorsCount=2
+SmearingFactorsCount=2
+scale_0      1.00842 -4.29194e-05
+scale_1      1.00106 -0.000115483
+smear_0     0.661361  -0.00679621
+smear_1      1.74817   -0.0108486

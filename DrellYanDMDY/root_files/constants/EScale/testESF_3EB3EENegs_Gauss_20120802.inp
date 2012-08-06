@@ -1,0 +1,33 @@
+! g_esfWorkCase=16 (3 EB and 3 EE bins for each eta side)
+! g_esfWorkCaseShortName= 3EB3EENegs
+! g_esfFitModel=1 (fit model Gauss)
+scaling sqrt
+! bins  -2.50 -2.20 -1.90 -1.50 -1.20 -0.60 0.00 0.60 1.20 1.50 1.90 2.20 2.50
+MCOverData=19176.057875
+EtaDivisionCount=12
+ScalingFactorsCount=12
+SmearingFactorsCount=12
+scale_0      1.03001 -0.000393398
+scale_1     0.995699 -0.000308377
+scale_2      0.98746 -0.000259635
+scale_3      1.02244 -0.000240322
+scale_4      1.00959 -0.000117131
+scale_5      1.00629 -7.50894e-05
+scale_6      1.00339  -7.8648e-05
+scale_7      1.00866 -0.000148537
+scale_8      1.02121 -0.000248497
+scale_9      0.98572 -0.000291393
+scale_10       1.0004 -0.000303662
+scale_11      1.02712 -0.000446413
+smear_0      2.00283   -0.0282011
+smear_1      1.57722   -0.0276495
+smear_2      1.59806   -0.0288114
+smear_3      1.19691   -0.0270303
+smear_4     0.663034   -0.0182783
+smear_5     0.500948   -0.0193846
+smear_6     0.467844   -0.0199113
+smear_7      0.65478   -0.0186903
+smear_8      1.19468   -0.0275115
+smear_9      1.57125   -0.0296659
+smear_10      1.56209   -0.0268949
+smear_11      2.24484   -0.0272342

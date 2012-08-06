@@ -1,0 +1,27 @@
+! g_esfWorkCase=6 (6 bins)
+! g_esfWorkCaseShortName= 6bins
+! g_esfFitModel=7 (fit model Voigtian)
+scaling sqrt
+! bins  0.00 0.40 0.80 1.20 1.50 2.00 2.50
+MCOverData=61199.961481
+EtaDivisionCount=6
+ScalingFactorsCount=6
+SmearingFactorsCount=12
+scale_0      1.00454 -8.34482e-05
+scale_1      1.00524 -7.28115e-05
+scale_2      1.01149 -9.19662e-05
+scale_3      1.02187 -0.000143381
+scale_4     0.988684 -0.000143036
+scale_5      1.01437 -0.000160888
+smear_0    0.0545595     -1.96076
+smear_1     0.102716   -0.0144124
+smear_2    0.0766601   -0.0263624
+smear_3      0.17804   -0.0213921
+smear_4     0.387611   -0.0169693
+smear_5     0.198667   -0.0201287
+smear_6     0.433909    -0.203182
+smear_7     0.308377   -0.0290359
+smear_8     0.678072   -0.0182036
+smear_9      1.03639   -0.0221576
+smear_10      1.18072   -0.0234123
+smear_11      1.81991   -0.0157164
