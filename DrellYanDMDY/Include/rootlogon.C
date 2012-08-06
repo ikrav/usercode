@@ -21,8 +21,8 @@
   gROOT->ProcessLine(".L ../Include/TriggerSelection.hh+");
 
   gROOT->ProcessLine(".L ../Include/JsonParser.cc+");
-  gROOT->ProcessLine(".L ../Include/ElectronEnergyScale.cc+");
   gROOT->ProcessLine(".L ../Include/EtaEtaMass.hh+");
+  gROOT->ProcessLine(".L ../Include/ElectronEnergyScale.cc+");
   gROOT->ProcessLine(".L ../Include/FEWZ.cc+");
   gROOT->ProcessLine(".L ../Include/EventSelector.cc+");
   gROOT->ProcessLine(".L ../Include/InputFileMgr.cc+");
