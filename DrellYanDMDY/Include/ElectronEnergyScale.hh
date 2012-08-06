@@ -6,6 +6,12 @@
 #include <TRandom.h>
 #include <TH1F.h>
 
+#define UseEEM
+
+#ifdef UseEEM
+#include "../Include/EtaEtaMass.hh"
+#endif
+
 class ElectronEnergyScale {
 
 public:
@@ -15,6 +21,7 @@ public:
     UNCORRECTED,
     Date20110901_EPS11_default,
     Date20120101_default,
+    Date20120802_default,
     CalSet_File_Gauss,
     CalSet_File_BreitWigner,
     CalSet_File_Voigt
@@ -55,6 +62,18 @@ public:
     int idx=-1;
     for (int i=0; (idx<0) && (i<_nEtaBins); ++i) {
       if ((eta>_etaBinLimits[i]) && (eta<=_etaBinLimits[i+1])) idx=i+1;
+    }
+    return idx;
+  }
+
+  // triangular (i,j) index
+  int getEtaEtaIdx(double eta1, double eta2) const {
+    int idx1=getEtaBinIdx(eta1)-1;
+    int idx2=getEtaBinIdx(eta2)-1;
+    int idx=-1;
+    if ((idx1>=0) && (idx2>=0)) {
+      if (idx1>idx2) { idx=idx1; idx1=idx2; idx2=idx; }
+      idx=(2*_nEtaBins-1-idx1)*idx1/2 + idx2;
     }
     return idx;
   }
@@ -110,6 +129,12 @@ public:
 
   TH1F* createScaleHisto(const TString &namebase) const;
   TH1F* createSmearHisto(const TString &namebase, int parameterNo) const;
+
+#ifdef UseEEM
+  int loadEEMFile(const TString &eemFileName, vector<vector<double>*> &eemData) const;
+  int loadEEMFile(const TString &eemFileName, vector<vector<double>*> &eemData, double massMin, double massMax) const;
+  int loadEEMFile(const TString &eemFileName, vector<vector<EtaEtaMassData_t>*> &eemData, double massMin=-1e9, double massMax=1e9) const;
+#endif
 
   //protected: 
   // Internal functions, not for general use

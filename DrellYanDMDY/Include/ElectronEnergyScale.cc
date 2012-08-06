@@ -9,6 +9,11 @@
 #include <algorithm>
 #include "MyTools.hh"
 
+#ifdef UseEEM
+#include <TTree.h>
+#include <TBranch.h>
+#endif
+
 //------------------------------------------------------
 
 ElectronEnergyScale::ElectronEnergyScale(CalibrationSet calibrationSet):
@@ -376,6 +381,7 @@ bool ElectronEnergyScale::initializeAllConstants(int debug){
   case UNCORRECTED: nEtaBins1=1; break;
   case Date20110901_EPS11_default: nEtaBins1=12; break;
   case Date20120101_default: nEtaBins1=12; break;
+  case Date20120802_default: nEtaBins1=12; break;
   case CalSet_File_Gauss: 
   case CalSet_File_Voigt:
   case CalSet_File_BreitWigner:
@@ -519,6 +525,62 @@ bool ElectronEnergyScale::initializeAllConstants(int debug){
   }
     break;
 
+  case Date20120802_default: {
+    //
+    // Data of full 2011. Eta bins like for
+    // for Summer 11 result. The
+    // constants are NOT symmetric about eta = 0.
+    // Values derived for the CMSSW44X files with correct isolation variables
+    //
+    const int nEtaBins = 12;
+    //const double etaBinLimits[nEtaBins+1] = 
+    //  {-2.50001, -2.0, -1.5, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.5, 2.0, 2.50001};
+    std::vector<string> lines;
+    lines.push_back("! Date 2012 Aug 02\n");
+    lines.push_back("! g_esfWorkCase=15 (6 bins on each eta side)\n");
+    lines.push_back("! g_esfWorkCaseShortName= 6binNegs\n");
+    lines.push_back("! g_esfFitModel=1 (fit model Gauss)\n");
+    lines.push_back("scaling sqrt\n");
+    lines.push_back("! bins  -2.50 -2.00 -1.50 -1.20 -0.80 -0.40 0.00 0.40 0.80 1.20 1.50 2.00 2.50\n");
+    lines.push_back("MCOverData=17365.021297\n");
+    lines.push_back("EtaDivisionCount=12\n");
+    lines.push_back("ScalingFactorsCount=12\n");
+    lines.push_back("SmearingFactorsCount=12\n");
+    lines.push_back("scale_0      1.01426 -0.000243511\n");
+    lines.push_back("scale_1     0.988547 -0.000260672\n");
+    lines.push_back("scale_2       1.0225 -0.000266414\n");
+    lines.push_back("scale_3      1.01169 -0.000163012\n");
+    lines.push_back("scale_4      1.00637 -0.000165987\n");
+    lines.push_back("scale_5        1.006 -0.000153195\n");
+    lines.push_back("scale_6      1.00313 -0.000102003\n");
+    lines.push_back("scale_7      1.00402 -0.000127814\n");
+    lines.push_back("scale_8      1.01126 -0.000140353\n");
+    lines.push_back("scale_9      1.02128 -0.000265181\n");
+    lines.push_back("scale_10     0.988757 -0.000262493\n");
+    lines.push_back("scale_11      1.01436 -0.000265025\n");
+    lines.push_back("smear_0      1.89664   -0.0207878\n");
+    lines.push_back("smear_1      1.57576   -0.0247795\n");
+    lines.push_back("smear_2      1.19665   -0.0271564\n");
+    lines.push_back("smear_3     0.780325   -0.0210394\n");
+    lines.push_back("smear_4     0.409839   -0.0292847\n");
+    lines.push_back("smear_5     0.538319   -0.0227837\n");
+    lines.push_back("smear_6     0.450927   -0.0251806\n");
+    lines.push_back("smear_7     0.490343   -0.0256544\n");
+    lines.push_back("smear_8     0.733717   -0.0220547\n");
+    lines.push_back("smear_9      1.19763   -0.0274181\n");
+    lines.push_back("smear_10      1.50618    -0.025792\n");
+    lines.push_back("smear_11      1.98697   -0.0201719\n");
+
+    if (nEtaBins1!=nEtaBins) assert(0);
+
+    assert(_etaBinLimits); 
+    assert(_dataConst); assert(_dataConstErr);
+    assert(_mcConst1); assert(_mcConst1Err);
+    //for(int i=0; i<nEtaBins+1; i++) _etaBinLimits[i] = etaBinLimits[i];
+    if (!AssignConstants(lines, nEtaBins,_etaBinLimits,_dataConst,_dataConstErr,_mcConst1,_mcConst1Err)) assert(0);
+  }
+    break;
+
   case CalSet_File_Gauss: 
   case CalSet_File_Voigt:
   case CalSet_File_BreitWigner: {
@@ -561,6 +623,7 @@ bool ElectronEnergyScale::initializeExtraSmearingFunction(int normalize){
       case UNCORRECTED: break;
       case Date20110901_EPS11_default:
       case Date20120101_default:
+      case Date20120802_default:
       case CalSet_File_Gauss: {
 	if(_mcConst1 == 0) continue;
 	smearingFunctionGrid[i][j] = new TF1(fname, "gaus(0)", -10, 10);
@@ -817,6 +880,7 @@ void ElectronEnergyScale::randomizeSmearingWidth(int seed){
 
   case Date20110901_EPS11_default:
   case Date20120101_default:
+  case Date20120802_default:
   case CalSet_File_Gauss: {
 
     for( int i=0; i<_nEtaBins; i++){
@@ -1042,23 +1106,18 @@ ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet
   Ssiz_t pos = escaleTagName_orig.Index("#");
   if (pos>0) escaleTagName=escaleTagName_orig(0,pos-1); 
   else escaleTagName=escaleTagName_orig;
-  //std::cout << "escaleTagName_orig={" << escaleTagName_orig << "}, escaleTagName={" << escaleTagName << "}; pos=" << pos << "\n";
+  std::cout << "escaleTagName_orig={" << escaleTagName_orig << "}, escaleTagName={" << escaleTagName << "}; pos=" << pos << "\n";
   if ( (pos==0) || escaleTagName.Contains("Date20120101_default") ) {
     calibrationSet = ElectronEnergyScale::Date20120101_default;
+  }
+  else if ( (pos==0) || escaleTagName.Contains("Date20120802_default") ) {
+    calibrationSet = ElectronEnergyScale::Date20120802_default;
   }
   else if ( escaleTagName.Contains("UNCORRECTED")) {
     calibrationSet = ElectronEnergyScale::UNCORRECTED;
   }
   else if ( escaleTagName.Contains("Date20110901_EPS11_default")) {
     calibrationSet = ElectronEnergyScale::Date20110901_EPS11_default;
-  }
-  else if ( escaleTagName.Contains("Date20120101_Gauss_6bins")) {
-    calibrationSet = ElectronEnergyScale::CalSet_File_Gauss;
-    fileName="../root_files/constants/testESF_6bins_Gauss_20120119.inp";
-  }
-  else if ( escaleTagName.Contains("Date20120101_Gauss_6binNegs")) {
-    calibrationSet = ElectronEnergyScale::CalSet_File_Gauss;
-    fileName="../root_files/constants/testESF_6binNegs_Gauss_20120119.inp";
   }
   else if (escaleTagName.Contains("File")) {
     if (escaleTagName.Contains("File_Gauss") ||
@@ -1107,6 +1166,7 @@ TString ElectronEnergyScale::CalibrationSetName(ElectronEnergyScale::Calibration
   case ElectronEnergyScale::UNCORRECTED: name="UNCORRECTED"; break;
   case ElectronEnergyScale::Date20110901_EPS11_default: name="Date20110910_EPS11_default"; break;
   case ElectronEnergyScale::Date20120101_default: name="Date20120101_default"; break;
+  case ElectronEnergyScale::Date20120802_default: name="Date20120802_default"; break;
   case ElectronEnergyScale::CalSet_File_Gauss: 
     name="FileGauss(";
     if (fileName) name+=(*fileName);
@@ -1137,6 +1197,7 @@ TString ElectronEnergyScale::CalibrationSetFunctionName(ElectronEnergyScale::Cal
   case ElectronEnergyScale::UNCORRECTED: name="uncorrected"; break;
   case ElectronEnergyScale::Date20110901_EPS11_default: break; // Gauss
   case ElectronEnergyScale::Date20120101_default: break; // Gauss
+  case ElectronEnergyScale::Date20120802_default: break; // Gauss
   case ElectronEnergyScale::CalSet_File_Gauss: break; // Gauss
   case ElectronEnergyScale::CalSet_File_Voigt: name="Voigt"; break;
   case ElectronEnergyScale::CalSet_File_BreitWigner: name="BreitWigner"; break;
@@ -1155,6 +1216,7 @@ TString ElectronEnergyScale::calibrationSetShortName() const {
   case ElectronEnergyScale::UNCORRECTED: name="uncorrected"; break;
   case ElectronEnergyScale::Date20110901_EPS11_default: name="default20110901"; break; 
   case ElectronEnergyScale::Date20120101_default: name="default20120101"; break;
+  case ElectronEnergyScale::Date20120802_default: name="default20120802"; break;
   case ElectronEnergyScale::CalSet_File_Gauss: name="Gauss"; break;
   case ElectronEnergyScale::CalSet_File_Voigt: name="Voigt"; break;
   case ElectronEnergyScale::CalSet_File_BreitWigner: name="BreitWigner"; break;
@@ -1180,3 +1242,150 @@ TString ElectronEnergyScale::calibrationSetShortName() const {
 }
 
 //------------------------------------------------------
+
+#ifdef UseEEM
+int ElectronEnergyScale::loadEEMFile(const TString &eemFileName, vector<vector<double>*> &eemData) const {
+  EtaEtaMassData_t *eem = new EtaEtaMassData_t();
+  int res=1;
+  int etaEtaCount = this->numberOfEtaEtaBins();
+  eemData.clear(); eemData.reserve(etaEtaCount+1);
+
+  // Read file twice. First time we will determine the number of masses
+  // in each (eta1,eta2) bin and allocate memory. The second time we will
+  // store the mass value
+  const int optimize=1; // optimize memory
+  for (int loop=0; res && (loop<1+optimize); ++loop) {
+    //std::cout << "loop=" << loop << std::endl;
+    std::vector<int> counts(etaEtaCount);
+    const char *fname=eemFileName.Data();
+    TFile *fin = new TFile(fname);
+    assert(fin);
+    TTree *tree = (TTree*)fin->Get("Data"); assert(tree);
+    tree->SetBranchAddress("Data",&eem);
+    TBranch *branch = tree->GetBranch("Data"); assert(branch);
+    UInt_t entryMax = tree->GetEntries();
+    for (UInt_t ientry=0; ientry < entryMax; ++ientry) {
+      branch->GetEntry(ientry);
+      int idx=this->getEtaEtaIdx(eem->eta1(),eem->eta2());
+      //std::cout << loop << " got " << (*eem) << ", idx=" << idx << "\n";
+      if ((idx>=0) && (idx < etaEtaCount)) {
+	if (optimize && (loop==0)) {
+	  // loops 0 -- count the number of events
+	  counts[idx]++;
+	}
+	else {
+	  // loops 1 -- store the memory
+	  std::vector<double>* store=eemData[idx];
+	  store->push_back(eem->mass());
+	}
+      }
+    }
+    //delete branch;
+    //delete tree;
+    delete fin;
+    if (optimize && (loop==0)) {
+      // allocate memory
+      unsigned int k=0;
+      for (int i=0; i<this->numberOfEtaBins(); ++i) {
+	for (int j=i; j<this->numberOfEtaBins(); ++j, ++k) {
+	  std::vector<double>* tmp=new std::vector<double>();
+	  assert(tmp);
+	  //std::cout << "counts[k]=" << counts[k] << "\n";
+	  tmp->reserve(counts[k]);
+	  eemData.push_back(tmp);
+	}
+      }
+    }
+  }
+  return 1;
+}
+#endif
+
+//------------------------------------------------------
+
+#ifdef UseEEM
+int ElectronEnergyScale::loadEEMFile(const TString &eemFileName, vector<vector<double>*> &eemData, double massMin, double massMax) const {
+  ClearVec(eemData);
+  std::vector<std::vector<EtaEtaMassData_t>*> data;
+  int res=this->loadEEMFile(eemFileName,data,massMin,massMax);
+  if (!res) {
+    std::cout << "error in ElectronEnergyScale::loadEEMFile(doubleVV,min,max)\n";
+    return 0;
+  }
+  eemData.reserve(data.size());
+  for (unsigned int i=0; i<data.size(); ++i) {
+    const std::vector<EtaEtaMassData_t>* src=data[i];
+    std::vector<double> *dt=new std::vector<double>();
+    dt->reserve(src->size());
+    eemData.push_back(dt);
+    for (unsigned int ii=0; ii<src->size(); ++ii) {
+      dt->push_back((*src)[ii].mass());
+    }
+  }
+  ClearVec(data);
+  return 1;
+}
+#endif
+
+//------------------------------------------------------
+
+#ifdef UseEEM
+int ElectronEnergyScale::loadEEMFile(const TString &eemFileName, vector<vector<EtaEtaMassData_t>*> &eemData, double massMin, double massMax) const {
+  EtaEtaMassData_t *eem = new EtaEtaMassData_t();
+  int res=1;
+  int etaEtaCount = this->numberOfEtaEtaBins();
+  eemData.clear(); eemData.reserve(etaEtaCount+1);
+
+  // Read file twice. First time we will determine the number of masses
+  // in each (eta1,eta2) bin and allocate memory. The second time we will
+  // store the mass value
+  const int optimize=1; // optimize memory
+  for (int loop=0; res && (loop<1+optimize); ++loop) {
+    //std::cout << "loop=" << loop << std::endl;
+    std::vector<int> counts(etaEtaCount);
+    const char *fname=eemFileName.Data();
+    TFile *fin = new TFile(fname);
+    assert(fin);
+    TTree *tree = (TTree*)fin->Get("Data"); assert(tree);
+    tree->SetBranchAddress("Data",&eem);
+    TBranch *branch = tree->GetBranch("Data"); assert(branch);
+    UInt_t entryMax = tree->GetEntries();
+    for (UInt_t ientry=0; ientry < entryMax; ++ientry) {
+      branch->GetEntry(ientry);
+      int idx=this->getEtaEtaIdx(eem->eta1(),eem->eta2());
+      if ((eem->mass()<massMin) || (eem->mass()>massMax)) continue;
+      //std::cout << loop << " got " << (*eem) << ", idx=" << idx << "\n";
+      if ((idx>=0) && (idx < etaEtaCount)) {
+	if (optimize && (loop==0)) {
+	  // loops 0 -- count the number of events
+	  counts[idx]++;
+	}
+	else {
+	  // loops 1 -- store the memory
+	  std::vector<EtaEtaMassData_t>* store=eemData[idx];
+	  store->push_back(*eem);
+	}
+      }
+    }
+    //delete branch;
+    //delete tree;
+    delete fin;
+    if (optimize && (loop==0)) {
+      // allocate memory
+      unsigned int k=0;
+      for (int i=0; i<this->numberOfEtaBins(); ++i) {
+	for (int j=i; j<this->numberOfEtaBins(); ++j, ++k) {
+	  std::vector<EtaEtaMassData_t>* tmp=new std::vector<EtaEtaMassData_t>();
+	  assert(tmp);
+	  //std::cout << "counts[k]=" << counts[k] << "\n";
+	  tmp->reserve(counts[k]);
+	  eemData.push_back(tmp);
+	}
+      }
+    }
+  }
+  return 1;
+}
+#endif
+//------------------------------------------------------
+
