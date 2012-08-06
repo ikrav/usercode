@@ -12,9 +12,11 @@ puReweight=1
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
 if [ ${#2} -gt 0 ] ; then triggerSet=$2; fi
 if [ ${#3} -gt 0 ] ; then debugMode=$3; fi
+if [ ${#4} -gt 0 ] ; then tnpDataFile=$4; fi
+if [ ${#5} -gt 0 ] ; then tnpMCFile=$5; fi
 
-tnpMCFile="../config_files/sf_mc_eta2.conf"
-tnpDataFile="../config_files/sf_data_eta2.conf"
+#tnpDataFile="../config_files/sf_data_eta2.conf"
+#tnpMCFile="../config_files/sf_mc_eta2.conf"
 
 collectEvents=0  # it is recommended to have collectEvents=1 in evaluateESF!
 
@@ -32,11 +34,11 @@ fi
 if [ ${#mcConfInputFile} -eq 0 ] ; then
     mcConfInputFile="../config_files/fall11mc.input" # used in CalcEventEff.C
 fi
-if [ ${#tnpMCFile} -eq 0 ] ; then
-  tnpMCFile="../config_files/sf_mc.conf"   # file for eff_*.C
-fi
 if [ ${#tnpDataFile} -eq 0 ] ; then
   tnpDataFile="../config_files/sf_data.conf"   # file for eff_*.C
+fi
+if [ ${#tnpMCFile} -eq 0 ] ; then
+  tnpMCFile="../config_files/sf_mc.conf"   # file for eff_*.C
 fi
 if [ ${#debugMode} -eq 0 ] ; then
     debugMode=1
