@@ -606,22 +606,22 @@ Bool_t passEGM2011(const mithep::TDielectron *dielectron, WorkingPointType wp, d
 typedef enum { _EleID_Smurf2011,
 	       _EleID_EGM2011_Medium } TEleID_t;
 
-TEleID_t electronID=_EleID_Smurf2011;
+//const TEleID_t _electronID=_EleID_Smurf2011;
 // Started working on this but not finished.
-//TEleID_t electronID=_EleID_EGM2011_Medium;
+const TEleID_t _electronID=_EleID_EGM2011_Medium;
 
 //
 // Generic passEleID function
 //
 
 template<class EleObj_t>
-Bool_t passEleID(const EleObj_t *electron) {
+Bool_t passEleID(const EleObj_t *electron, double rho=0) {
   Bool_t pass=kFALSE;
-  switch(electronID) {
+  switch(_electronID) {
   case _EleID_Smurf2011: pass=passSmurf(electron); break;
-    //case _EleID_EGM2011_Medium: pass=passEGM2011(WP2011_MEDIUM);
+  case _EleID_EGM2011_Medium: pass=passEGM2011(electron,_EleID_EGM2011_Medium,rho);
   default:
-    std::cout << "passID: ElectronID is not prepared\n";
+    std::cout << "passEleID: ElectronID is not prepared\n";
   }
   return pass;
 }
