@@ -15,7 +15,8 @@ filename_data="../config_files/data.conf"
 filename_mc="../config_files/fall11mc.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffOld"
-tnpFileStart="../config_files/sf"
+tnpMCFile="../config_files/sf_mc_eta2.conf"
+tnpDataFile="../config_files/sf_data_eta2.conf"
 debugMode=0
 
 ## controlling your work
@@ -162,9 +163,8 @@ get_status() {
 
 # -------------------- Preparatory checks
 
-checkFile ${filename_data}
-checkFile ${filename_mc}
-#checkFile ${filename_cs}
+checkFile ${filename_data} ${filename_mc} ${filename_cs} 
+checkFile ${tnpMCFile} ${tnpDataFile}
 
 if [ ${debugMode} -eq 1 ] ; then
     echo -e "\n\n"
@@ -437,8 +437,8 @@ cd ../EventScaleFactors
 rm -f *.so ${expectEventScaleFactorsFile}
 echo
 checkFile evaluateESF.sh recalcESF.sh
-source evaluateESF.sh ${filename_mc} ${triggerSet}  | tee ${logDir}/out${timeStamp}-12-evaluateESF-efficiencyScaleFactors${anTag}.log
-source recalcESF.sh ${filename_mc} ${triggerSet} | tee ${logDir}/out${timeStamp}-12-recalcESF-efficiencyScaleFactors${anTag}.log
+source evaluateESF.sh ${filename_mc} ${triggerSet} ${debugMode} ${tnpDataFile} ${tnpMCFile} | tee ${logDir}/out${timeStamp}-12-evaluateESF-efficiencyScaleFactors${anTag}.log
+source recalcESF.sh ${filename_mc} ${triggerSet} ${debugMode} ${tnpDataFile} ${tnpMCFile} | tee ${logDir}/out${timeStamp}-12-recalcESF-efficiencyScaleFactors${anTag}.log
 get_status ${expectEventScaleFactorsFile}
 statusEventScaleFactors=$RUN_STATUS
 cd ../FullChain
