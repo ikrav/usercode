@@ -20,13 +20,16 @@ void eesSmearEtaEtaBinDemo(double eta1=0.0, double eta2=2.1) {
   ElectronEnergyScale esc("Date20120802_default");
   //ElectronEnergyScale esc("UNCORRECTED");
   //esc.init("FileVoigt ../root_files/constants/EScale/testESF_6binNegs_Voigtian_20120802.inp",1);
+  esc.init("FileGauss ../../root_files/constants/EScale/testESF_4EB3EENegs_Gauss_20120802.inp",1);
   //esc.setCalibrationSet(ElectronEnergyScale::UNCORRECTED);
   esc.print();
+  if (!esc.isInitialized()) return;
 
   TString eemFileExp, eemFileMC;
   setEEMFileLocation(eemFileExp,eemFileMC);
 
-  double xmin=60, xmax=120;
+  double x_extend=0;
+  double xmin=60-x_extend, xmax=120+x_extend;
   std::vector<std::vector<double>*> mcDataAll,expDataAll;
   if (!esc.loadEEMFile( eemFileMC, mcDataAll,xmin,xmax) ||
       !esc.loadEEMFile(eemFileExp,expDataAll,xmin,xmax)) {
@@ -50,8 +53,8 @@ void eesSmearEtaEtaBinDemo(double eta1=0.0, double eta2=2.1) {
   TString hName="Energy scale corrected (calibrationSet=";
   hName.Append(esc.calibrationSetName());
   hName.Append(")");
-  const double massMin=60;
-  const double massMax=120;
+  const double massMin=xmin;
+  const double massMax=xmax;
   const int numMassBins=100; //int(massMax-massMin+1e-3);
   const int subdivisionForSmearing=10;
   int ci=kBlack;
