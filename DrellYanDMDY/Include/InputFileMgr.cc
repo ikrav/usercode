@@ -249,6 +249,7 @@ int MCInputFileMgr_t::Load(const TString& inputFileName) {
   Int_t state=0;
   while(getline(ifs,line)) {
     if(line[0]=='#') continue;
+    if(line[0]=='%') break;
     if(state == 0){
       FDirTag = TString(line);
       getline(ifs,line);
