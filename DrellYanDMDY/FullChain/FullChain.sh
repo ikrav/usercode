@@ -437,7 +437,7 @@ cd ../EventScaleFactors
 rm -f *.so ${expectEventScaleFactorsFile}
 echo
 checkFile evaluateESF.sh recalcESF.sh
-source evaluateESF.sh ${filename_mc} ${triggerSet} ${debugMode} ${tnpDataFile} %{tnpMCFile} | tee ${logDir}/out${timeStamp}-12-evaluateESF-efficiencyScaleFactors${anTag}.log
+source evaluateESF.sh ${filename_mc} ${triggerSet} ${debugMode} ${tnpDataFile} ${tnpMCFile} | tee ${logDir}/out${timeStamp}-12-evaluateESF-efficiencyScaleFactors${anTag}.log
 source recalcESF.sh ${filename_mc} ${triggerSet} ${debugMode} ${tnpDataFile} ${tnpMCFile} | tee ${logDir}/out${timeStamp}-12-recalcESF-efficiencyScaleFactors${anTag}.log
 get_status ${expectEventScaleFactorsFile}
 statusEventScaleFactors=$RUN_STATUS
