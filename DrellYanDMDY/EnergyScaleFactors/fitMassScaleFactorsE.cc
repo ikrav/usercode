@@ -504,7 +504,7 @@ int FitMassSmearingIIe(std::ostream &out, unsigned int bin_count, const std::vec
   }
   
 
-  if (1 && tstc) {
+  if (0 && tstc) {
     out << "plot it\n";
     mcSignalV[0]->plotOn(tstf,RooFit::LineColor(kRed+2));
     out << "draw test frame\n";
@@ -827,7 +827,7 @@ int FitMassSmearingIIe(std::ostream &out, unsigned int bin_count, const std::vec
     html_lines.push_back(buf2);
     if (reorderVars) {
       if (exp.size()!=exp_orig.size()) {
-	sprintf(buf2,"<tr><td width=""25%%"">WARNING: The plot combinations<br> may be incorrect,<br> since some ranges were omitted.<br> Fit was done to %d cases<br> out of %d</td></tr>\n",int(exp.size()),int(exp_orig.size()));
+	sprintf(buf2,"<br><p><span style=""background-color:red""><td width=""25%%"">WARNING: The plot combinations may be incorrect, since some ranges were omitted.<br> Fit was done to %d cases<br> out of %d</td></span></p>\n",int(exp.size()),int(exp_orig.size()));
 	html_lines.push_back(buf2);
       }
     }
