@@ -7,6 +7,7 @@
 #include <TLorentzVector.h>
 #include <TH1F.h>
 #include <TCanvas.h>
+#include <TStyle.h>
 #include <TRandom.h>
 #include <TVectorD.h>
 #include <TGraphErrors.h>
@@ -143,6 +144,7 @@ void deriveScaleMeanAndErr(const int binCount, const int nexpCount,
 //=== Constants ==========================
 
 const bool savePlots = true;
+const bool correlationStudy = true;
 
 // File names for efficiency measurements from tag and probe
 TString          dirTag;
@@ -424,6 +426,19 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     }
   }
 
+  // for correlation studies
+  TH1F *hEvtW=new TH1F("hEvtW","hEvtW",nUnfoldingBins,0.,double(nUnfoldingBins));
+  TH1F *hEsfEvtW=new TH1F("hEsfEvtW","hEsfEvtW",nUnfoldingBins,0.,double(nUnfoldingBins));
+  double sumEvtW_Zpeak=0., sumEsfEvtW_Zpeak=0.;
+  std::vector<double> systSumEsfEvtW_ZpeakV(nexp);
+  std::vector<TH1F*> hSystEsfEvtWV;
+  hSystEsfEvtWV.reserve(nexp);
+  for (int i=0; i<nexp; i++) {
+    TString base = Form("hSystEsfEvtW_exp%d",i);
+    hSystEsfEvtWV.push_back(new TH1F(base,base,nUnfoldingBins,0.,double(nUnfoldingBins)));
+  }
+
+
   TFile *skimFile=new TFile(selectEventsFName);
   if (!skimFile || !skimFile->IsOpen()) {
     std::cout << "failed to open file <" << selectEventsFName << ">\n";
@@ -465,6 +480,10 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
       if( selData.insideMassWindow(60,120) ) {
 	hZpeakEt->Fill(selData.et_1, weight);
 	hZpeakEt->Fill(selData.et_2, weight);
+	if ((idx>=0) && (idx<nUnfoldingBins)) {
+	  sumEvtW_Zpeak+=weight;
+	  sumEsfEvtW_Zpeak+=weight*scaleFactor;
+	}
       }
 
       hScaleRecoV[ibin]->Fill( scaleFactorReco, weight);
@@ -476,6 +495,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 	hScaleIdFIV [idx]->Fill( scaleFactorId, weight);
 	hScaleHltFIV[idx]->Fill( scaleFactorHlt, weight);
 	hScaleFIV   [idx]->Fill( scaleFactor, weight);
+	hEvtW->Fill(idx,weight);
+	hEsfEvtW->Fill(idx,scaleFactor*weight);
       }
 	
       // Acumulate pseudo-experiments for error estimate
@@ -494,6 +515,10 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 	  systScaleRecoFI[idx][iexp]->Fill(scaleFactorReco, weight);
 	  systScaleIdFI [idx][iexp]->Fill(scaleFactorId, weight);
 	  systScaleHltFI[idx][iexp]->Fill(scaleFactorHlt, weight);
+	  hSystEsfEvtWV[iexp]->Fill(idx,scaleFactor*weight);
+	  if( selData.insideMassWindow(60,120) ) {
+	    systSumEsfEvtW_ZpeakV[iexp]+=weight*scaleFactor;
+	  }
 	}
       }
     } // if (ibin is ok)
@@ -680,6 +705,118 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   scaleFIV.Write("scaleFactorFlatIdxArray");
   scaleMeanErrFIV.Write("scaleFactorErrFlatIdxArray");
   fa.Close();
+
+  //
+  // Correlation study
+  //
+  
+  if (correlationStudy) {
+    TString corrFileNameDebug=sfConstFileName;
+    corrFileNameDebug.ReplaceAll("scale_factors","esf_correlation_debug");
+    TFile fCorrDebug(corrFileNameDebug,"recreate");
+    if (!fCorrDebug.IsOpen()) {
+      std::cout << "failed to create a file <" << corrFileNameDebug << ">" << std::endl;
+      assert(0);
+    }
+    
+    const double c_esfLimit_low = 0.0;
+    const double c_esfLimit_high = 1.5;
+    const int c_theEsfBins = int((c_esfLimit_high-c_esfLimit_low)/5e-3 + 1e-3);
+
+    TH2F *hCorrelation=new TH2F("hCorrelation","hCorrelation",nUnfoldingBins,0.5,nUnfoldingBins+0.5,nUnfoldingBins,0.5,nUnfoldingBins+0.5);
+    hCorrelation->SetDirectory(0);
+    TH2F *hCorrelationNorm=new TH2F("hCorrelationNorm","hCorrelationNorm",nUnfoldingBins,0.5,nUnfoldingBins+0.5,nUnfoldingBins,0.5,nUnfoldingBins+0.5);
+    hCorrelationNorm->SetDirectory(0);
+    
+    for (int iM=0, i=0; iM<DYTools::nMassBins; ++iM) {
+      for (int iY=0; (iY<DYTools::nYBins[iM]) && (i<nUnfoldingBins); ++iY, ++i) {
+	for (int jM=0, j=0; jM<DYTools::nMassBins; ++jM) {
+	  for (int jY=0; (jY<DYTools::nYBins[jM]) && (j<nUnfoldingBins); ++jY, ++j) {
+	    TString nameHESF= Form("hESF_%d_%d__iM%d_iY%d__jM%d_jY%d",i,j,iM,iY,jM,jY);
+	    TString nameHESF_Norm= Form("hESFNorm_%d_%d__iM%d_iY%d__jM%d_jY%d",i,j,iM,iY,jM,jY);
+	    if (debugMode) HERE(nameHESF.Data());
+	    TH2F *hESF=new TH2F(nameHESF,nameHESF,c_theEsfBins,c_esfLimit_low,c_esfLimit_high, c_theEsfBins,c_esfLimit_low,c_esfLimit_high);
+	    TH2F *hESF_Norm=(TH2F*)hESF->Clone(nameHESF_Norm);
+	    hESF->SetDirectory(0); hESF_Norm->SetDirectory(0);
+	    
+	    for (int iexp=0; iexp<nexp; ++iexp) {
+	      TString nameHRatio= Form("hRatio_iexp%d",iexp);
+	      TH1F *hRatio=(TH1F*)hSystEsfEvtWV[iexp]->Clone(nameHRatio);
+	      hRatio->SetDirectory(0);
+	      hRatio->Divide(hSystEsfEvtWV[iexp],hEvtW);
+	      hESF->Fill(hRatio->GetBinContent(i+1),hRatio->GetBinContent(j+1));
+	      delete hRatio;
+	      
+	      TString nameHRatioNorm= Form("hRatio_Norm_iexp%d",iexp);
+	      TH1F *hRatio_Norm=(TH1F*)hSystEsfEvtWV[iexp]->Clone(nameHRatioNorm);
+	      hRatio_Norm->SetDirectory(0);
+	      hRatio_Norm->Divide(hSystEsfEvtWV[iexp],hEvtW,sumEvtW_Zpeak/systSumEsfEvtW_ZpeakV[iexp],1.);
+	      
+	      hESF_Norm->Fill(hRatio_Norm->GetBinContent(i+1),hRatio_Norm->GetBinContent(j+1));
+	      delete hRatio_Norm;
+	    }
+	    
+	    if ((jM==0) && (jY==0)) {
+	      TString tmpDirName=Form("%dDcorrel_histos_Mbin%d_Ybin%d",(DYTools::study2D) ? 2:1,iM+1,iY+1);
+	      fCorrDebug.cd();
+	      fCorrDebug.mkdir(tmpDirName);
+	      fCorrDebug.cd(tmpDirName);
+	    }
+	    
+	    hESF->Write();
+	    hESF_Norm->Write();
+	    
+	    hCorrelation->Fill(i+1,j+1, hESF->GetCorrelationFactor(1,2) );
+	    hCorrelationNorm->Fill(i+1,j+1, hESF_Norm->GetCorrelationFactor(1,2) );
+	    delete hESF;
+	    delete hESF_Norm;
+	  }
+	}
+      }
+    }
+    fCorrDebug.cd();
+    hCorrelation->Write();
+    hCorrelationNorm->Write();
+    fCorrDebug.Close();
+    std::cout << "file <" << corrFileNameDebug << "> created" << std::endl;
+
+    TString corrFileName=corrFileNameDebug;
+    corrFileName.ReplaceAll("_debug","");
+    TFile fCorr(corrFileName,"recreate");
+    if (!fCorr.IsOpen()) {
+      std::cout << "failed to create a file <" << corrFileName << ">" << std::endl;
+      assert(0);
+    }
+
+    fCorr.cd();
+    hCorrelation->Write();
+    hCorrelationNorm->Write();
+
+    TCanvas *canvCorr = MakeCanvas("canvEffCorr","canvEffCorr",600,600);
+    canvCorr->SetRightMargin(0.12);
+    CPlot plotEffCorr("efficiencyCorrelations","",
+		       "idx_{1}",
+		       "idx_{2}");
+    gStyle->SetPalette(1);
+    plotEffCorr.AddHist2D(hCorrelation,"COLZ");
+    plotEffCorr.Draw(canvCorr);
+    SaveCanvas(canvCorr,"figEffCorrelations");
+    canvCorr->Write();
+
+    TCanvas *canvCorrNorm = MakeCanvas("canvEffCorrNorm","canvEffCorrNorm",600,600);
+    canvCorrNorm->SetRightMargin(0.12);
+    CPlot plotEffCorrNorm("efficiencyCorrelations_Norm","",
+                       "idx_{1}",
+                       "idx_{2}");
+    gStyle->SetPalette(1);
+    plotEffCorrNorm.AddHist2D(hCorrelationNorm,"COLZ");
+    plotEffCorrNorm.Draw(canvCorrNorm);
+    SaveCanvas(canvCorrNorm,"figEffCorrelations_Norm");
+    canvCorrNorm->Write();
+
+    fCorr.Close();
+    std::cout << "file <" << corrFileName << "> created" << std::endl;
+  }
 
   //
   // Some plots
@@ -1032,7 +1169,7 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	TElectron *ele2 = extractElectron(dielectron, 2);
 
 	// ID cuts
-// 	if( !( passSmurf(ele1) && passSmurf(ele2) ) ) continue;
+ 	//if( !( passSmurf(ele1) && passSmurf(ele2) ) ) continue;
 	if( !( passEGM2011(ele1, WP_MEDIUM, info->rhoLowEta)
 	       && passEGM2011(ele2, WP_MEDIUM, info->rhoLowEta) ) ) continue;
 
@@ -1806,9 +1943,12 @@ int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename,
    vector<TMatrixD*> &errHiV, vector<TMatrixD*> &avgErrV, 
    int weightedCnC) {
 
-  TFile f(TString("../root_files/tag_and_probe/")+mgr.dirTag()+TString("/")+
-	  filename);
-  if(!f.IsOpen()) assert(0);
+  TString fullFName=TString("../root_files/tag_and_probe/")+mgr.dirTag()+TString("/")+filename;
+  TFile f(fullFName);
+  if(!f.IsOpen()) {
+    std::cout << "failed to open a file <" << fullFName << ">" << std::endl;
+    assert(0);
+  }
   std::cout << "reading <" << filename << ">\n";
   
   TMatrixD *effMatrix        = NULL;
@@ -1827,7 +1967,10 @@ int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename,
   f.Close();
 
   // Make sure that the objects are present
-  if( !(effMatrix && effMatrixErrLow && effMatrixErrHigh) ) assert(0);
+  if( !(effMatrix && effMatrixErrLow && effMatrixErrHigh) ) {
+    std::cout << "file <" << fullFName << "> does not contain effMatrix,effMatrixErrLow or effMatrixErrHigh" << std::endl;
+    assert(0);
+  }
 
   // Make sure that there are only two eta bins and appropriate number of ET bins
   if( effMatrix->GetNcols() != etaBinCount ) {
