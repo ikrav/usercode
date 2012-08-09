@@ -484,7 +484,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 
 	bool isBele = isBarrel(electron->scEta);
 	bool isEele = isEndcap(electron->scEta);
-	if ( ! isBele && ! isEele && (etaBinning!=ETABINS5)) continue;
+	if ( ! isBele && ! isEele ) continue;
 	tagCandPassEta++;
 	
 	if( sample != DATA)
@@ -520,7 +520,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 
 	  bool isBsc = isBarrel(sc->scEta);
 	  bool isEsc = isEndcap(sc->scEta);
-	  if( ! isBsc && ! isEsc && (etaBinning!=ETABINS5)) continue;
+	  if( ! isBsc && ! isEsc ) continue;
 	  numTagProbePairsPassEta++;
 
 	  if( sample != DATA)
