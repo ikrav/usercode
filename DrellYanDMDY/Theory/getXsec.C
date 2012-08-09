@@ -35,6 +35,9 @@
 #include "../Include/InputFileMgr.hh"
 #endif
 
+template <class T>
+inline T SQR(T x) { return (x)*(x); }
+
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 double getErrorOnRatio(double nTotal, double nTotalErr, double nPass, double nPassErr) {
@@ -46,14 +49,56 @@ double getErrorOnRatio(double nTotal, double nTotalErr, double nPass, double nPa
   return err;
 }
 
+// -----------------------------------------------------------------------
+
+TH1F* plotXsec1D(const char *hname, const TMatrixD &nEvents, const TMatrixD &nEventsErr, CPlot *cp=NULL, int color=kBlack) {
+  TH1F *h=new TH1F(hname,hname, DYTools::nMassBins, DYTools::massBinLimits);
+  h->SetDirectory(0);
+  for (int iM=0; iM<DYTools::nMassBins; ++iM) {
+    double sum=0., sumW2=0.;
+    for (int iY=0; iY<DYTools::nYBins[iM]; ++iY) {
+      sum+= nEvents[iM][iY];
+      sumW2+= nEventsErr[iM][iY];
+    }
+    h->SetBinContent(iM+1, sum);
+    h->SetBinError(iM+1, sqrt(sumW2));
+  }
+  if (cp) {
+    cp->AddHist1D(h,TString(hname),"LP",color,1,0,1);
+  }
+  return h;
+}
+
+// -----------------------------------------------------------------------
+
+TH1F* plotXsec2D(const char *name_base, int iM, const TMatrixD &nEvents, const TMatrixD &nEventsErr, CPlot *cp=NULL, int color=kBlack, int addText=0) {
+  double massMin=DYTools::massBinLimits[iM];
+  double massMax=DYTools::massBinLimits[iM+1];
+  TString hname=Form("%s_mass_%2.0lf_%2.0lf",name_base,massMin,massMax);
+  TH1F *h=new TH1F(hname,hname, DYTools::nYBins[iM], DYTools::yRangeMin,DYTools::yRangeMax);
+  h->SetDirectory(0);
+  for (int iY=0; iY<DYTools::nYBins[iM]; ++iY) {
+    h->SetBinContent(iY+1, nEvents[iM][iY]);
+    h->SetBinError(iY+1, sqrt(nEventsErr[iM][iY]));
+  }
+  if (cp) {
+    cp->AddHist1D(h,TString(name_base),"L",color,1,0,1);
+    if (addText) {
+      TString mass_range=Form("%2.0lf<m<%2.0lf GeV",massMin,massMax);
+      cp->AddTextBox(mass_range, 0.7,0.70,0.92,0.83, 0,kBlack,kWhite);
+    }
+  }
+  return h;
+}
+
 
 //=== MAIN MACRO =================================================================================================
 
 
-void getXsec(const TString input, int debugMode=0)
+void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
 {
   // check whether it is a calculation
-  if (input.Contains("_DebugRun_")) {
+  if (mc_input.Contains("_DebugRun_")) {
     std::cout << "getXsec: _DebugRun_ detected. Terminating the script\n";
     return;
   }
@@ -75,7 +120,7 @@ void getXsec(const TString input, int debugMode=0)
   Double_t massLow  = DYTools::massBinLimits[0];
   Double_t massHigh = DYTools::massBinLimits[DYTools::nMassBins];
 
-  if (!inpMgr.Load(input)) {
+  if (!inpMgr.Load(mc_input)) {
     return;
   }
   
@@ -95,6 +140,8 @@ void getXsec(const TString input, int debugMode=0)
   TMatrixD nEventsDET (DYTools::nMassBins,DYTools::nYBinsMax); // number of weighted events in the detector acceptance
   TMatrixD w2Events (DYTools::nMassBins,DYTools::nYBinsMax);
   TMatrixD w2EventsDET (DYTools::nMassBins,DYTools::nYBinsMax);
+  Double_t nZpeak=0, w2Zpeak=0;
+  double nZpeakDET=0, w2ZpeakDET=0;
   
   nEvents = 0;
   w2Events = 0;
@@ -128,6 +175,7 @@ void getXsec(const TString input, int debugMode=0)
 
   // loop over samples  
   double lumi0=0;
+  if (plotOnly==0) {
   for(UInt_t ifile=0; ifile<inpMgr.fileNames().size(); ifile++) {
   
     // Read input file
@@ -206,16 +254,14 @@ void getXsec(const TString input, int debugMode=0)
   delete gen;
 
   // Determine Z-peak event count
-  Double_t nZpeak=0, w2Zpeak=0;
-  //double nZpeakDET=0, w2ZpeakDET=0;
   for (int i=0; i<DYTools::nMassBins; i++) {
     if ( (DYTools::massBinLimits[i]>=60-1e-3) 
 	 && (DYTools::massBinLimits[i+1]<=120+1e-3)) {
       for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
 	nZpeak += nEvents(i,yi);
 	w2Zpeak += w2Events(i,yi);
-	//nZpeakDET += nEventsDET(i,yi);
-	//w2ZpeakDET += w2EventsDET(i,yi);
+	nZpeakDET += nEventsDET(i,yi);
+	w2ZpeakDET += w2EventsDET(i,yi);
       }
     }
   }
@@ -225,6 +271,7 @@ void getXsec(const TString input, int debugMode=0)
     std::cout << "no events in the Z-peak region\n";
     return ;
   }
+  } // if (plotOnly==0)
 
 
   // Containers of the normalized event counts
@@ -236,7 +283,6 @@ void getXsec(const TString input, int debugMode=0)
   TMatrixD nEventsErr (DYTools::nMassBins,DYTools::nYBinsMax);
   TMatrixD nEventsDETErr (DYTools::nMassBins,DYTools::nYBinsMax);
 
-
   nEventsNorm=0;
   nEventsDETNorm=0;
   nEventsNormErr=0;
@@ -245,6 +291,7 @@ void getXsec(const TString input, int debugMode=0)
   nEventsErr=0;
   nEventsDETErr=0;
 
+  if (plotOnly==0) {
   for(int i=0; i<DYTools::nMassBins; i++) {
     for (int j=0; j<nYBins[i]; j++) {
       nEventsErr(i,j)=sqrt(w2Events(i,j));
@@ -255,34 +302,57 @@ void getXsec(const TString input, int debugMode=0)
 	getErrorOnRatio(nEvents(i,j),nEventsErr(i,j),
 			nZpeak, sqrt(w2Zpeak));
 
-      nEventsDETNorm(i,j) = nEventsDET(i,j)/nZpeak;
+      nEventsDETNorm(i,j) = nEventsDET(i,j)/nZpeakDET;
       nEventsDETNormErr(i,j) =
 	getErrorOnRatio(nEventsDET(i,j),nEventsDETErr(i,j),
-			nZpeak, sqrt(w2Zpeak));
+			nZpeakDET, sqrt(w2ZpeakDET));
     }
+  }
   }
 
 
 
   TString outFile= TString("../root_files/xSecTh_") + analysisTag + TString("_tmp.root");
-  TFile thFile(outFile,"recreate");
-  nEvents.Write("nGenEvents");
-  nEventsErr.Write("nGenEventsErr");
-  nEventsDET.Write("nGenEventsDET");
-  nEventsDETErr.Write("nGenEventsDETErr");
-  nEventsNorm.Write("nGenEventsNorm");
-  nEventsNormErr.Write("nGenEventsNormErr");
-  nEventsDETNorm.Write("nGenEventsDETNorm");
-  nEventsDETNormErr.Write("nGenEventsDETNormErr");
-  TVectorD zPeakInfo(2);
-  zPeakInfo(0)=nZpeak; zPeakInfo(1)=sqrt(w2Zpeak);
-  zPeakInfo.Write("zPeakCountAndErr");
-  thFile.Close();
+
+  if (plotOnly==0) {
+    TFile thFile(outFile,"recreate");
+    nEvents.Write("nGenEvents");
+    nEventsErr.Write("nGenEventsErr");
+    nEventsDET.Write("nGenEventsDET");
+    nEventsDETErr.Write("nGenEventsDETErr");
+    nEventsNorm.Write("nGenEventsNorm");
+    nEventsNormErr.Write("nGenEventsNormErr");
+    nEventsDETNorm.Write("nGenEventsDETNorm");
+    nEventsDETNormErr.Write("nGenEventsDETNormErr");
+    TVectorD zPeakInfo(4);
+    zPeakInfo(0)=nZpeak; zPeakInfo(1)=sqrt(w2Zpeak);
+    zPeakInfo(2)=nZpeakDET; zPeakInfo(3)=sqrt(w2ZpeakDET);
+    zPeakInfo.Write("zPeakCountAndErr");
+    thFile.Close();
+    std::cout << "file <" << outFile << "> created\n";
+  }
+  else {
+    TFile thFile(outFile);
+    nEvents.Read("nGenEvents");
+    nEventsErr.Read("nGenEventsErr");
+    nEventsDET.Read("nGenEventsDET");
+    nEventsDETErr.Read("nGenEventsDETErr");
+    nEventsNorm.Read("nGenEventsNorm");
+    nEventsNormErr.Read("nGenEventsNormErr");
+    nEventsDETNorm.Read("nGenEventsDETNorm");
+    nEventsDETNormErr.Read("nGenEventsDETNormErr");
+    TVectorD zPeakInfo(4);
+    zPeakInfo.Read("zPeakCountAndErr");
+    thFile.Close();
+    
+    nZpeak=zPeakInfo[0]; w2Zpeak=SQR(zPeakInfo[1]);
+    nZpeakDET=zPeakInfo[2]; w2ZpeakDET=SQR(zPeakInfo[3]);
+    std::cout << "file <" << outFile << "> loaded\n";
+  }
 
   //--------------------------------------------------------------------------------------------------------------
   // Make plots 
   //==============================================================================================================  
-  /*
   CPlot::sOutDir="plots" + analysisTag;
 
   TString fileNamePlots=TString("../root_files/xSecTh_") + analysisTag + TString("_plots_tmp.root");
@@ -291,12 +361,44 @@ void getXsec(const TString input, int debugMode=0)
     std::cout << "failed to create file <" << fileNamePlots << ">\n";
     throw 2;
   }
-  TCanvas *c = MakeCanvas("canvXsectTh","canvXsectTh",800,600);
-
   // string buffers
   char ylabel[50];   // y-axis label
 
-  // Z mass
+
+  if (study2D) {
+    TCanvas *c2D = MakeCanvas("canvXsectTh_2D","canvXsectTh_2D",600,600+300*study2D);
+    std::vector<TH1F*> hXsecV;
+    std::vector<CPlot*> cpV;
+    hXsecV.reserve(DYTools::nMassBins);
+    cpV.reserve(DYTools::nMassBins);
+    for (int iM=0; iM<DYTools::nMassBins; ++iM) {
+      double massMin=DYTools::massBinLimits[iM];
+      double massMax=DYTools::massBinLimits[iM+1];
+      CPlot *cp=new CPlot(Form("cpMass%2.0lf_%2.0lf",massMin,massMax),
+			  "","|Y|","counts");
+      cpV.push_back(cp);
+      hXsecV.push_back( plotXsec2D("xsec",iM,nEvents,nEventsErr,cp,kBlack,1) );
+    }
+    c2D->Divide(2,3);
+    for (int ipad=1; ipad<=6; ++ipad) {
+      cpV[ipad]->Draw(c2D,false,"png",ipad);
+    }
+    c2D->Update();
+  }
+
+  {
+    TCanvas *c1D = MakeCanvas("canvXsectTh_1D","canvXsectTh_1D",600,600);
+    CPlot *cp=new CPlot("cplot_1D","","M_{ee} (GeV)","counts");
+    TH1F *hXsec= plotXsec1D("xsec1D",nEvents,nEventsErr,cp,kBlue);
+    hXsec->SetDirectory(0);
+    cp->SetLogx();
+    cp->Draw(c1D,false,"png");
+    c1D->Update();
+  }
+	
+  /* 
+
+ // Z mass
   sprintf(ylabel,"a.u. / %.1f GeV/c^{2}",hZMassv[0]->GetBinWidth(1));
   CPlot plotZMass1("zmass1","","m(Z) [GeV/c^{2}]",ylabel);
   for(UInt_t i=0; i<fnamev.size(); i++) { 
@@ -312,34 +414,11 @@ void getXsec(const TString input, int debugMode=0)
     Plot1D(accv,accErrv,"acceptance1D","acceptance");
   //delete filePlots;
   
-
-  //          ------ can be adjusted to use outDir
-  // Store constants in the file
-  TString accConstFileName(TString("../root_files/"));
-  if (systematicsMode==DYTools::NORMAL){
-    accConstFileName+=TString("constants/")+dirTag;
-    gSystem->mkdir(accConstFileName,kTRUE);
-    //accConstFileName+=TString("/acceptance_constants.root");
-    accConstFileName+=TString("/acceptance_constants" + analysisTag + ".root");
-  }
-  else if (systematicsMode==DYTools::FSR_STUDY){
-    accConstFileName+=TString("systematics/")+dirTag;
-    gSystem->mkdir(accConstFileName,kTRUE);
-    accConstFileName+=TString("/acceptance_constants_reweight_") + analysisTag;
-    accConstFileName+=TString("_");
-    accConstFileName+=int(reweightFsr*100);
-    accConstFileName+=TString(".root");
-  }
-  TFile fa(accConstFileName,"recreate");
-  accv.Write("acceptanceMatrix");
-  accErrv.Write("acceptanceErrMatrix");
-  unfolding::writeBinningArrays(fa);
-  fa.Close();
-
-
+  */
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out
   //==============================================================================================================
+  /*
   cout << endl;
   cout << "*" << endl;
   cout << "* SUMMARY" << endl;
