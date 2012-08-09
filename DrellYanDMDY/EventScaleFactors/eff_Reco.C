@@ -385,6 +385,10 @@ void eff_Reco(const TString configFile, const TString effTypeString,
     
     // Read input file
     cout << "Processing " << ntupleFileNames[ifile] << "..." << endl;
+    if (ntupleFileNames[ifile].Index("tight-loose_skim")!=-1) {
+      std::cout << "eff_Reco cannot work with 'tight-loose_skim' file: TElectron and TPhoton branches are needed" << endl;
+      assert(0);
+    }
     infile = new TFile(ntupleFileNames[ifile]); 
     assert(infile);
     
