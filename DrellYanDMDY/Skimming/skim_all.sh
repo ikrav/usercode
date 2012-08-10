@@ -18,4 +18,7 @@ root -l -b -q TrimNtuples.C+\(\"../config_files/skim_configs/trim.input.zeem500\
 
 root -l -b -q SkimNtuples.C+\(\"../config_files/skim_configs/skim.input.zeem20to500\"\) >& log-skim-zeem20to500.txt 
 
+root -l -b -q SkimNtuples.C+\(\"../config_files/skim_configs/skim.input.ttj\"\) >& log-skim-ttj.txt 
+root -l -b -q SkimNtuples.C+\(\"../config_files/skim_configs/skim.input.wjets\"\) >& log-skim-wjets.txt 
+
 
