@@ -1107,11 +1107,11 @@ ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet
   if (pos>0) escaleTagName=escaleTagName_orig(0,pos-1); 
   else escaleTagName=escaleTagName_orig;
   std::cout << "escaleTagName_orig={" << escaleTagName_orig << "}, escaleTagName={" << escaleTagName << "}; pos=" << pos << "\n";
-  if ( (pos==0) || escaleTagName.Contains("Date20120101_default") ) {
-    calibrationSet = ElectronEnergyScale::Date20120101_default;
-  }
-  else if ( (pos==0) || escaleTagName.Contains("Date20120802_default") ) {
+  if ( (pos==0) || escaleTagName.Contains("Date20120802_default") ) {
     calibrationSet = ElectronEnergyScale::Date20120802_default;
+  }
+  else if ( (pos==0) || escaleTagName.Contains("Date20120101_default") ) {
+    calibrationSet = ElectronEnergyScale::Date20120101_default;
   }
   else if ( escaleTagName.Contains("UNCORRECTED")) {
     calibrationSet = ElectronEnergyScale::UNCORRECTED;
