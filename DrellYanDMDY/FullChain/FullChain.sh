@@ -461,7 +461,7 @@ rm -f *.so ${expectEScaleSystFile}
 echo
 checkFile evaluateEScaleSyst.sh
 source evaluateEScaleSyst.sh \
-    ${filename_data} ${filename_mc} ${anTag} \"${anTagUser}\" \
+    ${filename_data} ${filename_mc} ${anTag} \"${anTagUser}\" ${debugMode} \
     | tee ${logDir}/out${timeStamp}-13-escaleSystematics${anTag}.out
 get_status ${expectEScaleSystFile}
 if [ -f ${expectEScaleSystFile} ] ; then
