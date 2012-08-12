@@ -41,7 +41,7 @@ int saveTexTable=0){
   int countFittingShape=0;
   std::vector<TString> usedFiles;
 
-  ElectronEnergyScale escale("Date20120101_default");
+  ElectronEnergyScale escale("Date20120802_default");
 
   //
   // Calculate error associated with statistical 
@@ -156,8 +156,8 @@ int saveTexTable=0){
   // Calculate error related to extra smearing function shape
   //
   std::vector<TString> shapeNames;
-  shapeNames.push_back("_6binNegs_BreitWigner");
-  shapeNames.push_back("_6binNegs_Voigtian");
+  shapeNames.push_back("_6binNegs_BreitWigner_20120802");
+  shapeNames.push_back("_6binNegs_Voigtian_20120802");
   std::vector<TVectorD*> unfoldedYieldsShape;
   if (1)
   for (unsigned int i=0; i<shapeNames.size(); ++i) {
@@ -213,13 +213,13 @@ int saveTexTable=0){
   // Calculate error related to eta binning
   //
   std::vector<TString> etaBinNames;
-  etaBinNames.push_back("_2binNegs_Gauss");
-  etaBinNames.push_back("_3EB3EENegs_Gauss");
-  etaBinNames.push_back("_4binNegs_Gauss");
-  etaBinNames.push_back("_4EB3EENegs_Gauss");
-  etaBinNames.push_back("_5binNegs_Gauss");
-  etaBinNames.push_back("_6binNegs_Gauss_20120119"); // default
-  etaBinNames.push_back("_6bins_Gauss_20120119");
+  etaBinNames.push_back("_2binNegs_Gauss_20120802");
+  etaBinNames.push_back("_3EB3EENegs_Gauss_20120802");
+  etaBinNames.push_back("_4binNegs_Gauss_20120802");
+  etaBinNames.push_back("_4EB3EENegs_Gauss_20120802");
+  etaBinNames.push_back("_5binNegs_Gauss_20120802");
+  etaBinNames.push_back("_6binNegs_Gauss_20120802"); // default
+  etaBinNames.push_back("_6bins_Gauss_20120802");
   std::vector<TVectorD*> unfoldedYieldsEta;
   unfoldedYieldsEta.reserve(etaBinNames.size());
   if (1)
