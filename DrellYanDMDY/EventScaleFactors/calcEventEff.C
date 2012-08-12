@@ -46,7 +46,9 @@ using namespace std;
 
 const int NEffTypes=3;
 // Declaration of arrays for systematic studies
-typedef double EffArray_t[NEffTypes][DYTools::nEtBins5][DYTools::nEtaBins5]; // largest storage
+const int nEtBinsMax=DYTools::nEtBins6;
+const int nEtaBinsMax=DYTools::nEtaBins5;
+typedef double EffArray_t[NEffTypes][nEtBinsMax][nEtaBinsMax]; // largest storage
 
 const int nexp=100;
 typedef TH1F* SystTH1FArray_t[nMassBins][nexp];   // mass index
@@ -240,6 +242,17 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   etaBinning=tnpMCMgr.etaBinsKind();
   etaBinCount=DYTools::getNEtaBins(etaBinning);
   etaBinLimits=DYTools::getEtaBinLimits(etaBinning);
+
+  if (etBinCount>nEtBinsMax) {
+    printf("ERROR in the code: etBinCount=%d, hard-coded nEtBinsMax=%d\n",etBinCount,nEtBinsMax);
+    std::cout << std::endl;
+    assert(0);
+  }
+  if (etaBinCount>nEtaBinsMax) {
+    printf("ERROR in the code: etaBinCount=%d, hard-coded nEtaBinsMax=%d\n",etaBinCount,nEtaBinsMax);
+    std::cout << std::endl;
+    assert(0);
+  }
   
   TString selectEventsFName=TString("../root_files/tag_and_probe/") +
     dirTag + TString("/eventSFSelectEvents") + analysisTag + puStr +
@@ -364,8 +377,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   for (int i=0; i<nexp; i++) {
     EffArray_t *arr= & ro_Data[i];
     for (int kind=0; kind<NEffTypes; ++kind) {
-      for (int iEt=0; iEt<DYTools::nEtBins5; ++iEt) {
-	for (int iEta=0; iEta<DYTools::nEtaBins5; ++iEta) {
+      for (int iEt=0; iEt<nEtBinsMax; ++iEt) {
+	for (int iEta=0; iEta<nEtaBinsMax; ++iEta) {
 	  (*arr)[kind][iEt][iEta]=
 	    (debug_pseudo_exps) ? ((kind+1)*100 + (iEt+1)*10 + iEta+1) :
 	    gRandom->Gaus(0.0,1.0);
@@ -374,8 +387,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     }
     arr= & ro_MC[i];
     for (int kind=0; kind<NEffTypes; ++kind) {
-      for (int iEt=0; iEt<DYTools::nEtBins5; ++iEt) {
-	for (int iEta=0; iEta<DYTools::nEtaBins5; ++iEta) {
+      for (int iEt=0; iEt<nEtBinsMax; ++iEt) {
+	for (int iEta=0; iEta<nEtaBinsMax; ++iEta) {
 	  (*arr)[kind][iEt][iEta]=
 	    (debug_pseudo_exps) ? -((kind+1)*100 + (iEt+1)*10 + iEta+1) :
 	    gRandom->Gaus(0.0,1.0);
@@ -383,6 +396,17 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
       }
     }
   }
+
+  /*
+  if (0) {
+    for (int kind=0; kind<NEffTypes; ++kind) {
+      TString cName=Form("canv_kind_%d",kind+1);
+      TCanvas *c= MakeCanvas(cName,cName,800,800);
+      c->Divide(DYTools::
+    for (unsigned int i=0; i<
+  }
+  */
+
 
   // Create container for data for error estimates based on pseudo-experiments
   //TH1F *systScale[nMassBins][nexp];
@@ -723,41 +747,53 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     const double c_esfLimit_high = 1.5;
     const int c_theEsfBins = int((c_esfLimit_high-c_esfLimit_low)/5e-3 + 1e-3);
 
-    TH2F *hCorrelation=new TH2F("hCorrelation","hCorrelation",nUnfoldingBins,0.5,nUnfoldingBins+0.5,nUnfoldingBins,0.5,nUnfoldingBins+0.5);
+    // omit the underflow mass bin in 2D case
+    const int iMmin=(study2D==0) ? 0 : 1;
+    const int idxMin= iMmin * DYTools::nYBins[0];
+    const int nCorrelationBins=nUnfoldingBins-idxMin;
+
+    TH2F *hCorrelation=new TH2F("hCorrelation","hCorrelation",nCorrelationBins,0.5,nCorrelationBins+0.5,nCorrelationBins,0.5,nCorrelationBins+0.5);
     hCorrelation->SetDirectory(0);
-    TH2F *hCorrelationNorm=new TH2F("hCorrelationNorm","hCorrelationNorm",nUnfoldingBins,0.5,nUnfoldingBins+0.5,nUnfoldingBins,0.5,nUnfoldingBins+0.5);
+    TH2F *hCorrelationNorm=(TH2F*)hCorrelation->Clone("hCorrelation_Norm");
     hCorrelationNorm->SetDirectory(0);
+
+    std::vector<TH1F*> hRatioV, hRatio_NormV;
+    hRatioV.reserve(nexp);
+    hRatio_NormV.reserve(nexp);
+    for (int iexp=0; iexp<nexp; ++iexp) {
+      TString nameHRatio= Form("hRatio_iexp%d",iexp);
+      TH1F *hRatio=(TH1F*)hSystEsfEvtWV[iexp]->Clone(nameHRatio);
+      hRatio->SetDirectory(0);
+      hRatio->Divide(hSystEsfEvtWV[iexp],hEvtW);
+      hRatioV.push_back(hRatio);
+      
+      TString nameHRatioNorm= Form("hRatio_Norm_iexp%d",iexp);
+      TH1F *hRatio_Norm=(TH1F*)hSystEsfEvtWV[iexp]->Clone(nameHRatioNorm);
+      hRatio_Norm->SetDirectory(0);
+      hRatio_Norm->Divide(hSystEsfEvtWV[iexp],hEvtW,sumEvtW_Zpeak/systSumEsfEvtW_ZpeakV[iexp],1.);
+      hRatio_NormV.push_back(hRatio_Norm);
+    }
     
-    for (int iM=0, i=0; iM<DYTools::nMassBins; ++iM) {
+    for (int iM=iMmin, i=idxMin; iM<DYTools::nMassBins; ++iM) {
       for (int iY=0; (iY<DYTools::nYBins[iM]) && (i<nUnfoldingBins); ++iY, ++i) {
-	for (int jM=0, j=0; jM<DYTools::nMassBins; ++jM) {
+	for (int jM=iMmin, j=idxMin; jM<DYTools::nMassBins; ++jM) {
 	  for (int jY=0; (jY<DYTools::nYBins[jM]) && (j<nUnfoldingBins); ++jY, ++j) {
-	    TString nameHESF= Form("hESF_%d_%d__iM%d_iY%d__jM%d_jY%d",i,j,iM,iY,jM,jY);
-	    TString nameHESF_Norm= Form("hESFNorm_%d_%d__iM%d_iY%d__jM%d_jY%d",i,j,iM,iY,jM,jY);
+	    TString nameHESF= Form("hESF_%d_%d__iM%d_iY%d__jM%d_jY%d",i-idxMin,j-idxMin,iM-iMmin,iY,jM-iMmin,jY);
+	    TString nameHESF_Norm= Form("hESFNorm_%d_%d__iM%d_iY%d__jM%d_jY%d",i-idxMin,j-idxMin,iM-iMmin,iY,jM-iMmin,jY);
 	    if (debugMode) HERE(nameHESF.Data());
 	    TH2F *hESF=new TH2F(nameHESF,nameHESF,c_theEsfBins,c_esfLimit_low,c_esfLimit_high, c_theEsfBins,c_esfLimit_low,c_esfLimit_high);
 	    TH2F *hESF_Norm=(TH2F*)hESF->Clone(nameHESF_Norm);
 	    hESF->SetDirectory(0); hESF_Norm->SetDirectory(0);
 	    
 	    for (int iexp=0; iexp<nexp; ++iexp) {
-	      TString nameHRatio= Form("hRatio_iexp%d",iexp);
-	      TH1F *hRatio=(TH1F*)hSystEsfEvtWV[iexp]->Clone(nameHRatio);
-	      hRatio->SetDirectory(0);
-	      hRatio->Divide(hSystEsfEvtWV[iexp],hEvtW);
+	      TH1F *hRatio=hRatioV[iexp];
 	      hESF->Fill(hRatio->GetBinContent(i+1),hRatio->GetBinContent(j+1));
-	      delete hRatio;
-	      
-	      TString nameHRatioNorm= Form("hRatio_Norm_iexp%d",iexp);
-	      TH1F *hRatio_Norm=(TH1F*)hSystEsfEvtWV[iexp]->Clone(nameHRatioNorm);
-	      hRatio_Norm->SetDirectory(0);
-	      hRatio_Norm->Divide(hSystEsfEvtWV[iexp],hEvtW,sumEvtW_Zpeak/systSumEsfEvtW_ZpeakV[iexp],1.);
-	      
+	      TH1F *hRatio_Norm=hRatio_NormV[iexp];
 	      hESF_Norm->Fill(hRatio_Norm->GetBinContent(i+1),hRatio_Norm->GetBinContent(j+1));
-	      delete hRatio_Norm;
 	    }
 	    
 	    if ((jM==0) && (jY==0)) {
-	      TString tmpDirName=Form("%dDcorrel_histos_Mbin%d_Ybin%d",(DYTools::study2D) ? 2:1,iM+1,iY+1);
+	      TString tmpDirName=Form("%dDcorrel_histos_McorrBin%d_Ybin%d",(DYTools::study2D) ? 2:1,iM+1-iMmin,iY+1);
 	      fCorrDebug.cd();
 	      fCorrDebug.mkdir(tmpDirName);
 	      fCorrDebug.cd(tmpDirName);
@@ -766,8 +802,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 	    hESF->Write();
 	    hESF_Norm->Write();
 	    
-	    hCorrelation->Fill(i+1,j+1, hESF->GetCorrelationFactor(1,2) );
-	    hCorrelationNorm->Fill(i+1,j+1, hESF_Norm->GetCorrelationFactor(1,2) );
+	    hCorrelation->Fill(i+1-idxMin,j+1-idxMin, hESF->GetCorrelationFactor(1,2) );
+	    hCorrelationNorm->Fill(i+1-idxMin,j+1-idxMin, hESF_Norm->GetCorrelationFactor(1,2) );
 	    delete hESF;
 	    delete hESF_Norm;
 	  }
@@ -816,6 +852,9 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 
     fCorr.Close();
     std::cout << "file <" << corrFileName << "> created" << std::endl;
+
+    for (unsigned int i=0; i<hRatioV.size(); ++i) delete hRatioV[i];
+    for (unsigned int i=0; i<hRatio_NormV.size(); ++i) delete hRatio_NormV[i];
   }
 
   //
