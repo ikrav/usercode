@@ -184,7 +184,13 @@ bool ElectronEnergyScale::assignConstants(const std::vector<string> &lines, int 
   for (unsigned int i=0; i<lines.size(); i++) {
     if ((lines[i].find("g_esfWorkCase")!=std::string::npos) && 
 	(lines[i].find("g_esfWorkCaseShortName")==std::string::npos)) {
-      linesHaveNegativeEtas= (lines[i].find("bins on each eta side")!=std::string::npos) ? 1:0;
+      if ((lines[i].find("bins on each eta side")!=std::string::npos) ||
+	  (lines[i].find("bins for each eta side")!=std::string::npos)) {
+	linesHaveNegativeEtas= 1;
+      }
+      else {
+	linesHaveNegativeEtas= 0;
+      }
     }
     else if (lines[i].find("EtaDivisionCount")!=std::string::npos) {
       etaDivCount=atoi(lines[i].c_str() + lines[i].find('=') + 1);
@@ -970,6 +976,7 @@ double ElectronEnergyScale::generateMCSmearAny(double eta1, double eta2, bool ra
   }
   if(count != 2) {
     printf("ElectronEnergyScale: Smear function ERROR\n");
+    printf("Failed to obtain index for eta1=%4.2lf, eta2=%4.2lf\n",eta1,eta2);
     throw 1;
   }
  
