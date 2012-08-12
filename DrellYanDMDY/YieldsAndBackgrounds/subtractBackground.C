@@ -228,16 +228,8 @@ TString subtractBackground(const TString conf,
   
     }
 
-  // Calculate WZ and ZZ backgrounds
-   for(int i=0; i<DYTools::nMassBins; i++)
-     for (int j=0; j<DYTools::nYBins[i]; j++)
-       {
-          {
-             wzzz(i,j)=0;
-             wzzzError(i,j)=0;
-             wzzzErrorSyst(i,j)=0;
-          }
-       } 
+  // Calculate WZ and ZZ backgrounds, if true2eBackground is not available
+  if (!useTrue2eBgDataDriven) {
     for (int k=0; k<NSamples; k++)
       {
          if (sn[k]=="zz" || sn[k]=="wz")
@@ -260,6 +252,7 @@ TString subtractBackground(const TString conf,
                  }
            }
        }
+  }
 
 
     // Calculate qcd and wjets backgrounds
