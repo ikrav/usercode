@@ -11,6 +11,7 @@ _sourceConfigFile=$1
 _mcConfInputFile=$2
 _anTag=$3
 _anTagUser=$4
+_debugMode=$5
 
 
 # 1) user-defined
@@ -44,7 +45,10 @@ if [ ${#_anTagUser} -gt 0 ] ; then
   echo -e " ... setting anTagUser to <${_anTagUser}>"
   anTagUser=${_anTagUser}
 fi
-
+if [ ${#_debugMode} -gt 0 ] ; then
+  echo -e " ... setting debugMode to <${_debugMode}>"
+  debugMode=${_debugMode}
+fi
 
 copySelectedNTuples=1   # the main sequence has to be run before this script
    # but the ntuples needs to be copied only once
@@ -67,8 +71,9 @@ defaultEtaDistribution="6binNegs_"
 shapeDependenceStudy="Voigtian BreitWigner"
 #shapeDependenceStudy="Voigtian"
 
-etaDistrArr="${etaDistrArr} 6bins_Gauss_20120119"
-etaDistrArr="${etaDistrArr} 6binNegs_Gauss_20120119"
+etaDistrArr=
+etaDistrArr="${etaDistrArr} 6bins_Gauss"
+etaDistrArr="${etaDistrArr} 6binNegs_Gauss"
 etaDistrArr="${etaDistrArr} 2binNegs_Gauss 4binNegs_Gauss"
 etaDistrArr="${etaDistrArr} 3EB3EENegs_Gauss 4EB3EENegs_Gauss" 
 etaDistrArr="${etaDistrArr} 5binNegs_Gauss"
@@ -208,7 +213,7 @@ cloneNTuples() {
   if [ ! -e "${selEventsDestDir}/ntuples" ] ; 
       then mkdir ${selEventsDestDir}/ntuples; fi
 
-  sets="data qcd ttbar wjets ww wz ztt zz zee"
+  sets="data qcd ttbar wjets wtop wtopbar ww wz ztt zz zee"
   for s in ${sets} ; do
     fname="${s}${anTagUser}_select.root"
     set -x  # debug on
@@ -291,14 +296,14 @@ prepareConfFile() {
   cd ${extraPath}
   echo "pwd=${PWD}"
   if [ ! -z ${workConfFile} ] ; then
-    sed "s/#Date20120101_default/${escale}/" ${sourceConfigFile} | \
-	sed "s/Date20120101_default/${escale}/" | \
+    sed "s/#Date20120802_default/${escale}/" ${sourceConfigFile} | \
+	sed "s/Date20120802_default/${escale}/" | \
 	sed "s/${dirTag}/${tag}/" \
 	> ${workConfFile}
   fi
   if [ ! -z ${workMCConfInputFile} ] ; then
-     sed "s/#Date20120101_default/${escale}/" ${mcConfInputFile} | \
-      sed "s/Date20120101_default/${escale}/" | \
+     sed "s/#Date20120802_default/${escale}/" ${mcConfInputFile} | \
+      sed "s/Date20120802_default/${escale}/" | \
       sed "s/${dirTag}/${tag}/" \
         > ${workMCConfInputFile}
   fi
@@ -358,8 +363,8 @@ if [ ${err} -eq 0 ] && [ ${doStatisticalStudy} -eq 1 ] ; then
   while [ ${seed} -le ${seedMax} ] && [ ${err} -eq 0 ] ; do
     model="seed${seed}"
     plotsDirExtraTag="seed${seed}"
-    prepareConfFile "Date20120101_default_RANDOMIZED${seed}"
-    model="_default20120101_DtRND${seed}"
+    prepareConfFile "Date20120802_default_RANDOMIZED${seed}"
+    model="_default20120802_DtRND${seed}"
     calculateUnfolding=0
     deriveUnfoldedSpectrum
     renameYields
@@ -379,7 +384,7 @@ if [ ${err} -eq 0 ] && [ ${doShapeSystematics} -eq 1 ] ; then
   cloneNTuples  ${selEventsDir}
   for shape in ${shapeDependenceStudy} ; do
     if [ ${err} -eq 0 ] ; then
-      model=${defaultEtaDistribution}${shape}
+      model=${defaultEtaDistribution}${shape}_20120802
       plotsDirExtraTag="${shape}"
       prepareConfFile "File${shape}_..\/root_files\/constants\/EScale\/testESF_${model}.inp"
       model="_${model}"
@@ -403,7 +408,7 @@ fi
   workMCConfInputFile=${workMCConfInputFileT/MODEL/eta}
   cloneNTuples  ${selEventsDir}
   for aModel in ${etaDistrArr} ; do
-    model=${aModel}
+    model=${aModel}_20120802
     prepareConfFile "FileGauss_..\/root_files\/constants\/EScale\/testESF_${model}.inp"
     plotsDirExtraTag="${model}"
     model="_${model}"
