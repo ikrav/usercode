@@ -289,6 +289,13 @@ bool ElectronEnergyScale::AssignConstants(const std::vector<string> &lines, int 
       int idx=atoi(s + lines[i].find('_') + 1);
       double val=atof(s + lines[i].find(' '));
       double valErr=atof(s + lines[i].find(' ',lines[i].find('.')));
+      if  (idx>count) {
+	std::cout << "Error:\n";
+	std::cout << "line=<" << lines[i] << ">\n";
+	std::cout << "contains value for idx=" << idx << ", while count=" << count << "\n";
+	std::cout << "in AssignConstants" << std::endl;
+	assert(0);
+      }
       if (etaDivCount==count) {
 	d[idx]=val; derr[idx]=valErr;
       }
