@@ -15,10 +15,10 @@
 #include "../Include/InputFileMgr.hh"
 
 // returns 1 - ok, 0 - binning failure, -1 - file failure
-int applyUnfoldingLocal(TVectorD &vin, TVectorD &vout, TString matrixFileName, int printLoadedData=1);
+int applyUnfoldingLocal(TVectorD &vin, TVectorD &vout, TString matrixFileName, int printLoadedData=0);
 
 // save texTable
-int printTexTable(const TString &texFileName, const std::vector<TString>& headers, const std::vector<TVectorD*> &data, const std::vector<double> &factors);
+int printTexTable(const TString &texFileName, const std::vector<TString>& headers, const std::vector<int> &padding, const std::vector<TVectorD*> &data, const std::vector<double> &factors);
 
 
 // -----------------------------------------------------------
@@ -320,19 +320,20 @@ int saveTexTable=0){
 
   if (saveTexTable) {
     std::vector<TString> headers;
+    std::vector<int> padding;
     std::vector<TVectorD*> data;
     std::vector<double> factors;
     headers.push_back("mass range");
     headers.push_back("rapidity range");
-    headers.push_back("statistical, \\%"); data.push_back(&escaleRandomizedSystRelative); factors.push_back(100.);
-    headers.push_back("shape, \\%"); data.push_back(&escaleFitShapeSystRelative); factors.push_back(100.);
-    headers.push_back("residual, \\%"); data.push_back(&escaleResidualDiffSystRelative); factors.push_back(100.);
-    headers.push_back("$\\eta$ binning, \\%"); data.push_back(&escaleEtaBinSystRelative); factors.push_back(100.);
-    headers.push_back("total, \\%"); data.push_back(&escaleSystPercent); factors.push_back(1.);
+    headers.push_back("\\multicolumn{1}{c|}{statistical, \\%}"); data.push_back(&escaleRandomizedSystRelative); factors.push_back(100.); padding.push_back(6);
+    headers.push_back("\\multicolumn{1}{c|}{shape, \\%}"); data.push_back(&escaleFitShapeSystRelative); factors.push_back(100.); padding.push_back(4);
+    headers.push_back("\\multicolumn{1}{c|}{residual, \\%}"); data.push_back(&escaleResidualDiffSystRelative); factors.push_back(100.); padding.push_back(5);
+    headers.push_back("\\multicolumn{1}{c|}{$\\eta$ binning, \\%}"); data.push_back(&escaleEtaBinSystRelative); factors.push_back(100.); padding.push_back(6);
+    headers.push_back("\\multicolumn{1}{c|}{total, \\%}"); data.push_back(&escaleSystPercent); factors.push_back(1.); padding.push_back(3);
     
     TString texFName=TString("../root_files/systematics/") + lumiTag + 
       TString("/escale_systematics") + analysisTag + TString("_tmp.tex");
-    printTexTable(texFName,headers,data,factors);
+    printTexTable(texFName,headers,padding,data,factors);
   }
 
   TString finalFName=TString("../root_files/systematics/") + lumiTag + 
@@ -398,19 +399,28 @@ int  applyUnfoldingLocal(TVectorD &vin, TVectorD &vout, TString matrixFileName, 
 // save texTable
 //-----------------------------------------------------------------
 
-int printTexTable(const TString &texFileName, const std::vector<TString>& headers, const std::vector<TVectorD*> &data, const std::vector<double> &factors) {
+int printTexTable(const TString &texFileName, const std::vector<TString>& headers, const std::vector<int> &padding, const std::vector<TVectorD*> &data, const std::vector<double> &factors) {
   if ((headers.size()!=data.size()+2) || (headers.size()<2)) {
     std::cout << "printTexTable. vector size mismatch: " << headers.size() << " headers and " << data.size() << " data\n";
+    return 0;
+  }
+  if (data.size()!=padding.size()) {
+    std::cout << "printTexTable. vector size mismatch: data.size=" << data.size() << ", padding.size=" << padding.size() << "\n";
     return 0;
   }
 
   std::string s;
   FILE *fout=fopen(texFileName.Data(),"w");
-  fprintf(fout,"\n\n\n");
+  fprintf(fout,"\n");
+  fprintf(fout,"\\documentclass{article}\n");
+  fprintf(fout,"\\usepackage{dcolumn}\n");
+  fprintf(fout,"\\newcolumntype{d}[1]{D{.}{.}{#1}}\n");
+  fprintf(fout,"\\begin{document}\n\n");
+
   fprintf(fout,"\\begin{table}[tbhH]\n");
-  fprintf(fout,"\\caption{\\label{tbl:escaleSyst} Electron energy scale systematics}\n");
-  fprintf(fout,"\\begin{center}\n\\begin{tabular}{|c|");
-  for (unsigned int i=0; i<data.size(); ++i) fprintf(fout,"d|");
+  fprintf(fout,"\\caption{\\label{tbl:escaleSyst} Electron energy scale systematics (analysisTag=%s)}\n",DYTools::analysisTag.Data());
+  fprintf(fout,"\\begin{center}\n\\begin{tabular}{|c|c|");
+  for (unsigned int i=0; i<padding.size(); ++i) fprintf(fout,"d{%d}|",padding[i]);
   fprintf(fout,"}\n");
   fprintf(fout,"\\hline\n");
   fprintf(fout," %s ",headers[0].Data());
@@ -429,6 +439,7 @@ int printTexTable(const TString &texFileName, const std::vector<TString>& header
   }
   fprintf(fout,"\\hline\n");
   fprintf(fout,"\\end{tabular}\n\\end{center}\n\\end{table}\n\n");
+  fprintf(fout,"\\end{document}\n");
   fclose(fout);
   std::cout << "texFileName=<" << texFileName << "> saved\n";
   return 1;
