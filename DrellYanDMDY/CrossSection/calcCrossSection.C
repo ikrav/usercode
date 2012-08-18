@@ -1030,6 +1030,7 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
   TMatrixD normXSecErrByBinStat   (DYTools::nMassBins,nMaxYBins);
   TMatrixD normXSecErrByBinSyst   (DYTools::nMassBins,nMaxYBins);
 
+
   if (printPreFSRCrossSectionTable) {
     printf("\nPre FSR cross sections: :\n");
     printf("                    absolute                       normalized +- stat +- sys (total)           (1/sigma)(1/dM)norm +-stat +-syst (total) \n");
@@ -1059,8 +1060,8 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
 	       normXSecErrByBin[i][yi]
 	       );
       }
-      delete rapidityBinLimits;
     }
+    delete rapidityBinLimits;
   }
 
   TString outputDir(TString("../root_files/"));
