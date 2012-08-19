@@ -355,7 +355,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       isBsc = isBarrel(storeData.eta);
       isEsc = isEndcap(storeData.eta);
     }
-    if( ! isBsc && ! isEsc && (etaBinning!=ETABINS5)) continue;
+    if( ! isBsc && ! isEsc ) continue;
     numTagProbePairsPassEta++;
 
     // Tag and probe is done around the Z peak

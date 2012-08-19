@@ -1180,12 +1180,10 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	totalCandInMassWindow++;
 
 	// Exclude ECAL gap region (should already be done for ntuple, but just to make sure...)
-	if (etaBinning!=ETABINS5) {
-	  if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) &&
-	     (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
-	  if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) &&
-	     (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
-	}
+	if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) &&
+	   (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
+	if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) &&
+	   (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
 	// ECAL acceptance cut on supercluster Et
 	if((fabs(dielectron->scEta_1) > 2.5)       || 
 	   (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
