@@ -118,7 +118,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   //==============================================================================================================
   
   TString puStr = (performPUReweight) ? "_PU" : "";
-  CPlot::sOutDir = TString("plots") + analysisTag + puStr;
+  CPlot::sOutDir = TString("plots") + DYTools::analysisTag + puStr;
   gSystem->mkdir(CPlot::sOutDir,true);
 
   const tnpSelectEvent_t::TCreateBranchesOption_t weightBranch1stStep=
@@ -196,58 +196,58 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   
   int calcMethod = 0;
   if(calcMethodString == "COUNTnCOUNT")
-    calcMethod = COUNTnCOUNT;
+    calcMethod = DYTools::COUNTnCOUNT;
   else if(calcMethodString == "COUNTnFIT")
-    calcMethod = COUNTnFIT;
+    calcMethod = DYTools::COUNTnFIT;
   else if(calcMethodString == "FITnFIT")
-    calcMethod = FITnFIT;
+    calcMethod = DYTools::FITnFIT;
   else
     assert(0);
   printf("Efficiency calculation method: %s\n", calcMethodString.Data());
 
   int effType = 0;
   if(effTypeString == "ID")
-    effType = ID;
+    effType = DYTools::ID;
   else if(effTypeString == "HLT")
-    effType = HLT;
+    effType = DYTools::HLT;
   else
     assert(0);
   printf("Efficiency type to measure: %s\n", effTypeString.Data());
 
   int etBinning = 0;
   if(etBinningString == "ETBINS1")
-    etBinning = ETBINS1;
+    etBinning = DYTools::ETBINS1;
   else if(etBinningString == "ETBINS5")
-    etBinning = ETBINS5;
+    etBinning = DYTools::ETBINS5;
   else if(etBinningString == "ETBINS6")
-    etBinning = ETBINS6;
+    etBinning = DYTools::ETBINS6;
   else
     assert(0);
   printf("SC ET binning: %s\n", etBinningString.Data());
 
   int etaBinning = 0;
   if(etaBinningString == "ETABINS1")
-    etaBinning = ETABINS1;
+    etaBinning = DYTools::ETABINS1;
   else if(etaBinningString == "ETABINS2")
-    etaBinning = ETABINS2;
+    etaBinning = DYTools::ETABINS2;
   else if(etaBinningString == "ETABINS5")
-    etaBinning = ETABINS5;
+    etaBinning = DYTools::ETABINS5;
   else
     assert(0);
   printf("SC eta binning: %s\n", etaBinningString.Data());
 
   int sample;
   if(sampleTypeString == "DATA")
-    sample = DATA;
+    sample = DYTools::DATA;
   else if(sampleTypeString == "MC")
-    sample = MC;
+    sample = DYTools::MC;
   else
     assert(0);
   printf("Sample: %s\n", sampleTypeString.Data());
 
   // Correct the trigger object
-  triggers.actOnData((sample==DATA)?true:false);
-  if (effType==HLT) {
+  triggers.actOnData((sample==DYTools::DATA)?true:false);
+  if (effType==DYTools::HLT) {
     std::cout << "\tHLT efficiency calculation method " 
 	      << triggers.hltEffCalcName() << ", triggerSet=" 
 	      << triggers.triggerSetName() << "\n";
@@ -285,15 +285,15 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   TFile *templatesFile = 0;
   vector<TH1F*> hPassTemplateV;
   vector<TH1F*> hFailTemplateV;
-  if( sample != DATA) {
+  if( sample != DYTools::DATA) {
     // For simulation, we will be saving templates
     TString labelMC = 
       getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
     TString templatesLabel = tagAndProbeDir + 
       TString("/mass_templates_")+labelMC+TString(".root");
     templatesFile = new TFile(templatesLabel,"recreate");
-    for(int i=0; i<getNEtBins(etBinning); i++){
-      for(int j=0; j<getNEtaBins(etaBinning); j++){
+    for(int i=0; i<DYTools::getNEtBins(etBinning); i++){
+      for(int j=0; j<DYTools::getNEtaBins(etaBinning); j++){
 	TString hname = "hMassTemplate_Et";
 	hname += i;
 	hname += "_eta";
@@ -305,7 +305,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   } else {
     // For data, we will be using templates,
     // however, if the request is COUNTnCOUNT, do nothing
-    if( calcMethod != COUNTnCOUNT ){
+    if( calcMethod != DYTools::COUNTnCOUNT ){
       TString labelMC = 
 	getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
       TString templatesLabel = 
@@ -321,7 +321,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   // trees. No events are actually written.
   TString uScore="_";
   TString selectEventsFName=tagAndProbeDir + TString("/selectEvents_") 
-    + analysisTag + uScore+
+    + DYTools::analysisTag + uScore+
     + sampleTypeString + uScore +
     + effTypeString + uScore +  triggers.triggerSetName();
   if (performPUReweight) selectEventsFName.Append("_PU");
@@ -358,7 +358,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
     failTree->Branch("nGoodPV",&storeNGoodPV,"nGoodPV/i");
   }
 
-  int nDivisions = getNEtBins(etBinning)*getNEtaBins(etaBinning);
+  int nDivisions = DYTools::getNEtBins(etBinning)*DYTools::getNEtaBins(etaBinning);
   double ymax = 800;
   if(nDivisions <4 )
     ymax = nDivisions * 200;
@@ -432,7 +432,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
     assert(dielectronBr); assert(pvBr);
 
     TBranch *genBr = 0;
-    if(sample != DATA){
+    if(sample != DYTools::DATA){
       eventTree->SetBranchAddress("Gen",&gen);
       genBr = eventTree->GetBranch("Gen");
     }
@@ -442,7 +442,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
      for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
        if (debugMode && (ientry>100000)) break;
        
-       if(sample != DATA){
+       if(sample != DYTools::DATA){
 	genBr->GetEntry(ientry);
 	// If the Z->ll leptons are not electrons, discard this event.
 	// This is needed for signal MC samples such as Madgraph Z->ll
@@ -476,7 +476,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
       eventsAfterJson++;
 
       // Event level trigger cut
-      bool idEffTrigger = (effType==ID) ? true:false;
+      bool idEffTrigger = (effType==DYTools::ID) ? true:false;
       ULong_t eventTriggerBit= triggers.getEventTriggerBit_TagProbe(info->runNum, idEffTrigger);
 
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event... 
@@ -501,8 +501,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	//
 	// Exclude ECAL gap region (should already be done for ntuple, but just to make sure...)
 	//if (etaBinning!=ETABINS5) {
-	  if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
-	  if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
+	  if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
+	  if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
 	  //}
 	// ECAL acceptance cut on supercluster Et
 	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
@@ -521,7 +521,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	// electrons. So we drop all candidates that do not have both leptons
 	// matched.
 	// 
-	if( sample != DATA )
+	if( sample != DYTools::DATA )
 	  if( ! dielectronMatchedToGeneratorLevel(gen, dielectron) ) continue;
 	totalCandMatchedToGen++;
 
@@ -532,8 +532,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 
 	// Preliminary selection is complete. Now work on tags and probes.
 	
-	TElectron *ele1 = extractElectron(dielectron, 1);
-	TElectron *ele2 = extractElectron(dielectron, 2);
+	TElectron *ele1 = DYTools::extractElectron(dielectron, 1);
+	TElectron *ele2 = DYTools::extractElectron(dielectron, 2);
 	bool isTag1 = isTag(ele1, tagTriggerObjectBit, info->rhoLowEta);
 	bool isTag2 = isTag(ele2, tagTriggerObjectBit, info->rhoLowEta);
 	
@@ -559,12 +559,12 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	bool isProbe2     = false;
 	bool isProbePass1 = false;
 	bool isProbePass2 = false;
-	if( effType == ID ){
+	if( effType == DYTools::ID ){
 	  isProbe1     = isIDProbe1;
 	  isProbe2     = isIDProbe2;
 	  isProbePass1 = isIDProbePass1;
 	  isProbePass2 = isIDProbePass2;
-	}else if( effType == HLT ){
+	}else if( effType == DYTools::HLT ){
 	  isProbe1     = isHLTProbe1;
 	  isProbe2     = isHLTProbe2;
 	  isProbePass1 = isHLTProbePass1;
@@ -620,20 +620,21 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 			     dielectron->scEt_2,dielectron->scEta_2,
 			     storeNGoodPV,event_weight,1.);
 	  }
-	  int templateBin = getTemplateBin( findEtBin(storeEt,etBinning),
-					    findEtaBin(storeEta,etaBinning),
-					    etaBinning);
+	  int templateBin = 
+	    getTemplateBin( DYTools::findEtBin(storeEt,etBinning),
+			    DYTools::findEtaBin(storeEta,etaBinning),
+			    etaBinning);
 	  if( isProbePass2 ){
 	    // passed
 	    hMassPass->Fill(dielectron->mass);
 	    passTree->Fill();
-	    if(sample != DATA && templateBin != -1)
+	    if(sample != DYTools::DATA && templateBin != -1)
 	      hPassTemplateV[templateBin]->Fill(dielectron->mass);
 	  }else{
 	    // fail
 	    hMassFail->Fill(dielectron->mass);
 	    failTree->Fill();
-	    if(sample != DATA && templateBin != -1)
+	    if(sample != DYTools::DATA && templateBin != -1)
 	      hFailTemplateV[templateBin]->Fill(dielectron->mass);
 	  }
 	}
@@ -648,20 +649,21 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 			     dielectron->scEt_1,dielectron->scEta_1,
 			     storeNGoodPV,event_weight,1.);
 	  }
-	  int templateBin = getTemplateBin( findEtBin(storeEt,etBinning),
-					    findEtaBin(storeEta,etaBinning),
-					    etaBinning);
+	  int templateBin = 
+	    getTemplateBin( DYTools::findEtBin(storeEt,etBinning),
+			    DYTools::findEtaBin(storeEta,etaBinning),
+			    etaBinning);
 	  if( isProbePass1 ){
 	    // passed
 	    hMassPass->Fill(dielectron->mass);
 	    passTree->Fill();
-	    if(sample != DATA && templateBin != -1)
+	    if(sample != DYTools::DATA && templateBin != -1)
 	      hPassTemplateV[templateBin]->Fill(dielectron->mass);
 	  }else{
 	    // fail
 	    hMassFail->Fill(dielectron->mass);
 	    failTree->Fill();
-	    if(sample != DATA && templateBin != -1)
+	    if(sample != DYTools::DATA && templateBin != -1)
 	      hFailTemplateV[templateBin]->Fill(dielectron->mass);
 	  }
 	}
@@ -696,14 +698,14 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
     delete selectedEventsFile;
     TString outFNamePV = tagAndProbeDir + 
       TString("/npv_tnp") + effTypeString + TString("_") + 
-      sampleTypeString + analysisTag + TString(".root");
+      sampleTypeString + DYTools::analysisTag + TString(".root");
     TString refFNamePV = tagAndProbeDir; // from Selection/selectEvents.C
     refFNamePV.Replace(refFNamePV.Index("tag_and_probe"),
 		       sizeof("tag_and_probe"),"selected_events/");
-    refFNamePV.Append( TString("/npv") + analysisTag_USER + TString(".root") );
+    refFNamePV.Append( TString("/npv") + DYTools::analysisTag_USER + TString(".root") );
     TString refDistribution="hNGoodPV_data";
     TString sampleNameBase= effTypeString + TString("_") + 
-      sampleTypeString + analysisTag;
+      sampleTypeString + DYTools::analysisTag;
     int res=CreatePUWeightedBranch(selectEventsFName,
 				   refFNamePV, refDistribution,
 				   outFNamePV, sampleNameBase);
@@ -768,7 +770,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   //  Find efficiency
   //
   bool useTemplates = false;
-  if(sample == DATA && effType == ID && (calcMethod == COUNTnFIT || FITnFIT) )
+  if(sample == DYTools::DATA && effType == DYTools::ID &&
+     (calcMethod == DYTools::COUNTnFIT || DYTools::FITnFIT) )
     useTemplates = true;
 
   int NsetBins=120;
@@ -791,14 +794,14 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 
   TString fitpicname = tagAndProbeDir+
     TString("/efficiency_TnP_")+label;
-  if (calcMethod==COUNTnCOUNT) fitpicname.Append(".png"); else fitpicname.Append("_fit.png");
+  if (calcMethod==DYTools::COUNTnCOUNT) fitpicname.Append(".png"); else fitpicname.Append("_fit.png");
   c1->SaveAs(fitpicname);
 
   // Save MC templates
-  if(sample != DATA){
+  if(sample != DYTools::DATA){
     templatesFile->cd();
-    for(int i=0; i<getNEtBins(etBinning); i++){
-      for(int j=0; j<getNEtaBins(etaBinning); j++){
+    for(int i=0; i<DYTools::getNEtBins(etBinning); i++){
+      for(int j=0; j<DYTools::getNEtaBins(etaBinning); j++){
 	int templateBin = getTemplateBin( i, j, etaBinning);
 	hPassTemplateV[templateBin]->Write();
 	hFailTemplateV[templateBin]->Write();

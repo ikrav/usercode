@@ -173,59 +173,59 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   
   int calcMethod = 0;
   if(calcMethodString == "COUNTnCOUNT")
-    calcMethod = COUNTnCOUNT;
+    calcMethod = DYTools::COUNTnCOUNT;
   else if(calcMethodString == "COUNTnFIT")
-    calcMethod = COUNTnFIT;
+    calcMethod = DYTools::COUNTnFIT;
   else if(calcMethodString == "FITnFIT")
-    calcMethod = FITnFIT;
+    calcMethod = DYTools::FITnFIT;
   else
     assert(0);
   printf("Efficiency calculation method: %s\n", calcMethodString.Data());
 
   int effType = 0;
   if(effTypeString == "RECO")
-    effType = RECO;
+    effType = DYTools::RECO;
   else if(effTypeString == "ID")
-    effType = ID;
+    effType = DYTools::ID;
   else if(effTypeString == "HLT")
-    effType = HLT;
+    effType = DYTools::HLT;
   else
     assert(0);
   printf("Efficiency type to measure: %s\n", effTypeString.Data());
 
   int etBinning = 0;
   if(etBinningString == "ETBINS1")
-    etBinning = ETBINS1;
+    etBinning = DYTools::ETBINS1;
   else if(etBinningString == "ETBINS5")
-    etBinning = ETBINS5;
+    etBinning = DYTools::ETBINS5;
   else if(etBinningString == "ETBINS6")
-    etBinning = ETBINS6;
+    etBinning = DYTools::ETBINS6;
   else
     assert(0);
   printf("SC ET binning: %s\n", etBinningString.Data());
 
   int etaBinning = 0;
   if(etaBinningString == "ETABINS1")
-    etaBinning = ETABINS1;
+    etaBinning = DYTools::ETABINS1;
   else if(etaBinningString == "ETABINS2")
-    etaBinning = ETABINS2;
+    etaBinning = DYTools::ETABINS2;
   else if(etaBinningString == "ETABINS5")
-    etaBinning = ETABINS5;
+    etaBinning = DYTools::ETABINS5;
   else
     assert(0);
   printf("SC eta binning: %s\n", etaBinningString.Data());
 
   int sample;
   if(sampleTypeString == "DATA")
-    sample = DATA;
+    sample = DYTools::DATA;
   else if(sampleTypeString == "MC")
-    sample = MC;
+    sample = DYTools::MC;
   else
     assert(0);
   printf("Sample: %s\n", sampleTypeString.Data());
 
   // Correct the trigger object
-  triggers.actOnData((sample==DATA)?true:false);
+  triggers.actOnData((sample==DYTools::DATA)?true:false);
 
   // The label is a string that contains the fields that are passed to
   // the function below, to be used to name files with the output later.
@@ -257,19 +257,19 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   if (puDependence) puTag.Append("_varPU");
   TString templatesLabel = tagAndProbeDir + TString("/mass_templates_")+labelMC + puTag + TString(".root");
 
-  if( sample != DATA) {
+  if( sample != DYTools::DATA) {
     // For simulation, we will be saving templates
     templatesFile = new TFile(templatesLabel,"recreate");
     for (int pu_i=0; pu_i<DYTools::nPVBinCount; ++pu_i) {
       vector<TH1F*> *hPassV=new vector<TH1F*>();
-      hPassV->reserve(getNEtBins(etBinning)*getNEtaBins(etaBinning));
+      hPassV->reserve(DYTools::getNEtBins(etBinning)*DYTools::getNEtaBins(etaBinning));
       hPassTemplateV.push_back(hPassV);
       vector<TH1F*> *hFailV=new vector<TH1F*>();
-      hFailV->reserve(getNEtBins(etBinning)*getNEtaBins(etaBinning));
+      hFailV->reserve(DYTools::getNEtBins(etBinning)*DYTools::getNEtaBins(etaBinning));
       hFailTemplateV.push_back(hFailV);
       if (!puDependence) pu_i=-2;
-      for(int i=0; i<getNEtBins(etBinning); i++){
-	for(int j=0; j<getNEtaBins(etaBinning); j++){
+      for(int i=0; i<DYTools::getNEtBins(etBinning); i++){
+	for(int j=0; j<DYTools::getNEtaBins(etaBinning); j++){
 	  hPassV->push_back(new TH1F(getTemplateName(i,j,"pass",pu_i+1),"",60,massLow,massHigh));
 	  hFailV->push_back(new TH1F(getTemplateName(i,j,"fail",pu_i+1),"",60,massLow,massHigh));
 	}
@@ -280,7 +280,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   else {
     // For data, we will be using templates
     // however, if the request is COUNTnCOUNT, do nothing
-    if( calcMethod != COUNTnCOUNT ){
+    if( calcMethod != DYTools::COUNTnCOUNT ){
       templatesFile = new TFile(templatesLabel);
       if( ! templatesFile->IsOpen() ) {
 	std::cout << "templatesFile name " << templatesLabel << "\n";
@@ -292,7 +292,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   // Load selected events
   TString uScore="_";
   TString selectEventsFName=tagAndProbeDir + TString("/selectEvents_") 
-    + analysisTag + uScore
+    + DYTools::analysisTag + uScore
     + sampleTypeString + uScore +
     + effTypeString + uScore +  triggers.triggerSetName();
   if (performPUReweight) selectEventsFName.Append("_PU");
@@ -349,11 +349,11 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     }
     numTagProbePairsPassEt++;
     
-    bool isBsc = isBarrel(storeEta);
-    bool isEsc = isEndcap(storeEta);
+    bool isBsc = DYTools::isBarrel(storeEta);
+    bool isEsc = DYTools::isEndcap(storeEta);
     if (new_store_data_code) {
-      isBsc = isBarrel(storeData.eta);
-      isEsc = isEndcap(storeData.eta);
+      isBsc = DYTools::isBarrel(storeData.eta);
+      isEsc = DYTools::isEndcap(storeData.eta);
     }
     if( ! isBsc && ! isEsc ) continue;
     numTagProbePairsPassEta++;
@@ -375,12 +375,13 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       hMassTotal->Fill(storeData.mass);
       // passing probes
       hMassPass->Fill(storeData.mass);
-      templateBin = getTemplateBin( findEtBin(storeData.et,etBinning),
-				    findEtaBin(storeData.eta,etaBinning),
-				    etaBinning);
+      templateBin = 
+	getTemplateBin( DYTools::findEtBin(storeData.et,etBinning),
+			DYTools::findEtaBin(storeData.eta,etaBinning),
+			etaBinning);
 
-      if(sample != DATA && templateBin != -1) {      
-	int puIdx= (puDependence) ? findPUBin(storeData.nGoodPV) : 0;
+      if(sample != DYTools::DATA && templateBin != -1) {      
+	int puIdx= (puDependence) ? DYTools::findPUBin(storeData.nGoodPV) : 0;
 	if (puIdx>=0)
 	  (*hPassTemplateV[puIdx])[templateBin]->Fill(storeData.mass,storeData.weight);
       }
@@ -391,12 +392,13 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       // passing probes
       hMassPass->Fill(storeData.mass);
 
-      templateBin = getTemplateBin( findEtBin(storeEt,etBinning),
-				    findEtaBin(storeEta,etaBinning),
-				    etaBinning);
+      templateBin = 
+	getTemplateBin( DYTools::findEtBin(storeEt,etBinning),
+			DYTools::findEtaBin(storeEta,etaBinning),
+			etaBinning);
 
-      if(sample != DATA && templateBin != -1) {      
-	int puIdx= (puDependence) ? findPUBin(storeNGoodPV) : 0;
+      if(sample != DYTools::DATA && templateBin != -1) {      
+	int puIdx= (puDependence) ? DYTools::findPUBin(storeNGoodPV) : 0;
 	if (puIdx>=0)
 	  (*hPassTemplateV[puIdx])[templateBin]->Fill(storeMass);
       }
@@ -419,12 +421,12 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     }
     numTagProbePairsPassEt++;
     
-    bool isBsc = isBarrel(storeEta);
-    bool isEsc = isEndcap(storeEta);
+    bool isBsc = DYTools::isBarrel(storeEta);
+    bool isEsc = DYTools::isEndcap(storeEta);
     int templateBin=-1;
     if (new_store_data_code) {
-      isBsc = isBarrel(storeData.eta);
-      isEsc = isEndcap(storeData.eta);
+      isBsc = DYTools::isBarrel(storeData.eta);
+      isEsc = DYTools::isEndcap(storeData.eta);
       if( ! isBsc && ! isEsc ) continue;
       numTagProbePairsPassEta++;
 
@@ -439,12 +441,13 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       // failing probes
       hMassFail->Fill(storeData.mass);
     
-      templateBin = getTemplateBin( findEtBin(storeData.et,etBinning),
-				    findEtaBin(storeData.eta,etaBinning),
-				    etaBinning);
+      templateBin = 
+	getTemplateBin( DYTools::findEtBin(storeData.et,etBinning),
+			DYTools::findEtaBin(storeData.eta,etaBinning),
+			etaBinning);
 
-      if(sample != DATA && templateBin != -1) {
-	int puIdx= (puDependence) ? findPUBin(storeData.nGoodPV) : 0;
+      if(sample != DYTools::DATA && templateBin != -1) {
+	int puIdx= (puDependence) ? DYTools::findPUBin(storeData.nGoodPV) : 0;
 	if (puIdx>=0)
 	  (*hFailTemplateV[puIdx])[templateBin]->Fill(storeData.mass,storeData.weight);
 	else std::cout << "puIdx=" << puIdx << "\n";
@@ -465,12 +468,13 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       // failing probes
       hMassFail->Fill(storeMass);
       
-      templateBin = getTemplateBin( findEtBin(storeEt,etBinning),
-					findEtaBin(storeEta,etaBinning),
-					etaBinning);
+      templateBin = 
+	getTemplateBin( DYTools::findEtBin(storeEt,etBinning),
+			DYTools::findEtaBin(storeEta,etaBinning),
+			etaBinning);
       
-      if(sample != DATA && templateBin != -1) {
-	int puIdx= (puDependence) ? findPUBin(storeNGoodPV) : 0;
+      if(sample != DYTools::DATA && templateBin != -1) {
+	int puIdx= (puDependence) ? DYTools::findPUBin(storeNGoodPV) : 0;
 	if (puIdx>=0)
 	  (*hFailTemplateV[puIdx])[templateBin]->Fill(storeMass);
       }
@@ -483,7 +487,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   // Efficiency analysis
   //
   
-  if (effType == RECO) {
+  if (effType == DYTools::RECO) {
     printf("\nTotal tag(electron)-probe(supercluster) pairs                %15d\n",numTagProbePairs);
   }
   else {
@@ -525,14 +529,14 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   //  Find efficiency
   //
   bool useTemplates = false;
-  if(sample == DATA)
+  if(sample == DYTools::DATA)
     useTemplates = true;
 
   int NsetBins=30;
-  bool isRECO=(effType == RECO) ? true : false;
+  bool isRECO=(effType == DYTools::RECO) ? true : false;
   const char* setBinsType="cache";
 
-  int nDivisions = getNEtBins(etBinning)*getNEtaBins(etaBinning);
+  int nDivisions = DYTools::getNEtBins(etBinning)*DYTools::getNEtaBins(etaBinning);
   //std::cout << "nDivisions=" << getNEtBins(etBinning) << "*" << getNEtaBins(etaBinning) << "=" << nDivisions << "\n";
   double ymax = 800;
   if(nDivisions <4 )
@@ -560,10 +564,10 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   c1->SaveAs(fitpicname);
 
   // Save MC templates
-  if(sample != DATA){
+  if(sample != DYTools::DATA){
     templatesFile->cd();
-    for(int i=0; i<getNEtBins(etBinning); i++){
-      for(int j=0; j<getNEtaBins(etaBinning); j++){
+    for(int i=0; i<DYTools::getNEtBins(etBinning); i++){
+      for(int j=0; j<DYTools::getNEtaBins(etaBinning); j++){
 	int templateBin = getTemplateBin( i, j, etaBinning);
 	int puMax=(puDependence) ? DYTools::nPVBinCount : 1;
 	for (int pu_i=0; pu_i<puMax; ++pu_i) {

@@ -51,8 +51,8 @@ const int nEtaBinsMax=DYTools::nEtaBins5;
 typedef double EffArray_t[NEffTypes][nEtBinsMax][nEtaBinsMax]; // largest storage
 
 const int nexp=100;
-typedef TH1F* SystTH1FArray_t[nMassBins][nexp];   // mass index
-typedef TH1F* SystTH1FArrayFI_t[nUnfoldingBinsMax][nexp]; // flat(mass,y) index
+typedef TH1F* SystTH1FArray_t[DYTools::nMassBins][nexp];   // mass index
+typedef TH1F* SystTH1FArrayFI_t[DYTools::nUnfoldingBinsMax][nexp]; // flat(mass,y) index
 
 template<class T> T SQR(const T& x) { return x*x; }
 
@@ -214,7 +214,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   
 
   TString puStr = (puReweight) ? "_PU" : "";
-  CPlot::sOutDir = TString("plots") + analysisTag + puStr;
+  CPlot::sOutDir = TString("plots") + DYTools::analysisTag + puStr;
   gSystem->mkdir(CPlot::sOutDir,true);
 
   MCInputFileMgr_t mcMgr;
@@ -255,7 +255,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   }
   
   TString selectEventsFName=TString("../root_files/tag_and_probe/") +
-    dirTag + TString("/eventSFSelectEvents") + analysisTag + puStr +
+    dirTag + TString("/eventSFSelectEvents") + DYTools::analysisTag + puStr +
     TString(".root");
   
   if (selectEvents) {
@@ -299,14 +299,14 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   vector<TH1F*> hScaleIdFIV;
   vector<TH1F*> hScaleHltFIV;
 
-  hLeadingEtV.reserve(nMassBins);
-  hTrailingEtV.reserve(nMassBins);
-  hElectronEtV.reserve(nMassBins);
+  hLeadingEtV.reserve(DYTools::nMassBins);
+  hTrailingEtV.reserve(DYTools::nMassBins);
+  hElectronEtV.reserve(DYTools::nMassBins);
 
-  hScaleV.reserve(nMassBins);
-  hScaleRecoV.reserve(nMassBins);
-  hScaleIdV.reserve(nMassBins);
-  hScaleHltV.reserve(nMassBins);
+  hScaleV.reserve(DYTools::nMassBins);
+  hScaleRecoV.reserve(DYTools::nMassBins);
+  hScaleIdV.reserve(DYTools::nMassBins);
+  hScaleHltV.reserve(DYTools::nMassBins);
 
   int nUnfoldingBins = DYTools::getTotalNumberOfBins();
   hScaleFIV.reserve(nUnfoldingBins);
@@ -314,7 +314,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   hScaleIdFIV.reserve(nUnfoldingBins);
   hScaleHltFIV.reserve(nUnfoldingBins);
 
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
 
     TString base = TString("hScaleV_massBin");
@@ -336,7 +336,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     base += i;
     hElectronEtV.push_back(new TH1F(base,base,etBinCount, etBinLimits));
     
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       char buf[50];
       sprintf(buf,"mIdx%d_y%4.2lf-%4.2lf",
 	      i,rapidityBinLimits[yi],rapidityBinLimits[yi+1]);
@@ -409,7 +409,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 
 
   // Create container for data for error estimates based on pseudo-experiments
-  //TH1F *systScale[nMassBins][nexp];
+  //TH1F *systScale[DYTools::nMassBins][nexp];
   SystTH1FArray_t systScale;
   SystTH1FArray_t systScaleReco;
   SystTH1FArray_t systScaleId;
@@ -423,7 +423,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   for(int i=0; i<nUnfoldingBins; i++) {
     for(int j=0; j<nexp; j++){
       TString base;
-      if (i<nMassBins) {
+      if (i<DYTools::nMassBins) {
 	base = "hScaleM_massBin";
 	base += i;
 	base += "_exp";
@@ -473,7 +473,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   esfSelectEvent_t selData;
   selData.setBranchAddress(skimTree);
 
-  //std::cout << "nMassBins=" << nMassBins << ", nUnfoldingBins=" << nUnfoldingBins << std::endl;
+  //std::cout << "DYTools::nMassBins=" << DYTools::nMassBins << ", nUnfoldingBins=" << nUnfoldingBins << std::endl;
   std::cout << "there are " << skimTree->GetEntries() 
 	    << " entries in the <" << selectEventsFName << "> file\n";
   for (UInt_t ientry=0; ientry<skimTree->GetEntries(); ++ientry) {
@@ -494,9 +494,9 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     hScaleId ->Fill( scaleFactorId, weight);
     hScaleHlt->Fill( scaleFactorHlt, weight);
     // Use generator-level post-FSR mass, y
-    int ibin= findMassBin(selData.genMass);
-    int idx = findIndexFlat(selData.genMass,selData.genY);
-    if ((ibin>=0) && (ibin<nMassBins)) {
+    int ibin= DYTools::findMassBin(selData.genMass);
+    int idx = DYTools::findIndexFlat(selData.genMass,selData.genY);
+    if ((ibin>=0) && (ibin<DYTools::nMassBins)) {
       hLeadingEtV [ibin]->Fill( selData.et_1, weight);
       hTrailingEtV[ibin]->Fill( selData.et_2, weight);
       hElectronEtV[ibin]->Fill( selData.et_1, weight);
@@ -562,19 +562,19 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   
   // Calculate errors on the scale factors
   // The "Mean" are the mean among all pseudo-experiments, very close to the primary scale factor values
-  TVectorD scaleMeanV(nMassBins);
-  TVectorD scaleMeanErrV(nMassBins);
-  TVectorD scaleMeanRecoV(nMassBins);
-  TVectorD scaleMeanRecoErrV(nMassBins);
-  TVectorD scaleMeanIdV(nMassBins);
-  TVectorD scaleMeanIdErrV(nMassBins);
-  TVectorD scaleMeanHltV(nMassBins);
-  TVectorD scaleMeanHltErrV(nMassBins);
+  TVectorD scaleMeanV(DYTools::nMassBins);
+  TVectorD scaleMeanErrV(DYTools::nMassBins);
+  TVectorD scaleMeanRecoV(DYTools::nMassBins);
+  TVectorD scaleMeanRecoErrV(DYTools::nMassBins);
+  TVectorD scaleMeanIdV(DYTools::nMassBins);
+  TVectorD scaleMeanIdErrV(DYTools::nMassBins);
+  TVectorD scaleMeanHltV(DYTools::nMassBins);
+  TVectorD scaleMeanHltErrV(DYTools::nMassBins);
   // Put into these vectors the content of the mean of the primary scale factor distributions
-  TVectorD scaleV(nMassBins);
-  TVectorD scaleRecoV(nMassBins);
-  TVectorD scaleIdV(nMassBins);
-  TVectorD scaleHltV(nMassBins);
+  TVectorD scaleV(DYTools::nMassBins);
+  TVectorD scaleRecoV(DYTools::nMassBins);
+  TVectorD scaleIdV(DYTools::nMassBins);
+  TVectorD scaleHltV(DYTools::nMassBins);
 
   TVectorD scaleMeanFIV(nUnfoldingBins);
   TVectorD scaleMeanErrFIV(nUnfoldingBins);
@@ -590,13 +590,13 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   TVectorD scaleIdFIV(nUnfoldingBins);
   TVectorD scaleHltFIV(nUnfoldingBins);
 
-  deriveScaleMeanAndErr(nMassBins,nexp, 
+  deriveScaleMeanAndErr(DYTools::nMassBins,nexp, 
 			systScale, scaleMeanV,scaleMeanErrV);
-  deriveScaleMeanAndErr(nMassBins,nexp, 
+  deriveScaleMeanAndErr(DYTools::nMassBins,nexp, 
 			systScaleReco, scaleMeanRecoV,scaleMeanRecoErrV);
-  deriveScaleMeanAndErr(nMassBins,nexp, 
+  deriveScaleMeanAndErr(DYTools::nMassBins,nexp, 
 			systScaleId  , scaleMeanIdV  ,scaleMeanIdErrV  );
-  deriveScaleMeanAndErr(nMassBins,nexp, 
+  deriveScaleMeanAndErr(DYTools::nMassBins,nexp, 
 			systScaleHlt , scaleMeanHltV ,scaleMeanHltErrV );
 
   deriveScaleMeanAndErr(nUnfoldingBins,nexp, 
@@ -611,7 +611,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   }
 
 
-  for(int ibin = 0; ibin < nMassBins; ibin++){
+  for(int ibin = 0; ibin < DYTools::nMassBins; ibin++){
     scaleRecoV[ibin] = hScaleRecoV[ibin]->GetMean();
     scaleIdV [ibin] = hScaleIdV [ibin] ->GetMean();
     scaleHltV[ibin] = hScaleHltV[ibin]->GetMean();
@@ -625,7 +625,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   }
 
   /* superceded
-  for(int ibin = 0; ibin < nMassBins; ibin++){
+  for(int ibin = 0; ibin < DYTools::nMassBins; ibin++){
     scaleMeanV[ibin] = 0;
     scaleMeanErrV[ibin] = 0;
     scaleMeanRecoV[ibin] = 0;
@@ -718,7 +718,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   // Store constants in the file
   TString outputDir(TString("../root_files/constants/")+dirTag);
   gSystem->mkdir(outputDir,kTRUE);
-  TString sfConstFileName(outputDir+TString("/scale_factors_") + analysisTag + 
+  TString sfConstFileName(outputDir+TString("/scale_factors_") + DYTools::analysisTag + 
 			  TString("_") +
 			  triggers.triggerConditionsName() + puStr +
 			  TString(".root"));
@@ -748,7 +748,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     const int c_theEsfBins = int((c_esfLimit_high-c_esfLimit_low)/5e-3 + 1e-3);
 
     // omit the underflow mass bin in 2D case
-    const int iMmin=(study2D==0) ? 0 : 1;
+    const int iMmin=(DYTools::study2D==0) ? 0 : 1;
     const int idxMin= iMmin * DYTools::nYBins[0];
     const int nCorrelationBins=nUnfoldingBins-idxMin;
 
@@ -882,9 +882,9 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     std::string format1=
       std::string("   %3.0f - %3.0f     %5.3f +- %5.3f    %5.3f +- %5.3f")+
       std::string("     %5.3f +- %5.3f     %5.3f +- %5.3f\n");
-    for(int i=0; i<nMassBins; i++){
+    for(int i=0; i<DYTools::nMassBins; i++){
       printf(format1.c_str(),
-	     massBinLimits[i], massBinLimits[i+1],
+	     DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
 	     hScaleRecoV[i]->GetMean(), scaleMeanRecoErrV[i],
 	     hScaleIdV[i]->GetMean(),  scaleMeanIdErrV[i],
 	     hScaleHltV[i]->GetMean(), scaleMeanHltErrV[i],
@@ -899,13 +899,13 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     std::string format2=
       std::string("   %3.0f - %3.0f  %4.2f-%4.2f     %5.3f +- %5.3f    %5.3f +- %5.3f")+
       std::string("     %5.3f +- %5.3f     %5.3f +- %5.3f\n");
-    for(int i=0; i<nMassBins; i++){
+    for(int i=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi) {
-	int idx=findIndexFlat(i,yi);
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+	int idx=DYTools::findIndexFlat(i,yi);
 	std::cout << "idx=" << idx << "\n";
 	printf(format2.c_str(),
-	       massBinLimits[i], massBinLimits[i+1],
+	       DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi], rapidityBinLimits[yi+1],
 	       hScaleRecoFIV[idx]->GetMean(), scaleMeanRecoErrFIV[idx],
 	       hScaleIdFIV[idx]->GetMean(),  scaleMeanIdErrFIV[idx],
@@ -924,10 +924,10 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 			scaleV   , scaleMeanErrV   ,
 			faPlots);
 
-  const int rapidityIdxCount= (study2D==1) ? 3 : 1;
+  const int rapidityIdxCount= (DYTools::study2D==1) ? 3 : 1;
   const int rapidityIdx_2D[] = { 0, 10, 20 };
   const int rapidityIdx_1D[] = {0};
-  const int *rapidityIdx = (study2D==1) ? rapidityIdx_2D : rapidityIdx_1D;
+  const int *rapidityIdx = (DYTools::study2D==1) ? rapidityIdx_2D : rapidityIdx_1D;
   if (1) {
     std::vector<CPlot*> cplotsV;
     if (1) {
@@ -961,7 +961,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
       cplotsV[2]->Draw(c6,false,"png",3);
       cplotsV[3]->Draw(c6,savePlots,"png",4);
       c6->Update();
-      TString plotName=TString("figYDepScaleFactors") + analysisTag + puStr
+      TString plotName=TString("figYDepScaleFactors") + DYTools::analysisTag + puStr
 	+ TString(".png");
       c6->SaveAs(plotName);
       c6->Write();
@@ -972,7 +972,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   // Make plots of Et spectra
   //
   // Normalize first
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     printf("Total events in mass bin %3d     %10.0f\n", 
 	   i, hLeadingEtV[i]->GetSumOfWeights());
     hLeadingEtV  [i]->Sumw2();
@@ -989,7 +989,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 
 
   const int plotMassBinIdxCount=5;
-  const int plotMassBinIdx[plotMassBinIdxCount] = { 0, 3, 4, 5, nMassBins-1 };
+  const int plotMassBinIdx[plotMassBinIdxCount] = { 0, 3, 4, 5, DYTools::nMassBins-1 };
   std::vector<TCanvas*> canvV;
   canvV.reserve(plotMassBinIdxCount);
 
@@ -1001,11 +1001,11 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     sprintf(buf,"etplot_bin%d",plotMassBinIdx[plot_i]);
     CPlot etplot1(buf, "","E_{T} [GeV]", "N_{ele}, normalized");
     const int cbin=plotMassBinIdx[plot_i];
-    if (cbin<=nMassBins) {
-      sprintf(buf,"%1.0f-%1.0f mass range",massBinLimits[cbin],massBinLimits[cbin+1]);
+    if (cbin<=DYTools::nMassBins) {
+      sprintf(buf,"%1.0f-%1.0f mass range",DYTools::massBinLimits[cbin],DYTools::massBinLimits[cbin+1]);
     }
     else {
-      std::cout << "ERROR: cbin=" << cbin << " is greater than nMassBins=" << nMassBins << "\n";
+      std::cout << "ERROR: cbin=" << cbin << " is greater than DYTools::nMassBins=" << DYTools::nMassBins << "\n";
       break;
     }
     TString label = buf;
@@ -1175,15 +1175,15 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 
 	// Consider only events in the mass range of interest
 	// Use generator level post-FSR mass.
- 	if( gen->mass < massBinLimits[0] || 
-	    gen->mass > massBinLimits[nMassBins]) continue;
+ 	if( gen->mass < DYTools::massBinLimits[0] || 
+	    gen->mass > DYTools::massBinLimits[DYTools::nMassBins]) continue;
 	totalCandInMassWindow++;
 
 	// Exclude ECAL gap region (should already be done for ntuple, but just to make sure...)
-	if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) &&
-	   (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
-	if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) &&
-	   (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
+	if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) &&
+	   (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
+	if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) &&
+	   (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
 	// ECAL acceptance cut on supercluster Et
 	if((fabs(dielectron->scEta_1) > 2.5)       || 
 	   (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
@@ -1202,8 +1202,8 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	// No cut on opposite charges to avoid systematics related to charge mis-ID	
 	//  	if( (dielectron->q_1 == dielectron->q_2 )) continue;
 
-	TElectron *ele1 = extractElectron(dielectron, 1);
-	TElectron *ele2 = extractElectron(dielectron, 2);
+	TElectron *ele1 = DYTools::extractElectron(dielectron, 1);
+	TElectron *ele2 = DYTools::extractElectron(dielectron, 2);
 
 	// ID cuts
  	//if( !( passSmurf(ele1) && passSmurf(ele2) ) ) continue;
@@ -1285,8 +1285,8 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 double findEventScaleFactor(const esfSelectEvent_t &data) {
 
   double esf1=1.0;
-  int etBin1 = findEtBin(data.et_1, etBinning);
-  int etaBin1 = findEtaBin(data.eta_1, etaBinning);
+  int etBin1 = DYTools::findEtBin(data.et_1, etBinning);
+  int etaBin1 = DYTools::findEtaBin(data.eta_1, etaBinning);
   if ((etBin1!=-1) && (etaBin1!=-1)) {
     esf1=
       findScaleFactor(0, etBin1, etaBin1) *
@@ -1295,8 +1295,8 @@ double findEventScaleFactor(const esfSelectEvent_t &data) {
   }
 
   double esf2=1.0;
-  int etBin2 = findEtBin(data.et_2, etBinning);
-  int etaBin2 = findEtaBin(data.eta_2, etaBinning);
+  int etBin2 = DYTools::findEtBin(data.et_2, etBinning);
+  int etaBin2 = DYTools::findEtaBin(data.eta_2, etaBinning);
   if ((etBin2!=-1) && (etaBin2!=-1)) {
     esf2=
       findScaleFactor(0, etBin2, etaBin2) *
@@ -1312,15 +1312,15 @@ double findEventScaleFactor(const esfSelectEvent_t &data) {
 double findEventScaleFactor(int kind, const esfSelectEvent_t &data) {
 
   double esf1=1.0;
-  int etBin1 = findEtBin(data.et_1, etBinning);
-  int etaBin1 = findEtaBin(data.eta_1, etaBinning);
+  int etBin1 = DYTools::findEtBin(data.et_1, etBinning);
+  int etaBin1 = DYTools::findEtaBin(data.eta_1, etaBinning);
   if ((etBin1!=-1) && (etaBin1!=-1)) {
     esf1= findScaleFactor(kind, etBin1, etaBin1);
   }
 
   double esf2=1.0;
-  int etBin2 = findEtBin(data.et_2, etBinning);
-  int etaBin2 = findEtaBin(data.eta_2, etaBinning);
+  int etBin2 = DYTools::findEtBin(data.et_2, etBinning);
+  int etaBin2 = DYTools::findEtaBin(data.eta_2, etaBinning);
   if ((etBin2!=-1) && (etaBin2!=-1)) {
     esf2= findScaleFactor(kind, etBin2, etaBin2);
   }
@@ -1332,8 +1332,8 @@ double findEventScaleFactor(int kind, const esfSelectEvent_t &data) {
 
 double findScaleFactor(int kind, double scEt, double scEta) {
 
-  int etBin = findEtBin(scEt, etBinning);
-  int etaBin = findEtaBin(scEta, etaBinning);
+  int etBin = DYTools::findEtBin(scEt, etBinning);
+  int etaBin = DYTools::findEtaBin(scEta, etaBinning);
   return findScaleFactor(kind,etBin,etaBin);
 
 }
@@ -1361,8 +1361,8 @@ double findScaleFactor(int kind, int etBin, int etaBin) {
 double findEventScaleFactorSmeared(const esfSelectEvent_t &data, int iexp) {
 
   double esf1=1.0;
-  int etBin1 = findEtBin(data.et_1, etBinning);
-  int etaBin1 = findEtaBin(data.eta_1, etaBinning);
+  int etBin1 = DYTools::findEtBin(data.et_1, etBinning);
+  int etaBin1 = DYTools::findEtaBin(data.eta_1, etaBinning);
 
   if ((etBin1!=-1) && (etaBin1!=-1)) {
     esf1=
@@ -1372,8 +1372,8 @@ double findEventScaleFactorSmeared(const esfSelectEvent_t &data, int iexp) {
   }
 
   double esf2=1.0;
-  int etBin2 = findEtBin(data.et_2, etBinning);
-  int etaBin2 = findEtaBin(data.eta_2, etaBinning);
+  int etBin2 = DYTools::findEtBin(data.et_2, etBinning);
+  int etaBin2 = DYTools::findEtaBin(data.eta_2, etaBinning);
   if ((etBin2!=-1) && (etaBin2!=-1)) {
     esf2=
       findScaleFactorSmeared(0, etBin2, etaBin2, iexp) *
@@ -1390,15 +1390,15 @@ double findEventScaleFactorSmeared(int kind, const esfSelectEvent_t &data,
 				   int iexp) {
 
   double esf1=1.0;
-  int etBin1 = findEtBin(data.et_1, etBinning);
-  int etaBin1 = findEtaBin(data.eta_1, etaBinning);
+  int etBin1 = DYTools::findEtBin(data.et_1, etBinning);
+  int etaBin1 = DYTools::findEtaBin(data.eta_1, etaBinning);
   if ((etBin1!=-1) && (etaBin1!=-1)) {
     esf1= findScaleFactorSmeared(kind, etBin1, etaBin1, iexp);
   }
 
   double esf2=1.0;
-  int etBin2 = findEtBin(data.et_2, etBinning);
-  int etaBin2 = findEtaBin(data.eta_2, etaBinning);
+  int etBin2 = DYTools::findEtBin(data.et_2, etBinning);
+  int etaBin2 = DYTools::findEtaBin(data.eta_2, etaBinning);
   if ((etBin2!=-1) && (etaBin2!=-1)) {
     esf2= findScaleFactorSmeared(kind, etBin2, etaBin2, iexp);
   }
@@ -1410,8 +1410,8 @@ double findEventScaleFactorSmeared(int kind, const esfSelectEvent_t &data,
 
 double findScaleFactorSmeared(int kind, double scEt, double scEta, int iexp) {
 
-  int etBin = findEtBin(scEt, etBinning);
-  int etaBin = findEtaBin(scEta, etaBinning);
+  int etBin = DYTools::findEtBin(scEt, etBinning);
+  int etaBin = DYTools::findEtaBin(scEta, etaBinning);
   return findScaleFactorSmeared(kind,etBin,etaBin,ro_Data[iexp],ro_MC[iexp]);
 
 }
@@ -1677,7 +1677,7 @@ void drawEfficiencies(TFile *fRoot){
       // Draw all graphs
       TString effName=EfficiencyKindName(DYTools::TEfficiencyKind_t(kind));
       TString ylabel=TString("efficiency_{") + effName + TString("}");
-      TString plotName = TString("plot_eff_") + analysisTag + TString("_") +
+      TString plotName = TString("plot_eff_") + DYTools::analysisTag + TString("_") +
 	effName + etaStr;
       
       drawEfficiencyGraphs(grDataEff, grMcEff,
@@ -1730,7 +1730,7 @@ void drawScaleFactors(TFile *fRoot){
 	= new TGraphErrors(etBinCount, x, scale, dx, scaleErr);
       TString effName=EfficiencyKindName(DYTools::TEfficiencyKind_t(kind));
       TString ylabel=TString("scale factor ") + effName;
-      TString plotName = TString("plot_scale_") + analysisTag + TString("_") +
+      TString plotName = TString("plot_scale_") + DYTools::analysisTag + TString("_") +
 	effName + etaStr;
 
       drawScaleFactorGraphs(grScaleFactor, ylabel, plotLabel, plotName, fRoot);
@@ -1760,26 +1760,26 @@ void drawEventScaleFactors(TVectorD &scaleRecoV, TVectorD &scaleRecoErrV,
 			   TFile *fRoot)
 {
 
-  if (scaleRecoV.GetNoElements()!=nMassBins) {
+  if (scaleRecoV.GetNoElements()!=DYTools::nMassBins) {
     std::cout << "\n\nERROR: drawEventScaleFactors should be called for "
 	      << "mass-bin indexed vectors\n\n";
     return;
   }
 
   // repackage into arrays
-  double x[nMassBins];
-  double dx[nMassBins];
-  double scaleRecoA   [nMassBins];
-  double scaleIdA    [nMassBins];
-  double scaleHltA   [nMassBins];
-  double scaleA      [nMassBins];
-  double scaleRecoErrA[nMassBins];
-  double scaleIdErrA [nMassBins];
-  double scaleHltErrA[nMassBins];
-  double scaleErrA   [nMassBins];
-  for(int i=0; i<nMassBins; i++){
-    x[i] = (massBinLimits[i] + massBinLimits[i+1])/2.0;
-    dx[i]= (massBinLimits[i+1] - massBinLimits[i])/2.0;
+  double x[DYTools::nMassBins];
+  double dx[DYTools::nMassBins];
+  double scaleRecoA   [DYTools::nMassBins];
+  double scaleIdA    [DYTools::nMassBins];
+  double scaleHltA   [DYTools::nMassBins];
+  double scaleA      [DYTools::nMassBins];
+  double scaleRecoErrA[DYTools::nMassBins];
+  double scaleIdErrA [DYTools::nMassBins];
+  double scaleHltErrA[DYTools::nMassBins];
+  double scaleErrA   [DYTools::nMassBins];
+  for(int i=0; i<DYTools::nMassBins; i++){
+    x[i] = (DYTools::massBinLimits[i] + DYTools::massBinLimits[i+1])/2.0;
+    dx[i]= (DYTools::massBinLimits[i+1] - DYTools::massBinLimits[i])/2.0;
     scaleRecoA       [i] = scaleRecoV   [i];
     scaleIdA        [i] = scaleIdV    [i];
     scaleHltA       [i] = scaleHltV   [i];
@@ -1791,17 +1791,17 @@ void drawEventScaleFactors(TVectorD &scaleRecoV, TVectorD &scaleRecoErrV,
   }
 
   TGraphErrors *grScale = 
-    new TGraphErrors(nMassBins, x, scaleA, dx, scaleErrA);
+    new TGraphErrors(DYTools::nMassBins, x, scaleA, dx, scaleErrA);
   TGraphErrors *grScaleReco = 
-    new TGraphErrors(nMassBins, x, scaleRecoA, dx, scaleRecoErrA);
+    new TGraphErrors(DYTools::nMassBins, x, scaleRecoA, dx, scaleRecoErrA);
   TGraphErrors *grScaleId  = 
-    new TGraphErrors(nMassBins, x, scaleIdA , dx, scaleIdErrA );
+    new TGraphErrors(DYTools::nMassBins, x, scaleIdA , dx, scaleIdErrA );
   TGraphErrors *grScaleHlt = 
-    new TGraphErrors(nMassBins, x, scaleHltA, dx, scaleHltErrA);
+    new TGraphErrors(DYTools::nMassBins, x, scaleHltA, dx, scaleHltErrA);
 
   TString plotName;
   TString plotNameBase = 
-    TString("plot_event_scale_") + analysisTag + TString("_");
+    TString("plot_event_scale_") + DYTools::analysisTag + TString("_");
   plotName = plotNameBase + TString("reco");
   drawEventScaleFactorGraphs(grScaleReco, "RECO scale factor", plotName,fRoot);
   plotName = "plot_event_scale_id";
@@ -1832,16 +1832,16 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
   }
 
   // repackage into arrays
-  double x[nMassBins];
-  double dx[nMassBins];
-  double scaleRecoA   [nMassBins];
-  double scaleIdA    [nMassBins];
-  double scaleHltA   [nMassBins];
-  double scaleA      [nMassBins];
-  double scaleRecoErrA[nMassBins];
-  double scaleIdErrA [nMassBins];
-  double scaleHltErrA[nMassBins];
-  double scaleErrA   [nMassBins];
+  double x[DYTools::nMassBins];
+  double dx[DYTools::nMassBins];
+  double scaleRecoA   [DYTools::nMassBins];
+  double scaleIdA    [DYTools::nMassBins];
+  double scaleHltA   [DYTools::nMassBins];
+  double scaleA      [DYTools::nMassBins];
+  double scaleRecoErrA[DYTools::nMassBins];
+  double scaleIdErrA [DYTools::nMassBins];
+  double scaleHltErrA[DYTools::nMassBins];
+  double scaleErrA   [DYTools::nMassBins];
 
   double rapidity=-999;
   {
@@ -1850,18 +1850,18 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
       (rapidityBinLimits[rapidityIndex]+rapidityBinLimits[rapidityIndex+1]);
     delete rapidityBinLimits;
   }
-  for(int i=0; i<nMassBins; i++){
-    int idx=findIndexFlat(i,rapidityIndex);
+  for(int i=0; i<DYTools::nMassBins; i++){
+    int idx=DYTools::findIndexFlat(i,rapidityIndex);
     if (idx<0) {
       std::cout <<"drawEventScaleFactorsFI: massBin=" << i << ", rapidityIndex=" << rapidityIndex << "(supplied to subroutine), idx=" << idx << std::endl;
       return;
     }
-    if (i==nMassBins-1) {
+    if (i==DYTools::nMassBins-1) {
       // last mass bins is special
-      idx=DYTools::findIndexFlat(i, findAbsYBin(i,rapidity));
+      idx=DYTools::findIndexFlat(i, DYTools::findAbsYBin(i,rapidity));
     }
-    x[i] = (massBinLimits[i] + massBinLimits[i+1])/2.0;
-    dx[i]= (massBinLimits[i+1] - massBinLimits[i])/2.0;
+    x[i] = (DYTools::massBinLimits[i] + DYTools::massBinLimits[i+1])/2.0;
+    dx[i]= (DYTools::massBinLimits[i+1] - DYTools::massBinLimits[i])/2.0;
     scaleRecoA       [i] = scaleRecoFIV   [idx];
     scaleIdA        [i] = scaleIdFIV    [idx];
     scaleHltA       [i] = scaleHltFIV   [idx];
@@ -1873,13 +1873,13 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
   }
 
   TGraphErrors *grScale = 
-    new TGraphErrors(nMassBins, x, scaleA, dx, scaleErrA);
+    new TGraphErrors(DYTools::nMassBins, x, scaleA, dx, scaleErrA);
   TGraphErrors *grScaleReco = 
-    new TGraphErrors(nMassBins, x, scaleRecoA, dx, scaleRecoErrA);
+    new TGraphErrors(DYTools::nMassBins, x, scaleRecoA, dx, scaleRecoErrA);
   TGraphErrors *grScaleId  = 
-    new TGraphErrors(nMassBins, x, scaleIdA , dx, scaleIdErrA );
+    new TGraphErrors(DYTools::nMassBins, x, scaleIdA , dx, scaleIdErrA );
   TGraphErrors *grScaleHlt = 
-    new TGraphErrors(nMassBins, x, scaleHltA, dx, scaleHltErrA);
+    new TGraphErrors(DYTools::nMassBins, x, scaleHltA, dx, scaleHltErrA);
 
   char buf[20];
   sprintf(buf,"_y=%4.2lf_",rapidity); // for file name
@@ -1888,7 +1888,7 @@ void drawEventScaleFactorsFI(TVectorD scaleRecoFIV, TVectorD scaleRecoErrFIV,
   sprintf(buf,"|y|=%4.2lf",rapidity); // for label
   TString plotName;
   TString plotNameBase = 
-    TString("plot_event_scale_") + analysisTag + TString("_") + yStr;
+    TString("plot_event_scale_") + DYTools::analysisTag + TString("_") + yStr;
   plotName = plotNameBase + TString("reco");
   drawEventScaleFactorGraphs(grScaleReco, 
 			     TString("RECO scale factor ") + TString(buf),
@@ -1932,7 +1932,7 @@ int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr,
      const TnPInputFileMgr_t &dataMgr, const TriggerSelection &triggers, 
 			      int puReweight) {
 
-  TString fnStart="efficiency_TnP_"; //+ analysisTag;
+  TString fnStart="efficiency_TnP_"; //+ DYTools::analysisTag;
   TString fnEnd=".root";
   if (puReweight) fnEnd= TString("_PU.root");
 
@@ -1952,7 +1952,8 @@ int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr,
   int res=1;
   for (int kind=0; res && (kind<3); ++kind) {
     TString dataFName=fnStart + 
-      getLabel(DATA,TEfficiencyKind_t(kind),dataMgr.effCalcMethod(kind),
+      getLabel(DYTools::DATA, DYTools::TEfficiencyKind_t(kind),
+	       dataMgr.effCalcMethod(kind),
 	       etBinning, etaBinning, triggers)
       + fnEnd;
     int weightedCnC= (kind==2) ? puReweight : 0;
@@ -1962,7 +1963,8 @@ int fillEfficiencyConstants(  const TnPInputFileMgr_t &mcMgr,
   }
   for (int kind=0; res && (kind<3); ++kind) {
     TString mcFName=fnStart + 
-      getLabel(MC,TEfficiencyKind_t(kind),mcMgr.effCalcMethod(kind),
+      getLabel(DYTools::MC, DYTools::TEfficiencyKind_t(kind),
+	       mcMgr.effCalcMethod(kind),
 	       etBinning, etaBinning, triggers)
       + fnEnd;
     res=fillOneEfficiency(mcMgr, mcFName, kind, 

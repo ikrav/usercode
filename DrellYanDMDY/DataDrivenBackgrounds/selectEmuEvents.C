@@ -401,14 +401,14 @@ void selectEmuEvents(const TString conf,
         /*ULong_t eventTriggerBit = kHLT_Mu17_Ele8_CaloIdL_MuObj | kHLT_Mu17_Ele8_CaloIdL_EGObj 
 	  | kHLT_Mu8_Ele17_CaloIdL_MuObj | kHLT_Mu8_Ele17_CaloIdL_EGObj;*/
 
-      ULong_t eventTriggerBit = (kHLT_Mu17_Ele8_CaloIdL | kHLT_Mu8_Ele17_CaloIdL | kHLT_Mu15_Photon20_CaloIdL | kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL);
+	const ULong_t eventTriggerBit = (Triggers2011::kHLT_Mu17_Ele8_CaloIdL | Triggers2011::kHLT_Mu8_Ele17_CaloIdL | Triggers2011::kHLT_Mu15_Photon20_CaloIdL | Triggers2011::kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL);
       /*      ULong_t leadingTriggerObjectBit = kHLT_Mu17_Ele8_CaloIdL_MuObj | kHLT_Mu17_Ele8_CaloIdL_EGObj
 	| kHLT_Mu8_Ele17_CaloIdL_MuObj | kHLT_Mu8_Ele17_CaloIdL_EGObj;
       ULong_t trailingTriggerObjectBit = kHLT_Mu17_Ele8_CaloIdL_MuObj | kHLT_Mu17_Ele8_CaloIdL_EGObj
       | kHLT_Mu8_Ele17_CaloIdL_MuObj | kHLT_Mu8_Ele17_CaloIdL_EGObj;*/
   
-      ULong_t electronTriggerObjectBit = (kHLT_Mu17_Ele8_CaloIdL_EGObj | kHLT_Mu8_Ele17_CaloIdL_EGObj | kHLT_Mu15_Photon20_CaloIdL_EGObj | kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_EGObj);
-      ULong_t muonTriggerObjectBit =  (kHLT_Mu17_Ele8_CaloIdL_MuObj | kHLT_Mu8_Ele17_CaloIdL_MuObj | kHLT_Mu15_Photon20_CaloIdL_MuObj | kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_MuObj);
+      const ULong_t electronTriggerObjectBit = (Triggers2011::kHLT_Mu17_Ele8_CaloIdL_EGObj | Triggers2011::kHLT_Mu8_Ele17_CaloIdL_EGObj | Triggers2011::kHLT_Mu15_Photon20_CaloIdL_EGObj | Triggers2011::kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_EGObj);
+      const ULong_t muonTriggerObjectBit =  (Triggers2011::kHLT_Mu17_Ele8_CaloIdL_MuObj | Triggers2011::kHLT_Mu8_Ele17_CaloIdL_MuObj | Triggers2011::kHLT_Mu15_Photon20_CaloIdL_MuObj | Triggers2011::kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_MuObj);
       // Apply trigger cut at the event level        	
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event...                                   
 

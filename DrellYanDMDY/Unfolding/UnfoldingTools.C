@@ -370,6 +370,7 @@ namespace unfolding {
 // -------------------------------------------------------
 
   void writeBinningArrays(TFile &fout) {
+    using namespace DYTools;
     fout.cd();
     TVectorD mass(nMassBins+1);
     TVectorD rapidityCounts(nMassBins);
@@ -400,6 +401,7 @@ namespace unfolding {
   // -------------------------------------------------------
 
   bool checkBinningRanges(const TVectorD &mass, const TVectorD &rapidityCounts, const TString &fname) {
+    using namespace DYTools;
     const char *fncname="unfolding::checkBinningRanges: ";
     TString fileInfo=TString("on file <") + fname + ">";
 
@@ -453,10 +455,11 @@ namespace unfolding {
     bool ok=true;
     if (verb) std::cout << "checkRangesMY: check matrix with name=<" << name << ">\n";
     int nMaxYBins= DYTools::findMaxYBins();
-    if(( M.GetNrows() != nMassBins ) || ( M.GetNcols() != nMaxYBins )) {
+    if(( M.GetNrows() != DYTools::nMassBins ) ||
+       ( M.GetNcols() != nMaxYBins )) {
       std::cout << "checkRangesMY(TMatrixD): " << name << " is not good: "
 		<< M.GetNrows() << 'x' << M.GetNcols() << " instead of "
-		<< nMassBins << 'x' << nMaxYBins << "\n";
+		<< DYTools::nMassBins << 'x' << nMaxYBins << "\n";
       ok=false;
     }
     return ok;

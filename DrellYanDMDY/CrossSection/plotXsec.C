@@ -49,7 +49,7 @@ void plotXsec(){
 
   TVectorD BinLimitsForXsec(DYTools::nMassBins+1);
   for(int ibin=0; ibin<=DYTools::nMassBins; ibin++){
-    BinLimitsForXsec[ibin] = massBinLimits[ibin];
+    BinLimitsForXsec[ibin] = DYTools::massBinLimits[ibin];
   }
 
   TVectorD xSecTh(nMassBinTh);
@@ -73,7 +73,7 @@ void plotXsec(){
   TMultiGraph *mg = new TMultiGraph();
         // create first graph
   const Int_t n1 = DYTools::nMassBins, n2=nMassBinTh;
-  Double_t x1[n1], x2[n2],  x3[n2], ex1[n1], ex2[n2], ex3[n2] ;
+  Double_t x1[n1], x3[n2], ex1[n1], ex3[n2] ;
   Double_t y1[n1], y2[n2],  y3[n2], ey1[n1], ey2[n2], ey3[n2];
 ////  printf("Bin  MeanMass  Width        Xsec         ErrXsec\n");
   //Int_t i1=-1, i2=0;
@@ -186,7 +186,7 @@ void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelect
   //printf("Load data yields\n"); fflush(stdout);
   std::cout << "Load data yields" << std::endl;
   TString xSecResultFileName(TString("../root_files/xSec_results_") + 
-			     analysisTag + TString("_") +
+			     DYTools::analysisTag + TString("_") +
 		   triggers.triggerConditionsName() + TString(".root"));
   std::cout << "xSecResultFileName= " << xSecResultFileName << "\n";
 
@@ -201,7 +201,7 @@ void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelect
   TVectorD xSecErr1(nUnfoldingBins);
   TVectorD xSecErr2(nUnfoldingBins);
 
-  std::cout << "nUnfoldingBins=" << nUnfoldingBins << ", nMassBins=" << nMassBins << "\n";
+  std::cout << "nUnfoldingBins=" << nUnfoldingBins << ", nMassBins=" << DYTools::nMassBins << "\n";
 
   unfolding::flattenMatrix(xSecM, xSec);
   unfolding::flattenMatrix(xSecErr1M, xSecErr1);
@@ -217,7 +217,7 @@ void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelect
     printf("readData: Binning in the inputs is consistent\n");
 
   // Prepare output yields and errors
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     v[i] = xSec[i];
     vErr1[i] = xSecErr1[i];
     vErr2[i] = xSecErr2[i];
@@ -232,7 +232,7 @@ void readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers){
   //TFile fileXsecTh   (TString("../root_files/xSecTh_results.root"));
 
   TString xSecThResultFileName(TString("../root_files/xSecTh_results_") +
-			       analysisTag + TString("_") +
+			       DYTools::analysisTag + TString("_") +
 		      triggers.triggerConditionsName() + TString(".root"));
   std::cout << "Load theory predictions\n";
   std::cout << "xSecThResultFileName=" << xSecThResultFileName << std::endl;

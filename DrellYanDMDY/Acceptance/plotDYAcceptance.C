@@ -148,18 +148,18 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   
   Double_t   nZv = 0;
 
-  TMatrixD nEventsv (DYTools::nMassBins,nYBinsMax);  
-  TMatrixD nPassv   (DYTools::nMassBins,nYBinsMax);
-  TMatrixD accv     (DYTools::nMassBins,nYBinsMax);
-  TMatrixD accErrv  (DYTools::nMassBins,nYBinsMax);
+  TMatrixD nEventsv (DYTools::nMassBins,DYTools::nYBinsMax);  
+  TMatrixD nPassv   (DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD accv     (DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD accErrv  (DYTools::nMassBins,DYTools::nYBinsMax);
 
-  TMatrixD nPassBBv(DYTools::nMassBins,nYBinsMax), accBBv(DYTools::nMassBins,nYBinsMax), accErrBBv(DYTools::nMassBins,nYBinsMax); 
-  TMatrixD nPassBEv(DYTools::nMassBins,nYBinsMax), accBEv(DYTools::nMassBins,nYBinsMax), accErrBEv(DYTools::nMassBins,nYBinsMax); 
-  TMatrixD nPassEEv(DYTools::nMassBins,nYBinsMax), accEEv(DYTools::nMassBins,nYBinsMax), accErrEEv(DYTools::nMassBins,nYBinsMax);
+  TMatrixD nPassBBv(DYTools::nMassBins,DYTools::nYBinsMax), accBBv(DYTools::nMassBins,DYTools::nYBinsMax), accErrBBv(DYTools::nMassBins,DYTools::nYBinsMax); 
+  TMatrixD nPassBEv(DYTools::nMassBins,DYTools::nYBinsMax), accBEv(DYTools::nMassBins,DYTools::nYBinsMax), accErrBEv(DYTools::nMassBins,DYTools::nYBinsMax); 
+  TMatrixD nPassEEv(DYTools::nMassBins,DYTools::nYBinsMax), accEEv(DYTools::nMassBins,DYTools::nYBinsMax), accErrEEv(DYTools::nMassBins,DYTools::nYBinsMax);
 
   // Vectors for calculation of errors with weighted sums
-  TMatrixD w2Eventsv (DYTools::nMassBins,nYBinsMax);  
-  TMatrixD w2Passv   (DYTools::nMassBins,nYBinsMax);
+  TMatrixD w2Eventsv (DYTools::nMassBins,DYTools::nYBinsMax);  
+  TMatrixD w2Passv   (DYTools::nMassBins,DYTools::nYBinsMax);
 
 
   nEventsv = 0;
@@ -331,15 +331,15 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       }else if(ibinMass >= nEventsv.GetNrows())
 	cout << "ERROR: binning problem" << endl;
 
-      Bool_t isB1 = (fabs(gen->eta_1)<kECAL_GAP_LOW);
-      Bool_t isB2 = (fabs(gen->eta_2)<kECAL_GAP_LOW);
-      Bool_t isE1 = (fabs(gen->eta_1)>kECAL_GAP_HIGH);
-      Bool_t isE2 = (fabs(gen->eta_2)>kECAL_GAP_HIGH);
+      Bool_t isB1 = (fabs(gen->eta_1)<DYTools::kECAL_GAP_LOW);
+      Bool_t isB2 = (fabs(gen->eta_2)<DYTools::kECAL_GAP_LOW);
+      Bool_t isE1 = (fabs(gen->eta_1)>DYTools::kECAL_GAP_HIGH);
+      Bool_t isE2 = (fabs(gen->eta_2)>DYTools::kECAL_GAP_HIGH);
       // Asymmetric Et cut scheme for DY analysis
       if( ( (gen->pt_1 > DYTools::etMinLead && gen->pt_2 > DYTools::etMinTrail) 
 	    || (gen->pt_1 > DYTools::etMinTrail && gen->pt_2 > DYTools::etMinLead) )
-         && ((fabs(gen->eta_1)<kECAL_GAP_LOW) || (fabs(gen->eta_1)>kECAL_GAP_HIGH))
-         && ((fabs(gen->eta_2)<kECAL_GAP_LOW) || (fabs(gen->eta_2)>kECAL_GAP_HIGH))   
+         && ((fabs(gen->eta_1)<DYTools::kECAL_GAP_LOW) || (fabs(gen->eta_1)>DYTools::kECAL_GAP_HIGH))
+         && ((fabs(gen->eta_2)<DYTools::kECAL_GAP_LOW) || (fabs(gen->eta_2)>DYTools::kECAL_GAP_HIGH))   
 	 && (fabs(gen->eta_1)<2.5) && (fabs(gen->eta_2)<2.5)) {
         
 	if(ibinMass != -1 && ibinMass < nPassv.GetNrows()){
@@ -372,7 +372,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   accErrEEv = 0;
 
   for(int i=0; i<DYTools::nMassBins; i++)
-    for (int j=0; j<nYBins[i]; j++)
+    for (int j=0; j<DYTools::nYBins[i]; j++)
       {
         if(nEventsv(i,j) != 0)
           {
@@ -414,7 +414,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   // Make plots 
   //==============================================================================================================  
 
-  CPlot::sOutDir="plots" + analysisTag;
+  CPlot::sOutDir="plots" + DYTools::analysisTag;
   if (systematicsMode==DYTools::FSR_STUDY) {
     CPlot::sOutDir += "_reweight";
     CPlot::sOutDir += int(reweightFsr*100);
@@ -426,7 +426,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   outDir+=dirTag;
   gSystem->mkdir(outDir,kTRUE);
 
-  TString fileNamePlots=outDir + "/acceptance_plots" + analysisTag + ".root";
+  TString fileNamePlots=outDir + "/acceptance_plots" + DYTools::analysisTag + ".root";
   TFile *filePlots=new TFile(fileNamePlots,"recreate");
   if (!filePlots) {
     std::cout << "failed to create file <" << fileNamePlots << ">\n";
@@ -462,12 +462,12 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     accConstFileName+=TString("constants/")+dirTag;
     gSystem->mkdir(accConstFileName,kTRUE);
     //accConstFileName+=TString("/acceptance_constants.root");
-    accConstFileName+=TString("/acceptance_constants" + analysisTag + ".root");
+    accConstFileName+=TString("/acceptance_constants" + DYTools::analysisTag + ".root");
   }
   else if (systematicsMode==DYTools::FSR_STUDY){
     accConstFileName+=TString("systematics/")+dirTag;
     gSystem->mkdir(accConstFileName,kTRUE);
-    accConstFileName+=TString("/acceptance_constants_reweight_") + analysisTag;
+    accConstFileName+=TString("/acceptance_constants_reweight_") + DYTools::analysisTag;
     accConstFileName+=TString("_");
     accConstFileName+=int(reweightFsr*100);
     accConstFileName+=TString(".root");

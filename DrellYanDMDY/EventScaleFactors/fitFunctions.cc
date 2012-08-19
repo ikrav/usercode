@@ -159,7 +159,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
   // from measureEfficiencyCountAndCount routine, otherwise
   // from measureEfficiencyWithFit routine.
   bool saveCountingToRootFile = true;
-  if( method == COUNTnFIT || method == FITnFIT )
+  if( method == DYTools::COUNTnFIT || method == DYTools::FITnFIT )
     saveCountingToRootFile = false;
   
   // Always report counting method results
@@ -168,7 +168,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
 				 saveCountingToRootFile, resultsRootFile, 
 				 plotsRootFile);
   
-  if( method == COUNTnFIT || method == FITnFIT )
+  if( method == DYTools::COUNTnFIT || method == DYTools::FITnFIT )
     measureEfficiencyWithFit(passTree, failTree, 
 			     method, etBinning, etaBinning, 
 			     canvas, effOutput, fitLog,
@@ -217,8 +217,8 @@ void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull,
     for (int pass=0; pass<2; ++pass) {
       for (int pu_i=0; pu_i<DYTools::nPVBinCount; ++pu_i) {
 	char buf[50];
-	UInt_t pvMin=UInt_t(nPVLimits[pu_i  ]+0.6);
-	UInt_t pvMax=UInt_t(nPVLimits[pu_i+1]-0.4);
+	UInt_t pvMin=UInt_t(DYTools::nPVLimits[pu_i  ]+0.6);
+	UInt_t pvMax=UInt_t(DYTools::nPVLimits[pu_i+1]-0.4);
 	sprintf(buf,"%sTreePU_%u_%u",(pass)? "pass":"fail",pvMin,pvMax);
 	//std::cout << "buf=" << buf << "\n";
 	TTree *tree=new TTree(buf,buf);
@@ -260,7 +260,7 @@ void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull,
 	nPass+=passTreeV[pu_i]->GetEntries();
 	nFail+=failTreeV[pu_i]->GetEntries();
 	sprintf(buf,"  %4.1lf..%4.1lf    %8lld   %8lld", 
-		nPVLimits[pu_i],nPVLimits[pu_i+1],
+		DYTools::nPVLimits[pu_i],DYTools::nPVLimits[pu_i+1],
 		passTreeV[pu_i]->GetEntries(), failTreeV[pu_i]->GetEntries());
 	effOutput << buf << "\n";
       }
@@ -275,8 +275,8 @@ void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull,
     for (int pu_i=0; pu_i<DYTools::nPVBinCount; ++pu_i) {
       std::cout << " pu_i=" << pu_i << "\n";
       char buf[50];
-      UInt_t pvMin=UInt_t(nPVLimits[pu_i  ]+0.6);
-      UInt_t pvMax=UInt_t(nPVLimits[pu_i+1]-0.4);
+      UInt_t pvMin=UInt_t(DYTools::nPVLimits[pu_i  ]+0.6);
+      UInt_t pvMax=UInt_t(DYTools::nPVLimits[pu_i+1]-0.4);
       sprintf(buf,"_%u_%u.root",pvMin,pvMax);
       TString resRootFName=resultRootFileBase + TString(buf);
       TFile *resultsRootFile=new TFile(resRootFName,"recreate");
@@ -309,11 +309,11 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 			    bool saveResultsToRootFile, TFile *resultsRootFile,
 			    TFile *resultPlotsFile){
   
-  int nEt                = getNEtBins(etBinning);
-  const double *limitsEt = getEtBinLimits(etBinning);
+  int nEt                = DYTools::getNEtBins(etBinning);
+  const double *limitsEt = DYTools::getEtBinLimits(etBinning);
   
-  int nEta                = getNEtaBins(etaBinning);
-  const double *limitsEta = getEtaBinLimits(etaBinning);
+  int nEta                = DYTools::getNEtaBins(etaBinning);
+  const double *limitsEta = DYTools::getEtaBinLimits(etaBinning);
   printf("eta bins %d\n", nEta);
 
   TMatrixD effArray2D(nEt, nEta);
@@ -456,11 +456,11 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
 		      TString dirTag, const TString &picFileExtraTag,
 		      int puBin){
   
-  int nEt                = getNEtBins(etBinning);
-  const double *limitsEt = getEtBinLimits(etBinning);
+  int nEt                = DYTools::getNEtBins(etBinning);
+  const double *limitsEt = DYTools::getEtBinLimits(etBinning);
 
-  int nEta                = getNEtaBins(etaBinning);
-  const double *limitsEta = getEtaBinLimits(etaBinning);
+  int nEta                = DYTools::getNEtaBins(etaBinning);
+  const double *limitsEta = DYTools::getEtaBinLimits(etaBinning);
   printf("eta bins %d\n", nEta);
   
   TMatrixD effArray2D(nEt, nEta);
@@ -469,9 +469,9 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
 
   TString methodStr;
   switch(method) {
-  case COUNTnCOUNT: methodStr="Count+Count"; break;
-  case COUNTnFIT: methodStr="Count+Fit"; break;
-  case FITnFIT: methodStr="Fit+Fit"; break;
+  case DYTools::COUNTnCOUNT: methodStr="Count+Count"; break;
+  case DYTools::COUNTnFIT: methodStr="Count+Fit"; break;
+  case DYTools::FITnFIT: methodStr="Fit+Fit"; break;
   default:
     std::cout << "unknown method of efficiency calculation\n";
     assert(0);
@@ -583,7 +583,7 @@ int getTemplateBin(int etBin, int etaBin, int etaBinning){
   int templateBin = -1;
 
   if( etBin != -1 && etaBin != -1)
-    templateBin = etBin * getNEtaBins(etaBinning) + etaBin;
+    templateBin = etBin * DYTools::getNEtaBins(etaBinning) + etaBin;
 
   return templateBin;
 

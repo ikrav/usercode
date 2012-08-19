@@ -22,7 +22,7 @@ void JsonParser::Initialize(TString filename){
   ifstream jsonFile(filename.Data());
   if (!jsonFile) {
     cout << "JsonParser::Error: Unable to open JSON file";
-    exit(1);
+    assert(0);
   }
   
   char x;

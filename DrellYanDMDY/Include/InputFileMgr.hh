@@ -179,7 +179,7 @@ public:
   DYTools::TEfficiencyKind_t effType(idx_t idx) const { return DetermineEfficiencyKind(FEffTypeStrV[idx]); }
   template<class idx_t>
   DYTools::TTnPMethod_t effCalcMethod(idx_t idx) const { return DetermineTnPMethod(FCalcMethodStrV[idx]); }
-  int etBinsCount() const { return getNEtBins(int(this->etBinsKind())); }
+  int etBinsCount() const { return DYTools::getNEtBins(int(this->etBinsKind())); }
   DYTools::TEtBinSet_t etBinsKind() const { return DetermineEtBinSet(FEtBinsKindStr); }
   DYTools::TEtaBinSet_t etaBinsKind() const { return DetermineEtaBinSet(FEtaBinsKindStr); }
 #endif

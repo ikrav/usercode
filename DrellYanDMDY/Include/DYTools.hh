@@ -1,6 +1,6 @@
 #ifndef DYTools_HH
 #define DYTools_HH
-#define DYTools
+
 
 #include <iostream>
 #include <math.h>
@@ -99,6 +99,7 @@ namespace DYTools {
 
 
   // generic bin idx finder
+  inline
   int _findMassBin(double mass, int nMassBinsLoc, const double *massBinLimitsLoc){  
 
     int result =-1;
@@ -113,9 +114,9 @@ namespace DYTools {
   };
 
   // some derived bin idx finders -- for debug
-  int _findMassBin2011(double mass) { return _findMassBin(mass,_nMassBins2011,_massBinLimits2011); }
-  int _findMassBin13(double mass) { return _findMassBin(mass,_nMassBins13,_massBinLimits13); }
-  int _findMassBinLumi(double mass) { return _findMassBin(mass,_nMassBinsLumi,_massBinLimitsLumi); }
+  inline int _findMassBin2011(double mass) { return _findMassBin(mass,_nMassBins2011,_massBinLimits2011); }
+  inline int _findMassBin13(double mass) { return _findMassBin(mass,_nMassBins13,_massBinLimits13); }
+  inline int _findMassBinLumi(double mass) { return _findMassBin(mass,_nMassBinsLumi,_massBinLimitsLumi); }
 
 // Declare mass binnings
   typedef enum { _MassBins_Undefined, _MassBins_2010, _MassBins_2011, _MassBins_2011_Lumi, _MassBins_2011_2D } TMassBinning_t;
@@ -146,9 +147,10 @@ namespace DYTools {
   //
 
   // find mass bin idx
-  int findMassBin(double mass) { return _findMassBin(mass,nMassBins,massBinLimits); }
+  inline int findMassBin(double mass) { return _findMassBin(mass,nMassBins,massBinLimits); }
 
 
+  inline 
   int findYBin(int massBin, double y){
   
     int result = -1;
@@ -189,11 +191,12 @@ namespace DYTools {
     return result;
   }
   
-  int findAbsYBin(int massBin, double y){ return findYBin(massBin,fabs(y)); }
-  int findYBin(double mass, double y) { return findYBin(findMassBin(mass),y); }
-  int findAbsYBin(double mass, double y) { return findYBin(findMassBin(mass),fabs(y)); }
+  inline int findAbsYBin(int massBin, double y){ return findYBin(massBin,fabs(y)); }
+  inline int findYBin(double mass, double y) { return findYBin(findMassBin(mass),y); }
+  inline int findAbsYBin(double mass, double y) { return findYBin(findMassBin(mass),fabs(y)); }
 
   // return rapidity value at the Ybin center
+  inline 
   double findAbsYValue(int massBin, int yBin) {
     if (massBin>=nMassBins) {
       std::cout << "ERROR in findAbsYValue: massBin=" << massBin << ", nMassBins=" << nMassBins << "\n";
@@ -209,6 +212,7 @@ namespace DYTools {
   }
   
   // return rapidity range of Ybin
+  inline 
   void findAbsYValueRange(int massBin, int yBin, double &absYMin, double &absYMax) {
     absYMin=0.; absYMax=0.;
     if (massBin>=nMassBins) {
@@ -228,6 +232,7 @@ namespace DYTools {
   
 
   // This function finds a unique 1D index for (index_m, index_y) pair
+  inline 
   int findIndexFlat(int massBin, int yBin){
     
     int result = -1;
@@ -244,6 +249,7 @@ namespace DYTools {
   }
 
   // This function finds a unique 1D index for (index_m, index_y) pair
+  inline 
   int findIndexFlat(double mass, double y){
     int massBin=findMassBin(mass);
     int yBin=findAbsYBin(massBin,y);
@@ -254,6 +260,7 @@ namespace DYTools {
   // 
   // Unfolding matrix binning
   // info: was getNumberOf2DBins
+  inline 
   int getTotalNumberOfBins(){
     int result = 0;
     for(int i=0; i<nMassBins; i++)
@@ -262,6 +269,7 @@ namespace DYTools {
   }
 
   // Largest number of Ybins
+  inline 
   int findMaxYBins(){
     int nYBMax=nYBins[0];
     for (int i=1; i<nMassBins; i++)
@@ -270,6 +278,7 @@ namespace DYTools {
   }
 
   // Bin limits in rapidity for a particular mass slice
+  inline 
   double *getYBinLimits(int massBin){
     double *result = 0;
     if( massBin < 0 || massBin >= nMassBins ) {
@@ -328,6 +337,7 @@ namespace DYTools {
   const double etBinLimits6[nEtBins6 + 1] = 
     {10, 15, 20, 30, 40, 50, 500};
 
+  inline 
   int getNEtBins(int binning){
     int n=0;
     if( binning == ETBINS1 ){
@@ -343,6 +353,7 @@ namespace DYTools {
     return n;
   }
 
+  inline 
   double *getEtBinLimits(int binning){
     int n = getNEtBins(binning);
     double *limitsOut = new double[n+1];
@@ -362,6 +373,7 @@ namespace DYTools {
     return limitsOut;
   }
 
+  inline 
   int findEtBin(double et, int binning){
     
     int result =-1;
@@ -388,6 +400,7 @@ namespace DYTools {
   const double etaBinLimits5[nEtaBins5 + 1] =
     {0, 0.8, 1.4442, 1.566, 2.0, 2.500001 };
 
+  inline 
   int getNEtaBins(int binning){
     int n=0;
     if( binning == ETABINS1 ){
@@ -403,6 +416,7 @@ namespace DYTools {
     return n;
   }
 
+  inline 
   double *getEtaBinLimits(int binning){
     int n = getNEtaBins(binning);
     double *limitsOut = new double[n+1];
@@ -422,6 +436,7 @@ namespace DYTools {
     return limitsOut;
   }
 
+  inline 
   int findEtaBin(double eta, int binning){
     
     int result =-1;
@@ -446,7 +461,7 @@ namespace DYTools {
   const double nPVLimits[nPVBinCount+1] = { 0.5, 2.5, 4.5, 6.5, 8.5, 10.5, 12.5, 14.5, 16.5, 20.5, 24.5, 40.5 };
   //  1., 3., 5., 7., 9., 11., 13., 15., 17., 21., 25., 40. };
 
-  int findPUBin(int nPV) { return _findMassBin(double(nPV),nPVBinCount,nPVLimits); }
+  inline int findPUBin(int nPV) { return _findMassBin(double(nPV),nPVBinCount,nPVLimits); }
 
   // 
   // Triggers vs run numbers
@@ -486,6 +501,7 @@ namespace DYTools {
   //
   // Repackage TDielectron->TElectron
   //
+  inline 
   mithep::TElectron *extractElectron(const mithep::TDielectron *dielectron, int index){
     
     mithep::TElectron *ele = new mithep::TElectron;
@@ -613,6 +629,7 @@ namespace DYTools {
   // Barrel or endcap
   //
 
+  inline 
   bool isBarrel(double eta){
     double result = false;
     if(fabs(eta) <= kECAL_GAP_LOW) 
@@ -620,6 +637,7 @@ namespace DYTools {
     return result;
   }
 
+  inline 
   bool isEndcap(double eta){
     double result = false;
     if(fabs(eta) >= kECAL_GAP_HIGH && fabs(eta)<2.5 ) 
@@ -631,6 +649,8 @@ namespace DYTools {
   // Several functions to calculate efficiency or ratio
   //
   enum {EFF_POISSON, EFF_BINOMIAL, EFF_CLOPPER_PEARSON};
+
+  inline 
   void calcEfficiency(double nPass, double nTotal, int method, 
 		      double &eff, double &effErrLow, double &effErrHigh)
   {

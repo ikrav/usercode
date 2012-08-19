@@ -52,9 +52,9 @@ eMu::eMu():doDMDY(false),doPUreWeight(false),saveToRootFile(false), verbose(fals
   xmax = 600;
   xmin = 0;
   nBins = 30;
-  rap_Bins = _nYBinsMax2D;
-  rap_Min = yRangeMin;
-  rap_Max = yRangeMax;
+  rap_Bins = DYTools::_nYBinsMax2D;
+  rap_Min = DYTools::yRangeMin;
+  rap_Max = DYTools::yRangeMax;
   lumiVal = "4.7";
   dataMap.insert(make_pair("data","Data"));
   eebkgMap.insert(make_pair("ttbar","t#bar{t}"));
@@ -82,7 +82,7 @@ eMu::eMu():doDMDY(false),doPUreWeight(false),saveToRootFile(false), verbose(fals
   //{20,40,60,80,100,120,140,160,180,200,220,240,260,280,300,320,340,360,380,400,420,440,460,480,500,520,540,560,580,600,620,640,660,680,700,720,740,760,780,800,820,840,860,880,900,920,940,960,980,1000,1020,1040,1060,1080,1100,1120,1140,1160,1180,1200};
 //{10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200,210,220,230,240,250,260,270,280,290,300,310,320,330,340,350,360,370,380,390,400,410,420,430,440,450,460,470,480,490,500,510,520,530,540,550,560,570,580,590,600,610,620,630,640,650,660,670,680,690,700,710,720,730,740,750,760,770,780,790,800,810,820,830,840,850,860,870,880,890,900,910,920,930,940,950,960,970,980,990,1000,1010,1020,1030,1040,1050,1060,1070,1080,1090,1100,1110,1120,1130,1140,1150,1160,1170,1180,1190,1200,1210,1220,1230,1240,1250,1260,1270,1280,1290,1300,1310,1320,1330,1340,1350,1360,1370,1380,1390,1400,1410,1420,1430,1440,1450,1460,1470,1480,1490,1500};
 
-const int nBinsV = sizeof(_massBinLimits2011)/sizeof(double);
+const int nBinsV = sizeof(DYTools::_massBinLimits2011)/sizeof(double);
 const int numMassBins = nBinsV - 1;
 
 //function definitions
@@ -152,15 +152,15 @@ int eMu::run(){
 
   //Fill massBins2D from _massBinLimits2D but ignore overflow and underflow
 
-  const int numBinsWithOverFlowAndUnderFlow = _nMassBins2D+1;
-  const int numBinsOfInterest =  _nMassBins2D-1;
+  const int numBinsWithOverFlowAndUnderFlow = DYTools::_nMassBins2D+1;
+  const int numBinsOfInterest =  DYTools::_nMassBins2D-1;
   double massBins2D[numBinsWithOverFlowAndUnderFlow]; //upper edge values of mass bins
 
   if (doDMDY){
     for (int i  = 1; i < numBinsWithOverFlowAndUnderFlow; ++i){//start after underflow
-      massBins2D[i-1] = _massBinLimits2D[i];
+      massBins2D[i-1] = DYTools::_massBinLimits2D[i];
     }
-    massBins2D[_nMassBins2D] = 8000; //Add overflow bin at the end to catch all
+    massBins2D[DYTools::_nMassBins2D] = 8000; //Add overflow bin at the end to catch all
   }
   
   const int num_massBins2D = sizeof(massBins2D)/sizeof(double); //This should be equivalent to (_nMassBins2D + 1)
@@ -252,7 +252,7 @@ int eMu::run(){
 	sum_dmdyHistv[massB].push_back(shared_ptr<TH1F>(new TH1F(histoName+"sum","",rap_Bins, rap_Min, rap_Max)));
 	data_dmdyHistv[massB].back()->SetDirectory(0);
 	sum_dmdyHistv[massB].back()->SetDirectory(0);
-	if (i == 6) rap_Bins = _nYBinsMax2D;
+	if (i == 6) rap_Bins = DYTools::_nYBinsMax2D;
 	// need to use correct binning
 	//need to change binning in last vector
       }
@@ -267,10 +267,10 @@ int eMu::run(){
     stathist2Dv.push_back(stathistv);
     stathMass2Dv.push_back(stathMassv);
 
-    datahistv.push_back(shared_ptr<TH1F>(new TH1F("datahistv","",numMassBins,_massBinLimits2011)));
+    datahistv.push_back(shared_ptr<TH1F>(new TH1F("datahistv","",numMassBins,DYTools::_massBinLimits2011)));
     datahMassv.push_back(shared_ptr<TH1F>(new TH1F("datahMassv","",nBins,xmin,xmax)));
 
-    sumVMassv.push_back(shared_ptr<TH1F>(new TH1F("sumVMassv","",numMassBins,_massBinLimits2011)));
+    sumVMassv.push_back(shared_ptr<TH1F>(new TH1F("sumVMassv","",numMassBins,DYTools::_massBinLimits2011)));
     sumMassv.push_back(shared_ptr<TH1F>(new TH1F("sumMassv","",nBins,xmin,xmax)));
 
     datahistv.back()->SetDirectory(0);
@@ -322,9 +322,9 @@ int eMu::run(){
         
         string hname = string("histo") + scounter.str();
         TString TS_hname(hname);
-        hist2Dv.back()->push_back(shared_ptr<TH1F>(new TH1F(TS_hname,"",numMassBins,_massBinLimits2011)));
+        hist2Dv.back()->push_back(shared_ptr<TH1F>(new TH1F(TS_hname,"",numMassBins,DYTools::_massBinLimits2011)));
         hMass2Dv.back()->push_back(shared_ptr<TH1F>(new TH1F(TS_hname+TString("a"),"",nBins,xmin,xmax)));
-        stathist2Dv.back()->push_back(shared_ptr<TH1F>(new TH1F(TS_hname+TString("stat"),"",numMassBins,_massBinLimits2011)));
+        stathist2Dv.back()->push_back(shared_ptr<TH1F>(new TH1F(TS_hname+TString("stat"),"",numMassBins,DYTools::_massBinLimits2011)));
         stathMass2Dv.back()->push_back(shared_ptr<TH1F>(new TH1F(TS_hname+TString("stat_a"),"",nBins,xmin,xmax)));
 
 	if (doDMDY){
@@ -337,7 +337,7 @@ int eMu::run(){
 	    TString h_name(TS_hname+upperMass.str());
 	    mc_dmdyHistv[massB].back()->push_back(shared_ptr<TH1F>(new TH1F(h_name,"",rap_Bins, rap_Min, rap_Max)));
 	    stats_mc_dmdyHistv[massB].back()->push_back(shared_ptr<TH1F>(new TH1F(h_name+"_stats","",rap_Bins, rap_Min, rap_Max)));
-	    if (i == 6) rap_Bins = _nYBinsMax2D;
+	    if (i == 6) rap_Bins = DYTools::_nYBinsMax2D;
 	  }
 	}
 
@@ -590,9 +590,9 @@ int eMu::run(){
 
   vector<shared_ptr<TH1F> > eMuMassScaledv;// this becomes the calculated ee distro
   eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo1sc","",nBins,xmin,xmax)));
-  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo2sc","",numMassBins,_massBinLimits2011)));
+  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo2sc","",numMassBins,DYTools::_massBinLimits2011)));
   eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo3sc","",nBins,xmin,xmax)));
-  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo4sc","",numMassBins,_massBinLimits2011)));
+  eMuMassScaledv.push_back(shared_ptr<TH1F>(new TH1F("histo4sc","",numMassBins,DYTools::_massBinLimits2011)));
   //Fill above using a loop
 
   if ( emuDistov.size() != eMuMassScaledv.size()) 
@@ -822,7 +822,7 @@ TH1F* eMu::subtractEMubackground3(TH1F *inputHisto, vector<vector<shared_ptr<TH1
   // Need to change below, very ugly!
   TH1F *outHisto;
   string histName("emuHisto");
-  outHisto = new TH1F(TString(histName+sstreamCounter.str()),"",numMassBins,_massBinLimits2011);
+  outHisto = new TH1F(TString(histName+sstreamCounter.str()),"",numMassBins,DYTools::_massBinLimits2011);
 
   //need to check if this is the variable bin histo
   //ugly!

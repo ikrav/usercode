@@ -185,6 +185,7 @@ int printHisto(std::ostream& out, const TH1F* histo) {
 inline
 void printSanityCheck(TMatrixD val, TMatrixD err, TString name)
 {
+  using namespace DYTools;
   std::cout<<"Sanity check printout"<<std::endl;
   if (val.GetNrows()!=nMassBins || val.GetNcols()!=findMaxYBins())
     {

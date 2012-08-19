@@ -256,7 +256,7 @@ void selectEvents(const TString conf,
   PUReweight_t puReweight;
   TString dirTag(outputDir(outputDir.Index("DY_"),outputDir.Length()));
   int append = (runMode==DYTools::NORMAL) ? 0 : 1;
-  int res=puReweight.setDefaultFile(dirTag,analysisTag_USER, 1+append);
+  int res=puReweight.setDefaultFile(dirTag,DYTools::analysisTag_USER, 1+append);
   assert(res);
   TString outNamePV=puReweight.fileName();
 #endif
@@ -363,7 +363,7 @@ void selectEvents(const TString conf,
     // Prepare ntuple file name
     //
     TString outName = ntupDir + TString("/") + snamev[isam] + 
-      analysisTag_USER + TString("_select.root");
+      DYTools::analysisTag_USER + TString("_select.root");
 
     if ((runMode==DYTools::ESCALE_STUDY) || 
 	(runMode==DYTools::ESCALE_STUDY_RND)) {
@@ -526,8 +526,8 @@ void selectEvents(const TString conf,
 	  int ibinPreFsr = DYTools::findMassBin(gen->vmass);
 	  // If mass is larger than the highest bin boundary
 	  // (last bin), use the last bin.
-	  if(ibinPreFsr == -1 && gen->vmass >= massBinLimits[nMassBins] )
-	    ibinPreFsr = nMassBins-1;
+	  if(ibinPreFsr == -1 && gen->vmass >= DYTools::massBinLimits[DYTools::nMassBins] )
+	    ibinPreFsr = DYTools::nMassBins-1;
 	  // Find FEWZ-powheg reweighting factor 
 	  // that depends on pre-FSR Z/gamma* rapidity, pt, and mass
 	  if(useFewzWeights){
@@ -617,8 +617,8 @@ void selectEvents(const TString conf,
 	  else {
 
           // Exclude ECAL gap region and cut out of acceptance electrons
-          if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
-          if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
+	    if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
+	    if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
           if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
 
 	  // Keep the EEM values before any changes
@@ -800,7 +800,7 @@ void selectEvents(const TString conf,
 #ifndef usePUReweight
   // Write useful histograms
   // npv.root
-  TString outNamePV = outputDir + TString("/npv") + analysisTag_USER + TString(".root");
+  TString outNamePV = outputDir + TString("/npv") + DYTools::analysisTag_USER + TString(".root");
   TFile *outFilePV = new TFile(outNamePV,"RECREATE");
   outFilePV->cd();
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
@@ -813,12 +813,12 @@ void selectEvents(const TString conf,
   // Make plots
   //==============================================================================================================
 
-  TString outFNameHistos = outputDir + TString("/selectEvents") + analysisTag_USER + TString("-plots.root");
+  TString outFNameHistos = outputDir + TString("/selectEvents") + DYTools::analysisTag_USER + TString("-plots.root");
   TFile *outFileHistos = new TFile(outFNameHistos,"RECREATE");
   outFileHistos->cd();
   for(UInt_t isam=0; isam<samplev.size(); isam++) hNGoodPVv[isam]->Write();
 
-  TString canvasName="selectEvents" + study2Dstr;
+  TString canvasName="selectEvents" + DYTools::study2Dstr;
   TCanvas *c = MakeCanvas(canvasName,canvasName,canw,canh);
 
   printf("Make plots\n");fflush(stdout);

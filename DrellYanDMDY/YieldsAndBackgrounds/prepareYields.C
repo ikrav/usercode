@@ -236,7 +236,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
   // Open file with number of PV distributions for pile-up reweighting
   // TString("/npv.root");
   PUReweight_t puWeight;
-  const TString fnamePV = outputDir+TString("/npv") + analysisTag_USER + TString(".root");
+  const TString fnamePV = outputDir+TString("/npv") + DYTools::analysisTag_USER + TString(".root");
   std::cout << "fnamePV=<" << fnamePV << ">\n";
   TFile *pvfile = NULL;
   TH1F *hPVData = 0;
@@ -276,7 +276,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     if((isam==0) && !hasData) continue;
 
-    TString fname = outputDir + TString("/ntuples/") + snamev[isam] + analysisTag_USER + TString("_select.root");
+    TString fname = outputDir + TString("/ntuples/") + snamev[isam] + DYTools::analysisTag_USER + TString("_select.root");
     if ((isam==0) && 
 	((runMode==DYTools::ESCALE_STUDY) || (runMode==DYTools::ESCALE_STUDY_RND))) {
       // selectEvents corrects only data energies
@@ -336,8 +336,8 @@ void prepareYields(const TString conf  = "data_plot.conf",
       }
 
       // Find the 2D bin for this event:
-      int massBin = findMassBin(data->mass);
-      int yBin    = findAbsYBin(massBin, data->y);
+      int massBin = DYTools::findMassBin(data->mass);
+      int yBin    = DYTools::findAbsYBin(massBin, data->y);
 
       if ((massBin==-1) || (yBin==-1)) // out of range
 	continue;
@@ -410,11 +410,11 @@ void prepareYields(const TString conf  = "data_plot.conf",
 			  totalMCMass->FindBin(massNormMax-0.001));
   printf("data to MC extra correction from Z peak normalization: %f\n",dataOverMc);
 
-  double dataOverMcEachBin[nMassBins+1];
-  for (int i=0; i<nMassBins; i++)
+  double dataOverMcEachBin[DYTools::nMassBins+1];
+  for (int i=0; i<DYTools::nMassBins; i++)
     {
-      dataOverMcEachBin[i] = hMassv[0]->Integral(hMassv[0]->FindBin(massBinLimits[i]+0.001),hMassv[0]->FindBin(massBinLimits[i+1]-0.001)) /
-      totalMCMass->Integral(totalMCMass->FindBin(massBinLimits[i]+0.001),totalMCMass->FindBin(massBinLimits[i+1]-0.001));
+      dataOverMcEachBin[i] = hMassv[0]->Integral(hMassv[0]->FindBin(DYTools::massBinLimits[i]+0.001),hMassv[0]->FindBin(DYTools::massBinLimits[i+1]-0.001)) /
+	totalMCMass->Integral(totalMCMass->FindBin(DYTools::massBinLimits[i]+0.001),totalMCMass->FindBin(DYTools::massBinLimits[i+1]-0.001));
       printf("data to MC %i bin norm: %f\n",i,dataOverMcEachBin[i]);
     }
 
@@ -438,7 +438,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
   TString outputDirYields(outputDir.Data());
   outputDirYields.ReplaceAll("selected_events","yields");
   gSystem->mkdir(outputDirYields,kTRUE);
-  TString fNameOutYieldPlots(outputDirYields+TString("/yield_plots") + analysisTag);
+  TString fNameOutYieldPlots(outputDirYields+TString("/yield_plots") + DYTools::analysisTag);
   fNameOutYieldPlots += ".root";
   TFile *fYieldPlots = new TFile( fNameOutYieldPlots, "recreate" );
   if (!fYieldPlots) {
@@ -472,12 +472,12 @@ void prepareYields(const TString conf  = "data_plot.conf",
   //==============================================================================================================
 
   // Pack info into writable objects
-  TVectorD massBinLimits(nMassBins+1);
-  TVectorD rapidityBinning(nMassBins+1);
-  for(int i=0; i <= nMassBins; i++){
-    massBinLimits(i) = DYTools::massBinLimits[i];
-    rapidityBinning(i) = DYTools::nYBins[i];
-  }
+  //TVectorD massBinLimits(nMassBins+1);
+  //TVectorD rapidityBinning(nMassBins+1);
+  //for(int i=0; i <= nMassBins; i++){
+  //  massBinLimits(i) = DYTools::massBinLimits[i];
+  //  rapidityBinning(i) = DYTools::nYBins[i];
+  //}
 
   // This dummy object is only needed to convey the number
   // of samples considered. The method below is rather convoluted,
@@ -487,11 +487,12 @@ void prepareYields(const TString conf  = "data_plot.conf",
   dummySampleCount = 0;
 
   gSystem->mkdir(outputDirYields,kTRUE);
-  TString fNameOutYields(outputDirYields+TString("/yields") + analysisTag);
+  TString fNameOutYields(outputDirYields+TString("/yields") + DYTools::analysisTag);
   fNameOutYields += ".root";
   TFile fYields( fNameOutYields, "recreate" );
-  massBinLimits      .Write("massBinLimits");
-  rapidityBinning    .Write("rapidityBinning");
+  //massBinLimits      .Write("massBinLimits");
+  //rapidityBinning    .Write("rapidityBinning");
+  unfolding::writeBinningArrays(fYields);
   dummySampleCount   .Write("dummySampleCount");
   unfolding::writeBinningArrays(fYields);
   char objName[100];
@@ -510,7 +511,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
   // Save mass histograms into a separate file for a direct comparison 
   // with DrellYan(1D) package
   TString fNameOutHists(outputDirYields+"/massHist");
-  fNameOutHists += analysisTag + TString(".root");
+  fNameOutHists += DYTools::analysisTag + TString(".root");
   TFile fMassHists(fNameOutHists,"recreate");
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     hMassBinsv[isam]->Write(snamev[isam]);
@@ -603,7 +604,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
     printf(" %14s ",snamev[isam].Data());
   }
   printf("           total          fraction\n");
-  for(int ibin=0; ibin<nMassBins; ibin++){
+  for(int ibin=0; ibin<DYTools::nMassBins; ibin++){
     printf("%5.1f-%5.1f GeV: ",
            hMassBinsv[0]->GetXaxis()->GetBinLowEdge(ibin+1),
            hMassBinsv[0]->GetXaxis()->GetBinUpEdge(ibin+1));

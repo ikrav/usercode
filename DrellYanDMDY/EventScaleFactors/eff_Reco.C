@@ -116,7 +116,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   //==============================================================================================================
 
   TString puStr = (performPUReweight) ? "_PU" : "";
-  CPlot::sOutDir = TString("plots") + analysisTag + puStr;
+  CPlot::sOutDir = TString("plots") + DYTools::analysisTag + puStr;
   gSystem->mkdir(CPlot::sOutDir,true);
 
   const tnpSelectEvent_t::TCreateBranchesOption_t weightBranch1stStep=
@@ -197,55 +197,55 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   
   int calcMethod = 0;
   if(calcMethodString == "COUNTnCOUNT")
-    calcMethod = COUNTnCOUNT;
+    calcMethod = DYTools::COUNTnCOUNT;
   else if(calcMethodString == "COUNTnFIT")
-    calcMethod = COUNTnFIT;
+    calcMethod = DYTools::COUNTnFIT;
   else if(calcMethodString == "FITnFIT")
-    calcMethod = FITnFIT;
+    calcMethod = DYTools::FITnFIT;
   else
     assert(0);
   printf("Efficiency calculation method: %s\n", calcMethodString.Data());
 
   int effType = 0;
   if(effTypeString == "RECO")
-    effType = RECO;
+    effType = DYTools::RECO;
   else
     assert(0);
   printf("Efficiency type to measure: %s\n", effTypeString.Data());
 
   int etBinning = 0;
   if(etBinningString == "ETBINS1")
-    etBinning = ETBINS1;
+    etBinning = DYTools::ETBINS1;
   else if(etBinningString == "ETBINS5")
-    etBinning = ETBINS5;
+    etBinning = DYTools::ETBINS5;
   else if(etBinningString == "ETBINS6")
-    etBinning = ETBINS6;
+    etBinning = DYTools::ETBINS6;
   else
     assert(0);
   printf("SC ET binning: %s\n", etBinningString.Data());
 
   int etaBinning = 0;
   if(etaBinningString == "ETABINS1")
-    etaBinning = ETABINS1;
+    etaBinning = DYTools::ETABINS1;
   else if(etaBinningString == "ETABINS2")
-    etaBinning = ETABINS2;
+    etaBinning = DYTools::ETABINS2;
   else if(etaBinningString == "ETABINS5")
-    etaBinning = ETABINS5;
+    etaBinning = DYTools::ETABINS5;
   else
     assert(0);
   printf("SC eta binning: %s\n", etaBinningString.Data());
 
   int sample;
   if(sampleTypeString == "DATA")
-    sample = DATA;
+    sample = DYTools::DATA;
   else if(sampleTypeString == "MC")
-    sample = MC;
+    sample = DYTools::MC;
   else
     assert(0);
   printf("Sample: %s\n", sampleTypeString.Data());
 
   // Correct the trigger object
-  triggers.actOnData((sample==DATA)?true:false);
+  triggers.actOnData((sample==DYTools::DATA)?true:false);
 
   // The label is a string that contains the fields that are passed to
   // the function below, to be used to name files with the output later.
@@ -276,15 +276,15 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   TFile *templatesFile = 0;
   vector<TH1F*> hPassTemplateV;
   vector<TH1F*> hFailTemplateV;
-  if( sample != DATA) {
+  if( sample != DYTools::DATA) {
     // For simulation, we will be saving templates
     TString labelMC = 
       getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
     TString templatesLabel = 
       tagAndProbeDir + TString("/mass_templates_")+ labelMC+TString(".root");
     templatesFile = new TFile(templatesLabel,"recreate");
-    for(int i=0; i<getNEtBins(etBinning); i++){
-      for(int j=0; j<getNEtaBins(etaBinning); j++){
+    for(int i=0; i<DYTools::getNEtBins(etBinning); i++){
+      for(int j=0; j<DYTools::getNEtaBins(etaBinning); j++){
 	TString hname = "hMassTemplate_Et";
 	hname += i;
 	hname += "_eta";
@@ -296,7 +296,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   } else {
     // For data, we will be using templates
     // however, if the request is COUNTnCOUNT, do nothing
-    if( calcMethod != COUNTnCOUNT ){
+    if( calcMethod != DYTools::COUNTnCOUNT ){
       TString labelMC = 
 	getLabel(-1111, effType, calcMethod, etBinning, etaBinning, triggers);
       TString templatesLabel = 
@@ -312,7 +312,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   // This file is utilized by fit_EffReco
   TString uScore="_";
   TString selectEventsFName=tagAndProbeDir + TString("/selectEvents_") 
-    + analysisTag + uScore
+    + DYTools::analysisTag + uScore
     + sampleTypeString + uScore +
     + effTypeString + uScore +  triggers.triggerSetName();
   if (performPUReweight) selectEventsFName.Append(puStr);
@@ -429,7 +429,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
     assert(electronBr); assert(photonBr);
     assert(pvBr);
     TBranch *genBr = 0;
-    if(sample != DATA){
+    if(sample != DYTools::DATA){
       eventTree->SetBranchAddress("Gen",&gen);
       genBr = eventTree->GetBranch("Gen");
     }
@@ -440,7 +440,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
       //for(UInt_t ientry=0; ientry<1000; ientry++) { 
       if (debugMode && (ientry>100000)) break;  // This is for faster turn-around in testing
       
-      if(sample != DATA)
+      if(sample != DYTools::DATA)
 	genBr->GetEntry(ientry);
       eleArr->Clear();
       electronBr->GetEntry(ientry);
@@ -486,12 +486,12 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 	if(electron->scEt<20) continue;
 	tagCandPassEt++;
 
-	bool isBele = isBarrel(electron->scEta);
-	bool isEele = isEndcap(electron->scEta);
+	bool isBele = DYTools::isBarrel(electron->scEta);
+	bool isEele = DYTools::isEndcap(electron->scEta);
 	if ( ! isBele && ! isEele ) continue;
 	tagCandPassEta++;
 	
-	if( sample != DATA)
+	if( sample != DYTools::DATA)
 	  if( ! electronMatchedToGeneratorLevel(gen, electron) ) continue;
 	
 	tagCandGenMatched++;
@@ -522,12 +522,12 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 	  if(sc->scEt < 10) continue;
 	  numTagProbePairsPassEt++;
 
-	  bool isBsc = isBarrel(sc->scEta);
-	  bool isEsc = isEndcap(sc->scEta);
+	  bool isBsc = DYTools::isBarrel(sc->scEta);
+	  bool isEsc = DYTools::isEndcap(sc->scEta);
 	  if( ! isBsc && ! isEsc ) continue;
 	  numTagProbePairsPassEta++;
 
-	  if( sample != DATA)
+	  if( sample != DYTools::DATA)
 	    if( ! scMatchedToGeneratorLevel(gen, sc) ) continue;
 	  numTagProbePairsGenMatched++;
 	  
@@ -583,20 +583,21 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 	    storeData.assign(mass,ee_rapidity,sc->scEt,sc->scEta, storeNGoodPV,
 			     event_weight, 1.);
 	  }
-	  int templateBin = getTemplateBin( findEtBin(sc->scEt,etBinning),
-					    findEtaBin(sc->scEta,etaBinning),
-					    etaBinning);
+	  int templateBin = 
+	    getTemplateBin( DYTools::findEtBin(sc->scEt,etBinning),
+			    DYTools::findEtaBin(sc->scEta,etaBinning),
+			    etaBinning);
 	  if( electronMatch != 0 ){
 	    // supercluster has match in reconstructed electrons: "pass"
 	    hMassPass->Fill(mass);
 	    passTree->Fill();
-	    if(sample != DATA && templateBin != -1)
+	    if(sample != DYTools::DATA && templateBin != -1)
 	      hPassTemplateV[templateBin]->Fill(mass);
 	  }else{
 	    // supercluster is not reconstructed as an electron
 	    hMassFail->Fill(mass);
 	    failTree->Fill();
-	    if(sample != DATA && templateBin != -1)
+	    if(sample != DYTools::DATA && templateBin != -1)
 	      hFailTemplateV[templateBin]->Fill(mass);
 	  }
 	  
@@ -625,14 +626,14 @@ void eff_Reco(const TString configFile, const TString effTypeString,
     delete selectedEventsFile;
     TString outFNamePV = tagAndProbeDir + 
       TString("/npv_tnp") + effTypeString + TString("_") + sampleTypeString +
-      analysisTag + TString(".root");
+      DYTools::analysisTag + TString(".root");
     TString refFNamePV = tagAndProbeDir; // from Selection/selectEvents.C
     refFNamePV.Replace(refFNamePV.Index("tag_and_probe"),
 		       sizeof("tag_and_probe"),"selected_events/");
-    refFNamePV.Append( TString("/npv") + analysisTag_USER + TString(".root") );
+    refFNamePV.Append( TString("/npv") + DYTools::analysisTag_USER + TString(".root") );
     TString refDistribution="hNGoodPV_data";
     TString sampleNameBase= effTypeString + TString("_") + 
-      sampleTypeString + analysisTag;
+      sampleTypeString + DYTools::analysisTag;
     int res=CreatePUWeightedBranch(selectEventsFName,
 				   refFNamePV, refDistribution,
 				   outFNamePV, sampleNameBase);
@@ -699,14 +700,15 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   //  Find efficiency
   //
   bool useTemplates = false;
-  if(sample == DATA)
+  if(sample == DYTools::DATA)
     useTemplates = true;
 
   int NsetBins=30;
   bool isRECO=1;
   const char* setBinsType="cache";
   
-  int nDivisions = getNEtBins(etBinning)*getNEtaBins(etaBinning);
+  int nDivisions = 
+    DYTools::getNEtBins(etBinning)*DYTools::getNEtaBins(etaBinning);
   double ymax = 800;
   if(nDivisions <4 )
     ymax = nDivisions * 200;
@@ -729,15 +731,15 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 
   TString fitpicname = tagAndProbeDir+
     TString("/efficiency_TnP_")+label;
-  if (calcMethod==COUNTnCOUNT) fitpicname.Append(".png"); else fitpicname.Append("_fit.png");
+  if (calcMethod==DYTools::COUNTnCOUNT) fitpicname.Append(".png"); else fitpicname.Append("_fit.png");
   //c1->Update();
   c1->SaveAs(fitpicname);
 
   // Save MC templates
-  if(sample != DATA){
+  if(sample != DYTools::DATA){
     templatesFile->cd();
-    for(int i=0; i<getNEtBins(etBinning); i++){
-      for(int j=0; j<getNEtaBins(etaBinning); j++){
+    for(int i=0; i<DYTools::getNEtBins(etBinning); i++){
+      for(int j=0; j<DYTools::getNEtaBins(etaBinning); j++){
 	int templateBin = getTemplateBin( i, j, etaBinning);
 	hPassTemplateV[templateBin]->Write();
 	hFailTemplateV[templateBin]->Write();

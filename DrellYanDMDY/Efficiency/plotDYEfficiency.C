@@ -135,21 +135,21 @@ void plotDYEfficiency(const TString input,
 
   //int nYBinsMax=findMaxYBins();
 
-  TMatrixD nEventsv (DYTools::nMassBins,nYBinsMax);  
-  TMatrixD nPassv (DYTools::nMassBins,nYBinsMax);  
-  TMatrixD effv (DYTools::nMassBins,nYBinsMax);  
-  TMatrixD effErrv (DYTools::nMassBins,nYBinsMax);  
+  TMatrixD nEventsv (DYTools::nMassBins,DYTools::nYBinsMax);  
+  TMatrixD nPassv (DYTools::nMassBins,DYTools::nYBinsMax);  
+  TMatrixD effv (DYTools::nMassBins,DYTools::nYBinsMax);  
+  TMatrixD effErrv (DYTools::nMassBins,DYTools::nYBinsMax);  
 
-  TMatrixD nEventsBBv (DYTools::nMassBins,nYBinsMax);
-  TMatrixD nEventsBEv (DYTools::nMassBins,nYBinsMax);
-  TMatrixD nEventsEEv (DYTools::nMassBins,nYBinsMax);
+  TMatrixD nEventsBBv (DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD nEventsBEv (DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD nEventsEEv (DYTools::nMassBins,DYTools::nYBinsMax);
  
-  TMatrixD nPassBBv(DYTools::nMassBins,nYBinsMax), 
-    effBBv(DYTools::nMassBins,nYBinsMax), effErrBBv(DYTools::nMassBins,nYBinsMax); 
-  TMatrixD nPassBEv(DYTools::nMassBins,nYBinsMax), 
-    effBEv(DYTools::nMassBins,nYBinsMax), effErrBEv(DYTools::nMassBins,nYBinsMax); 
-  TMatrixD nPassEEv(DYTools::nMassBins,nYBinsMax), 
-    effEEv(DYTools::nMassBins,nYBinsMax), effErrEEv(DYTools::nMassBins,nYBinsMax);
+  TMatrixD nPassBBv(DYTools::nMassBins,DYTools::nYBinsMax), 
+    effBBv(DYTools::nMassBins,DYTools::nYBinsMax), effErrBBv(DYTools::nMassBins,DYTools::nYBinsMax); 
+  TMatrixD nPassBEv(DYTools::nMassBins,DYTools::nYBinsMax), 
+    effBEv(DYTools::nMassBins,DYTools::nYBinsMax), effErrBEv(DYTools::nMassBins,DYTools::nYBinsMax); 
+  TMatrixD nPassEEv(DYTools::nMassBins,DYTools::nYBinsMax), 
+    effEEv(DYTools::nMassBins,DYTools::nYBinsMax), effErrEEv(DYTools::nMassBins,DYTools::nYBinsMax);
 
   TVectorD nEventsZPeakPU(DYTools::nPVBinCount), nPassZPeakPU(DYTools::nPVBinCount);
   TVectorD nEventsZPeakPURaw(100), nPassZPeakPURaw(100);
@@ -164,8 +164,8 @@ void plotDYEfficiency(const TString input,
   nPassBEv = 0;
   nPassEEv = 0;
 
-  TMatrixD sumWeightsPassSq (DYTools::nMassBins,nYBinsMax);
-  TMatrixD sumWeightsTotaSq (DYTools::nMassBins,nYBinsMax);
+  TMatrixD sumWeightsPassSq (DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD sumWeightsTotaSq (DYTools::nMassBins,DYTools::nYBinsMax);
   sumWeightsPassSq = 0;
   sumWeightsTotaSq = 0;
 
@@ -179,7 +179,7 @@ void plotDYEfficiency(const TString input,
 
 #ifdef usePUReweight
   PUReweight_t puReweight;
-  int res=puReweight.setDefaultFile(dirTag,analysisTag_USER,0);
+  int res=puReweight.setDefaultFile(dirTag,DYTools::analysisTag_USER,0);
   assert(res);
   TString outNamePV=puReweight.fileName();
   TString refPUDistribution="hNGoodPV_data";
@@ -338,7 +338,7 @@ void plotDYEfficiency(const TString input,
       double totalWeight= scale * gen->weight * puWeight;
 
       // Accumulate denominator for efficiency calculations
-      if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= nYBins[ibinGenM]){
+      if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= DYTools::nYBins[ibinGenM]){
 	nEventsv(ibinGenM,ibinGenY) += totalWeight;
         sumWeightsTotaSq(ibinGenM,ibinGenY) += totalWeight*totalWeight;
 	// Split events barrel/endcap using matched supercluster or particle eta
@@ -424,7 +424,7 @@ void plotDYEfficiency(const TString input,
 	  //  std::cout << "error in PU bin indexing\n";
 	  //}
 	}
-	if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= nYBins[ibinGenM]){
+	if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= DYTools::nYBins[ibinGenM]){
 	  nPassv(ibinGenM,ibinGenY) += totalWeight;
           sumWeightsPassSq(ibinGenM,ibinGenY) += totalWeight*totalWeight;
 	  if(isB1 && isB2)                            { nPassBBv(ibinGenM,ibinGenY) += totalWeight; } 
@@ -490,10 +490,10 @@ void plotDYEfficiency(const TString input,
   //==============================================================================================================  
 
   // destination dir
-  CPlot::sOutDir="plots" + analysisTag;
+  CPlot::sOutDir="plots" + DYTools::analysisTag;
   TString outputDir(TString("../root_files/constants/")+dirTag);
   gSystem->mkdir(outputDir,kTRUE);
-  TString fnamePlots=outputDir + TString("/event_efficiency_plots") + analysisTag + TString(".root");
+  TString fnamePlots=outputDir + TString("/event_efficiency_plots") + DYTools::analysisTag + TString(".root");
   TFile *filePlots=new TFile(fnamePlots,"recreate");
   if (!filePlots || !filePlots->IsOpen()) {
     std::cout << "failed to create a file <" << fnamePlots << ">\n";
@@ -523,7 +523,7 @@ void plotDYEfficiency(const TString input,
 
   // Store constants in the file
   //TString effConstFileName(outputDir+TString("/event_efficiency_constants.root"));
-  TString effConstFileName(outputDir+TString("/event_efficiency_constants") + analysisTag + TString(".root"));
+  TString effConstFileName(outputDir+TString("/event_efficiency_constants") + DYTools::analysisTag + TString(".root"));
 
    TFile fa(effConstFileName,"recreate");
    effv.Write("efficiencyArray");
@@ -552,13 +552,13 @@ void plotDYEfficiency(const TString input,
   printf("     Number of selected events (puWeighted)  : %8.1lf\n",nZv_puWeighted);
 #endif
 
-  const char *yRangeStr=(study2D) ? "rapidity range" : "";
+  const char *yRangeStr=(DYTools::study2D) ? "rapidity range" : "";
   printf(" mass range  %s preselected      passed     total_Eff        BB-BB_Eff        EB-BB_Eff        EB-EB_Eff\n",yRangeStr);
   for(int i=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       printf(" %4.0f-%4.0f ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
-      if (study2D!=0) printf(" %4.2f-%4.2f ", rapidityBinLimits[yi], rapidityBinLimits[yi+1]);
+      if (DYTools::study2D!=0) printf(" %4.2f-%4.2f ", rapidityBinLimits[yi], rapidityBinLimits[yi+1]);
       printf("    %10.0f   %10.0f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
 	     nEventsv(i,yi), nPassv(i,yi),
 	     effv(i,yi), effErrv(i,yi),
@@ -573,9 +573,9 @@ void plotDYEfficiency(const TString input,
     printf(" mass_range  %s total_preselected  total_passed     BB-BB_preselected  passed    EB-BB_preselected  passed        EB-EB_preselected  passed\n",yRangeStr);
     for(int i=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi) {
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
 	printf(" %4.0f-%4.0f ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
-	if (study2D!=0) printf(" %4.2f-%4.2f ", rapidityBinLimits[yi], rapidityBinLimits[yi+1]);
+	if (DYTools::study2D!=0) printf(" %4.2f-%4.2f ", rapidityBinLimits[yi], rapidityBinLimits[yi+1]);
 	printf("    %8.1f %8.1f   %8.1f %8.1f  %8.1f %8.1f  %8.1f %8.1f\n",
 	       nEventsv(i,yi), nPassv(i,yi),
 	       nEventsBBv(i,yi), nPassBBv(i,yi),

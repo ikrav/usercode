@@ -56,14 +56,14 @@ int saveTexTable=0){
   unfoldedYieldsSquaredMean = 0;
 
   TString matrixFileName = TString("../root_files/constants/") + lumiTag + 
-    TString("/unfolding_constants") + analysisTag + TString(".root");
+    TString("/unfolding_constants") + DYTools::analysisTag + TString(".root");
   const int nFiles1 = 20;  // expected number of files
   if (1)
   for(int ifile=0; ifile<nFiles1; ifile++){
     int seed = 1001+ifile;
     escale.randomizeEnergyScaleCorrections(seed);
     TString fname = TString("../root_files/yields/") + lumiTag + 
-      TString("_escale_randomized/yields_bg-subtracted") + analysisTag + 
+      TString("_escale_randomized/yields_bg-subtracted") + DYTools::analysisTag + 
       TString("__") + escale.calibrationSetShortName();
     fname += ".root";
     TFile file(fname);
@@ -115,7 +115,7 @@ int saveTexTable=0){
   TVectorD unfoldedYieldsVariation(nUnfoldingBins);
   TVectorD escaleResidualDiffSystRelative(nUnfoldingBins);
   TString fname = TString("../root_files/yields/") + lumiTag + 
-    TString("/yields_bg-subtracted") + analysisTag + TString(".root");
+    TString("/yields_bg-subtracted") + DYTools::analysisTag + TString(".root");
   int res=1;
   {
   TFile file(fname);
@@ -127,14 +127,14 @@ int saveTexTable=0){
     }
   //
     matrixFileName = TString("../root_files/constants/") + lumiTag + 
-      TString("/unfolding_constants") + analysisTag + TString(".root");
+      TString("/unfolding_constants") + DYTools::analysisTag + TString(".root");
     res=applyUnfoldingLocal(observedYields, unfoldedYields, matrixFileName);
     if (res==1) usedFiles.push_back(matrixFileName);
 
   //
     if (res==1) {
       matrixFileName = TString("../root_files/constants/") + lumiTag + 
-	TString("_escale_residual/unfolding_constants") + analysisTag +
+	TString("_escale_residual/unfolding_constants") + DYTools::analysisTag +
 	TString("_escaleResidual.root");
       res=applyUnfoldingLocal(observedYields, unfoldedYieldsVariation, matrixFileName);
       if (res==1) {
@@ -164,7 +164,7 @@ int saveTexTable=0){
     TVectorD observedYieldsShape(nUnfoldingBins);
     TVectorD observedYieldsShapeErr(nUnfoldingBins);
     TString shapeFName=TString("../root_files/yields/") + lumiTag + 
-      TString("_escale_shape/yields_bg-subtracted") + analysisTag +
+      TString("_escale_shape/yields_bg-subtracted") + DYTools::analysisTag +
       TString("_") + shapeNames[i] + TString(".root");
     TFile fShape(shapeFName);
     if (fShape.IsOpen()) {
@@ -175,7 +175,7 @@ int saveTexTable=0){
 	throw 2;
       }
       TString matrixFileNameShape = TString("../root_files/constants/") + lumiTag + 
-	TString("_escale_shape/unfolding_constants") + analysisTag +
+	TString("_escale_shape/unfolding_constants") + DYTools::analysisTag +
 	TString("_") + shapeNames[i] + TString(".root");
       TVectorD *shapeYields=new TVectorD(nUnfoldingBins);
       {
@@ -225,7 +225,7 @@ int saveTexTable=0){
   if (1)
   for (unsigned int i=0; i<etaBinNames.size(); ++i) {
     TString fEtaFileName=TString("../root_files/yields/") + lumiTag + 
-      TString("_escale_eta/yields_bg-subtracted") + analysisTag +
+      TString("_escale_eta/yields_bg-subtracted") + DYTools::analysisTag +
       TString("_") + etaBinNames[i] + TString(".root");
     TFile fEta(fEtaFileName);
     if (fEta.IsOpen()) {
@@ -238,7 +238,7 @@ int saveTexTable=0){
 	throw 2;
       }
       matrixFileName = TString("../root_files/constants/") + lumiTag + 
-	TString("_escale_eta/unfolding_constants") + analysisTag +
+	TString("_escale_eta/unfolding_constants") + DYTools::analysisTag +
 	TString("_") + etaBinNames[i] + TString(".root");
       TVectorD *unfYields = new TVectorD(nUnfoldingBins);
       res=applyUnfoldingLocal(observedYieldsEta, *unfYields, matrixFileName);
@@ -332,12 +332,12 @@ int saveTexTable=0){
     headers.push_back("\\multicolumn{1}{c|}{total, \\%}"); data.push_back(&escaleSystPercent); factors.push_back(1.); padding.push_back(3);
     
     TString texFName=TString("../root_files/systematics/") + lumiTag + 
-      TString("/escale_systematics") + analysisTag + TString("_tmp.tex");
+      TString("/escale_systematics") + DYTools::analysisTag + TString("_tmp.tex");
     printTexTable(texFName,headers,padding,data,factors);
   }
 
   TString finalFName=TString("../root_files/systematics/") + lumiTag + 
-    TString("/escale_systematics") + analysisTag + TString("_tmp.root");
+    TString("/escale_systematics") + DYTools::analysisTag + TString("_tmp.root");
   TFile fout(finalFName,"recreate");
   unfolding::writeBinningArrays(fout);
   escaleRandomizedSystRelative.Write("escaleRandomizedSystRelativeFI");
@@ -381,7 +381,7 @@ int  applyUnfoldingLocal(TVectorD &vin, TVectorD &vout, TString matrixFileName, 
     printf("                   yields observed        after unfolding            \n");
     for(int i=0, idx=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi, ++idx) {
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi, ++idx) {
 	printf("%4.0f-%4.0f %4.2lf-%4.2lf   %8.1f       %8.1f\n",
 	       DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi],rapidityBinLimits[yi+1],
@@ -426,10 +426,10 @@ int printTexTable(const TString &texFileName, const std::vector<TString>& header
   fprintf(fout," %s ",headers[0].Data());
   for (unsigned int i=1; i<headers.size(); ++i) fprintf(fout," & %s ",headers[i].Data());
   fprintf(fout,"\\\\\n\\hline\n");
-  for(int i=0, idx=0; i<nMassBins; i++) {
+  for(int i=0, idx=0; i<DYTools::nMassBins; i++) {
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi, ++idx) {
-      fprintf(fout," %4.0lf $-$ %4.0lf ",massBinLimits[i],massBinLimits[i+1]);
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi, ++idx) {
+      fprintf(fout," %4.0lf $-$ %4.0lf ",DYTools::massBinLimits[i],DYTools::massBinLimits[i+1]);
       fprintf(fout," & %4.2lf $-$ %4.2lf ",rapidityBinLimits[yi],rapidityBinLimits[yi+1]);
       for (unsigned int j=0; j<headers.size()-2; ++j) {
 	fprintf(fout," & %5.2lf ",(*data[j])[idx]*factors[j]);

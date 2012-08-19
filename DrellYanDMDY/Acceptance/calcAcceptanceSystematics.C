@@ -18,10 +18,10 @@ Double_t lumi = 0;
 
 void  extractAcceptance(TMatrixD &vout, int reweightInt);
 
-const TString fileEnd(analysisTag + TString(".root"));
+const TString fileEnd(DYTools::analysisTag + TString(".root"));
 const TString fileDataYields(TString("yields_bg-subtracted") + fileEnd);
 const TString fileAcceptanceConstantsBaseReweight(TString("acceptance_constants_reweight_") + 
-						  analysisTag + TString("_"));
+					DYTools::analysisTag + TString("_"));
 
 
 void calcAcceptanceSystematics(const TString conf){
@@ -63,15 +63,15 @@ void calcAcceptanceSystematics(const TString conf){
   //calculate Fsr systematics 
   /////////////////////////////////
 
-  TMatrixD accFsrMax(nMassBins,nYBinsMax);
-  TMatrixD accFsrMin(nMassBins,nYBinsMax);
-  TMatrixD accSystPercentFsr(nMassBins,nYBinsMax);
+  TMatrixD accFsrMax(DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD accFsrMin(DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD accSystPercentFsr(DYTools::nMassBins,DYTools::nYBinsMax);
 
   extractAcceptance(accFsrMax, 105);
   extractAcceptance(accFsrMin, 95);
 
-  for(int i = 0; i < nMassBins; i++){
-    for (int yi = 0; yi < nYBins[i]; ++yi) {
+  for(int i = 0; i < DYTools::nMassBins; i++){
+    for (int yi = 0; yi < DYTools::nYBins[i]; ++yi) {
       accSystPercentFsr[i][yi] = 100.0*fabs(accFsrMax[i][yi]-accFsrMin[i][yi])/
 	(accFsrMax[i][yi]+accFsrMin[i][yi]);
     }
@@ -80,11 +80,11 @@ void calcAcceptanceSystematics(const TString conf){
   //printing out to the screen
 
   printf("mass     rapidity    <acc>  rel-err-percent-Fsr\n");
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       printf("%4.0f-%4.0f  %4.2f-%4.2f  %1.3f   %1.3f \n", 
-	     massBinLimits[i], massBinLimits[i+1],
+	     DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
 	     rapidityBinLimits[yi], rapidityBinLimits[yi+1],
 	     0.5*(accFsrMax[i][yi]+accFsrMin[i][yi]), accSystPercentFsr[i][yi]);
     }
@@ -113,8 +113,8 @@ void calcAcceptanceSystematics(const TString conf){
 //-----------------------------------------------------------------
 void  extractAcceptance(TMatrixD &vout, int reweightInt)
 {
-  if ((vout.GetNrows()!=nMassBins) || (vout.GetNcols()!=nYBinsMax)) {
-    std::cout << "extractAcceptance: vout should be of size [nMassBins]x[nYBinsMax]=[nUnfoldingBins]\n";
+  if ((vout.GetNrows()!=DYTools::nMassBins) || (vout.GetNcols()!=DYTools::nYBinsMax)) {
+    std::cout << "extractAcceptance: vout should be of size [DYTools::nMassBins]x[DYTools::nYBinsMax]=[nUnfoldingBins]\n";
     assert(0);
   }
 
@@ -134,8 +134,8 @@ void  extractAcceptance(TMatrixD &vout, int reweightInt)
   TMatrixD* acc = (TMatrixD*)fAcc.Get("acceptanceMatrix");
   assert(acc);
 
-  for (int i=0; i<nMassBins; i++){
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for (int i=0; i<DYTools::nMassBins; i++){
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       vout[i][yi]=(*acc)[i][yi];
     }
   }

@@ -104,6 +104,7 @@ bool isTag(const mithep::TElectron *electron, ULong_t trigger, double rho){
 // -------------------------------------------------------------------
 
 TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, const TriggerSelection &trigSet){
+  using namespace DYTools;
 
   TString label = analysisTag;
   if (analysisTag.Length()>0) label.Append("_");

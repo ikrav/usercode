@@ -58,7 +58,7 @@ void Plot1D(const TMatrixD &matrValues, const TMatrixD &matrErrors, TString name
         return;
      }
 
-   if (nMassBins!=matrValues.GetNrows() || nMassBins!=matrErrors.GetNrows()) 
+   if (DYTools::nMassBins!=matrValues.GetNrows() || DYTools::nMassBins!=matrErrors.GetNrows()) 
      {
         std::cout<<"for 1D study, length of vector is not equal to the number of mass bins"<<std::endl;
         return;
@@ -72,8 +72,8 @@ void Plot1D(const TMatrixD &matrValues, const TMatrixD &matrErrors, TString name
      {
         yVals[i]=matrValues(i,0);
         yErrs[i]=matrErrors(i,0);
-        xVals[i]=(massBinLimits[i+1]+massBinLimits[i])/2;
-        xErrs[i]=(massBinLimits[i+1]-massBinLimits[i])/2;
+        xVals[i]=(DYTools::massBinLimits[i+1]+DYTools::massBinLimits[i])/2;
+        xErrs[i]=(DYTools::massBinLimits[i+1]-DYTools::massBinLimits[i])/2;
      }
 
    TGraphErrors *gr = new TGraphErrors(DYTools::nMassBins,xVals,yVals,xErrs,yErrs);
@@ -170,10 +170,10 @@ TMatrixD AdjustMatrixBinning(const TMatrixD &matrUsualBinning)
 
 Int_t minMutualMultiple()
 {
-  int mult=nYBins[0];
-  for (int i=1; i<nMassBins; i++)
+  int mult=DYTools::nYBins[0];
+  for (int i=1; i<DYTools::nMassBins; i++)
   {
-    mult=minMutualMultipleTwo(mult,nYBins[i]);
+    mult=minMutualMultipleTwo(mult,DYTools::nYBins[i]);
 
   }
   return mult;
@@ -215,10 +215,10 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
      {
        x  = new double[DYTools::nMassBins];
        ex = new double[DYTools::nMassBins];
-       for (int i=0; i<nMassBins; i++)
+       for (int i=0; i<DYTools::nMassBins; i++)
          {
-           x[i]=(massBinLimits[i+1]+massBinLimits[i])/2;
-           ex[i]=(massBinLimits[i+1]-massBinLimits[i])/2;
+           x[i]=(DYTools::massBinLimits[i+1]+DYTools::massBinLimits[i])/2;
+           ex[i]=(DYTools::massBinLimits[i+1]-DYTools::massBinLimits[i])/2;
          }
        y1=relCrossSection.GetMatrixArray();
        ey1=relCrossSectionStatErr.GetMatrixArray();
@@ -252,8 +252,9 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
            n = DYTools::nYBins[i];
            for (int j=0; j<DYTools::nYBins[i]; j++)
              {
-               x[j]=yRangeMin+(j+0.5)*(yRangeMax-yRangeMin)/n;
-               ex[j]=0.5*(yRangeMax-yRangeMin)/n;
+               x[j]=DYTools::yRangeMin+
+		 (j+0.5)*(DYTools::yRangeMax-DYTools::yRangeMin)/n;
+               ex[j]=0.5*(DYTools::yRangeMax-DYTools::yRangeMin)/n;
                y1[j]=relCrossSection(i,j); 
                ey1[j]=relCrossSectionStatErr(i,j);
                y2[j]=relCrossSectionDET(i,j);
@@ -265,11 +266,11 @@ TMatrixD relPostFsrCrossSectionDET, TMatrixD relPostFsrCrossSectionStatErrDET)
              }
            
            TString name2D="RShape2D_mass_";
-           name2D+=massBinLimits[i];
+           name2D+=DYTools::massBinLimits[i];
            name2D+="-";
-           name2D+=massBinLimits[i+1];
+           name2D+=DYTools::massBinLimits[i+1];
 
-           RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,name2D,massBinLimits[i],massBinLimits[i+1]);
+           RShapeDrawAndSave(n,x,ex,y1,ey1,y2,ey2,y3,ey3,y4,ey4,name2D,DYTools::massBinLimits[i],DYTools::massBinLimits[i+1]);
 
          }
 
@@ -293,7 +294,7 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
    TCanvas* canv=new TCanvas(name,name);
    canv->SetGrid();
    //for 1D analysis x-axis is mass, for 2D analysis x-axis is |Y|
-   if (study2D==0) canv->SetLogx(1);
+   if (DYTools::study2D==0) canv->SetLogx(1);
    canv->SetLogy(1);
    canv->SetFillColor(0);
    // draw a frame to define the range
@@ -335,8 +336,8 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
 
 
    TString massRange;
-   if (study2D==0) massRange="";
-   else if (study2D==1) 
+   if (DYTools::study2D==0) massRange="";
+   else if (DYTools::study2D==1) 
      {
        massRange="Mee: ";
        massRange+=int(mass1);
@@ -358,17 +359,18 @@ void RShapeDrawAndSave(Int_t n, double* x,double* ex,double* y1,double* ey1,doub
 
    TAxis* yax=mg->GetYaxis();
 
-   if (study2D==0) yax->SetRangeUser(5e-6,2);
-   else if (study2D==1) yax->SetRangeUser(3e-5,10);
-   if (study2D==0) mg->GetXaxis()->SetTitle("M_{ee}");
-   else if (study2D==1) mg->GetXaxis()->SetTitle("|Y|");
+   if (DYTools::study2D==0) yax->SetRangeUser(5e-6,2);
+   else if (DYTools::study2D==1) yax->SetRangeUser(3e-5,10);
+   if (DYTools::study2D==0) mg->GetXaxis()->SetTitle("M_{ee}");
+   else if (DYTools::study2D==1) mg->GetXaxis()->SetTitle("|Y|");
    
-   if (study2D==0) mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dM");
-   else if (study2D==1) mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dMd|Y|");
+   if (DYTools::study2D==0) mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dM");
+   else if (DYTools::study2D==1) mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma /dMd|Y|");
    mg->GetYaxis()->SetTitleOffset(1.20);
 
    TLegend *leg;
-   if (study2D==0 || mass2>massBinLimits[nMassBins-2]) 
+   if (DYTools::study2D==0 || 
+       mass2>DYTools::massBinLimits[DYTools::nMassBins-2]) 
       leg = new TLegend(.50,.55,.95,.95);
    else leg = new TLegend(.60,.75,.95,.95);
    leg->AddEntry(gr1,"Pre FSR All Phase Space");
@@ -421,13 +423,13 @@ void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString
     {
       plotMass.SetYRange(1.0,2000000);  
       plotMass.SetXRange(20,1500);
-      double plotMassMin=(study2D) ? 20. : 15.;
+      double plotMassMin=(DYTools::study2D) ? 20. : 15.;
       plotMass.SetXRange(plotMassMin,1500);
     }
   else
     {
       plotMass.SetYRange(1.0,300000);
-      double plotMassMin=(study2D) ? 20. : 15.;
+      double plotMassMin=(DYTools::study2D) ? 20. : 15.;
       plotMass.SetXRange(plotMassMin,1500);
     }  
   plotMass.Draw(c1,kFALSE);
@@ -457,7 +459,7 @@ void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vect
     TMatrixD *thisSampleYieldsSumw2 = yieldsSumw2.at(isam);
     for(int im = 0; im < DYTools::nMassBins; im++){
       for(int iy = 0; iy < DYTools::nYBins[im]; iy++){
-	int iflat = findIndexFlat(im, iy);
+	int iflat = DYTools::findIndexFlat(im, iy);
 	hFlattened[isam]->SetBinContent(iflat, (*thisSampleYields)(im,iy) );
 	hFlattened[isam]->SetBinError(iflat, sqrt((*thisSampleYieldsSumw2)(im,iy)) );
       }
@@ -514,18 +516,18 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
   int jStart;
   if (hasData) jStart=0; 
   else jStart=1;
-  TH1F* allHists[nMassBins][samplev.size()];
+  TH1F* allHists[DYTools::nMassBins][samplev.size()];
 
-  TH1F *totalMc[nMassBins];
-  TH1F *ewkHist[nMassBins];
-  TH1F *ratioHist[nMassBins];
-  TH1F *ratioClone[nMassBins];
-  THStack *mcHists[nMassBins]; 
+  TH1F *totalMc[DYTools::nMassBins];
+  TH1F *ewkHist[DYTools::nMassBins];
+  TH1F *ratioHist[DYTools::nMassBins];
+  TH1F *ratioClone[DYTools::nMassBins];
+  THStack *mcHists[DYTools::nMassBins]; 
   TString normStr =(normEachBin) ? "normEachBin-" : "normZpeak-";
   normStr.Append((singleCanvas) ? "sngl-" : "multi-");
   std::cout << "normStr=" << normStr << "\n";
 
-  for (int i=1; i<nMassBins; i++)
+  for (int i=1; i<DYTools::nMassBins; i++)
   // loop over mass bins starting from 1st (excluding underflow bin)
     {
       TString stackName="mcStack-" + normStr;
@@ -533,10 +535,10 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
       mcHists[i]=new THStack(stackName,"");
       TString totalMcName="totalMC-" + normStr;
       totalMcName+=i;
-      totalMc[i]=new TH1F(totalMcName,"",nYBins[i],yRangeMin,yRangeMax); 
+      totalMc[i]=new TH1F(totalMcName,"",DYTools::nYBins[i],DYTools::yRangeMin,DYTools::yRangeMax); 
       TString ewkName="ewk-" + normStr;
       ewkName+=i;
-      ewkHist[i]=new TH1F(ewkName,"",nYBins[i],yRangeMin,yRangeMax);
+      ewkHist[i]=new TH1F(ewkName,"",DYTools::nYBins[i],DYTools::yRangeMin,DYTools::yRangeMax);
 
 
  
@@ -546,13 +548,13 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
 
           TString histName="hist-" + normStr;
           histName+=i; histName+="-"; histName+=j; 
-          allHists[i][j]=new TH1F(histName,"",nYBins[i],yRangeMin,yRangeMax);
+          allHists[i][j]=new TH1F(histName,"",DYTools::nYBins[i],DYTools::yRangeMin,DYTools::yRangeMax);
           //nYBins, YRangeMin, yRangeMax - from DYTools.hh
 
           TMatrixD *thisSampleYields = yields.at(j);
           TMatrixD *thisSampleYieldsSumw2 = yieldsSumw2.at(j);
 
-          for (int k=0; k<nYBins[i]; k++)
+          for (int k=0; k<DYTools::nYBins[i]; k++)
           // loop over allHists bins
             {
               allHists[i][j]->SetBinContent(k+1,(*thisSampleYields)(i,k));
@@ -632,13 +634,13 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
   lumiText->SetNDC();
   lumiText->SetText(0.91, 0.90, DYTools::strLumiAtECMS);
 
-  TLatex *massLabels[nMassBins];
-  for (int i=1; i<nMassBins; i++)
+  TLatex *massLabels[DYTools::nMassBins];
+  for (int i=1; i<DYTools::nMassBins; i++)
     {
       TString massStr="";
-      massStr+=massBinLimits[i];
+      massStr+=DYTools::massBinLimits[i];
       massStr+="<m<";
-      massStr+=massBinLimits[i+1];
+      massStr+=DYTools::massBinLimits[i+1];
       massStr+=" GeV";
       massLabels[i]=new TLatex();
       massLabels[i]->SetTextFont(42);
@@ -648,22 +650,22 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
       massLabels[i]->SetText(0.91, 0.82, massStr);
     }
 
-  TCanvas* canv[nMassBins];
+  TCanvas* canv[DYTools::nMassBins];
   TString canvName;
   TString canvNames="y-Single-";
   if (normEachBin) canvNames+="norm-each-mass-bin";
   else canvNames+="norm-Z-peak";
   TCanvas* canvSingle=(singleCanvas) ? MakeCanvas(canvNames,canvNames,1200,1800) : NULL;
   if (canvSingle) canvSingle->Divide(2,6,0,0);
-  TPad* pad1[nMassBins];
-  TPad* pad2[nMassBins];
+  TPad* pad1[DYTools::nMassBins];
+  TPad* pad2[DYTools::nMassBins];
 
   TLine *lineAtOne = new TLine(15.0, 1.0, 1500, 1.0);
   lineAtOne->SetLineStyle(kDashed);
   lineAtOne->SetLineWidth(1);
   lineAtOne->SetLineColor(kBlue);
     
-  for (int i=1; i<nMassBins; i++) {
+  for (int i=1; i<DYTools::nMassBins; i++) {
     int idx=(i-1)%6+1;
 
       if (singleCanvas)
@@ -770,12 +772,12 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
           SaveCanvas(canv[i], canvName);
         }
 
-      if (singleCanvas && ((i==nMassBins-1) || (idx==6)))
+      if (singleCanvas && ((i==DYTools::nMassBins-1) || (idx==6)))
 	{
 	  TString name=canvNames;
 	  char buf[20];
 	  if (idx==6) sprintf(buf,"-%d",i/6);
-	  else if (i!=nMassBins-1) sprintf(buf,"-%d",i/6+1);
+	  else if (i!=DYTools::nMassBins-1) sprintf(buf,"-%d",i/6+1);
 	  else buf[0]='\0';
 	  name.Append(buf);
 	  canvSingle->SetName(name);
@@ -917,7 +919,7 @@ void PlotMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
     throw 2;
   }
   int nY=matrV[0].GetNcols();
-  if (nY!=nYBinsMax) {
+  if (nY!=DYTools::nYBinsMax) {
     std::cout << "PlotMatrixMYSlices: nN!=DYTools::nYBinsMax" << std::endl;
     throw 2;
   }
@@ -971,13 +973,13 @@ void PlotMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
 	if (printData) printf("iSet=%d: %s, %s\n",iSet,labelV[iSet].Data(),histTextBuf);
 	TString drOpt=(iSet==0) ? drawOption : "LP";
 	snprintf(histBuf, hBufLen,"h%d_%s_y%5.3f",iSet,histName.Data(),yCenter);
-	TH1F* Hist= new TH1F(histName,title, nMassBins, DYTools::massBinLimits);
+	TH1F* Hist= new TH1F(histName,title, DYTools::nMassBins, DYTools::massBinLimits);
 	Hist->SetDirectory(0);
 	//Hist->GetXaxis()->SetTitle("mass, GeV");
 	Hist->SetMarkerColor(colors[iSet%colorCount]);
 	for (int i=0; i<nM; i++) {
-	  int iRap=findAbsYBin(i, yCenter);
-	  if (printData) printf(" %6.1f-%6.1f  %8.2lf  %8.2lf\n",massBinLimits[i],massBinLimits[i+1],matrV[iSet](i,iRap),matrErrV[iSet](i,iRap));
+	  int iRap=DYTools::findAbsYBin(i, yCenter);
+	  if (printData) printf(" %6.1f-%6.1f  %8.2lf  %8.2lf\n",DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],matrV[iSet](i,iRap),matrErrV[iSet](i,iRap));
 	  Hist->SetBinContent(i+1,matrV[iSet](i,iRap));
 	  Hist->SetBinError(i+1,matrErrV[iSet](i,iRap));
 	}
@@ -992,7 +994,7 @@ void PlotMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
       CPlot* cp=new CPlot();
       cplots.push_back(cp);
       snprintf(histTextBuf, hBufLen, "mass= %1.0f - %1.0f",
-	       massBinLimits[iMass], massBinLimits[iMass+1]);
+	       DYTools::massBinLimits[iMass], DYTools::massBinLimits[iMass+1]);
       cp->AddTextBox(TString(histTextBuf), 0.58, 0.4, 0.95, 0.46, 0);
       cp->SetXTitle("|Y|");
       cp->SetYTitle(yAxisLabel);
@@ -1002,12 +1004,12 @@ void PlotMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
 	if (printData) printf("iSet=%d: %s, %s\n",iSet,labelV[iSet].Data(),histTextBuf);
 	TString drOpt=(iSet==0) ? drawOption : "LP";
 	snprintf(histBuf, hBufLen,"h%d_%s_mass%1.0f_%1.0f",iSet,histName.Data(),
-		 massBinLimits[iMass], massBinLimits[iMass+1]);
-	TH1F* Hist= new TH1F(histName,"", nYBins[iMass], yRangeMin, yRangeMax);
+		 DYTools::massBinLimits[iMass], DYTools::massBinLimits[iMass+1]);
+	TH1F* Hist= new TH1F(histName,"", DYTools::nYBins[iMass], DYTools::yRangeMin, DYTools::yRangeMax);
 	Hist->SetDirectory(0);
 	//Hist->GetXaxis()->SetTitle("|Y|");
 	Hist->SetMarkerColor(colors[iSet%colorCount]);
-	for (int j=0; j<nYBins[iMass]; j++) {
+	for (int j=0; j<DYTools::nYBins[iMass]; j++) {
 	  if (printData) {
 	    double yMin,yMax;
 	    DYTools::findAbsYValueRange(0, j, yMin,yMax);
@@ -1050,12 +1052,12 @@ void PlotMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity,
   matrV.reserve(matrFIV.size()); matrErrV.reserve(matrErrFIV.size());
   int res=1;
   for (unsigned int i=0; res && (i<matrFIV.size()); ++i) {
-    TMatrixD temp(nMassBins,nYBinsMax);
+    TMatrixD temp(DYTools::nMassBins,DYTools::nYBinsMax);
     res=unfolding::deflattenMatrix(matrFIV[i], temp);
     if (res) matrV.push_back(temp);
   }
   for (unsigned int i=0; res && (i<matrErrFIV.size()); ++i) {
-    TMatrixD temp(nMassBins,nYBinsMax);
+    TMatrixD temp(DYTools::nMassBins,DYTools::nYBinsMax);
     res=unfolding::deflattenMatrix(matrErrFIV[i], temp);
     if (res) matrErrV.push_back(temp);
   }
@@ -1098,7 +1100,7 @@ void PrintMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity
     throw 2;
   }
   int nY=matrV[0].GetNcols();
-  if (nY!=nYBinsMax) {
+  if (nY!=DYTools::nYBinsMax) {
     std::cout << "PrintMatrixMYSlices: nN!=DYTools::nYBinsMax" << std::endl;
     throw 2;
   }
@@ -1138,8 +1140,8 @@ void PrintMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity
       printf("\n");
 
       for (int i=0; i<nM; i++) {
-	int iRap=findAbsYBin(i, yCenter);
-	printf(" %6.1f-%6.1f  ",massBinLimits[i],massBinLimits[i+1]);
+	int iRap=DYTools::findAbsYBin(i, yCenter);
+	printf(" %6.1f-%6.1f  ",DYTools::massBinLimits[i],DYTools::massBinLimits[i+1]);
 	for (unsigned int iSet=0; iSet<matrV.size(); ++iSet) {
 	  printf("   %8.2lf +/- %8.2lf",matrV[iSet](i,iRap),matrErrV[iSet](i,iRap));
 	}
@@ -1151,14 +1153,14 @@ void PrintMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity
     for (unsigned int ii=0; ii<indices.size(); ++ii) {
       int iMass=indices[ii];
       printf("\n\nmass= %1.0f - %1.0f\n",
-	     massBinLimits[iMass], massBinLimits[iMass+1]);
+	     DYTools::massBinLimits[iMass], DYTools::massBinLimits[iMass+1]);
       printf("   rapidity rng |");
       for (unsigned int iSet=0; iSet<labelV.size(); ++iSet) {
 	printf(" %s |",labelV[iSet].Data());
       }
       printf("\n");
 
-      for (int j=0; j<nYBins[iMass]; j++) {
+      for (int j=0; j<DYTools::nYBins[iMass]; j++) {
 	double yMin,yMax;
 	DYTools::findAbsYValueRange(0, j, yMin,yMax);
 	printf(" %6.1f-%6.1f  ",yMin,yMax);
@@ -1186,12 +1188,12 @@ void PrintMatrixMYSlices(const std::vector<int> &indices, int functionOfRapidity
   matrV.reserve(matrFIV.size()); matrErrV.reserve(matrErrFIV.size());
   int res=1;
   for (unsigned int i=0; res && (i<matrFIV.size()); ++i) {
-    TMatrixD temp(nMassBins,nYBinsMax);
+    TMatrixD temp(DYTools::nMassBins,DYTools::nYBinsMax);
     res=unfolding::deflattenMatrix(matrFIV[i], temp);
     if (res) matrV.push_back(temp);
   }
   for (unsigned int i=0; res && (i<matrErrFIV.size()); ++i) {
-    TMatrixD temp(nMassBins,nYBinsMax);
+    TMatrixD temp(DYTools::nMassBins,DYTools::nYBinsMax);
     res=unfolding::deflattenMatrix(matrErrFIV[i], temp);
     if (res) matrErrV.push_back(temp);
   }

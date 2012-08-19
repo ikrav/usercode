@@ -240,8 +240,8 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
       // Asymmetric Et cut scheme for DY analysis
       if( ( (gen->pt_1 > DYTools::etMinLead && gen->pt_2 > DYTools::etMinTrail) 
          || (gen->pt_1 > DYTools::etMinTrail && gen->pt_2 > DYTools::etMinLead) )
-         && ((fabs(gen->eta_1)<kECAL_GAP_LOW) || (fabs(gen->eta_1)>kECAL_GAP_HIGH))
-         && ((fabs(gen->eta_2)<kECAL_GAP_LOW) || (fabs(gen->eta_2)>kECAL_GAP_HIGH))   
+	  && ((fabs(gen->eta_1)<DYTools::kECAL_GAP_LOW) || (fabs(gen->eta_1)>DYTools::kECAL_GAP_HIGH))
+         && ((fabs(gen->eta_2)<DYTools::kECAL_GAP_LOW) || (fabs(gen->eta_2)>DYTools::kECAL_GAP_HIGH))   
 	  && (fabs(gen->eta_1)<2.5) && (fabs(gen->eta_2)<2.5)) {
         
 	nEventsDET(ibinMassPreFsr,ibinYPreFsr) += fullWeight;
@@ -293,7 +293,7 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
 
   if (plotOnly==0) {
   for(int i=0; i<DYTools::nMassBins; i++) {
-    for (int j=0; j<nYBins[i]; j++) {
+    for (int j=0; j<DYTools::nYBins[i]; j++) {
       nEventsErr(i,j)=sqrt(w2Events(i,j));
       nEventsDETErr(i,j)=sqrt(w2EventsDET(i,j));
 
@@ -312,7 +312,7 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
 
 
 
-  TString outFile= TString("../root_files/xSecTh_") + analysisTag + TString("_tmp.root");
+  TString outFile= TString("../root_files/xSecTh_") + DYTools::analysisTag + TString("_tmp.root");
 
   if (plotOnly==0) {
     TFile thFile(outFile,"recreate");
@@ -353,20 +353,20 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
   //--------------------------------------------------------------------------------------------------------------
   // Make plots 
   //==============================================================================================================  
-  CPlot::sOutDir="plots" + analysisTag;
+  CPlot::sOutDir="plots" + DYTools::analysisTag;
 
-  TString fileNamePlots=TString("../root_files/xSecTh_") + analysisTag + TString("_plots_tmp.root");
+  TString fileNamePlots=TString("../root_files/xSecTh_") + DYTools::analysisTag + TString("_plots_tmp.root");
   TFile *filePlots=new TFile(fileNamePlots,"recreate");
   if (!filePlots) {
     std::cout << "failed to create file <" << fileNamePlots << ">\n";
     throw 2;
   }
   // string buffers
-  char ylabel[50];   // y-axis label
+  //char ylabel[50];   // y-axis label
 
 
-  if (study2D) {
-    TCanvas *c2D = MakeCanvas("canvXsectTh_2D","canvXsectTh_2D",600,600+300*study2D);
+  if (DYTools::study2D) {
+    TCanvas *c2D = MakeCanvas("canvXsectTh_2D","canvXsectTh_2D",600,600+300*DYTools::study2D);
     std::vector<TH1F*> hXsecV;
     std::vector<CPlot*> cpV;
     hXsecV.reserve(DYTools::nMassBins);

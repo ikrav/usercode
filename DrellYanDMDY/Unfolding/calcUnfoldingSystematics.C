@@ -5,9 +5,13 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <string>
 
 #include "../Include/DYTools.hh"
 #include "../Include/UnfoldingTools.hh"
+
+using std::string;
+using std::stringstream;
 
 // The global variables will be used in several functions:
 TString tagDirYields = "";
@@ -20,13 +24,13 @@ int readData(const TString &fname, TVectorD &vFI, TVectorD &vErr1FI,
 
 void  applyUnfoldingLocal(TVectorD &vinFI, TVectorD &voutFI, bool ifSeed, int seed, int reweightInt);
 
-const TString fileEnd( analysisTag + TString(".root") );
+const TString fileEnd( DYTools::analysisTag + TString(".root") );
 const TString fileDataYields        (TString("yields_bg-subtracted") + fileEnd);
 
 const TString fileUnfoldingConstantsBaseSeed(
-     TString("unfolding_constants_seed_") + analysisTag + TString("_") );
+     TString("unfolding_constants_seed_") + DYTools::analysisTag + TString("_") );
 const TString fileUnfoldingConstantsBaseReweight(
-     TString("unfolding_constants_reweight_") + analysisTag + TString("_") );
+     TString("unfolding_constants_reweight_") + DYTools::analysisTag + TString("_") );
 
 const int seedFirst = 1001;
 const int seedLast = 1020;
@@ -162,11 +166,11 @@ void calcUnfoldingSystematics(const TString conf){
 //printing out to the screen
 
    printf("mass     rapidity   mean-unfolded   RMS-unfolded   rel-error     rel-err-percent-Smear     rel-err-percent-Fsr      rel-err-percent-total \n");
-  for(int i=0, idx=0; i<nMassBins; i++){
+   for(int i=0, idx=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi, ++idx) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi, ++idx) {
       printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %7.1f      %7.1f          %6.4f             %6.1f                 %6.3f                       %6.1f\n",
-	     massBinLimits[i],massBinLimits[i+1],
+	     DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	     rapidityBinLimits[yi],rapidityBinLimits[yi+1],
 	     unfoldedYieldsMean[idx], unfoldedYieldsRMS[idx],
 	     unfoldedYieldsRMS[idx]/unfoldedYieldsMean[idx],
@@ -182,7 +186,7 @@ void calcUnfoldingSystematics(const TString conf){
   TString outputDir(TString("../root_files/systematics/")+tagDirConstants);
   gSystem->mkdir(outputDir,kTRUE);
   TString unfoldingSystFileName(outputDir+TString("/unfolding_systematics") 
-				+ analysisTag + TString(".root"));
+				+ DYTools::analysisTag + TString(".root"));
 
   TFile fa(unfoldingSystFileName,"recreate");
   unfolding::writeBinningArrays(fa);
@@ -280,7 +284,7 @@ void  applyUnfoldingLocal(TVectorD &vin, TVectorD &vout, bool ifSeed, int seed, 
     printf("                   yields observed        after unfolding            \n");
     for(int i=0, idx=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi, ++idx) {
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi, ++idx) {
 	printf("%4.0f-%4.0f %4.2lf-%4.2lf   %8.1f       %8.1f\n",
 	       DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi],rapidityBinLimits[yi+1],

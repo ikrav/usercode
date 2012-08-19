@@ -87,7 +87,7 @@ TString subtractBackground(const TString conf,
 
 
   // yields.root
-  TString yieldsFile=inputDir+TString("/yields") + analysisTag + TString(".root");
+  TString yieldsFile=inputDir+TString("/yields") + DYTools::analysisTag + TString(".root");
   std::cout << "yieldsFile=<" << yieldsFile << ">\n";
   TFile file(yieldsFile);
   if (!file.IsOpen()) {
@@ -378,11 +378,11 @@ TString subtractBackground(const TString conf,
   // 1. determine counts in Z-peak area in data and MC
   double countDataNoBkg=0., countMCsignal=0.;
   for (int i=0; i<DYTools::nMassBins; i++) {
-    if ((massBinLimits[i]>59.999) && (massBinLimits[i]<120.0001)) {
-      for (int yi=0; yi<nYBins[i]; ++yi) {
+    if ((DYTools::massBinLimits[i]>59.999) && (DYTools::massBinLimits[i]<120.0001)) {
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
 	countDataNoBkg += signalYields[i][yi];
       }
-      for (int yi=0; yi<nYBins[i]; ++yi) {
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
 	countMCsignal += zeePredictedYield[i][yi];
       }
     }
@@ -396,11 +396,11 @@ TString subtractBackground(const TString conf,
     throw 2;
   }
   // 2. create weight maps
-  TMatrixD zeeMCShapeReweight(nMassBins,nYBinsMax);
+  TMatrixD zeeMCShapeReweight(DYTools::nMassBins,nYBinsMax);
   zeeMCShapeReweight=0;
   double ZpeakFactor = countMCsignal/double(countDataNoBkg);
   for (int i=0; i<DYTools::nMassBins; i++) {
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       double mc = zeePredictedYield[i][yi];
       double weight=(fabs(mc)<1e-7) ?  
 	0. :  ( ZpeakFactor * signalYields[i][yi] / mc );
@@ -412,7 +412,7 @@ TString subtractBackground(const TString conf,
  
   // Save sideband-subtracted signal yields
   // inputDir+TString("/yields_bg-subtracted.root")
-  TString outFileName=inputDir + TString("/yields_bg-subtracted") + analysisTag + TString(".root");
+  TString outFileName=inputDir + TString("/yields_bg-subtracted") + DYTools::analysisTag + TString(".root");
   TFile fileOut(outFileName,"recreate");
   signalYields         .Write("YieldsSignal");
   signalYieldsError    .Write("YieldsSignalErr");   // not squared
@@ -438,8 +438,8 @@ TString subtractBackground(const TString conf,
     printf(" Note: stat error in signal yield contain stat error on background,\n");
     printf("   and syst error on signal yield contains syst error on background\n");
     printf("mass range            observed       true2e-bg         wz-zz-bg               fake-bg                 total-bg            signal\n");
-    for(int i=0; i<nMassBins; i++){
-      printf("%5.1f-%5.1f GeV: ", massBinLimits[i], massBinLimits[i+1]);
+    for(int i=0; i<DYTools::nMassBins; i++){
+      printf("%5.1f-%5.1f GeV: ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
       printf(" %7.0f+-%3.0f ", observedYields[i][yi], sqrt(observedYieldsErrorSquared[i][yi]));
       printf(" %5.1f+-%4.1f+-%4.1f ", true2eBackground[i][yi], sqrt(true2eBackgroundError[i][yi]), sqrt(true2eBackgroundErrorSyst[i][yi]));
       printf(" %6.2f+-%4.2f+-%4.2f ", wzzz[i][yi], sqrt(wzzzError[i][yi]), sqrt(wzzzErrorSyst[i][yi]));
@@ -452,8 +452,8 @@ TString subtractBackground(const TString conf,
     // Table 2: combined true2e and WZ/ZZ backgrounds only
     printf("\n  only true2e-bg + ww-wz\n");
     printf("mass range      true2e, includingwz/zz\n");
-    for(int i=0; i<nMassBins; i++){
-      printf("%5.1f-%5.1f GeV: ", massBinLimits[i], massBinLimits[i+1]);
+    for(int i=0; i<DYTools::nMassBins; i++){
+      printf("%5.1f-%5.1f GeV: ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
       double val = true2eBackground[i][yi] + wzzz[i][yi];
       double err=0, sys=0;
       if (correct_error_code){
@@ -482,8 +482,8 @@ TString subtractBackground(const TString conf,
     // only the syst. error on the background.
     printf("\n  Systematics, %% relative to background subtracted yields\n");
     printf("mass range            subtr-signal    total-bg      syst-from-bg-frac      syst-from-bg-percent\n");
-    for(int i=0; i<nMassBins; i++){
-      printf("%5.1f-%5.1f GeV: ", massBinLimits[i], massBinLimits[i+1]);
+    for(int i=0; i<DYTools::nMassBins; i++){
+      printf("%5.1f-%5.1f GeV: ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
       printf("    %8.1f+-%5.1f+-%4.1f ", signalYields[i][yi], signalYieldsError[i][yi],signalYieldsErrorSyst[i][yi]);
       printf("    %5.1f+-%4.1f+-%4.1f ", totalBackground[i][yi], totalBackgroundError[i][yi], totalBackgroundErrorSyst[i][yi]);
       printf("    %6.4f ", totalBackgroundErrorSyst[i][yi]/signalYields[i][yi]);

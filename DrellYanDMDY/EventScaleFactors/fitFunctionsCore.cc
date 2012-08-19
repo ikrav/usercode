@@ -248,13 +248,13 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   RooFormulaVar nsigPass("nsigPass","nsigPass","@0*@1",RooArgList(nsignal,eff));
   RooRealVar nbgPass ("nbgPass","nbgPass",lims[12].av,lims[12].lo,lims[12].hi);
   RooAbsPdf *passPdf=NULL;
-  if( mode == COUNTnFIT ){
+  if( mode == DYTools::COUNTnFIT ){
     RooGenericPdf * simpleSignal = new RooGenericPdf("simpleSignal","simpleSignal",
 						     "1.0",RooArgList());
     RooExtendPdf * simpleSignalExtended = new RooExtendPdf("passPdf", "passPdf",
 							   *simpleSignal, nsigPass);
     passPdf = simpleSignalExtended;
-  }else if( mode == FITnFIT ){
+  }else if( mode == DYTools::FITnFIT ){
     if (bkgPassContainsErrorFunction) {
       cout << "pass background model: exponential times error function\n";
       fitLog << "pass background model: exponential times error function\n";
@@ -310,7 +310,7 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   double total = dataUnbinnedPass->numEntries() + dataUnbinnedFail->numEntries();
   nsignal.setVal( 0.99*total);
   eff.setVal(0.90);
-  if( mode == FITnFIT ){
+  if( mode == DYTools::FITnFIT ){
     nbgPass.setVal(0.01*total);
     cbAlphaPass.setVal(1.0);
     cbNPass    .setVal(5.0);
@@ -351,7 +351,7 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
 		  );
 
   // Release shape parameters and refine the fit
-  if( mode == FITnFIT ){
+  if( mode == DYTools::FITnFIT ){
     cbAlphaPass.setConstant(kFALSE);
     cbNPass    .setConstant(kFALSE);
   }
@@ -394,7 +394,7 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   if (unbinnedFit) dataUnbinnedPass->plotOn(framePass);
   else dataBinnedPass->plotOn(framePass);
 
-  if(mode == FITnFIT){
+  if(mode == DYTools::FITnFIT){
     passPdf->plotOn(framePass);
     passPdf->plotOn(framePass,Components("bgPassPdf"),LineStyle(kDashed));
   }
@@ -742,13 +742,13 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   RooFormulaVar nsigPass("nsigPass","nsigPass","@0*@1",RooArgList(nsignal,eff));
   RooRealVar nbgPass ("nbgPass","nbgPass",lims[8].av, lims[8].lo, lims[8].hi);
   RooAbsPdf *passPdf;
-  if( mode == COUNTnFIT ){
+  if( mode == DYTools::COUNTnFIT ){
     RooGenericPdf * simpleSignal = new RooGenericPdf("simpleSignal","simpleSignal",
 						     "1.0",RooArgList());
     RooExtendPdf * simpleSignalExtended = new RooExtendPdf("passPdf", "passPdf",
 							   *simpleSignal, nsigPass);
     passPdf = simpleSignalExtended;
-  }else if( mode == FITnFIT ){
+  }else if( mode == DYTools::FITnFIT ){
     if (bkgPassContainsErrorFunction) {
       cout << "pass background model: exponential times error function\n";
       fitLog << "pass background model: exponential times error function\n";
@@ -805,7 +805,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   double total = dataUnbinnedPass->numEntries() + dataUnbinnedFail->numEntries();
   nsignal.setVal( 0.99*total);
   eff.setVal(0.90);
-  if( mode == FITnFIT ){
+  if( mode == DYTools::FITnFIT ){
     nbgPass.setVal(0.01*total);
   }
   nbgFail.setVal(0.01*total);
@@ -885,7 +885,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   if (unbinnedFit) dataUnbinnedPass->plotOn(framePass);
   else dataBinnedPass->plotOn(framePass);
 
-  if(mode == FITnFIT){
+  if(mode == DYTools::FITnFIT){
     passPdf->plotOn(framePass);
     passPdf->plotOn(framePass,Components("bgPassPdf"),LineStyle(kDashed));
   }

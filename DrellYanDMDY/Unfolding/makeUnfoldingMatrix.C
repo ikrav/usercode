@@ -204,7 +204,7 @@ void makeUnfoldingMatrix(const TString input,
   TMatrixD *shapeWeights=NULL;
   if (systematicsMode==DYTools::ESCALE_RESIDUAL) {
     TString shapeFName=TString("../root_files/yields/") + dirTag + 
-      TString("/yields_bg-subtracted") + analysisTag + TString(".root");
+      TString("/yields_bg-subtracted") + DYTools::analysisTag + TString(".root");
     std::cout << "Obtaining shape weights from <" << shapeFName << ">\n";
     TFile fshape(shapeFName);
     if (!fshape.IsOpen()) {
@@ -256,14 +256,14 @@ void makeUnfoldingMatrix(const TString input,
 
   // MC spectra for storage in ROOT file
   //int nYBinsMax = DYTools::findMaxYBins(); // commented out - rely on DYTools.hh
-  TMatrixD yieldsMcPostFsrGen(DYTools::nMassBins,nYBinsMax);
-  TMatrixD yieldsMcPostFsrRec(DYTools::nMassBins,nYBinsMax);
-  TMatrixD yieldsMcGen(DYTools::nMassBins,nYBinsMax);       // to compare with DrellYan1D
+  TMatrixD yieldsMcPostFsrGen(DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD yieldsMcPostFsrRec(DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD yieldsMcGen(DYTools::nMassBins,DYTools::nYBinsMax);       // to compare with DrellYan1D
   // The errors 2D arrays are not filled at the moment. It needs
   // to be done carefully since events are weighted.
   // For each bin, the error would be sqrt(sum weights^2).
-  TMatrixD yieldsMcPostFsrGenErr(DYTools::nMassBins,nYBinsMax);
-  TMatrixD yieldsMcPostFsrRecErr(DYTools::nMassBins,nYBinsMax);
+  TMatrixD yieldsMcPostFsrGenErr(DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD yieldsMcPostFsrRecErr(DYTools::nMassBins,DYTools::nYBinsMax);
 
   // Matrices for unfolding
   TMatrixD DetMigration(nUnfoldingBins, nUnfoldingBins);
@@ -353,8 +353,8 @@ void makeUnfoldingMatrix(const TString input,
 	
 	// Apply selection
 	// Eta cuts
-        if((fabs(dielectron->scEta_1)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<kECAL_GAP_HIGH)) continue;
-        if((fabs(dielectron->scEta_2)>kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<kECAL_GAP_HIGH)) continue;
+        if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
+        if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
 	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
 	
 	// Asymmetric SC Et cuts
@@ -427,8 +427,9 @@ void makeUnfoldingMatrix(const TString input,
           DetMigrationErr(iIndexFlatGen,iIndexFlatReco) += fullWeight*fullWeight;
 	}
 	
-        Bool_t isB1 = (fabs(dielectron->scEta_1)<kECAL_GAP_LOW);
-        Bool_t isB2 = (fabs(dielectron->scEta_2)<kECAL_GAP_LOW);         
+        Bool_t isB1 = DYTools::isBarrel(dielectron->scEta_1);
+        Bool_t isB2 = DYTools::isBarrel(dielectron->scEta_2);
+
 	hMassDiff->Fill(massResmeared - gen->mass);
 	if( isB1 && isB2 )
 	  hMassDiffBB->Fill(massResmeared - gen->mass);
@@ -542,18 +543,18 @@ void makeUnfoldingMatrix(const TString input,
     TString u="_";
     switch(systematicsMode) {
     case DYTools::NORMAL: 
-      fnameTag=analysisTag; 
+      fnameTag=DYTools::analysisTag; 
       break;
     case DYTools::RESOLUTION_STUDY: 
-      fnameTag=TString("_seed_") + analysisTag + u;
+      fnameTag=TString("_seed_") + DYTools::analysisTag + u;
       fnameTag+=seed;
       break;
     case DYTools::FSR_STUDY:
-      fnameTag=TString("_reweight_") + analysisTag + u;
+      fnameTag=TString("_reweight_") + DYTools::analysisTag + u;
       fnameTag+= int(100*reweightFsr);
       break;
     case DYTools::ESCALE_RESIDUAL:
-      fnameTag=analysisTag+TString("_escaleResidual");
+      fnameTag=DYTools::analysisTag+TString("_escaleResidual");
       break;
     default:
       std::cout<<"requested mode not recognized when determining fnameTag"<<std::endl;
@@ -579,7 +580,7 @@ void makeUnfoldingMatrix(const TString input,
   fConst.Close();
 
   // Store reference MC arrays in a file
-  TString refFileName(outputDir+TString("/yields_MC_unfolding_reference_") + analysisTag + TString(".root"));
+  TString refFileName(outputDir+TString("/yields_MC_unfolding_reference_") + DYTools::analysisTag + TString(".root"));
   TFile fRef(refFileName, "recreate" );
   yieldsMcPostFsrGen.Write("yieldsMcPostFsrGen");
   yieldsMcPostFsrRec.Write("yieldsMcPostFsrRec");
@@ -631,7 +632,7 @@ void makeUnfoldingMatrix(const TString input,
   // Draw a plot that illustrates the detector resolution effects.
   // We plot (gen-rec)/gen as a function of mass and rapidity.
   //
-  TMatrixD resolutionEffect(DYTools::nMassBins,nYBinsMax);
+  TMatrixD resolutionEffect(DYTools::nMassBins,DYTools::nYBinsMax);
   resolutionEffect = 0;
   for(int i=0; i < resolutionEffect.GetNrows(); i++){
     for(int j=0; j < resolutionEffect.GetNcols(); j++){
@@ -735,13 +736,13 @@ void makeUnfoldingMatrix(const TString input,
   std::cout << " chk ROOT bug: -condLU*||DetResponse||=" << (-condLU*DetResponse.Norm1()) << "\n" << std::endl;
 
   //Print errors of the Unfolding matrix when they exceed 0.1
-  for (int iM=0; iM<nMassBins; iM++)
-    for (int iY=0; iY<nYBins[iM]; iY++)
-      for (int jM=0; jM<nMassBins; jM++)
-        for (int jY=0; jY<nYBins[jM]; jY++)
+  for (int iM=0; iM<DYTools::nMassBins; iM++)
+    for (int iY=0; iY<DYTools::nYBins[iM]; iY++)
+      for (int jM=0; jM<DYTools::nMassBins; jM++)
+        for (int jY=0; jY<DYTools::nYBins[jM]; jY++)
           {
-             int i=findIndexFlat(iM,iY);
-             int j=findIndexFlat(jM,jY);           
+	    int i=DYTools::findIndexFlat(iM,iY);
+	    int j=DYTools::findIndexFlat(jM,jY);           
              if (DetInvertedResponseErr(i,j)>0.1)
                 {
                    std::cout<<"DetInvertedResponseErr("<<i<<","<<j<<")="<<DetInvertedResponseErr(i,j);

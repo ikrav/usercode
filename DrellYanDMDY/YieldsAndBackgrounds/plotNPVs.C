@@ -58,6 +58,7 @@ void plotNPVs(const TString inpFile) {
   }
 
   c->Update();
+  SaveCanvas(c,"NPVs");
 
   return;
 }

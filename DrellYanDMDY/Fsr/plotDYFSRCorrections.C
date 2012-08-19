@@ -57,7 +57,7 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   TString          dirTag;
 
   Double_t massLow  = DYTools::massBinLimits[0];
-  Double_t massHigh = DYTools::massBinLimits[nMassBins];
+  Double_t massHigh = DYTools::massBinLimits[DYTools::nMassBins];
   
   if (1) {
     MCInputFileMgr_t mcInp; // avoid errors from empty lines
@@ -117,11 +117,11 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   
   UInt_t   nZ = 0;
   Double_t nZweighted=0;
-  TMatrixD nEventsv (DYTools::nMassBins,findMaxYBins());  
-  TMatrixD nPassv   (DYTools::nMassBins,findMaxYBins());
-  TMatrixD nCorrelv  (DYTools::nMassBins,findMaxYBins());
-  TMatrixD corrv     (DYTools::nMassBins,findMaxYBins());
-  TMatrixD corrErrv  (DYTools::nMassBins,findMaxYBins());
+  TMatrixD nEventsv (DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD nPassv   (DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD nCorrelv  (DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD corrv     (DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD corrErrv  (DYTools::nMassBins,DYTools::nYBinsMax);
 
   nEventsv = 0;
   nPassv = 0;
@@ -223,20 +223,20 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
       if((mass < massLow) || (mass > massHigh)) continue;
       double y = gen->vy;    // pre-FSR
       double yPostFsr = gen->y;    // post-FSR
-      if((fabs(y) < yRangeMin) || (fabs(y) > yRangeMax)) continue;
+      if((fabs(y) < DYTools::yRangeMin) || (fabs(y) > DYTools::yRangeMax)) continue;
 
       int ibinM1D = DYTools::_findMassBin2011(mass);      // temporary
       // If mass is larger than the highest bin boundary
       // (last bin), use the last bin.
-      if(ibinM1D == -1 && mass >= _massBinLimits2011[_nMassBins2011] )
-	ibinM1D = _nMassBins2011-1;
+      if(ibinM1D == -1 && mass >= DYTools::_massBinLimits2011[DYTools::_nMassBins2011] )
+	ibinM1D = DYTools::_nMassBins2011-1;
       //int ibinM1DPostFsr = DYTools::_findMassBin2011(massPostFsr);  // temporary
 
       int ibinM = DYTools::findMassBin(mass);
       // If mass is larger than the highest bin boundary
       // (last bin), use the last bin.
-      if(ibinM == -1 && mass >= massBinLimits[nMassBins] )
-	ibinM = nMassBins-1;
+      if(ibinM == -1 && mass >= DYTools::massBinLimits[DYTools::nMassBins] )
+	ibinM = DYTools::nMassBins-1;
       int ibinMPostFsr = DYTools::findMassBin(massPostFsr);
 
       int ibinY = DYTools::findAbsYBin(ibinM,y);
@@ -271,28 +271,28 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
      //       printf("mass= %f   pt= %f    Y= %f     weight= %f\n",gen->mass, gen->vpt, gen->vy, fewz_weight);
       }
 
-      if(ibinM != -1 && ibinM<nMassBins && ibinY!=-1 && ibinY<nYBins[ibinM]) {
+      if(ibinM != -1 && ibinM<DYTools::nMassBins && ibinY!=-1 && ibinY<DYTools::nYBins[ibinM]) {
 	//std::cout << "presel: ientry=" << ientry << ", ibinM=" << ibinM << ", ibinY=" << ibinY << ", weight=" << (scale * gen->weight * fewz_weight) << "\n";
 	nEventsv(ibinM,ibinY) += scale * gen->weight * fewz_weight;
       }
-      else if(ibinM >= nMassBins || ibinY>=nYBins[ibinM])
+      else if(ibinM >= DYTools::nMassBins || ibinY>=DYTools::nYBins[ibinM])
         binProblemPreFsr++;
 
-      if(ibinMPostFsr!=-1 && ibinMPostFsr<nMassBins &&  ibinYPostFsr!=-1 
-	 && ibinYPostFsr<nYBins[ibinMPostFsr])
+      if(ibinMPostFsr!=-1 && ibinMPostFsr<DYTools::nMassBins &&  ibinYPostFsr!=-1 
+	 && ibinYPostFsr<DYTools::nYBins[ibinMPostFsr])
 	nPassv(ibinMPostFsr,ibinYPostFsr) += scale * gen->weight * fewz_weight;
-      else if(ibinMPostFsr >= nMassBins || 
-	      ibinYPostFsr>=nYBins[ibinMPostFsr]) {
+      else if(ibinMPostFsr >= DYTools::nMassBins || 
+	      ibinYPostFsr>=DYTools::nYBins[ibinMPostFsr]) {
 	// Do nothing: post-fsr mass could easily be below the lowest edge of mass range
         binProblemPostFsr++;
       }
 
       if (ibinM==ibinMPostFsr && ibinY==ibinYPostFsr)
         {
-          if(ibinM != -1 && ibinM<nMassBins && ibinY!=-1 && 
-	     ibinY<nYBins[ibinM])
+          if(ibinM != -1 && ibinM<DYTools::nMassBins && ibinY!=-1 && 
+	     ibinY<DYTools::nYBins[ibinM])
             nCorrelv(ibinM,ibinY) += scale * gen->weight * fewz_weight;
-          else if(ibinM >= nMassBins || ibinY>=nYBins[ibinM])
+          else if(ibinM >= DYTools::nMassBins || ibinY>=DYTools::nYBins[ibinM])
             binProblemCorrel++;
         }
 
@@ -331,10 +331,10 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   // Make plots 
   //==============================================================================================================  
 
-  CPlot::sOutDir="plots" + analysisTag;
+  CPlot::sOutDir="plots" + DYTools::analysisTag;
 
   // prepare tag
-  TString addStr=TString("_") + analysisTag;
+  TString addStr=TString("_") + DYTools::analysisTag;
   if (sansAcc) addStr.Append("_sans_acc");
   //else addStr=""; 
 

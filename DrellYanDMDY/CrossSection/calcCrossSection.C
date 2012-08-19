@@ -51,7 +51,7 @@ const int printAllCorrectionTable=0;
 const int printRelativeSystErrTable=0;
 const int callPrintTableForNotes=0;
 
-const TString fileEnd(analysisTag + TString(".root"));
+const TString fileEnd(DYTools::analysisTag + TString(".root"));
 
 const TString fileDataYields        (TString("yields_bg-subtracted") + fileEnd);
 const TString fileMcReferenceYields (TString("yields_MC_unfolding_reference_") + fileEnd);
@@ -67,7 +67,7 @@ const TString fileAcceptanceConstants(TString("acceptance_constants") + fileEnd)
 const TString fileAcceptanceSystematics(TString("theoretical_uncertainties.root"));
 const TString fileAcceptanceFSRSystematics(TString("acceptance_FSR_systematics") + fileEnd);
 const TString fileFsrCorrectionConstants(TString("fsr_constants_") + fileEnd);
-const TString fileFsrCorrectionSansAccConstants(TString("fsr_constants_") + analysisTag + TString("_sans_acc.root"));
+const TString fileFsrCorrectionSansAccConstants(TString("fsr_constants_") + DYTools::analysisTag + TString("_sans_acc.root"));
 
 // Forward declarations
 //-----------------------------------------------------------------
@@ -183,61 +183,61 @@ void calcCrossSection(const TString conf="../config_files/xsecCalc.conf"){
   applyUnfoldingToMc(); //fullUnfoldingConstFileName, fullMcRefYieldsFileName);
 
 
-  TMatrixD signalYields(nMassBins,nMaxYBins);
-  TMatrixD signalYieldsStatErr(nMassBins,nMaxYBins);
-  TMatrixD signalYieldsSystErr(nMassBins,nMaxYBins);
+  TMatrixD signalYields(DYTools::nMassBins,nMaxYBins);
+  TMatrixD signalYieldsStatErr(DYTools::nMassBins,nMaxYBins);
+  TMatrixD signalYieldsSystErr(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD unfoldedYields(nMassBins,nMaxYBins);
-  TMatrixD unfoldedYieldsStatErr(nMassBins,nMaxYBins);
-  TMatrixD unfoldedYieldsSystErr(nMassBins,nMaxYBins);
+  TMatrixD unfoldedYields(DYTools::nMassBins,nMaxYBins);
+  TMatrixD unfoldedYieldsStatErr(DYTools::nMassBins,nMaxYBins);
+  TMatrixD unfoldedYieldsSystErr(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD effCorrectedYields(nMassBins,nMaxYBins);
-  TMatrixD effCorrectedYieldsStatErr(nMassBins,nMaxYBins);
-  TMatrixD effCorrectedYieldsSystErr(nMassBins,nMaxYBins);
+  TMatrixD effCorrectedYields(DYTools::nMassBins,nMaxYBins);
+  TMatrixD effCorrectedYieldsStatErr(DYTools::nMassBins,nMaxYBins);
+  TMatrixD effCorrectedYieldsSystErr(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD accCorrectedYields(nMassBins,nMaxYBins);
-  TMatrixD accCorrectedYieldsStatErr(nMassBins,nMaxYBins);
-  TMatrixD accCorrectedYieldsSystErr(nMassBins,nMaxYBins);
+  TMatrixD accCorrectedYields(DYTools::nMassBins,nMaxYBins);
+  TMatrixD accCorrectedYieldsStatErr(DYTools::nMassBins,nMaxYBins);
+  TMatrixD accCorrectedYieldsSystErr(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD preFsrYields(nMassBins,nMaxYBins);
-  TMatrixD preFsrYieldsStatErr(nMassBins,nMaxYBins);
-  TMatrixD preFsrYieldsSystErr(nMassBins,nMaxYBins);
+  TMatrixD preFsrYields(DYTools::nMassBins,nMaxYBins);
+  TMatrixD preFsrYieldsStatErr(DYTools::nMassBins,nMaxYBins);
+  TMatrixD preFsrYieldsSystErr(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD preFsrSansAccYields(nMassBins,nMaxYBins);
-  TMatrixD preFsrSansAccYieldsStatErr(nMassBins,nMaxYBins);
-  TMatrixD preFsrSansAccYieldsSystErr(nMassBins,nMaxYBins);
+  TMatrixD preFsrSansAccYields(DYTools::nMassBins,nMaxYBins);
+  TMatrixD preFsrSansAccYieldsStatErr(DYTools::nMassBins,nMaxYBins);
+  TMatrixD preFsrSansAccYieldsSystErr(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD absCrossSection(nMassBins,nMaxYBins);
-  TMatrixD absCrossSectionStatErr(nMassBins,nMaxYBins);
-  TMatrixD absCrossSectionSystErr(nMassBins,nMaxYBins);
+  TMatrixD absCrossSection(DYTools::nMassBins,nMaxYBins);
+  TMatrixD absCrossSectionStatErr(DYTools::nMassBins,nMaxYBins);
+  TMatrixD absCrossSectionSystErr(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD absCrossSectionDET(nMassBins,nMaxYBins);
-  TMatrixD absCrossSectionStatErrDET(nMassBins,nMaxYBins);
-  TMatrixD absCrossSectionSystErrDET(nMassBins,nMaxYBins);
+  TMatrixD absCrossSectionDET(DYTools::nMassBins,nMaxYBins);
+  TMatrixD absCrossSectionStatErrDET(DYTools::nMassBins,nMaxYBins);
+  TMatrixD absCrossSectionSystErrDET(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD relCrossSection(nMassBins,nMaxYBins);
-  TMatrixD relCrossSectionStatErr(nMassBins,nMaxYBins);
-  TMatrixD relCrossSectionSystErr(nMassBins,nMaxYBins);
+  TMatrixD relCrossSection(DYTools::nMassBins,nMaxYBins);
+  TMatrixD relCrossSectionStatErr(DYTools::nMassBins,nMaxYBins);
+  TMatrixD relCrossSectionSystErr(DYTools::nMassBins,nMaxYBins);
 
-  TMatrixD relCrossSectionDET(nMassBins,nMaxYBins);
-  TMatrixD relCrossSectionStatErrDET(nMassBins,nMaxYBins);
-  TMatrixD relCrossSectionSystErrDET(nMassBins,nMaxYBins);
+  TMatrixD relCrossSectionDET(DYTools::nMassBins,nMaxYBins);
+  TMatrixD relCrossSectionStatErrDET(DYTools::nMassBins,nMaxYBins);
+  TMatrixD relCrossSectionSystErrDET(DYTools::nMassBins,nMaxYBins);
 
-  TMatrixD absPostFsrCrossSection(nMassBins,nMaxYBins);
-  TMatrixD absPostFsrCrossSectionStatErr(nMassBins,nMaxYBins);
-  TMatrixD absPostFsrCrossSectionSystErr(nMassBins,nMaxYBins);
+  TMatrixD absPostFsrCrossSection(DYTools::nMassBins,nMaxYBins);
+  TMatrixD absPostFsrCrossSectionStatErr(DYTools::nMassBins,nMaxYBins);
+  TMatrixD absPostFsrCrossSectionSystErr(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD absPostFsrCrossSectionDET(nMassBins,nMaxYBins);
-  TMatrixD absPostFsrCrossSectionStatErrDET(nMassBins,nMaxYBins);
-  TMatrixD absPostFsrCrossSectionSystErrDET(nMassBins,nMaxYBins);
+  TMatrixD absPostFsrCrossSectionDET(DYTools::nMassBins,nMaxYBins);
+  TMatrixD absPostFsrCrossSectionStatErrDET(DYTools::nMassBins,nMaxYBins);
+  TMatrixD absPostFsrCrossSectionSystErrDET(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD relPostFsrCrossSection(nMassBins,nMaxYBins);
-  TMatrixD relPostFsrCrossSectionStatErr(nMassBins,nMaxYBins);
-  TMatrixD relPostFsrCrossSectionSystErr(nMassBins,nMaxYBins);
+  TMatrixD relPostFsrCrossSection(DYTools::nMassBins,nMaxYBins);
+  TMatrixD relPostFsrCrossSectionStatErr(DYTools::nMassBins,nMaxYBins);
+  TMatrixD relPostFsrCrossSectionSystErr(DYTools::nMassBins,nMaxYBins);
 
-  TMatrixD relPostFsrCrossSectionDET(nMassBins,nMaxYBins);
-  TMatrixD relPostFsrCrossSectionStatErrDET(nMassBins,nMaxYBins);
-  TMatrixD relPostFsrCrossSectionSystErrDET(nMassBins,nMaxYBins);
+  TMatrixD relPostFsrCrossSectionDET(DYTools::nMassBins,nMaxYBins);
+  TMatrixD relPostFsrCrossSectionStatErrDET(DYTools::nMassBins,nMaxYBins);
+  TMatrixD relPostFsrCrossSectionSystErrDET(DYTools::nMassBins,nMaxYBins);
 
   systBackgrBeforeUnfolding = 0;
   systEfficiency = 0;
@@ -377,8 +377,8 @@ void readData(TMatrixD &v, TMatrixD &vErr1, TMatrixD &vErr2){
     printf("readData: Binning in the inputs is consistent\n");
 
   // Prepare output yields and errors
-  for(int i=0; i<nMassBins; i++){
-    for (int yi=0; yi<nYBins[i]; yi++) {
+  for(int i=0; i<DYTools::nMassBins; i++){
+    for (int yi=0; yi<DYTools::nYBins[i]; yi++) {
       v[i][yi] = YieldsSignal[i][yi];
       vErr1[i][yi] = YieldsSignalErr[i][yi];
       // Background systematics should be already in, add 
@@ -469,8 +469,8 @@ void  applyUnfolding(TMatrixD &vinM, TMatrixD &vinStatErrM, TMatrixD &vinSystErr
   // changes relative errors, all subsequent manipulations do not, so we can 
   // save the errors here.
   for(int i=0; i<DYTools::nMassBins; i++){
-    for (int yi=0; yi<nYBins[i]; yi++) {
-      int idx=findIndexFlat(i,yi);
+    for (int yi=0; yi<DYTools::nYBins[i]; yi++) {
+      int idx=DYTools::findIndexFlat(i,yi);
       systBackgrRelative[i][yi] = systBackgrV[idx]/vout[idx];
       systEscaleRelative[i][yi] = systEscaleV[idx]/vout[idx];
       systUnfoldRelative[i][yi] = systUnfoldingV[idx]/vout[idx];
@@ -483,8 +483,8 @@ void  applyUnfolding(TMatrixD &vinM, TMatrixD &vinStatErrM, TMatrixD &vinSystErr
     printf(" mass        |y| range      yields observed        after unfolding            \n");
     for(int i=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi) {
-      int idx=findIndexFlat(i,yi);
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+      int idx=DYTools::findIndexFlat(i,yi);
       printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %8.1f +- %6.1f +- %5.1f       %8.1f +- %7.1f +- %6.1f\n",
 	     DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
 	     rapidityBinLimits[yi], rapidityBinLimits[yi+1],
@@ -544,8 +544,8 @@ void applyUnfoldingToMc() { //TString fullUnfoldingConstFileName, TString fullMc
     printf(" mass      rapidity    yieldsGen     unfolded  asym(%%)\n");
     for(int i=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi) {
-	int idx=findIndexFlat(i,yi);
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+	int idx=DYTools::findIndexFlat(i,yi);
 	printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %10.0f    %10.0f   %6.2f\n",
 	       DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi],rapidityBinLimits[yi+1],
@@ -561,8 +561,8 @@ void applyUnfoldingToMc() { //TString fullUnfoldingConstFileName, TString fullMc
     printf(" mass      rapidity    yieldsReco    unfolded  asym(%%)\n");
     for(int i=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi) {
-        int idx=findIndexFlat(i,yi);
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+        int idx=DYTools::findIndexFlat(i,yi);
         printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %10.0f    %10.0f  %6.2lf\n",
                DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
                rapidityBinLimits[yi],rapidityBinLimits[yi+1],
@@ -629,12 +629,12 @@ void  efficiencyCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
     printf("Efficiency: Binning in the inputs is consistent\n");
 
   // Apply the correction
-  TMatrixD systErrorPropagated(nMassBins,nMaxYBins);
-  TMatrixD systErrorAdditional(nMassBins,nMaxYBins);
+  TMatrixD systErrorPropagated(DYTools::nMassBins,nMaxYBins);
+  TMatrixD systErrorAdditional(DYTools::nMassBins,nMaxYBins);
   systErrorAdditional = 0;
 
-  for(int i=0; i<nMassBins; i++){
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for(int i=0; i<DYTools::nMassBins; i++){
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       double effFactor = efficiencyArray[i][yi] * rhoDataMc[i];
       double effErr = effFactor
 	* sqrt( efficiencyErrArray[i][yi]*efficiencyErrArray[i][yi]/efficiencyArray[i][yi]/efficiencyArray[i][yi]
@@ -656,11 +656,11 @@ void  efficiencyCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
   if (printEfficiencyTable) {
   printf("\nEfficiency: Results for the data, yields:\n");
   printf("                after unfolding            eff. factors,%%       rho(data/mc)         efficiency-corrected        syst-err-eff, %%\n");
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %8.1f +- %7.1f +- %7.1f   %5.2f +- %5.2f      %4.3f +- %4.3f      %8.1f +- %7.1f +- %7.1f        %4.2f\n",
-	     massBinLimits[i],massBinLimits[i+1],
+	     DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	     rapidityBinLimits[yi],rapidityBinLimits[yi+1],
 	     vin[i][yi], vinStatErr[i][yi], vinSystErr[i][yi],
 	     efficiencyArray[i][yi]*100, efficiencyErrArray[i][yi]*100, 
@@ -718,8 +718,8 @@ void  acceptanceCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
   // Check that the binning is consistent
   bool checkResult = true;
   if (checkResult) checkResult=unfolding::checkRangesMY(acceptanceMatrix,"acceptanceMatrix");
-  //if( acceptanceMatrix.GetNoElements() != nMassBins) checkResult = false;
-  if( acceptanceTheoryErrArray.GetNoElements() != nMassBins) checkResult = false;
+  //if( acceptanceMatrix.GetNoElements() != DYTools::nMassBins) checkResult = false;
+  if( acceptanceTheoryErrArray.GetNoElements() != DYTools::nMassBins) checkResult = false;
   if( !checkResult ){
     printf("Acceptance: ERROR: inconsistent binning in the inputs\n");
     assert(0);
@@ -727,13 +727,13 @@ void  acceptanceCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
     printf("Acceptance: Binning in the inputs is consistent\n");
 
   // Apply the correction
-  TMatrixD systErrorPropagated(nMassBins,nMaxYBins);
-  TMatrixD systErrorAdditional(nMassBins,nMaxYBins);
-  TMatrixD systErrorTheory(nMassBins,nMaxYBins);
+  TMatrixD systErrorPropagated(DYTools::nMassBins,nMaxYBins);
+  TMatrixD systErrorAdditional(DYTools::nMassBins,nMaxYBins);
+  TMatrixD systErrorTheory(DYTools::nMassBins,nMaxYBins);
   systErrorAdditional = 0;
 
-  for(int i=0; i<nMassBins; i++){
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for(int i=0; i<DYTools::nMassBins; i++){
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       double accFactor = acceptanceMatrix[i][yi];
       double accErr    = acceptanceErrMatrix[i][yi];
       double accThErr  = acceptanceTheoryErrArray[i];
@@ -754,11 +754,11 @@ void  acceptanceCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
   if (printAcceptanceTable) {
     printf("\nAcceptance: Results for the data, yields:\n");
     printf("                          eff-corrected                 acc. factors,%%         acceptance-corrected        syst-err-acc%%,   Theory_Err%% \n");
-    for(int i=0; i<nMassBins; i++){
+    for(int i=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi) {
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
 	printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %8.1f +- %7.1f +- %7.1f   %5.2f +- %5.2f      %9.1f +- %8.1f +- %8.1f        %4.2f     %4.2f\n",
-	       massBinLimits[i],massBinLimits[i+1],
+	       DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi],rapidityBinLimits[yi+1],
 	       vin[i][yi], vinStatErr[i][yi], vinSystErr[i][yi],
 	       acceptanceMatrix[i][yi]*100, acceptanceErrMatrix[i][yi]*100, 
@@ -792,7 +792,7 @@ void  fsrCorrectionBase(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystEr
   // Check that the binning is consistent
   bool checkResult = true;
   if (checkResult) checkResult=unfolding::checkRangesMY(fsrCorrectionMatrix,"fsrCorrectionMatrix");
-  //if( fsrCorrectionArray.GetNoElements() != nMassBins) checkResult = false;
+  //if( fsrCorrectionArray.GetNoElements() != DYTools::nMassBins) checkResult = false;
   if( !checkResult ){
     printf("FsrCorrectionBase: ERROR: inconsistent binning in the inputs\n");
     assert(0);
@@ -801,9 +801,9 @@ void  fsrCorrectionBase(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystEr
 
   // Apply the correction
 
-  TMatrixD systErrorPropagated(nMassBins,nMaxYBins);
-  for(int i=0; i<nMassBins; i++){
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  TMatrixD systErrorPropagated(DYTools::nMassBins,nMaxYBins);
+  for(int i=0; i<DYTools::nMassBins; i++){
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       double fsrFactor = fsrCorrectionMatrix[i][yi];
       double fsrErr    = fsrCorrectionErrMatrix[i][yi];
       vout[i][yi]        = vin[i][yi] / fsrFactor;
@@ -818,11 +818,11 @@ void  fsrCorrectionBase(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystEr
   printf("\n"); // FsrCorrection
   std::cout << title <<" : Results for the data, yields:\n";
   printf("                          acc-corrected               fsr. factors            fsr-corrected                  sys-err-fsr\n");
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       printf("%4.0f-%4.0f  %4.2f-%4.2f  %9.1f +- %8.1f +- %8.1f   %4.3f +- %4.3f      %9.1f +- %8.1f +- %8.1f        %5.2f\n",
-	     massBinLimits[i],massBinLimits[i+1],
+	     DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	     rapidityBinLimits[yi],rapidityBinLimits[yi+1],
 	     vin[i][yi], vinStatErr[i][yi], vinSystErr[i][yi],
 	     fsrCorrectionMatrix[i][yi], fsrCorrectionErrMatrix[i][yi], 
@@ -859,7 +859,7 @@ void  fsrCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
   // Check that the binning is consistent
   bool checkResult = true;
   if (checkResult) checkResult=unfolding::checkRangesMY(fsrCorrectionMatrix,"fsrCorrectionMatrix");
-  //if( fsrCorrectionArray.GetNoElements() != nMassBins) checkResult = false;
+  //if( fsrCorrectionArray.GetNoElements() != DYTools::nMassBins) checkResult = false;
   if( !checkResult ){
     printf("FsrCorrection: ERROR: inconsistent binning in the inputs\n");
     assert(0);
@@ -868,9 +868,9 @@ void  fsrCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
 
   // Apply the correction
 
-  TMatrixD systErrorPropagated(nMassBins,nMaxYBins);
-  for(int i=0; i<nMassBins; i++){
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  TMatrixD systErrorPropagated(DYTools::nMassBins,nMaxYBins);
+  for(int i=0; i<DYTools::nMassBins; i++){
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       double fsrFactor = fsrCorrectionMatrix[i][yi];
       double fsrErr    = fsrCorrectionErrMatrix[i][yi];
       vout[i][yi]        = vin[i][yi] / fsrFactor;
@@ -883,11 +883,11 @@ void  fsrCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
 
   printf("\nFsrCorrection: Results for the data, yields:\n");
   printf("                          acc-corrected               fsr. factors            fsr-corrected                  sys-err-fsr\n");
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       printf("%4.0f-%4.0f  %4.2f-%4.2f  %9.1f +- %8.1f +- %8.1f   %4.3f +- %4.3f      %9.1f +- %8.1f +- %8.1f        %5.2f\n",
-	     massBinLimits[i],massBinLimits[i+1],
+	     DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	     rapidityBinLimits[yi],rapidityBinLimits[yi+1],
 	     vin[i][yi], vinStatErr[i][yi], vinSystErr[i][yi],
 	     fsrCorrectionMatrix[i][yi], fsrCorrectionErrMatrix[i][yi], 
@@ -919,7 +919,7 @@ void  fsrCorrectionSansAcceptance(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD 
   
   // Check that the binning is consistent
   bool checkResult = true;
-  //if( fsrCorrectionArray.GetNoElements() != nMassBins) checkResult = false;
+  //if( fsrCorrectionArray.GetNoElements() != DYTools::nMassBins) checkResult = false;
   if (checkResult) checkResult=unfolding::checkRangesMY(fsrCorrectionArray,"fsrCorrectionArray");
   if( !checkResult ){
     printf("FsrCorrectionSansAcceptance: ERROR: inconsistent binning in the inputs\n");
@@ -931,8 +931,8 @@ void  fsrCorrectionSansAcceptance(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD 
   assert(0);
   /*
   // Apply the correction
-  TMatrixD systErrorPropagated(nMassBins,nMaxYBins);
-  for(int i=0; i<nMassBins; i++){
+  TMatrixD systErrorPropagated(DYTools::nMassBins,nMaxYBins);
+  for(int i=0; i<DYTools::nMassBins; i++){
     double fsrFactor = fsrCorrectionArray[i];
     double fsrErr    = fsrCorrectionErrArray[i];
     vout[i]        = vin[i] / fsrFactor;
@@ -945,9 +945,9 @@ void  fsrCorrectionSansAcceptance(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD 
   printf("\nThis printout below is FSR correction being applied to data without acceptance correction.\n");
   printf("\nFsrCorrectionSansAcceptance: Results for the data, yields:\n");
   printf("                acc-corrected                 fsr. factors             fsr-corrected                  sys-err-fsr\n");
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %4.3f +- %4.3f      %9.1f +- %8.1f +- %8.1f        %5.2f\n",
-	   massBinLimits[i],massBinLimits[i+1],
+	   DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	   vin[i], vinStatErr[i], vinSystErr[i],
 	   fsrCorrectionArray[i], fsrCorrectionErrArray[i], 
 	   vout[i], voutStatErr[i], voutSystErr[i],
@@ -967,8 +967,8 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
 {
 
   // Find absolute cross-section
-  for(int i=0; i<nMassBins; i++) {
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for(int i=0; i<DYTools::nMassBins; i++) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       vout[i][yi] = vin[i][yi] / lumi;
       voutStatErr[i][yi] = vinStatErr[i][yi] / lumi;
       voutSystErr[i][yi] = vinSystErr[i][yi] / lumi;
@@ -984,14 +984,14 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
 
   TVectorD xsecRefV(nMaxYBins),xsecRefStatErrV(nMaxYBins), xsecRefSystErrV(nMaxYBins);
   xsecRefV=0; xsecRefStatErrV=0; xsecRefSystErrV=0;
-  int lowYBins=nYBins[low];
+  int lowYBins=DYTools::nYBins[low];
 
   for( int i=low; i<=high; i++){
-    if (lowYBins!=nYBins[i]) {
+    if (lowYBins!=DYTools::nYBins[i]) {
       std::cout << "y binning error in crossSections. Correct the code: wrong assumption\n";
       assert(0);
     }
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       xsecReference += vout[i][yi];
       xsecReferenceStatErr += voutStatErr[i][yi] * voutStatErr[i][yi];
       xsecReferenceSystErr += voutSystErr[i][yi] * voutSystErr[i][yi];
@@ -1009,8 +1009,8 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
   }
 
   // Find normalized cross-section
-  for(int i=0; i<nMassBins; i++) {
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for(int i=0; i<DYTools::nMassBins; i++) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       voutNorm[i][yi] = vout[i][yi] / xsecReference;
       voutNormStatErr[i][yi] = voutNorm[i][yi]
 	* sqrt( SQR(xsecReferenceStatErr) / SQR(xsecReference)
@@ -1035,10 +1035,10 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
     printf("\nPre FSR cross sections: :\n");
     printf("                    absolute                       normalized +- stat +- sys (total)           (1/sigma)(1/dM)norm +-stat +-syst (total) \n");
   }
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi) {
-      double binw = massBinLimits[i+1] - massBinLimits[i];
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+      double binw = DYTools::massBinLimits[i+1] - DYTools::massBinLimits[i];
       normXSec[i][yi]=voutNorm[i][yi];
       normXSecErrStat[i][yi]=voutNormStatErr[i][yi];
       normXSecErrSyst[i][yi]=voutNormSystErr[i][yi];
@@ -1051,7 +1051,7 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
 
       if (printPreFSRCrossSectionTable) {
 	printf("%4.0f-%4.0f  %4.2f-%4.2f    %6.1f +- %4.1f +- %4.1f      %1.6f +- %1.6f +- %1.6f  ( %1.6f )     %1.8f +- %1.8f +- %1.8f  ( %1.8f )    \n",
-	       massBinLimits[i],massBinLimits[i+1],
+	       DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi],rapidityBinLimits[yi+1],
 	       vout[i][yi], voutStatErr[i][yi], voutSystErr[i][yi],
 	       voutNorm[i][yi], voutNormStatErr[i][yi], voutNormSystErr[i][yi],
@@ -1066,7 +1066,7 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
 
   TString outputDir(TString("../root_files/"));
   gSystem->mkdir(outputDir,kTRUE);
-  TString xSecResultFileName(outputDir+TString("/xSec_results_") + analysisTag + TString("_") +
+  TString xSecResultFileName(outputDir+TString("/xSec_results_") + DYTools::analysisTag + TString("_") +
 			     triggers.triggerConditionsName() + TString(".root"));
   std::cout << "xSecResultFileName= " << xSecResultFileName << "\n";
   TFile fa(xSecResultFileName,"recreate");
@@ -1197,7 +1197,7 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
   }
   TString outputDir1(TString("../root_files/"));
   gSystem->mkdir(outputDir1,kTRUE);
-  TString xSecResultFileName1(outputDir1+TString("/xSecTh_results_") + analysisTag + TString("_") +
+  TString xSecResultFileName1(outputDir1+TString("/xSecTh_results_") + DYTools::analysisTag + TString("_") +
 			      triggers.triggerConditionsName() + TString(".root"));
   std::cout << "xSecResultFileName1=" << xSecResultFileName1 << "\n";
   TFile fb(xSecResultFileName1,"recreate");
@@ -1206,7 +1206,7 @@ void  crossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
   fb.Close();
 
   printf("\nPre FSR cross-section in the Z peak from %3.0f to %3.0f:\n",
-	 massBinLimits[low], massBinLimits[high+1]);
+	 DYTools::massBinLimits[low], DYTools::massBinLimits[high+1]);
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
 //     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
@@ -1220,8 +1220,8 @@ void  crossSectionsDET(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr
 {
 
   // Find absolute cross-section
-  for(int i=0; i<nMassBins; i++) {
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for(int i=0; i<DYTools::nMassBins; i++) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       vout[i][yi] = vin[i][yi] / lumi;
       voutStatErr[i][yi] = vinStatErr[i][yi] / lumi;
       voutSystErr[i][yi] = vinSystErr[i][yi] / lumi;
@@ -1236,7 +1236,7 @@ void  crossSectionsDET(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr
   double xsecReferenceSystErr = 0;
 
   for( int i=low; i<=high; i++){
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       xsecReference += vout[i][yi];
       xsecReferenceStatErr += voutStatErr[i][yi] * voutStatErr[i][yi];
       xsecReferenceSystErr += voutSystErr[i][yi] * voutSystErr[i][yi];
@@ -1247,8 +1247,8 @@ void  crossSectionsDET(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr
   xsecReferenceSystErr = sqrt(xsecReferenceSystErr);
 
   // Find normalized cross-section
-  for(int i=0; i<nMassBins; i++) {
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for(int i=0; i<DYTools::nMassBins; i++) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       voutNorm[i][yi] = vout[i][yi] / xsecReference;
       voutNormStatErr[i][yi] = voutNorm[i][yi]
 	* sqrt( SQR(xsecReferenceStatErr) / SQR(xsecReference)
@@ -1262,12 +1262,12 @@ void  crossSectionsDET(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr
   if (printPreFSR_DET_ShapeTable) {
     printf("\nPre FSR DET shape: :\n");
     printf("                    absolute                      normalized +-stat +-sys (total)\n");
-    for(int i=0; i<nMassBins; i++){
+    for(int i=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi) {
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
 	printf("%4.0f-%4.0f  %4.2f-%4.2f    %6.1f +- %4.1f +- %4.1f      %1.6f +- %1.6f +- %1.6f  ( %1.6f )\n",
 	       //    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %1.6f +- %1.6f +- %1.6f  ( %1.6f )\n",
-	       massBinLimits[i],massBinLimits[i+1],
+	       DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi], rapidityBinLimits[yi+1],
 	       vout[i][yi], voutStatErr[i][yi], voutSystErr[i][yi],
 	       voutNorm[i][yi], voutNormStatErr[i][yi], voutNormSystErr[i][yi],
@@ -1277,7 +1277,7 @@ void  crossSectionsDET(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr
     }
   }
   printf("\nPreFsr cross-section in the Z peak from %3.0f to %3.0f:\n",
-	 massBinLimits[low], massBinLimits[high+1]);
+	 DYTools::massBinLimits[low], DYTools::massBinLimits[high+1]);
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
   return;
@@ -1290,8 +1290,8 @@ void  postFsrCrossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
 {
 
   // Find absolute cross-section
-  for(int i=0; i<nMassBins; i++) {
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for(int i=0; i<DYTools::nMassBins; i++) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       vout[i][yi] = vin[i][yi] / lumi;
       voutStatErr[i][yi] = vinStatErr[i][yi] / lumi;
       voutSystErr[i][yi] = vinSystErr[i][yi] / lumi;
@@ -1305,7 +1305,7 @@ void  postFsrCrossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
   double xsecReferenceStatErr = 0;
   double xsecReferenceSystErr = 0;
   for( int i=low; i<=high; i++){
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       xsecReference += vout[i][yi];
       xsecReferenceStatErr += voutStatErr[i][yi] * voutStatErr[i][yi];
       xsecReferenceSystErr += voutSystErr[i][yi] * voutSystErr[i][yi];
@@ -1316,8 +1316,8 @@ void  postFsrCrossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
   xsecReferenceSystErr = sqrt(xsecReferenceSystErr);
 
   // Find normalized cross-section
-  for(int i=0; i<nMassBins; i++) {
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for(int i=0; i<DYTools::nMassBins; i++) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       voutNorm[i][yi] = vout[i][yi] / xsecReference;
       voutNormStatErr[i][yi] = voutNorm[i][yi]
 	* sqrt( SQR(xsecReferenceStatErr) / SQR(xsecReference)
@@ -1331,12 +1331,12 @@ void  postFsrCrossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
   if (printPostFSRCrossSectionTable) {
     printf("\nPost FSR cross section: :\n");
     printf("                    absolute                      normalized +-stat +-sys (total)\n");
-    for(int i=0; i<nMassBins; i++){
+    for(int i=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi) {
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
 	printf("%4.0f-%4.0f  %4.2f-%4.2f    %6.1f +- %4.1f +- %4.1f      %1.6f +- %1.6f +- %1.6f  ( %1.6f )\n",
 	       //    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %1.6f +- %1.6f +- %1.6f  ( %1.6f )\n",
-	       massBinLimits[i],massBinLimits[i+1],
+	       DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi], rapidityBinLimits[yi+1],
 	       vout[i][yi], voutStatErr[i][yi], voutSystErr[i][yi],
 	       voutNorm[i][yi], voutNormStatErr[i][yi], voutNormSystErr[i][yi],
@@ -1346,7 +1346,7 @@ void  postFsrCrossSections(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
     }
   }
   printf("\nPostFsr cross-section in the Z peak from %3.0f to %3.0f:\n",
-	 massBinLimits[low], massBinLimits[high+1]);
+	 DYTools::massBinLimits[low], DYTools::massBinLimits[high+1]);
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
 //     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
@@ -1360,8 +1360,8 @@ void  postFsrCrossSectionsDET(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vin
 {
   
   // Find absolute cross-section
-  for(int i=0; i<nMassBins; i++) {
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for(int i=0; i<DYTools::nMassBins; i++) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       vout[i][yi] = vin[i][yi] / lumi;
       voutStatErr[i][yi] = vinStatErr[i][yi] / lumi;
       voutSystErr[i][yi] = vinSystErr[i][yi] / lumi;
@@ -1375,7 +1375,7 @@ void  postFsrCrossSectionsDET(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vin
   double xsecReferenceStatErr = 0;
   double xsecReferenceSystErr = 0;
   for( int i=low; i<=high; i++){
-    for ( int yi=0; yi<nYBins[i]; ++yi) {
+    for ( int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       xsecReference += vout[i][yi];
       xsecReferenceStatErr += voutStatErr[i][yi] * voutStatErr[i][yi];
       xsecReferenceSystErr += voutSystErr[i][yi] * voutSystErr[i][yi];
@@ -1385,8 +1385,8 @@ void  postFsrCrossSectionsDET(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vin
   xsecReferenceSystErr = sqrt(xsecReferenceSystErr);
 
   // Find normalized cross-section
-  for(int i=0; i<nMassBins; i++) {
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+  for(int i=0; i<DYTools::nMassBins; i++) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       voutNorm[i][yi] = vout[i][yi] / xsecReference;
       voutNormStatErr[i][yi] = voutNorm[i][yi]
 	* sqrt( SQR(xsecReferenceStatErr) / SQR(xsecReference)
@@ -1400,11 +1400,11 @@ void  postFsrCrossSectionsDET(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vin
   if (printPostFSR_DET_ShapeTable) {
     printf("\nPost FSR DET shape: :\n");
     printf("                    absolute                     normalized +-stat +-sys (total)\n");
-    for(int i=0; i<nMassBins; i++){
+    for(int i=0; i<DYTools::nMassBins; i++){
       double *rapidityBinLimits=DYTools::getYBinLimits(i);
-      for (int yi=0; yi<nYBins[i]; ++yi) {
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
 	printf("%4.0f-%4.0f  %4.2lf-%4.2lf    %6.1f +- %4.1f +- %4.1f      %1.6f +- %1.6f +- %1.6f  ( %1.6f )\n",
-	       massBinLimits[i],massBinLimits[i+1],
+	       DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi], rapidityBinLimits[yi+1],
 	       vout[i][yi], voutStatErr[i][yi], voutSystErr[i][yi],
 	       voutNorm[i][yi], voutNormStatErr[i][yi], voutNormSystErr[i][yi],
@@ -1425,9 +1425,9 @@ void printTableForNotes(const TMatrixD& obs, const TMatrixD& obsErr,
 
   printf("\n\nLatex table for notes\n");
   printf("               obs-bg                  unfolded                 eff-corrected                acc-corrected              fsr-corrected\n");
-  for(int i=0; i<nMassBins; i++){
-    for (int yi=0; yi<nYBins[i]; ++yi) {
-      printf("$%4.0f-%4.0f$ &", massBinLimits[i],massBinLimits[i+1]);
+  for(int i=0; i<DYTools::nMassBins; i++){
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+      printf("$%4.0f-%4.0f$ &", DYTools::massBinLimits[i],DYTools::massBinLimits[i+1]);
       printf(" yiRange=%2d &$",yi+1);
       printf(" %8.1f \\pm %6.1f $&$", obs[i][yi] , obsErr[i][yi]);
       printf(" %8.1f \\pm %6.1f $&$", unf[i][yi] , unfErr[i][yi]);
@@ -1496,9 +1496,9 @@ void printAllCorrections(){
   fout << "\\\\ \\hline\n";
 
   char buf[200];
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       double effFactor = efficiencyArray[i][yi] * rhoDataMc[i];
 //     double effErr = effFactor
 //       * sqrt( efficiencyErrArray[i]*efficiencyErrArray[i]/efficiencyArray[i]/efficiencyArray[i]
@@ -1517,7 +1517,7 @@ void printAllCorrections(){
       double fsrFactorSansAcc = fsrCorrectionSansAccArray[i][yi];
       double fsrErrSansAcc    = fsrCorrectionSansAccErrArray[i][yi];
 
-      sprintf(buf,"$ %4.0f-%4.0f $&", massBinLimits[i],massBinLimits[i+1]);
+      sprintf(buf,"$ %4.0f-%4.0f $&", DYTools::massBinLimits[i],DYTools::massBinLimits[i+1]);
       fout << buf;
       sprintf(buf,"$ %4.2f-%4.2f $&", rapidityBinLimits[yi],rapidityBinLimits[yi+1]);
       fout << buf;
@@ -1560,9 +1560,9 @@ void printRelativeSystErrors(){
   fout << "\\\\ \\hline\n";
 
   char buf[200];
-  for(int i=0; i<nMassBins; i++){
+  for(int i=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<nYBins[i]; ++yi) {
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
       // Factor out theory error from the total acceptance error
       double systAcceptanceExpRelative 
 	= sqrt( systAcceptanceRelative[i][yi]*systAcceptanceRelative[i][yi]
@@ -1573,7 +1573,7 @@ void printRelativeSystErrors(){
 			+ systBackgrRelative[i][yi]*systBackgrRelative[i][yi]
 			+ systUnfoldRelative[i][yi]*systUnfoldRelative[i][yi]
 			+ systAcceptanceExpRelative*systAcceptanceExpRelative);
-      sprintf(buf,"$%4.0f-%4.0f $&$ %4.2f-%4.2f $&", massBinLimits[i],massBinLimits[i+1],rapidityBinLimits[yi],rapidityBinLimits[yi+1]);
+      sprintf(buf,"$%4.0f-%4.0f $&$ %4.2f-%4.2f $&", DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],rapidityBinLimits[yi],rapidityBinLimits[yi+1]);
       fout << buf;
       sprintf(buf,"$  %5.1f  $&$ %5.1f $&$ %5.1f $&$ %5.1f $&$ %5.1f $&$ %5.1f $&$ %5.1f $ \\\\" ,
 	      100*systEscaleRelative[i][yi], 
