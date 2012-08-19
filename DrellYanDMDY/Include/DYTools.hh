@@ -64,7 +64,7 @@ namespace DYTools {
 
   // Tag and probe fitting constants
   typedef enum {COUNTnCOUNT, COUNTnFIT, FITnFIT} TTnPMethod_t;
-  typedef enum {RECO=0, ID=1, HLT=2} TEfficiencyKind_t;
+  typedef enum {RECO=0, ID=1, HLT=2, HLT_leg1, HLT_leg2} TEfficiencyKind_t;
  
 
   //
@@ -326,7 +326,7 @@ namespace DYTools {
   //
   // Define Et and Eta binning
   //
-  typedef enum {ETBINS1=1, ETBINS5, ETBINS6} TEtBinSet_t;
+  typedef enum {ETBINS_UNDEFINED=-1, ETBINS1=1, ETBINS5, ETBINS6, ETBINS7, ETBINS8, ETBINS9} TEtBinSet_t;
   const int nEtBins1 = 1;
   const double etBinLimits1[nEtBins1 + 1] = 
     {10, 500};
@@ -336,17 +336,31 @@ namespace DYTools {
   const int nEtBins6 = 6;
   const double etBinLimits6[nEtBins6 + 1] = 
     {10, 15, 20, 30, 40, 50, 500};
+  const int nEtBins7 = 7;
+  const double etBinLimits7[nEtBins7 + 1] = 
+    {10, 15, 20, 30, 40, 50, 100, 500};
+  const int nEtBins8 = 8;
+  const double etBinLimits8[nEtBins8 + 1] = 
+    {10, 15, 20, 30, 40, 50, 75, 100, 500};
+  const int nEtBins9 = 9;
+  const double etBinLimits9[nEtBins9 + 1] = 
+    {10, 15, 20, 30, 40, 50, 75, 100, 125, 500};
+
+  const int nEtBinsMax = nEtBins9;
+
 
   inline 
   int getNEtBins(int binning){
     int n=0;
-    if( binning == ETBINS1 ){
-      n = nEtBins1;
-    }else if( binning == ETBINS5 ){
-      n = nEtBins5;
-    }else if( binning == ETBINS6 ){
-      n = nEtBins6;
-    }else{
+    switch(binning) {
+    case ETBINS_UNDEFINED: n = 0; break;
+    case ETBINS1: n = nEtBins1; break;
+    case ETBINS5: n = nEtBins5; break;
+    case ETBINS6: n = nEtBins6; break;
+    case ETBINS7: n = nEtBins7; break;
+    case ETBINS8: n = nEtBins8; break;
+    case ETBINS9: n = nEtBins9; break;
+    default:
       printf("ERROR: unknown binning requested\n");
       n=0;
     }
@@ -358,14 +372,16 @@ namespace DYTools {
     int n = getNEtBins(binning);
     double *limitsOut = new double[n+1];
     const double *limits = NULL;
-    if( binning == ETBINS1 ){
-      limits = etBinLimits1;
-    }else if( binning == ETBINS5 ){
-      limits = etBinLimits5;
-    }else if( binning == ETBINS6 ){
-      limits = etBinLimits6;
-    }else{
-      printf("ERROR: unknown binning requested\n");
+    switch(binning) {
+    case ETBINS1: limits=etBinLimits1; break;
+    case ETBINS5: limits=etBinLimits5; break;
+    case ETBINS6: limits=etBinLimits6; break;
+    case ETBINS7: limits=etBinLimits7; break;
+    case ETBINS8: limits=etBinLimits8; break;
+    case ETBINS9: limits=etBinLimits9; break;
+    default:
+      printf("ERROR: unknown/undefined binning requested\n");
+      assert(0);
     }
     for(int i=0; i<=n; i++)
       limitsOut[i] = limits[i];
@@ -389,28 +405,59 @@ namespace DYTools {
     return result;
   };
 
-  typedef enum {ETABINS1, ETABINS2, ETABINS5} TEtaBinSet_t;
+  typedef enum {ETABINS_UNDEFINED=-1, ETABINS1=1, ETABINS2, ETABINS2Negs, ETABINS5, ETABINS5Negs, ETABINS4test, ETABINS4testNegs,  ETABINS4alt, ETABINS4altNegs, ETABINS5alt, ETABINS5altNegs} TEtaBinSet_t;
   const int nEtaBins1 = 1;
   const double etaBinLimits1[nEtBins1 + 1] = 
     {0, 2.5000001};
   const int nEtaBins2 = 2;
   const double etaBinLimits2[nEtaBins2 + 1] = 
     {0, 1.479, 2.5000001};
+  const int nEtaBins2Negs = 4;
+  const double etaBinLimits2Negs[nEtaBins2Negs + 1] = 
+    {-2.500001, -1.479, 0, 1.479, 2.5000001};
   const int nEtaBins5 = 5;
   const double etaBinLimits5[nEtaBins5 + 1] =
     {0, 0.8, 1.4442, 1.566, 2.0, 2.500001 };
+  const int nEtaBins4test = 4;
+  const double etaBinLimits4test[nEtaBins4test + 1] =
+    {0, 0.8, 1.479, 2.0, 2.500001 };
+  const int nEtaBins4testNegs = 8;
+  const double etaBinLimits4testNegs[nEtaBins4testNegs + 1] =
+    {-2.50001, -2.0, -1.479, -0.8, 0, 0.8, 1.479, 2.0, 2.500001 };
+  const int nEtaBins4alt = 4;
+  const double etaBinLimits4alt[nEtaBins4alt + 1 ] = 
+    {0, 0.8, 1.479, 2.2, 2.500001 };
+  const int nEtaBins4altNegs = 8;
+  const double etaBinLimits4altNegs[nEtaBins4altNegs + 1 ] =
+    {-2.500001, -2.2, -1.479, -0.8, 0, 0.8, 1.479, 2.2, 2.500001 };
+  const int nEtaBins5alt = 5;
+  const double etaBinLimits5alt[nEtaBins5alt + 1 ] = 
+    {0, 0.8, 1.4442, 1.556, 2.2, 2.500001 };
+  const int nEtaBins5altNegs = 10;
+  const double etaBinLimits5altNegs[nEtaBins5altNegs + 1 ] =
+    {-2.500001, -2.2, -1.556, -1.4442, -0.8, 0, 0.8, 1.4442, 1.556, 2.2, 2.500001 };
+
+  const int nEtaBinsMax= nEtaBins5altNegs;
+
 
   inline 
   int getNEtaBins(int binning){
     int n=0;
-    if( binning == ETABINS1 ){
-      n = nEtaBins1;
-    }else if( binning == ETABINS2 ){
-      n = nEtaBins2;
-    }else if( binning == ETABINS5 ){
-      n = nEtaBins5;
-    }else{
+    switch(binning) {
+    case ETABINS_UNDEFINED: n = 0; break;
+    case ETABINS1: n = nEtaBins1; break;
+    case ETABINS2: n = nEtaBins2; break;
+    case ETABINS2Negs: n = nEtaBins2Negs; break;
+    case ETABINS5: n = nEtaBins5; break;
+    case ETABINS4test: n = nEtaBins4test; break;
+    case ETABINS4testNegs: n = nEtaBins4testNegs; break;
+    case ETABINS4alt: n = nEtaBins4alt; break;
+    case ETABINS4altNegs: n = nEtaBins4altNegs; break;
+    case ETABINS5alt: n = nEtaBins5alt; break;
+    case ETABINS5altNegs: n = nEtaBins5altNegs; break;
+    default:
       printf("ERROR: unknown binning requested\n");
+      assert(0);
       n=0;
     }
     return n;
@@ -421,18 +468,22 @@ namespace DYTools {
     int n = getNEtaBins(binning);
     double *limitsOut = new double[n+1];
     const double *limits = NULL;
-    if( binning == ETABINS1 ){
-      limits = etaBinLimits1;
-    }else if( binning == ETABINS2 ){
-      limits = etaBinLimits2;
-    }else if( binning == ETABINS5 ){
-      limits = etaBinLimits5;
-    }else{
-      printf("ERROR: unknown binning requested\n");
+    switch(binning) {
+    case ETABINS1: limits = etaBinLimits1; break;
+    case ETABINS2: limits = etaBinLimits2; break;
+    case ETABINS2Negs: limits = etaBinLimits2Negs; break;
+    case ETABINS5: limits = etaBinLimits5; break;
+    case ETABINS4test: limits = etaBinLimits4test; break;
+    case ETABINS4testNegs: limits = etaBinLimits4testNegs; break;
+    case ETABINS4alt: limits = etaBinLimits4alt; break;
+    case ETABINS4altNegs: limits = etaBinLimits4altNegs; break;
+    case ETABINS5alt: limits = etaBinLimits5alt; break;
+    case ETABINS5altNegs: limits = etaBinLimits5altNegs; break;
+    default:
+      printf("ERROR: unknown/undefined binning requested\n");
+      assert(0);
+      n=0;
     }
-    for(int i=0; i<=n; i++)
-      limitsOut[i] = limits[i];
-    
     return limitsOut;
   }
 
