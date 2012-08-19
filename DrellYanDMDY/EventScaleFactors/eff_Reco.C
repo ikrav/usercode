@@ -210,8 +210,6 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   DYTools::TEfficiencyKind_t effType = DetermineEfficiencyKind(effTypeString);
   if ( effType != DYTools::RECO ) {
     std::cout << "effReco works with RECO efficiency only\n";
-  }
-  else {
     assert(0);
   }
   printf("Efficiency type to measure: %s\n", EfficiencyKindName(effType).Data());
