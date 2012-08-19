@@ -46,9 +46,7 @@ using namespace std;
 
 const int NEffTypes=3;
 // Declaration of arrays for systematic studies
-const int nEtBinsMax=DYTools::nEtBins6;
-const int nEtaBinsMax=DYTools::nEtaBins5;
-typedef double EffArray_t[NEffTypes][nEtBinsMax][nEtaBinsMax]; // largest storage
+typedef double EffArray_t[NEffTypes][DYTools::nEtBinsMax][DYTools::nEtaBinsMax]; // largest storage
 
 const int nexp=100;
 typedef TH1F* SystTH1FArray_t[DYTools::nMassBins][nexp];   // mass index
@@ -172,11 +170,11 @@ vector<TMatrixD*> dataEffAvgErr,mcEffAvgErr;
 EffArray_t ro_Data[nexp], ro_MC[nexp];
 
 
-int etBinning=-1;
+DYTools::TEtBinSet_t etBinning= DYTools::ETBINS_UNDEFINED;
 int etBinCount=0;
 double *etBinLimits=NULL;
 
-int etaBinning=-1;
+DYTools::TEtaBinSet_t etaBinning= DYTools::ETABINS_UNDEFINED;
 int etaBinCount=0;
 double *etaBinLimits=NULL;
 
@@ -243,13 +241,13 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   etaBinCount=DYTools::getNEtaBins(etaBinning);
   etaBinLimits=DYTools::getEtaBinLimits(etaBinning);
 
-  if (etBinCount>nEtBinsMax) {
-    printf("ERROR in the code: etBinCount=%d, hard-coded nEtBinsMax=%d\n",etBinCount,nEtBinsMax);
+  if (etBinCount>DYTools::nEtBinsMax) {
+    printf("ERROR in the code: etBinCount=%d, hard-coded DYTools::nEtBinsMax=%d\n",etBinCount,DYTools::nEtBinsMax);
     std::cout << std::endl;
     assert(0);
   }
-  if (etaBinCount>nEtaBinsMax) {
-    printf("ERROR in the code: etaBinCount=%d, hard-coded nEtaBinsMax=%d\n",etaBinCount,nEtaBinsMax);
+  if (etaBinCount>DYTools::nEtaBinsMax) {
+    printf("ERROR in the code: etaBinCount=%d, hard-coded DYTools::nEtaBinsMax=%d\n",etaBinCount,DYTools::nEtaBinsMax);
     std::cout << std::endl;
     assert(0);
   }
@@ -377,8 +375,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   for (int i=0; i<nexp; i++) {
     EffArray_t *arr= & ro_Data[i];
     for (int kind=0; kind<NEffTypes; ++kind) {
-      for (int iEt=0; iEt<nEtBinsMax; ++iEt) {
-	for (int iEta=0; iEta<nEtaBinsMax; ++iEta) {
+      for (int iEt=0; iEt<DYTools::nEtBinsMax; ++iEt) {
+	for (int iEta=0; iEta<DYTools::nEtaBinsMax; ++iEta) {
 	  (*arr)[kind][iEt][iEta]=
 	    (debug_pseudo_exps) ? ((kind+1)*100 + (iEt+1)*10 + iEta+1) :
 	    gRandom->Gaus(0.0,1.0);
@@ -387,8 +385,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     }
     arr= & ro_MC[i];
     for (int kind=0; kind<NEffTypes; ++kind) {
-      for (int iEt=0; iEt<nEtBinsMax; ++iEt) {
-	for (int iEta=0; iEta<nEtaBinsMax; ++iEta) {
+      for (int iEt=0; iEt<DYTools::nEtBinsMax; ++iEt) {
+	for (int iEta=0; iEta<DYTools::nEtaBinsMax; ++iEta) {
 	  (*arr)[kind][iEt][iEta]=
 	    (debug_pseudo_exps) ? -((kind+1)*100 + (iEt+1)*10 + iEta+1) :
 	    gRandom->Gaus(0.0,1.0);

@@ -46,6 +46,7 @@
 #include "../Include/TElectron.hh"
 #include "../Include/TVertex.hh"
 #include "../Include/DYTools.hh"
+#include "../Include/DYToolsUI.hh"
 #include "../Include/EleIDCuts.hh"
 #include "../Include/TriggerSelection.hh"
 
@@ -205,36 +206,23 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
     assert(0);
   printf("Efficiency calculation method: %s\n", calcMethodString.Data());
 
-  int effType = 0;
-  if(effTypeString == "ID")
-    effType = DYTools::ID;
-  else if(effTypeString == "HLT")
-    effType = DYTools::HLT;
-  else
-    assert(0);
-  printf("Efficiency type to measure: %s\n", effTypeString.Data());
+  DYTools::TEfficiencyKind_t effType = DetermineEfficiencyKind(effTypeString);
+  switch(effType) {
+  case DYTools::ID:
+  case DYTools::HLT:
+  case DYTools::HLT_leg1:
+  case DYTools::HLT_leg2:
+    break;
+  default:
+    std::cout << "eff_IdHlt does not work with <" << EfficiencyKindName(effType) << "> efficiency\n";
+  }
+  printf("Efficiency type to measure: %s\n", EfficiencyKindName(effType).Data());
 
-  int etBinning = 0;
-  if(etBinningString == "ETBINS1")
-    etBinning = DYTools::ETBINS1;
-  else if(etBinningString == "ETBINS5")
-    etBinning = DYTools::ETBINS5;
-  else if(etBinningString == "ETBINS6")
-    etBinning = DYTools::ETBINS6;
-  else
-    assert(0);
-  printf("SC ET binning: %s\n", etBinningString.Data());
+  DYTools::TEtBinSet_t etBinning = DetermineEtBinSet(etBinningString);
+  printf("SC ET binning: %s\n", EtBinSetName(etBinning).Data());
 
-  int etaBinning = 0;
-  if(etaBinningString == "ETABINS1")
-    etaBinning = DYTools::ETABINS1;
-  else if(etaBinningString == "ETABINS2")
-    etaBinning = DYTools::ETABINS2;
-  else if(etaBinningString == "ETABINS5")
-    etaBinning = DYTools::ETABINS5;
-  else
-    assert(0);
-  printf("SC eta binning: %s\n", etaBinningString.Data());
+  DYTools::TEtaBinSet_t etaBinning = DetermineEtaBinSet(etaBinningString);
+  printf("SC eta binning: %s\n", EtaBinSetName(etaBinning).Data());
 
   int sample;
   if(sampleTypeString == "DATA")
@@ -500,10 +488,9 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	totalCandInMassWindow++;
 	//
 	// Exclude ECAL gap region (should already be done for ntuple, but just to make sure...)
-	//if (etaBinning!=ETABINS5) {
 	  if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
 	  if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
-	  //}
+
 	// ECAL acceptance cut on supercluster Et
 	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
 	totalCandInEtaAcceptance++;
@@ -550,6 +537,10 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	bool isHLTProbe2     = passID(ele2, info->rhoLowEta);
 	bool isHLTProbePass1 = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit) );
 	bool isHLTProbePass2 = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit) );
+	bool isHLTProbePass1tight = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit_Tight) );
+	bool isHLTProbePass2tight = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit_Tight) );
+	bool isHLTProbePass1loose = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit_Loose) );
+	bool isHLTProbePass2loose = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit_Loose) );
 
 	// 
 	//  Apply tag and probe, and accumulate counters or histograms
@@ -559,12 +550,14 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	bool isProbe2     = false;
 	bool isProbePass1 = false;
 	bool isProbePass2 = false;
-	if( effType == DYTools::ID ){
+	switch( effType ) {
+	case DYTools::ID:
 	  isProbe1     = isIDProbe1;
 	  isProbe2     = isIDProbe2;
 	  isProbePass1 = isIDProbePass1;
 	  isProbePass2 = isIDProbePass2;
-	}else if( effType == DYTools::HLT ){
+	  break;
+	case DYTools::HLT:
 	  isProbe1     = isHLTProbe1;
 	  isProbe2     = isHLTProbe2;
 	  isProbePass1 = isHLTProbePass1;
@@ -580,7 +573,20 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	      isTag1=0; // ignore whether ele1 can be a tag
 	    }
 	  }
-	}else {
+	  break;
+	case DYTools::HLT_leg1:
+	  isProbe1 = isHLTProbe1;
+	  isProbe2 = isHLTProbe2;
+	  isProbePass1 = isHLTProbePass1tight;
+	  isProbePass2 = isHLTProbePass2tight;
+	  break;
+	case DYTools::HLT_leg2:
+	  isProbe1 = isHLTProbe1;
+	  isProbe2 = isHLTProbe2;
+	  isProbePass1 = isHLTProbePass1loose;
+	  isProbePass2 = isHLTProbePass2loose;
+	  break;
+	default:
 	  printf("ERROR: unknown efficiency type requested\n");
 	}
 

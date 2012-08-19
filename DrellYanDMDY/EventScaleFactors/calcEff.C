@@ -47,6 +47,7 @@
 #include "../Include/TPhoton.hh"
 #include "../Include/TVertex.hh"
 #include "../Include/DYTools.hh"
+#include "../Include/DYToolsUI.hh"
 #include "../Include/EleIDCuts.hh"
 #include "../Include/TriggerSelection.hh"
 
@@ -88,7 +89,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   if (!effTypeString.Contains("RECO") &&
       !effTypeString.Contains("ID") &&
       !effTypeString.Contains("HLT")) {
-    std::cout << "calcEff: effTypeString should be \"RECO\",\"ID\" or \"HLT\"\n";
+    std::cout << "calcEff: effTypeString should be \"RECO\",\"ID\" or \"HLT*\"\n";
     return;
   }
 
@@ -182,38 +183,14 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     assert(0);
   printf("Efficiency calculation method: %s\n", calcMethodString.Data());
 
-  int effType = 0;
-  if(effTypeString == "RECO")
-    effType = DYTools::RECO;
-  else if(effTypeString == "ID")
-    effType = DYTools::ID;
-  else if(effTypeString == "HLT")
-    effType = DYTools::HLT;
-  else
-    assert(0);
-  printf("Efficiency type to measure: %s\n", effTypeString.Data());
+  DYTools::TEfficiencyKind_t effType = DetermineEfficiencyKind(effTypeString);
+  printf("Efficiency type to measure: %s\n", EfficiencyKindName(effType).Data());
 
-  int etBinning = 0;
-  if(etBinningString == "ETBINS1")
-    etBinning = DYTools::ETBINS1;
-  else if(etBinningString == "ETBINS5")
-    etBinning = DYTools::ETBINS5;
-  else if(etBinningString == "ETBINS6")
-    etBinning = DYTools::ETBINS6;
-  else
-    assert(0);
-  printf("SC ET binning: %s\n", etBinningString.Data());
+  DYTools::TEtBinSet_t etBinning = DetermineEtBinSet(etBinningString);
+  printf("SC ET binning: %s\n", EtBinSetName(etBinning).Data());
 
-  int etaBinning = 0;
-  if(etaBinningString == "ETABINS1")
-    etaBinning = DYTools::ETABINS1;
-  else if(etaBinningString == "ETABINS2")
-    etaBinning = DYTools::ETABINS2;
-  else if(etaBinningString == "ETABINS5")
-    etaBinning = DYTools::ETABINS5;
-  else
-    assert(0);
-  printf("SC eta binning: %s\n", etaBinningString.Data());
+  DYTools::TEtaBinSet_t etaBinning = DetermineEtaBinSet(etaBinningString);
+  printf("SC eta binning: %s\n", EtaBinSetName(etaBinning).Data());
 
   int sample;
   if(sampleTypeString == "DATA")

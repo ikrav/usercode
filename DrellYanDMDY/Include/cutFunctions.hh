@@ -8,6 +8,7 @@
 #include "TElectron.hh"
 #include "TPhoton.hh"
 #include "DYTools.hh"
+#include "DYToolsUI.hh"
 #include "EleIDCuts.hh"
 #include "TriggerSelection.hh"
 
@@ -23,4 +24,5 @@ bool passID(const mithep::TElectron *electron, double rho);
 
 bool isTag(const mithep::TElectron *electron, ULong_t trigger, double rho);
 
-TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, const TriggerSelection &trigSet);
+TString getLabel(int sample, DYTools::TEfficiencyKind_t effType, int method, DYTools::TEtBinSet_t etBinning, DYTools::TEtaBinSet_t etaBinning, const TriggerSelection &trigSet);
+
