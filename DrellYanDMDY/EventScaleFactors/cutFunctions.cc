@@ -103,7 +103,7 @@ bool isTag(const mithep::TElectron *electron, ULong_t trigger, double rho){
 
 // -------------------------------------------------------------------
 
-TString getLabel(int sample, int effType, int method,  int etBinning, int etaBinning, const TriggerSelection &trigSet){
+TString getLabel(int sample, DYTools::TEfficiencyKind_t effType, int method,  DYTools::TEtBinSet_t etBinning, DYTools::TEtaBinSet_t etaBinning, const TriggerSelection &trigSet){
   using namespace DYTools;
 
   TString label = analysisTag;
@@ -121,16 +121,10 @@ TString getLabel(int sample, int effType, int method,  int etBinning, int etaBin
   else
     assert(0);
 
-  if( effType == RECO )
-    label += "_reco";
-  else if( effType == ID )
-    label += "_id";
-  else if(effType == HLT ) {
-    if ((sample==DATA) && trigSet.hltEffMethodIs2011New()) label += "_hlt2011new";
-    else label += "_hlt";
-  }
-  else
-    assert(0);
+  label+= EfficiencyKindName( effType );
+  //if(effType == HLT ) {
+  //  if ((sample==DATA) && trigSet.hltEffMethodIs2011New()) label += "_hlt2011new";
+  //}
 
   if (sample != -1111) {
     if(method == COUNTnCOUNT)
