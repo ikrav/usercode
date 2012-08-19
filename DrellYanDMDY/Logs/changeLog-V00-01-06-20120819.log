@@ -1,0 +1,4 @@
+andriusj June 13, 2012
+V00-01-06 is an intermediate release before enforcing DYTools:: namespace
+
+Changes in this version: new n-tuples with new eleID and new isolation
