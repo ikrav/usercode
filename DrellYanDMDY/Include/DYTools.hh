@@ -494,6 +494,9 @@ namespace DYTools {
       assert(0);
       n=0;
     }
+    for (int i=0; i<=n; ++i) {
+      limitsOut[i] = limits[i];
+    }
     return limitsOut;
   }
 
