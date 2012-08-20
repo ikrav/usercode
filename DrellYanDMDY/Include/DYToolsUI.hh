@@ -70,6 +70,7 @@ TString EfficiencyKindName(DYTools::TEfficiencyKind_t kind) {
   case HLT: name="HLT"; break;
   case HLT_leg1: name="HLTleg1"; break;
   case HLT_leg2: name="HLTleg2"; break;
+  case HLT_rndTag: name="HLTrandomTag"; break;
   default: name="Unknown_Efficiency_Kind";
   }
   return name;
@@ -173,6 +174,7 @@ DYTools::TEfficiencyKind_t DetermineEfficiencyKind(const TString &str) {
   else if (str.Contains("ID")) kind=ID;
   else if (str.Contains("HLTleg1")) kind=HLT_leg1;
   else if (str.Contains("HLTleg2")) kind=HLT_leg2;
+  else if (str.Contains("HLTrandomTag")) kind=HLT_rndTag;
   else if (str.Contains("HLT")) kind=HLT;
   else {
     std::cout << "DetermineEfficiencyKind failed at <" << str << ">\n";
