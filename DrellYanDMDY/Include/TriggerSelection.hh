@@ -229,11 +229,17 @@ class TriggerSelection{
     // For "new" MC use only random tag and probe since Fall11 MC is DoubleEG 
     // for the signal trigger.
     //
-    if (!_isData && !(_hltEffCalcAlgo==HLTEffCalc_2011Old) ) return true;
+    if (!_isData && !(_hltEffCalcAlgo==HLTEffCalc_2011Old) ) {
+      std::cout << "trig: randomTag\n";
+      return true;
+    }
     //
     // If it is data but "old" method is requested do not use random TnP
     // If it is MC and old method is requested, do not use TnP
-    if (!_isData || (_hltEffCalcAlgo==HLTEffCalc_2011Old)) return false;
+    if (!_isData || (_hltEffCalcAlgo==HLTEffCalc_2011Old)) {
+      std::cout << "trig: not randomTag\n"; 
+      return false;
+    }
     bool yes=false;
     switch ( _hltEffCalcAlgo ) {
     case HLTEffCalc_2011New:
@@ -243,6 +249,7 @@ class TriggerSelection{
     default:
       yes=false;
     }
+    std::cout << "trig: return randomTag=" << yes << "\n";
     return yes;
   }
 
