@@ -1,5 +1,6 @@
 #if !defined(__CINT__) || defined(__MAKECINT__)
 #include "../Include/cutFunctions.hh"
+#include "../Include/DYToolsUI.hh"
 #endif
 
 Bool_t dielectronMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TDielectron *dielectron){
@@ -138,9 +139,11 @@ TString getLabel(int sample, DYTools::TEfficiencyKind_t effType, int method,  DY
   }
 
   label += "_bins-et";
-  label += getNEtBins(etBinning);
+  //label += getNEtBins(etBinning);
+  label += EtBinSetName(etBinning);
   label += "-eta";
-  label += getNEtaBins(etaBinning);
+  //label += getNEtaBins(etaBinning);
+  label += EtaBinSetName(etaBinning);
 
   return label;
 }
