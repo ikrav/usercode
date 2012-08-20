@@ -128,7 +128,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   Double_t massLow  = 60;
   Double_t massHigh = 120;
 
-  // Read in the configuratoin file
+  // Read in the configuration file
   TString sampleTypeString = "";
   TString calcMethodString = "";
   TString etBinningString  = "";
@@ -197,22 +197,24 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   }
   
   int calcMethod = 0;
+  printf("Efficiency calculation method: %s\n", calcMethodString.Data());
   if(calcMethodString == "COUNTnCOUNT")
     calcMethod = DYTools::COUNTnCOUNT;
   else if(calcMethodString == "COUNTnFIT")
     calcMethod = DYTools::COUNTnFIT;
   else if(calcMethodString == "FITnFIT")
     calcMethod = DYTools::FITnFIT;
-  else
+  else {
+    std::cout << "... identification failed" << std::endl;
     assert(0);
-  printf("Efficiency calculation method: %s\n", calcMethodString.Data());
+  }
 
   DYTools::TEfficiencyKind_t effType = DetermineEfficiencyKind(effTypeString);
+  printf("Efficiency type to measure: %s\n", EfficiencyKindName(effType).Data());
   if ( effType != DYTools::RECO ) {
     std::cout << "effReco works with RECO efficiency only\n";
     assert(0);
   }
-  printf("Efficiency type to measure: %s\n", EfficiencyKindName(effType).Data());
 
   DYTools::TEtBinSet_t etBinning = DetermineEtBinSet(etBinningString);
   printf("SC ET binning: %s\n", EtBinSetName(etBinning).Data());
@@ -221,13 +223,15 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   printf("SC eta binning: %s\n", EtaBinSetName(etaBinning).Data());
 
   int sample;
+  printf("Sample: %s\n", sampleTypeString.Data());
   if(sampleTypeString == "DATA")
     sample = DYTools::DATA;
   else if(sampleTypeString == "MC")
     sample = DYTools::MC;
-  else
+  else {
+    std::cout << "... identification failed" << std::endl;
     assert(0);
-  printf("Sample: %s\n", sampleTypeString.Data());
+  }
 
   // Correct the trigger object
   triggers.actOnData((sample==DYTools::DATA)?true:false);

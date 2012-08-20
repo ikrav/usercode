@@ -130,7 +130,14 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   Double_t massLow  = 60;
   Double_t massHigh = 120;
 
-  // Read in the configuratoin file
+  DYTools::TEfficiencyKind_t effType = DetermineEfficiencyKind(effTypeString);
+  printf("Efficiency type to measure: %s\n", EfficiencyKindName(effType).Data());
+  if ((effType!=DYTools::ID) && !DYTools::efficiencyIsHLT(effType)) {
+    std::cout << "eff_IdHlt does not work with <" << EfficiencyKindName(effType) << "> efficiency\n";
+    assert(0);
+  }
+
+  // Read in the configuration file
   TString sampleTypeString = "";
   TString calcMethodString = "";
   TString etBinningString  = "";
@@ -147,6 +154,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   string line;
   Int_t state=0;
   Int_t subState=0;
+  TString effTypeString1 = (DYTools::efficiencyIsHLT(effType)) ? "HLT" : effTypeString;
   while(getline(ifs,line)) {
     if(line[0]=='#') continue;
     if(line[0]=='%') break;
@@ -164,7 +172,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	return;
       }
       subState++;
-      if (line.find(effTypeString)!=string::npos) {
+      if (line.find(effTypeString1)!=string::npos) {
 	calcMethodString = TString(line.c_str()+pos+1);
       }
       if (subState==3) state++;
@@ -196,27 +204,17 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   ifs.close();
   
   int calcMethod = 0;
+  printf("Efficiency calculation method: %s\n", calcMethodString.Data());
   if(calcMethodString == "COUNTnCOUNT")
     calcMethod = DYTools::COUNTnCOUNT;
   else if(calcMethodString == "COUNTnFIT")
     calcMethod = DYTools::COUNTnFIT;
   else if(calcMethodString == "FITnFIT")
     calcMethod = DYTools::FITnFIT;
-  else
+  else {
+    std::cout << "... identification failed" << std::endl;
     assert(0);
-  printf("Efficiency calculation method: %s\n", calcMethodString.Data());
-
-  DYTools::TEfficiencyKind_t effType = DetermineEfficiencyKind(effTypeString);
-  switch(effType) {
-  case DYTools::ID:
-  case DYTools::HLT:
-  case DYTools::HLT_leg1:
-  case DYTools::HLT_leg2:
-    break;
-  default:
-    std::cout << "eff_IdHlt does not work with <" << EfficiencyKindName(effType) << "> efficiency\n";
   }
-  printf("Efficiency type to measure: %s\n", EfficiencyKindName(effType).Data());
 
   DYTools::TEtBinSet_t etBinning = DetermineEtBinSet(etBinningString);
   printf("SC ET binning: %s\n", EtBinSetName(etBinning).Data());
@@ -225,13 +223,15 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   printf("SC eta binning: %s\n", EtaBinSetName(etaBinning).Data());
 
   int sample;
+  printf("Sample: %s\n", sampleTypeString.Data());
   if(sampleTypeString == "DATA")
     sample = DYTools::DATA;
   else if(sampleTypeString == "MC")
     sample = DYTools::MC;
-  else
+  else {
+    std::cout << "... identification failed" << std::endl;
     assert(0);
-  printf("Sample: %s\n", sampleTypeString.Data());
+  }
 
   // Correct the trigger object
   triggers.actOnData((sample==DYTools::DATA)?true:false);
@@ -558,11 +558,14 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	  isProbePass2 = isIDProbePass2;
 	  break;
 	case DYTools::HLT:
+	case DYTools::HLT_rndTag:
 	  isProbe1     = isHLTProbe1;
 	  isProbe2     = isHLTProbe2;
 	  isProbePass1 = isHLTProbePass1;
 	  isProbePass2 = isHLTProbePass2;
-	  if (triggers.useRandomTagTnPMethod(info->runNum)) {
+	  if ((effType==DYTools::HLT_rndTag) 
+	      && triggers.useRandomTagTnPMethod(info->runNum)) {
+	    std::cout << "random tag\n";
 	    if (rnd->Uniform() <= 0.5) {
 	      // tag is 1st electron
 	      if (!isTag1) continue;
