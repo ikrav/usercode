@@ -263,6 +263,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     }
     else {
       std::cout << "selection file <" << selectEventsFName << "> created\n";
+      gBenchmark->Show("calcEventEff");
     }
     return;
   }
