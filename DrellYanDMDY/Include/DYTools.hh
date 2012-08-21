@@ -500,21 +500,46 @@ namespace DYTools {
     return limitsOut;
   }
 
+  inline
+  int signedEtaBinning(int binning) {
+    int yes=0;
+    switch(binning) {
+    case ETABINS1: 
+    case ETABINS2: 
+    case ETABINS5:
+    case ETABINS4test:
+    case ETABINS4alt:
+    case ETABINS5alt:
+      yes=0;
+      break;
+    case ETABINS2Negs: 
+    case ETABINS4testNegs:
+    case ETABINS4altNegs:
+    case ETABINS5altNegs:
+      yes=1;
+      break;
+    default:
+      printf("ERROR: unknown/undefined binning requested\n");
+      assert(0);
+    }
+    return yes;
+  }
+
   inline 
   int findEtaBin(double eta, int binning){
-    
     int result =-1;
     int n = getNEtaBins(binning);
     const double *limits = getEtaBinLimits(binning);
+    if (!signedEtaBinning(binning) && (eta<0)) eta=-eta;
     for(int ibin=0; ibin < n; ibin++){
-      if( fabs(eta) >= limits[ibin] && fabs(eta) < limits[ibin+1]) {
+      if( eta >= limits[ibin] && eta < limits[ibin+1]) {
 	result = ibin;
 	break;
       }
     }
     delete limits;
     return result;
-  };
+  }
 
 
   // Primary vertices 

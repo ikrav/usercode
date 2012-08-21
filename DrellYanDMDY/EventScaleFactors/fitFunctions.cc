@@ -338,7 +338,7 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       TString etCut = TString::Format(" ( et >=%6.1f && et <%6.1f ) ",
 				      limitsEt[i], limitsEt[i+1]);
       TString etaCut = 
-	TString::Format(" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ",
+	TString::Format(" ( eta >= %5.3f && eta < %5.3f ) ",
 				       limitsEta[j], limitsEta[j+1]);
       TString cut = etCut + TString(" && ") + etaCut;
       //cout << cut << endl;
@@ -487,7 +487,7 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
        TString etCut = TString::Format(" ( et >=%6.1f && et <%6.1f ) ",
 				      limitsEt[i], limitsEt[i+1]);
       TString etaCut = 
-	TString::Format(" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ",
+	TString::Format(" ( eta >= %5.3f && eta < %5.3f ) ",
 				       limitsEta[j], limitsEta[j+1]);
       TString cut = etCut + TString(" && ") + etaCut;
       //cout << cut.Data() << endl;
