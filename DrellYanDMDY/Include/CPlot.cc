@@ -122,15 +122,21 @@ void CPlot::AddHist1D(TH1F *h, TString label, TString drawopt, int color, int li
     fLeg = new TLegend(0.6,0.84,0.93,0.9);
   else
     fLeg->SetY1(fLeg->GetY1()-0.06);
- 
-  if ((drawopt.CompareTo("E",TString::kIgnoreCase)==0) ||
-      legendSymbolLP) {
-    //fLeg->AddEntry(h,label,"P");
-    fLeg->AddEntry(h,label,"PL");
-  } else {
-    if(fillsty>0) fLeg->AddEntry(h,label,"F");
-    else          fLeg->AddEntry(h,label,"L");
-  } 
+
+  if (legendSymbolLP<0) {
+    std::cout << "Histo " << h->GetName() 
+	      << " will not have legend entry\n";
+  }
+  else {
+    if ((drawopt.CompareTo("E",TString::kIgnoreCase)==0) ||
+	legendSymbolLP) {
+      //fLeg->AddEntry(h,label,"P");
+      fLeg->AddEntry(h,label,"PL");
+    } else {
+      if(fillsty>0) fLeg->AddEntry(h,label,"F");
+      else          fLeg->AddEntry(h,label,"L");
+    } 
+  }
   
   AddHist1D(h,drawopt,color,linesty,fillsty);
 }
