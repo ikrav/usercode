@@ -599,7 +599,10 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
       vHists[ifirst]->SetXTitle(fXTitle);
       vHists[ifirst]->SetYTitle(fYTitle);
       vHists[ifirst]->SetLineWidth(2);
-      vHists[ifirst]->Draw(vHistOpts[ifirst].Data());
+      TString opt=vHistOpts[ifirst].Data();
+      opt.ReplaceAll("same","");
+      opt.ReplaceAll("SAME","");
+      vHists[ifirst]->Draw(opt);
     }
    
     //
