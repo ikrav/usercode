@@ -1982,27 +1982,35 @@ int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename,
    int weightedCnC) {
 
   TString fullFName=TString("../root_files/tag_and_probe/")+mgr.dirTag()+TString("/")+filename;
-  TFile f(fullFName);
-  if(!f.IsOpen()) {
+  TFile *f=new TFile(fullFName);
+  if(!f->IsOpen()) {
     std::cout << "failed to open a file <" << fullFName << ">" << std::endl;
-    assert(0);
+    if (DYTools::analysisTag=="2D") fullFName.ReplaceAll("2D","1D");
+    else fullFName.ReplaceAll("1D","2D");
+    delete f;
+    f = new TFile(fullFName);
+    if (!f->IsOpen()) {
+      std::cout << "failed to open a file <" << fullFName << ">" << std::endl;
+      assert(0);
+    }
   }
-  std::cout << "reading <" << filename << ">\n";
+  std::cout << "reading <" << filename << ">\nfullFName=<" << fullFName << ">\n";
   
   TMatrixD *effMatrix        = NULL;
   TMatrixD *effMatrixErrLow  = NULL;
   TMatrixD *effMatrixErrHigh = NULL;
   if (weightedCnC) {
-    effMatrix        = (TMatrixD*)f.Get("effArray2DWeighted");
-    effMatrixErrLow  = (TMatrixD*)f.Get("effArrayErrLow2DWeighted");
-    effMatrixErrHigh = (TMatrixD*)f.Get("effArrayErrHigh2DWeighted");
+    effMatrix        = (TMatrixD*)f->Get("effArray2DWeighted");
+    effMatrixErrLow  = (TMatrixD*)f->Get("effArrayErrLow2DWeighted");
+    effMatrixErrHigh = (TMatrixD*)f->Get("effArrayErrHigh2DWeighted");
   }
   else {
-    effMatrix        = (TMatrixD*)f.Get("effArray2D");
-    effMatrixErrLow  = (TMatrixD*)f.Get("effArrayErrLow2D");
-    effMatrixErrHigh = (TMatrixD*)f.Get("effArrayErrHigh2D");
+    effMatrix        = (TMatrixD*)f->Get("effArray2D");
+    effMatrixErrLow  = (TMatrixD*)f->Get("effArrayErrLow2D");
+    effMatrixErrHigh = (TMatrixD*)f->Get("effArrayErrHigh2D");
   }
-  f.Close();
+  f->Close();
+  delete f;
 
   // Make sure that the objects are present
   if( !(effMatrix && effMatrixErrLow && effMatrixErrHigh) ) {
