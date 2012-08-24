@@ -35,7 +35,7 @@ TString tagDirConstants = "";
 Double_t lumi = 0;
 const int nMassBinTh=518;
 
-const int includeEScaleSystematics=0;
+const int includeEScaleSystematics=1;
 const int includeUnfoldingSystematics=1;
 
 
@@ -681,6 +681,7 @@ void  efficiencyCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
 
 void  acceptanceCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSystErr,
 			   TMatrixD &vout, TMatrixD &voutStatErr, TMatrixD &voutSystErr){
+  const int nUnfoldingBins= DYTools::getTotalNumberOfBins();
   // Read efficiency constants
   printf("Acceptance: Load constants\n"); fflush(stdout);
     
@@ -699,11 +700,21 @@ void  acceptanceCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
   TString fileSystematicsFullName=TString("../root_files/systematics/")+tagDirConstants+TString("/")+fileAcceptanceSystematics;
   TFile fileSystematics(fileSystematicsFullName);
 			
-  TVectorD *acceptanceTheoryErrArrayPtr = (TVectorD *)fileSystematics.FindObjectAny("acceptanceTheoryErrArray");
-  if (!acceptanceTheoryErrArrayPtr) {
-    std::cout << "failed to get object from <" << fileSystematicsFullName << ">\n";
-    assert(0);
+  TVectorD *acceptanceTheoryErrArrayPtr = NULL;
+
+  if (DYTools::study2D==0) {
+    acceptanceTheoryErrArrayPtr = (TVectorD *)fileSystematics.FindObjectAny("acceptanceTheoryErrArray");
+    if (!acceptanceTheoryErrArrayPtr) {
+      std::cout << "failed to get object from <" << fileSystematicsFullName << ">\n";
+      assert(0);
+    }
   }
+  else {
+    std::cout << "\n\tignoring acceptanceTheoryErrArray for 2D\n";
+    acceptanceTheoryErrArrayPtr= new TVectorD(nUnfoldingBins);
+    *acceptanceTheoryErrArrayPtr=0;
+  }
+
   TVectorD acceptanceTheoryErrArray = *acceptanceTheoryErrArrayPtr;
 
   TString fileAccFSRSystFullName=TString("../root_files/systematics/")+tagDirConstants+TString("/")+fileAcceptanceFSRSystematics;
@@ -719,7 +730,7 @@ void  acceptanceCorrection(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vinSys
   bool checkResult = true;
   if (checkResult) checkResult=unfolding::checkRangesMY(acceptanceMatrix,"acceptanceMatrix");
   //if( acceptanceMatrix.GetNoElements() != DYTools::nMassBins) checkResult = false;
-  if( acceptanceTheoryErrArray.GetNoElements() != DYTools::nMassBins) checkResult = false;
+  if( acceptanceTheoryErrArray.GetNoElements() != nUnfoldingBins) checkResult = false;
   if( !checkResult ){
     printf("Acceptance: ERROR: inconsistent binning in the inputs\n");
     assert(0);
@@ -1413,6 +1424,13 @@ void  postFsrCrossSectionsDET(TMatrixD &vin, TMatrixD &vinStatErr, TMatrixD &vin
       delete rapidityBinLimits;
     }
   }
+
+  printf("\nPostFsrDET cross-section in the Z peak from %3.0f to %3.0f:\n",
+	 DYTools::massBinLimits[low], DYTools::massBinLimits[high+1]);
+  printf("           %9.1f +- %8.1f +- %6.1f \n",
+	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
+//     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
+
   return;
 }
 
