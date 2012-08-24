@@ -336,7 +336,7 @@ namespace DYTools {
   //
   // Define Et and Eta binning
   //
-  typedef enum {ETBINS_UNDEFINED=-1, ETBINS1=1, ETBINS5, ETBINS6, ETBINS7, ETBINS8, ETBINS9} TEtBinSet_t;
+  typedef enum {ETBINS_UNDEFINED=-1, ETBINS1=1, ETBINS5, ETBINS6, ETBINS7, ETBINS7alt, ETBINS8, ETBINS9} TEtBinSet_t;
   const int nEtBins1 = 1;
   const double etBinLimits1[nEtBins1 + 1] = 
     {10, 500};
@@ -349,6 +349,9 @@ namespace DYTools {
   const int nEtBins7 = 7;
   const double etBinLimits7[nEtBins7 + 1] = 
     {10, 15, 20, 30, 40, 50, 100, 500};
+  const int nEtBins7alt = 7;
+  const double etBinLimits7alt[nEtBins7alt + 1] = 
+    {10, 15, 20, 30, 40, 50, 75, 500};
   const int nEtBins8 = 8;
   const double etBinLimits8[nEtBins8 + 1] = 
     {10, 15, 20, 30, 40, 50, 75, 100, 500};
@@ -368,6 +371,7 @@ namespace DYTools {
     case ETBINS5: n = nEtBins5; break;
     case ETBINS6: n = nEtBins6; break;
     case ETBINS7: n = nEtBins7; break;
+    case ETBINS7alt: n = nEtBins7alt; break;
     case ETBINS8: n = nEtBins8; break;
     case ETBINS9: n = nEtBins9; break;
     default:
@@ -387,6 +391,7 @@ namespace DYTools {
     case ETBINS5: limits=etBinLimits5; break;
     case ETBINS6: limits=etBinLimits6; break;
     case ETBINS7: limits=etBinLimits7; break;
+    case ETBINS7alt: limits=etBinLimits7alt; break;
     case ETBINS8: limits=etBinLimits8; break;
     case ETBINS9: limits=etBinLimits9; break;
     default:
@@ -415,13 +420,19 @@ namespace DYTools {
     return result;
   };
 
-  typedef enum {ETABINS_UNDEFINED=-1, ETABINS1=1, ETABINS2, ETABINS2Negs, ETABINS5, ETABINS5Negs, ETABINS4test, ETABINS4testNegs,  ETABINS4alt, ETABINS4altNegs, ETABINS5alt, ETABINS5altNegs} TEtaBinSet_t;
+  typedef enum {ETABINS_UNDEFINED=-1, ETABINS1=1, ETABINS2, ETABINS2Negs, ETABINS3, ETABINS3Negs, ETABINS5, ETABINS5Negs, ETABINS4test, ETABINS4testNegs,  ETABINS4alt, ETABINS4altNegs, ETABINS5alt, ETABINS5altNegs} TEtaBinSet_t;
   const int nEtaBins1 = 1;
   const double etaBinLimits1[nEtBins1 + 1] = 
     {0, 2.5000001};
   const int nEtaBins2 = 2;
   const double etaBinLimits2[nEtaBins2 + 1] = 
     {0, 1.479, 2.5000001};
+  const int nEtaBins3 = 3;
+  const double etaBinLimits3[nEtaBins3 + 1] = 
+    {0, 1.479, 2.0, 2.5000001};
+  const int nEtaBins3Negs = 6;
+  const double etaBinLimits3Negs[nEtaBins3Negs + 1] = 
+    {-2.5000001, -2.0, -1.479, 0., 1.479, 2.0, 2.5000001};
   const int nEtaBins2Negs = 4;
   const double etaBinLimits2Negs[nEtaBins2Negs + 1] = 
     {-2.500001, -1.479, 0, 1.479, 2.5000001};
@@ -458,6 +469,8 @@ namespace DYTools {
     case ETABINS1: n = nEtaBins1; break;
     case ETABINS2: n = nEtaBins2; break;
     case ETABINS2Negs: n = nEtaBins2Negs; break;
+    case ETABINS3: n = nEtaBins3; break;
+    case ETABINS3Negs: n = nEtaBins3Negs; break;
     case ETABINS5: n = nEtaBins5; break;
     case ETABINS4test: n = nEtaBins4test; break;
     case ETABINS4testNegs: n = nEtaBins4testNegs; break;
@@ -482,6 +495,8 @@ namespace DYTools {
     case ETABINS1: limits = etaBinLimits1; break;
     case ETABINS2: limits = etaBinLimits2; break;
     case ETABINS2Negs: limits = etaBinLimits2Negs; break;
+    case ETABINS3: limits = etaBinLimits3; break;
+    case ETABINS3Negs: limits = etaBinLimits3Negs; break;
     case ETABINS5: limits = etaBinLimits5; break;
     case ETABINS4test: limits = etaBinLimits4test; break;
     case ETABINS4testNegs: limits = etaBinLimits4testNegs; break;
@@ -506,6 +521,7 @@ namespace DYTools {
     switch(binning) {
     case ETABINS1: 
     case ETABINS2: 
+    case ETABINS3: 
     case ETABINS5:
     case ETABINS4test:
     case ETABINS4alt:
@@ -513,6 +529,7 @@ namespace DYTools {
       yes=0;
       break;
     case ETABINS2Negs: 
+    case ETABINS3Negs:
     case ETABINS4testNegs:
     case ETABINS4altNegs:
     case ETABINS5altNegs:

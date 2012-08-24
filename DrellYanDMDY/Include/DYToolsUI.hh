@@ -87,6 +87,7 @@ TString EtBinSetName(DYTools::TEtBinSet_t set) {
   case ETBINS5: name="EtBins5"; break;
   case ETBINS6: name="EtBins6"; break;
   case ETBINS7: name="EtBins7"; break;
+  case ETBINS7alt: name="EtBins7alt"; break;
   case ETBINS8: name="EtBins8"; break;
   case ETBINS9: name="EtBins9"; break;
   default: name="Unknown_Et_BinSet";
@@ -106,6 +107,8 @@ TString EtaBinSetName(DYTools::TEtaBinSet_t set) {
   case ETABINS1: name="EtaBins1"; break;
   case ETABINS2: name="EtaBins2"; break;
   case ETABINS2Negs: name="EtaBins2Negs"; break;
+  case ETABINS3: name="EtaBins3"; break;
+  case ETABINS3Negs: name="EtaBins3Negs"; break;
   case ETABINS5: name="EtaBins5"; break;
   case ETABINS5Negs: name="EtaBins5Negs"; break;
   case ETABINS4test: name="EtaBins4test"; break;
@@ -191,6 +194,7 @@ DYTools::TEtBinSet_t DetermineEtBinSet(const TString& str) {
   if (str.Contains("ETBINS1") || str.Contains("EtBins1")) kind=ETBINS1;
   else if (str.Contains("ETBINS5") || str.Contains("EtBins5")) kind=ETBINS5;
   else if (str.Contains("ETBINS6") || str.Contains("EtBins6")) kind=ETBINS6;
+  else if (str.Contains("ETBINS7alt") || str.Contains("EtBins7alt")) kind=ETBINS7alt;
   else if (str.Contains("ETBINS7") || str.Contains("EtBins7")) kind=ETBINS7;
   else if (str.Contains("ETBINS8") || str.Contains("EtBins8")) kind=ETBINS8;
   else if (str.Contains("ETBINS9") || str.Contains("EtBins9")) kind=ETBINS9;
@@ -209,6 +213,8 @@ DYTools::TEtaBinSet_t DetermineEtaBinSet(const TString& str) {
   if (str.Contains("ETABINS1") || str.Contains("EtaBins1")) kind=ETABINS1;
   else if (str.Contains("ETABINS2Negs") || str.Contains("EtaBins2Negs")) kind=ETABINS2Negs;
   else if (str.Contains("ETABINS2") || str.Contains("EtaBins2")) kind=ETABINS2;
+  else if (str.Contains("ETABINS3Negs") || str.Contains("EtaBins3Negs")) kind=ETABINS3Negs;
+  else if (str.Contains("ETABINS3") || str.Contains("EtaBins3")) kind=ETABINS3;
   else if (str.Contains("ETABINS5Negs") || str.Contains("EtaBins5Negs")) kind=ETABINS5Negs;
   else if (str.Contains("ETABINS5altNegs") || str.Contains("EtaBins5altNegs")) kind=ETABINS5altNegs;
   else if (str.Contains("ETABINS5alt") || str.Contains("EtaBins5alt")) kind=ETABINS5alt;
