@@ -2,8 +2,9 @@
 #define ELEIDCUTS_HH
 
 #include <TMath.h>
-#include "TElectron.hh"
-#include "TDielectron.hh"
+#include "../Include/TElectron.hh"
+#include "../Include/TDielectron.hh"
+#include "../Include/TEventInfo.hh"
 #include <cassert>
 #include <iostream>
 
@@ -615,11 +616,13 @@ const TEleID_t _electronID=_EleID_EGM2011_Medium;
 //
 
 template<class EleObj_t>
-Bool_t passEleID(const EleObj_t *electron, double rho=0) {
+Bool_t passEleID(const EleObj_t *electron, const mithep::TEventInfo *info=NULL) {
   Bool_t pass=kFALSE;
   switch(_electronID) {
   case _EleID_Smurf2011: pass=passSmurf(electron); break;
-  case _EleID_EGM2011_Medium: pass=passEGM2011(electron,_EleID_EGM2011_Medium,rho);
+  case _EleID_EGM2011_Medium: 
+    assert(info);
+    pass=passEGM2011(electron,_EleID_EGM2011_Medium,info->rhoLowEta);
   default:
     std::cout << "passEleID: ElectronID is not prepared\n";
   }
