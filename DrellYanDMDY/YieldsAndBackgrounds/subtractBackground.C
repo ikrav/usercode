@@ -77,7 +77,7 @@ TString subtractBackground(const TString conf,
   if ((runMode==DYTools::ESCALE_STUDY) || (runMode==DYTools::ESCALE_STUDY_RND)) {
     CPlot::sOutDir = "plots_escale/";
   }
-  else CPlot::sOutDir = "plots";
+  else CPlot::sOutDir = TString("plots") + DYTools::analysisTag;
   CPlot::sOutDir += plotsDirExtraTag;
 
 

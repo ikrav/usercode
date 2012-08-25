@@ -174,7 +174,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
   if ((runMode==DYTools::ESCALE_STUDY) || (runMode==DYTools::ESCALE_STUDY_RND)) {
     CPlot::sOutDir = "plots_escale/";
   }
-  else CPlot::sOutDir = "plots";
+  else CPlot::sOutDir = TString("plots") + DYTools::analysisTag;
   CPlot::sOutDir += plotsDirExtraTag;
 
   Bool_t hasData = (samplev[0]->fnamev.size()>0);
