@@ -462,6 +462,7 @@ namespace unfolding {
 		<< DYTools::nMassBins << 'x' << nMaxYBins << "\n";
       ok=false;
     }
+    else { if (verb) std::cout << "...ok\n"; }
     return ok;
   }
 
@@ -485,6 +486,7 @@ namespace unfolding {
 		<< nBins << "\n";
       ok=false;
     }
+    else { if (verb) std::cout << "...ok\n"; }
     return ok;
   }
 
