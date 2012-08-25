@@ -1647,17 +1647,19 @@ void drawEfficiencies(TFile *fRoot){
   double effData[etBinCount],effDataErr[etBinCount];
   double effMC[etBinCount],effMCErr[etBinCount];
   const int bufsize=30;
-  char bufEta[bufsize];
   char plotLabel[bufsize];
 
+  int signedEta=DYTools::signedEtaBinning(etaBinning);
+  const char *etaSignStr=(signedEta) ? "_eta" : "_abs_eta";
+  const char *etaLabelStr=(signedEta) ? "#eta" : "|#eta|";
   for (int kind=0; kind<3; ++kind) {
     for (int iEta=0; iEta<etaBinCount; ++iEta) {
-      snprintf(bufEta,bufsize,"_abs_eta_%5.3lf__%5.3lf",
-	      etaBinLimits[iEta],etaBinLimits[iEta+1]);
-      TString etaStr=bufEta;
+      TString etaStr=
+	Form("%s_%5.3lf__%5.3lf", etaSignStr,
+	     etaBinLimits[iEta],etaBinLimits[iEta+1]);
       etaStr.ReplaceAll(".","_");
-      snprintf(plotLabel,bufsize,"%5.3lf < |#eta| < %5.3lf",
-	      etaBinLimits[iEta],etaBinLimits[iEta+1]);
+      snprintf(plotLabel,bufsize,"%5.3lf < %s < %5.3lf",
+	       etaBinLimits[iEta],etaLabelStr,etaBinLimits[iEta+1]);
 
       for (int iEt=0; iEt<etBinCount; ++iEt) {
 	effData[iEt]= (*dataEff[kind])[iEt][iEta];
@@ -1705,17 +1707,21 @@ void drawScaleFactors(TFile *fRoot){
 
   double scale[etBinCount];
   double scaleErr[etBinCount];
-  char bufEta[30];
-  char plotLabel[30];
+  const int bufsize=30;
+  char plotLabel[bufsize];
+
+  int signedEta=DYTools::signedEtaBinning(etaBinning);
+  const char *etaSignStr=(signedEta) ? "_eta" : "_abs_eta";
+  const char *etaLabelStr=(signedEta) ? "#eta" : "|#eta|";
 
   for (int kind=0; kind<3; ++kind) {
     for (int iEta=0; iEta<etaBinCount; ++iEta) {
-      sprintf(bufEta,"_abs_eta_%5.3lf__%5.3lf",
-	      etaBinLimits[iEta],etaBinLimits[iEta+1]);
-      TString etaStr=bufEta;
+      TString etaStr=
+	Form("%s_%5.3lf__%5.3lf", etaSignStr,
+	     etaBinLimits[iEta],etaBinLimits[iEta+1]);
       etaStr.ReplaceAll(".","_");
-      sprintf(plotLabel,"%5.3lf < |#eta| < %5.3lf",
-	      etaBinLimits[iEta],etaBinLimits[iEta+1]);
+      snprintf(plotLabel,bufsize,"%5.3lf < %s < %5.3lf",
+	       etaBinLimits[iEta],etaLabelStr,etaBinLimits[iEta+1]);
 
       for (int iEt=0; iEt<etBinCount; ++iEt) {
 	scale[iEt]= (*dataEff[kind])[iEt][iEta] / (*mcEff[kind])[iEt][iEta];
