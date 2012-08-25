@@ -568,6 +568,11 @@ namespace DYTools {
   //  1., 3., 5., 7., 9., 11., 13., 15., 17., 21., 25., 40. };
 
   inline int findPUBin(int nPV) { return _findMassBin(double(nPV),nPVBinCount,nPVLimits); }
+  
+  // 
+  // Cross section types
+  //
+  typedef enum { _cs_None=0, _cs_preFsr, _cs_preFsrNorm, _cs_preFsrDet, _cs_preFsrDetNorm } TCrossSectionKind_t;
 
   // 
   // Triggers vs run numbers

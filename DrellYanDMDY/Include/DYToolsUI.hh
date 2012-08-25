@@ -248,7 +248,24 @@ DYTools::TDataKind_t DetermineDataKind(const TString &str) {
 
 // ------------------------------------------------------------------
 
+inline
+TString CrossSectionKindName(DYTools::TCrossSectionKind_t kind) {
+  using namespace DYTools;
+  TString name;
+  switch(kind) {
+  case _cs_None: name="none"; break;
+  case _cs_preFsr: name="preFsr"; break;
+  case _cs_preFsrNorm: name="preFsrNorm"; break;
+  case _cs_preFsrDet: name="preFsrDet"; break;
+  case _cs_preFsrDetNorm: name="preFsrDetNorm"; break;
+  default:
+    std::cout << "CrossSectionKindName: cannot determine the name\n";
+    assert(0);
+  }
+  return name;
+}
 
+// ------------------------------------------------------------------
 
 // ------------------------------------------------------------------
 //     Printing
@@ -261,6 +278,7 @@ std::ostream& operator<<(std::ostream& out, DYTools::TEfficiencyKind_t kind) { o
 std::ostream& operator<<(std::ostream& out, DYTools::TEtBinSet_t set) { out << EtBinSetName(set); return out; }
 std::ostream& operator<<(std::ostream& out, DYTools::TEtaBinSet_t set) { out << EtaBinSetName(set); return out; }
 std::ostream& operator<<(std::ostream& out, DYTools::TDataKind_t kind) { out << DataKindName(kind); return out; }
+std::ostream& operator<<(std::ostream& out, DYTools::TCrossSectionKind_t kind) { out << CrossSectionKindName(kind); return out; }
 
 
 // ------------------------------------------------------------------
