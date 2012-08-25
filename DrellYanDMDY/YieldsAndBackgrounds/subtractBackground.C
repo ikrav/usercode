@@ -392,7 +392,7 @@ TString subtractBackground(const TString conf,
     throw 2;
   }
   if (fabs(countMCsignal)<1e-7) {
-    std::cout << "found no data events in Z-peak region\n";
+    std::cout << "found no mc events in Z-peak region\n";
     throw 2;
   }
   // 2. create weight maps
@@ -492,6 +492,47 @@ TString subtractBackground(const TString conf,
     }
   }
  
+  //
+  // debug plots
+  //
+  const int makeDebugPlots=1;
+  if (makeDebugPlots) {
+    if (0) {
+      std::vector<int> indices;
+      indices.push_back(0);
+      TMatrixD tmpErr=zeeMCShapeReweight;
+      tmpErr=0;
+      PlotMatrixSlices(indices,0,zeeMCShapeReweight, tmpErr, "zeeMCShapeReweight",
+		       "hist", NULL, "zeeMCShapeReweight");
+    }
+
+    if (1) {
+      std::vector<int> indices;
+      indices.push_back(0);
+      std::vector<TMatrixD> matrV;
+      std::vector<TMatrixD> matrErrV;
+      std::vector<TString> labelV;
+      TMatrixD tmpErr=zeeMCShapeReweight;  tmpErr=0;
+      TMatrixD mcRew=zeePredictedYield;
+      for (int i=0; i<zeePredictedYield.GetNrows(); ++i) {
+	for (int j=0; j<zeePredictedYield.GetNcols(); ++j) {
+	  mcRew(i,j) = zeePredictedYield(i,j) * zeeMCShapeReweight(i,j);
+	}
+      }
+      matrV.push_back(signalYields); matrV.push_back(zeePredictedYield);
+      matrV.push_back(mcRew);
+      matrErrV.push_back(tmpErr); matrErrV.push_back(tmpErr);
+      matrErrV.push_back(tmpErr);
+      labelV.reserve(matrV.size());
+      labelV.push_back("signalYields (data)");
+      labelV.push_back("zeeYields (MC)");
+      labelV.push_back("reweighted MC");
+      PlotMatrixSlices(indices,0,matrV, matrErrV, labelV, "dataVsMC",
+		       "hist", NULL, "dataVsMC");
+    }
+  }
+
+
   return "Ok";
 
 }
