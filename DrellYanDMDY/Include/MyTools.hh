@@ -183,6 +183,61 @@ int printHisto(std::ostream& out, const TH1F* histo) {
 //------------------------------------------------------------------------------------------------------------------------
 
 inline
+TH1F *extractRapidityDependence(const TString &name, const TString &title,
+				const TMatrixD &m, const TMatrixD &mErr,
+				int iMassBin, int perMassBinWidth=0) {
+  TString hName= name + Form("_massBin%d",iMassBin);
+  TString hTitle= title + Form("_massBin%d",iMassBin);
+  TH1F *h=new TH1F(name,title,DYTools::nYBins[iMassBin],DYTools::yRangeMin,DYTools::yRangeMax);
+  h->SetDirectory(0);
+  h->Sumw2();
+  for (int iY=0; iY<DYTools::nYBins[iMassBin]; ++iY) {
+    double factor= (perMassBinWidth==0) ? 
+      1 : 1/(DYTools::massBinLimits[iMassBin+1] - DYTools::massBinLimits[iMassBin]);
+    h->SetBinContent(iY+1, m[iMassBin][iY]*factor);
+    h->SetBinError(iY+1, fabs(mErr[iMassBin][iY])*factor);
+  }
+  return h;
+}
+
+// -----------------------------------------------------------------------------
+
+inline
+TH1F *extractMassDependence(const TString &name, const TString &title,
+			    const TMatrixD &m, const TMatrixD &mErr,
+			    int iYBin, 
+			    int perMassBinWidth=1, int perRapidityBinWidth=0) {
+  if (perRapidityBinWidth) std::cout << "\n\tWARNING: extractMassDependence: perRapidityBinWidth=1 is experimental\n\n";
+  TString hName= name + Form("_yBin%d",iYBin);
+  TString hTitle= title + Form("_yBin%d",iYBin);
+  TH1F *h=new TH1F(name,title,DYTools::nMassBins,DYTools::massBinLimits);
+  h->SetDirectory(0);
+  h->Sumw2();
+  for (int iM=0; iM<DYTools::nMassBins; ++iM) {
+    bool lastBin= (iM==DYTools::nMassBins-1) ? true : false;  
+    if (lastBin && (iYBin!=0)) {
+      double yc=DYTools::findAbsYValue(0,iYBin);
+      iYBin=DYTools::findAbsYBin(iM,yc);
+    }
+    double val=m[iM][iYBin];
+    if (iM==DYTools::nMassBins-1) {
+      val *= DYTools::nYBins[iM]/double(DYTools::nYBins[0]);
+    }
+    if (perRapidityBinWidth) {
+      val *= (DYTools::yRangeMax-DYTools::yRangeMin)/double(DYTools::nYBins[iM]);
+    }
+    if (perMassBinWidth) val/=(DYTools::massBinLimits[iM+1]-DYTools::massBinLimits[iM]);
+    h->SetBinContent(iM+1, val);
+    h->SetBinError(iM+1, fabs(mErr[iM][iYBin]));
+  }
+  return h;
+}
+
+
+
+//------------------------------------------------------------------------------------------------------------------------
+
+inline
 void printSanityCheck(TMatrixD val, TMatrixD err, TString name)
 {
   using namespace DYTools;
@@ -212,5 +267,7 @@ void printSanityCheck(TMatrixD val, TMatrixD err, TString name)
            std::cout<<name<<"("<<i<<","<<yi<<")="<<val(i,yi)<<", "<<name<<"Err("<<i<<","<<yi<<")="<<err(i,yi)<<std::endl;
       }
 }
+
+//------------------------------------------------------------------------------------------------------------------------
 
 #endif
