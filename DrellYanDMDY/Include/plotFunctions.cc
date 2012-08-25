@@ -614,6 +614,8 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
 	legend->AddEntry(allHists[1][j],"QCD","PF");
       else if (snamev[j] == "ttbar" )
 	legend->AddEntry(allHists[1][j],"t#bar{t}","PF");
+      else if (snamev[j] == "W+t" )
+	legend->AddEntry(allHists[1][j],"Wt + W#bar{t}","PF");
       else if (snamev[j] == "ztt" )
 	legend->AddEntry(allHists[1][j],"#gamma*/Z#rightarrow#tau#tau","PF");
     }
@@ -832,6 +834,12 @@ void SetSomeHistAttributes (TH1F* hist, TString samplename)
           hist->SetFillColor(kOrange+10);
 	  hist->SetMarkerColor(kOrange+10);
           hist->SetLineColor(kOrange+3);
+        }
+      else if (samplename=="W+t") 
+        {
+	  hist->SetFillColor(634);
+	  hist->SetMarkerColor(634);
+	  hist->SetLineColor(kOrange+3);
         }
       else if (samplename=="ztt") 
         {
