@@ -35,14 +35,20 @@
 #include "../Include/InputFileMgr.hh"
 #endif
 
+//using std::cout;
+//using std::endl;
+
 template <class T>
 inline T SQR(T x) { return (x)*(x); }
 
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 double getErrorOnRatio(double nTotal, double nTotalErr, double nPass, double nPassErr) {
-  double nFail = nTotal - nPass;
-  double nFailErr = sqrt( nTotalErr*nTotalErr - nPassErr*nPassErr );
+  double nFail = fabs(nTotal - nPass);
+  if (nTotalErr<nPassErr) {
+    std::cout << "getErrorOnRatio: nTotalErr=" << nTotalErr << ", nPassErr=" << nPassErr << "\n";
+  }
+  double nFailErr = sqrt( fabs(nTotalErr*nTotalErr - nPassErr*nPassErr ) );
   double err = sqrt( (nFail*nFail * nPassErr*nPassErr + 
 		      nPass*nPass * nFailErr*nFailErr)
                      / (nTotal*nTotal*nTotal*nTotal) );
@@ -104,6 +110,7 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
   }
 
   if (debugMode) std::cout << "\n\n\tDEBUG MODE is ON\n\n";
+  std::cout << "DYTools::analysisTag=" << DYTools::analysisTag << "\n";
 
   // normal calculation
 
@@ -156,7 +163,7 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
   // 
   // Read weights from a file
   //
-  const bool useFewzWeights = true;
+  const bool useFewzWeights = false;
   const bool cutZPT100 = true;
   FEWZ_t fewz(useFewzWeights,cutZPT100);
   if (useFewzWeights && !fewz.isInitialized()) {
@@ -202,9 +209,13 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
     nZv += scale * eventTree->GetEntries();
 
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-      if (debugMode && (ientry>10000)) break;
+      if (debugMode && (ientry>100000)) break;
 
       genBr->GetEntry(ientry);
+      if (ientry%1000000==0) {
+	double r=trunc(ientry/double(eventTree->GetEntries())*1000)*0.1;
+	std::cout << "ientry=" << ientry << "/" << eventTree->GetEntries() << " (" << r << "%)\n";
+      }
 
       double massPreFsr = gen->vmass;   // pre-FSR
       double yPreFsr = gen->vy;    // pre-FSR
@@ -233,6 +244,7 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
 	fewz_weight=fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
       }
 
+      //std::cout << "weight=scale*gen->weight*fewz: " << scale << " * " << gen->weight << " * " << fewz_weight << "\n";
       double fullWeight = scale * gen->weight * fewz_weight;
       nEvents(ibinMassPreFsr,ibinYPreFsr) += fullWeight;
       w2Events(ibinMassPreFsr,ibinYPreFsr) += fullWeight*fullWeight;
@@ -265,6 +277,10 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
       }
     }
   }
+  std::cout << "\n";
+  std::cout << "nZpeak=" << nZpeak << ", w2Zpeak=" << w2Zpeak << "\n";
+  std::cout << "nZpeakDET=" << nZpeakDET << ", w2ZpeakDET=" << w2ZpeakDET << "\n";
+  std::cout << "\n";
 
 
   if (nZpeak==0) {
@@ -312,7 +328,9 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
 
 
 
-  TString outFile= TString("../root_files/xSecTh_") + DYTools::analysisTag + TString("_tmp.root");
+  TString outFile= TString("../root_files/xSecTh_");
+  if (!useFewzWeights) outFile.Append("noFEWZ_");
+  outFile.Append( DYTools::analysisTag + TString("_tmp.root") );
 
   if (plotOnly==0) {
     TFile thFile(outFile,"recreate");
