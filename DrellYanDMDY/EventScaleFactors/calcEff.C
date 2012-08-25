@@ -518,6 +518,10 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   double ymax = 800;
   if(nDivisions <4 )
     ymax = nDivisions * 200;
+  else if (nDivisions>DYTools::maxTnPCanvasDivisions) {
+    nDivisions=DYTools::maxTnPCanvasDivisions;
+  }
+
   TCanvas *c1 = MakeCanvas("canvDistr","canvDistr", 600, (int)ymax);
   c1->Divide(2,nDivisions);
   

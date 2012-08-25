@@ -32,6 +32,7 @@ namespace DYTools {
   // Global parameters
   const Double_t kECAL_GAP_LOW  = 1.4442;
   const Double_t kECAL_GAP_HIGH = 1.566;
+  const int maxTnPCanvasDivisions=10; // maximum number of canvas divisions in EventScaleFactors macros
   const double etMinLead  = 20;
   const double etMinTrail = 10;
 

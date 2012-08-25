@@ -701,6 +701,10 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   double ymax = 800;
   if(nDivisions <4 )
     ymax = nDivisions * 200;
+  else if (nDivisions>DYTools::maxTnPCanvasDivisions) {
+    nDivisions=DYTools::maxTnPCanvasDivisions;
+  }
+
   TCanvas *c1 = MakeCanvas("c1","c1", 600, (int)ymax);
   c1->Divide(2,nDivisions);
   measureEfficiencyPU(passTree, failTree,
