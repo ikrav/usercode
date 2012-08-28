@@ -346,7 +346,7 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       double probesFail = failTree->GetEntries(cut);
 
       // padIdx = 1 + 2*(i + j*nEt)
-      int padIdx= 1 + ( (i + j*nEt) % DYTools::maxTnPCanvasDivisions );
+      int padIdx= 1 + ( (2*i + 2*j*nEt) % (2*DYTools::maxTnPCanvasDivisions) );
       canvas->cd(padIdx);
       passTree->Draw("weight >> hwPass",cut);
       canvas->cd(padIdx+1);
@@ -396,7 +396,7 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       lines.push_back(strOut);
 
       // padIdx = 1 + 2*(i + j*nEt)
-      padIdx= 1 + ( (i + j*nEt) % DYTools::maxTnPCanvasDivisions );
+      padIdx= 1 + ( (2*i + 2*j*nEt) % (2*DYTools::maxTnPCanvasDivisions) );
       canvas->cd(padIdx);
       passTree->Draw("mass",cut);
       canvas->cd(padIdx+1);
@@ -498,7 +498,7 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
       double probesPass = passTree->GetEntries(cut);
       double probesFail = failTree->GetEntries(cut);
       // padIdx = 1 + 2*(i + j*nEt)
-      int padIdx= 1 + ( (i + j*nEt) % DYTools::maxTnPCanvasDivisions );
+      int padIdx= 1 + ( (2*i + 2*j*nEt) % (2*DYTools::maxTnPCanvasDivisions) );
       TPad *passPad = (TPad*)canvas->GetPad(padIdx);
       TPad *failPad = (TPad*)canvas->GetPad(padIdx + 1);
       double efficiency, efficiencyErrHi, efficiencyErrLo;
