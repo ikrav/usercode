@@ -14,33 +14,33 @@
 
 namespace unfolding{
 
-  int  unfold(TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName);
-  int  unfoldTrueToReco(TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName);
+  int  unfold(const TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName);
+  int  unfoldTrueToReco(const TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName);
 
   // pack MatrixD to flat-indexed VectorD and apply the unfolding matrix 
   // from a file
-  int  unfold(TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingConstFileName,
+  int  unfold(const TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingConstFileName,
 	      TVectorD &vinFlat, TVectorD &voutFlat);
 
-  int  propagateErrorThroughUnfolding(TVectorD &errorIn, 
+  int  propagateErrorThroughUnfolding(const TVectorD &errorIn, 
 				      TVectorD &errorPropagated,
 				      const TString &unfoldingConstFileName);
   
 
-  int  propagateErrorThroughUnfolding(TMatrixD &errorInMatrix, 
+  int  propagateErrorThroughUnfolding(const TMatrixD &errorInMatrix, 
 				      TMatrixD &errorPropagatedMatrix,
 				      const TString &unfoldingConstFileName,
 				      TVectorD &errorIn,
 				      TVectorD &errorPropagated);
   
 
-  /* int calculateTotalUnfoldingSystError(TVectorD &yieldsBeforeUnfolding, 
+  /* int calculateTotalUnfoldingSystError(const TVectorD &yieldsBeforeUnfolding, 
 				       TVectorD &systUnfolding, 
 				       const TString &fullUnfoldingConstFileName,
 				       const TString &extraUnfoldingErrorsFileName);*/
 
   int calculateTotalUnfoldingSystErrorFlat
-          (TVectorD &yieldsBeforeUnfolding, 
+          (const TVectorD &yieldsBeforeUnfolding, 
 	   TVectorD &systUnfolding, 
 	   const TString &fullUnfoldingConstFileName,
 	   const TString &extraUnfoldingErrorsFileName);

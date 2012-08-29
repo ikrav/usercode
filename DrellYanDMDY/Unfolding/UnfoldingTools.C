@@ -11,7 +11,7 @@ namespace unfolding {
 //-----------------------------------------------------------------
 // Function that executes unfolding
 //-----------------------------------------------------------------
-  int  unfold(TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName)
+  int  unfold(const TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName)
   {
     
     // Read unfolding constants
@@ -43,7 +43,7 @@ namespace unfolding {
 
   //-----------------------------------------------------------------
  
- int  unfoldTrueToReco(TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName)
+ int  unfoldTrueToReco(const TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName)
   {
 
     // Read unfolding constants
@@ -77,7 +77,7 @@ namespace unfolding {
 // Function that packs matrix to a vector and executes the unfolding
 //-----------------------------------------------------------------
 
-  int  unfold(TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingConstFileName, TVectorD &vin, TVectorD &vout)
+  int  unfold(const TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingConstFileName, TVectorD &vin, TVectorD &vout)
   {
     
     // Read unfolding constants
@@ -89,9 +89,9 @@ namespace unfolding {
 	!checkFlatVectorRanges(vin,vout,unfoldingConstFileName," derived flat vectors")) return 0;
     
     TFile fileConstants(unfoldingConstFileName); // file had to exist to reach this point
-    TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
+    //TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
     TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
-    TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
+    //TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
 
     // Pack the matrix
     if (!flattenMatrix(vinM, vin)) return 0;
@@ -115,7 +115,7 @@ namespace unfolding {
 //-----------------------------------------------------------------
 // Function that propagates systematic errors through unfolding
 //-----------------------------------------------------------------
- int  propagateErrorThroughUnfolding(TVectorD &errorIn, 
+ int  propagateErrorThroughUnfolding(const TVectorD &errorIn, 
 				     TVectorD &errorPropagated,
 				     const TString &unfoldingConstFileName)
   {
@@ -128,9 +128,9 @@ namespace unfolding {
     if (!checkFlatVectorRanges(errorIn,errorPropagated,unfoldingConstFileName," operates")) return 0;
 
     TFile fileConstants(unfoldingConstFileName);
-    TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
+    //TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
     TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
-    TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
+    //TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
 
     // Apply unfolding matrix
     int nBins = DYTools::getTotalNumberOfBins();
@@ -150,7 +150,7 @@ namespace unfolding {
 // Function that propagates flattens the matrix and propages the 
 // systematic errors through unfolding
 //-----------------------------------------------------------------
-  int  propagateErrorThroughUnfolding(TMatrixD &errorInM,
+  int  propagateErrorThroughUnfolding(const TMatrixD &errorInM,
 				      TMatrixD &errorPropagatedM,
 				      const TString &unfoldingConstFileName,
 				      TVectorD &errorIn, 
@@ -166,9 +166,9 @@ namespace unfolding {
 	!checkFlatVectorRanges(errorIn,errorPropagated,unfoldingConstFileName," operates")) return 0;
 
     TFile fileConstants(unfoldingConstFileName);
-    TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
+    //TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
     TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
-    TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
+    //TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
 
     // Pack the matrix
     if (!flattenMatrix(errorInM, errorIn)) return 0;
@@ -260,7 +260,7 @@ namespace unfolding {
 
   // This function adds together all pieces of unfolding systematics
   int calculateTotalUnfoldingSystErrorFlat(
-	  TVectorD &yieldsBeforeUnfolding, 
+	  const TVectorD &yieldsBeforeUnfolding, 
 	  TVectorD &systUnfolding, 
 	  const TString &fullUnfoldingConstFileName,
 	  const TString &extraUnfoldingErrorsFileName){
@@ -270,8 +270,8 @@ namespace unfolding {
     if (!checkFlatVectorRanges(yieldsBeforeUnfolding,systUnfolding,"calculateTotalUnfoldingSystErrorFlat")) return 0;
   
     TFile fileConstants(fullUnfoldingConstFileName);
-    TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
-    TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
+    //TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
+    //TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
     TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
 
     int nBins = DYTools::getTotalNumberOfBins();
