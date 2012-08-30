@@ -743,7 +743,7 @@ namespace DYTools {
 
   inline 
   bool isBarrel(double eta){
-    double result = false;
+    bool result = false;
     if(fabs(eta) <= kECAL_GAP_LOW) 
       result = true;
     return result;
@@ -751,11 +751,22 @@ namespace DYTools {
 
   inline 
   bool isEndcap(double eta){
-    double result = false;
+    bool result = false;
     if(fabs(eta) >= kECAL_GAP_HIGH && fabs(eta)<2.5 ) 
       result = true;
     return result;
   }
+
+  inline 
+  bool goodEta(double eta) {
+    bool result = false;
+    if ((fabs(eta) <= kECAL_GAP_LOW) || 
+	((fabs(eta) >= kECAL_GAP_HIGH) && (fabs(eta)<2.5))) {
+      result = true;
+    }
+    return result;
+  }
+
 
   //
   // Several functions to calculate efficiency or ratio
