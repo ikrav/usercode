@@ -502,7 +502,7 @@ TString subtractBackground(const TString conf,
       indices.push_back(0);
       TMatrixD tmpErr=zeeMCShapeReweight;
       tmpErr=0;
-      PlotMatrixSlices(indices,0,zeeMCShapeReweight, tmpErr, "zeeMCShapeReweight",
+      PlotMatrixMYSlices(indices,0,zeeMCShapeReweight, tmpErr, "zeeMCShapeReweight",
 		       "hist", NULL, "zeeMCShapeReweight");
     }
 
@@ -527,7 +527,7 @@ TString subtractBackground(const TString conf,
       labelV.push_back("signalYields (data)");
       labelV.push_back("zeeYields (MC)");
       labelV.push_back("reweighted MC");
-      PlotMatrixSlices(indices,0,matrV, matrErrV, labelV, "dataVsMC",
+      PlotMatrixMYSlices(indices,0,matrV, matrErrV, labelV, "dataVsMC",
 		       "hist", NULL, "dataVsMC");
     }
   }
