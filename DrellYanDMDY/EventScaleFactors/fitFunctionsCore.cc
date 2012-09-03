@@ -7,8 +7,127 @@ int performWeightedFit=1;
 int debugWeightedFit=0; // extra datasets are created if this is 1
 int bkgPassContainsErrorFunction=0;
 int bkgFailContainsErrorFunction=0;
-bool unbinnedFit=false;
+bool unbinnedFitDefault=false;
+bool unbinnedFit=unbinnedFitDefault;
 
+
+// helping variables for fitMassWithTemplates
+const int cLoadVariableLimitsFromFile=0;
+const TString variableLimitsFName="user_fit_params.dat";
+const TString variableLimitsFNameTempl="user_fit_params_wTemplates.dat";
+
+struct RealLimit 
+{
+  std::string name;
+  double av;
+  double lo;
+  double hi;
+
+  void clear() { av=0.; lo=0.; hi=0.; }
+};
+
+
+inline int PosOk(size_t pos) { return (pos==std::string::npos) ? 0 : 1; }
+
+// ---------------------------------------------------------
+
+int loadVariableLimitsFromFile(int isReco, const TString &cut, 
+			       int limitCount, RealLimit *limits, 
+			       int fitWithTemplates) {
+  unbinnedFit=unbinnedFitDefault;
+  TString fname=
+    (fitWithTemplates) ? variableLimitsFNameTempl : variableLimitsFName;
+  std::ifstream fin(fname);
+  if (!fin.is_open()) {
+    std::cout << "loadVariableLimitsFromFile is on, but the file <" << 
+      fname << "> could not be found\n";
+    assert(0);
+  }
+
+  for (int i=0; i<limitCount; ++i) {
+    limits[i].clear();
+  }
+
+  std::string s;
+  int debugLoad=1;
+  int stage=0;
+  int found=0;
+  while (!fin.eof() && getline(fin,s)) {
+    if (debugLoad) std::cout << "got line <" << s << ">\n";
+    if (s[0]=='#') {
+      if (stage==2+limitCount) stage=0;
+      if (debugLoad) std::cout << "... skipping '#'\n";
+      continue;
+    }
+    if (s[0]=='%') {
+      if (debugLoad) std::cout << "... file end symbol '%' detected\n";
+      break;
+    }
+    if ((stage==0) && PosOk(s.find("isReco="))) {
+      if (debugLoad) std::cout << "isReco detected\n";
+      int isReco_in_file=atoi(s.c_str() + 7);
+      if (debugLoad) std::cout << "isReco_in_file=" << isReco_in_file << "\n";
+      if (isReco==isReco_in_file) {
+	if (debugLoad) std::cout << "... next stage\n";
+	stage++;
+      }
+      else {
+	if (debugLoad) std::cout << "... not suitable\n";
+      }
+    }
+    else if ((stage==1) && PosOk(s.find("cut="))) { 
+      if (debugLoad) std::cout << "'cut' detected. Seeking {" << cut << "}\n";
+      size_t pos1=s.find('{');
+      size_t pos2=s.find('}');
+      if (!PosOk(pos1) || !PosOk(pos2)) {
+	std::cout << "could not extract cut from a line <" << s << ">: missing beginning '{' and/or ending '}'\n";
+	assert(0);
+      }
+      TString cut_in_file=s.substr(pos1+1,pos2-pos1-1);
+      if (debugLoad) std::cout << "cut in file={" << cut_in_file << "}\n";
+      if (cut.Contains(cut_in_file)) {
+	if (debugLoad) std::cout << "cut ok. Next stage\n";
+	stage++;
+      }
+      else {
+	if (debugLoad) std::cout << "... cut not suitable.Stage=0\n";
+	stage=0;
+      }
+    }
+    else if ((stage>=2) && (stage<2+limitCount)) {
+      int idx=stage-2;
+      std::stringstream ss(s);
+      if (idx<3) {
+	ss >> limits[idx].lo >> limits[idx].hi;
+	if (debugLoad) std::cout << "limits[" << idx <<"].lo=" << limits[idx].lo << ", .hi=" << limits[idx].hi << "\n";
+      }
+      else {
+	ss >> limits[idx].av >> limits[idx].lo >> limits[idx].hi;
+	if (debugLoad) std::cout << "limits[" << idx <<"].av=" << limits[idx].av << ", .lo=" << limits[idx].lo << ", .hi=" << limits[idx].hi << "\n";
+      }
+      stage++;
+    }
+    else if (stage==2+limitCount) {
+      found++;
+      if (PosOk(s.find("unbinnedFit="))) {
+	if (debugLoad) std::cout << "unbinnedFit key detected\n";
+	size_t posMax=s.find("unbinnedFit=") + TString("unbinnedFit=").Length() + 3;
+	size_t posYes=s.find("true");
+	unbinnedFit=(posYes<posMax) ? true : false;
+	if (debugLoad) std::cout << "setting unbinnedFit to " << ((unbinnedFit) ? "true" : "false") << "\n";
+      }
+      stage=0;
+    }
+    else {
+      if (debugLoad) std::cout << "... skipping\n";
+    }
+  }
+  fin.close();
+  
+  return found;
+}
+
+// ----------------------------------------------------
 
 void printCorrelations(ostream& os, RooFitResult *res)
 {
@@ -29,13 +148,6 @@ void printCorrelations(ostream& os, RooFitResult *res)
   }
   os.flags(flags);
 }
-
-struct RealLimit 
-{
-  double av;
-  double lo;
-  double hi;
-};
 
 
 void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode, 
@@ -58,26 +170,42 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
       lims[j].hi=0.0;
     }
 
-  //  [0].name="mass";
-  //  [1].name="et";
-  //  [2].name="eta";
-  //  [3].name="zMass";
-  //  [4].name="zWidth";
-  //  [5].name="nsignal";
-  //  [6].name="eff";
-  //  [7].name="lambdaBgPass";
-  //  [8].name="cbMeanPass";
-  //  [9].name="cbWidthPass";
-  //  [10].name="cbAlphaPass";
-  //  [11].name="cbNPass";
-  //  [12].name="nbgPass";
-  //  [13].name="lambdaBgFail";
-  //  [14].name="cbMeanFail";
-  //  [15].name="cbWidthFail";
-  //  [16].name="cbAlphaFail";
-  //  [17].name="cbNFail";
-  //  [18].name="nbgFail";
+    lims[0].name="mass";
+    lims[1].name="et";
+    lims[2].name="eta";
+    lims[3].name="zMass";
+    lims[4].name="zWidth";
+    lims[5].name="nsignal";
+    lims[6].name="eff";
+    lims[7].name="lambdaBgPass";
+    lims[8].name="cbMeanPass";
+    lims[9].name="cbWidthPass";
+    lims[10].name="cbAlphaPass";
+    lims[11].name="cbNPass";
+    lims[12].name="nbgPass";
+    lims[13].name="lambdaBgFail";
+    lims[14].name="cbMeanFail";
+    lims[15].name="cbWidthFail";
+    lims[16].name="cbAlphaFail";
+    lims[17].name="cbNFail";
+    lims[18].name="nbgFail";
   
+  int foundOnFile=0;
+  if (cLoadVariableLimitsFromFile) {
+    foundOnFile=loadVariableLimitsFromFile(isRECO,cut,19,lims,0);
+    std::cout << "loadVariableLimitsFromFile found " << foundOnFile << " records for cut={" << cut << "}\n";
+
+    std::cout<<"\nbeg-llllllllllllllllllllllimssssssssssssssssssssssss"<<std::endl;  
+    
+    for (int j=0; j<12; j++)
+      {
+	std::cout<<lims[j].name<<": "<<lims[j].av<<", "<<lims[j].lo<<", "<<lims[j].hi<<std::endl;
+      }
+    
+    std::cout<<"end-llllllllllllllllllllllimssssssssssssssssssssssss"<<std::endl;   
+  }
+
+  if (!foundOnFile) {
   if (!isRECO)//for id and hlt
     {
       lims[0].lo=60;    lims[0].hi=120;
@@ -117,17 +245,19 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
       lims[7].av=-0.1;  lims[7].lo=-0.5;  lims[7].hi=0.5;
       lims[8].av=0.0;   lims[8].lo=-5.0;  lims[8].hi=5.0;
       lims[9].av=1.0;   lims[9].lo=0.1;   lims[9].hi=6.0;
-      lims[10].av=5.0;  lims[10].lo=0.0;  lims[10].hi=20.0;
+      //lims[10].av=5.0;  lims[10].lo=0.0;  lims[10].hi=20.0;
+      lims[10].av=5.0;  lims[10].lo=-20.0;  lims[10].hi=20.0;
       lims[11].av=1.0;  lims[11].lo=0.0;  lims[11].hi=10.0;
       lims[12].av=1.0;  lims[12].lo=0.0;  lims[12].hi=1.0e5;
       lims[13].av=-0.1; lims[13].lo=-0.5; lims[13].hi=0.5;
       lims[14].av=0.0;  lims[14].lo=-5.0; lims[14].hi=5.0;
       lims[15].av=1.0;  lims[15].lo=0.1;  lims[15].hi=6.0;
-      lims[16].av=5.0;  lims[16].lo=0.0;  lims[16].hi=20.0;
+      //lims[16].av=5.0;  lims[16].lo=0.0;  lims[16].hi=20.0;
+      lims[16].av=5.0;  lims[16].lo=-20.0;  lims[16].hi=20.0;
       lims[17].av=1.0;  lims[17].lo=0.0;  lims[17].hi=10.0;
       lims[18].av=1.0;  lims[18].lo=0.0;  lims[18].hi=1.0e5;      
     }
-
+  }
   
   // Define data sets
   RooRealVar mass("mass","mass",lims[0].lo, lims[0].hi);
@@ -465,19 +595,36 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
       lims[j].hi=0.0;
     }
 
-  //  [0].name="mass";
-  //  [1].name="et";
-  //  [2].name="eta";
-  //  [3].name="nsignal";
-  //  [4].name="eff";
-  //  [5].name="lambdaBgPass";
-  //  [6].name="resMeanPass";
-  //  [7].name="resSigma";
-  //  [8].name="nbgPass";
-  //  [9].name="lambdaBgFail";
-  //  [10].name="resMeanFail";
-  //  [11].name="nbgFail";
+    lims[0].name="mass";
+    lims[1].name="et";
+    lims[2].name="eta";
+    lims[3].name="nsignal";
+    lims[4].name="eff";
+    lims[5].name="lambdaBgPass";
+    lims[6].name="resMeanPass";
+    lims[7].name="resSigma";
+    lims[8].name="nbgPass";
+    lims[9].name="lambdaBgFail";
+    lims[10].name="resMeanFail";
+    lims[11].name="nbgFail";
   
+  int foundOnFile=0;
+  if (cLoadVariableLimitsFromFile) {
+    foundOnFile=loadVariableLimitsFromFile(isRECO,cut,12,lims,1);
+    std::cout << "loadVariableLimitsFromFile found " << foundOnFile << " records for cut={" << cut << "}\n";
+
+    std::cout<<"\nbeg-llllllllllllllllllllllimssssssssssssssssssssssss"<<std::endl;  
+    
+    for (int j=0; j<12; j++)
+      {
+	std::cout<<lims[j].name<<": "<<lims[j].av<<", "<<lims[j].lo<<", "<<lims[j].hi<<std::endl;
+      }
+    
+    std::cout<<"end-llllllllllllllllllllllimssssssssssssssssssssssss"<<std::endl;   
+  }
+
+
+  if (!foundOnFile) {
   if (!isRECO)
     {
       lims[0].lo=60;    lims[0].hi=120;
@@ -513,19 +660,9 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
       lims[11].av=1.0;  lims[11].lo=0.0;  lims[11].hi=1.0e5;
       
     }
+  }
   
-  /*  
-    std::cout<<"beg-llllllllllllllllllllllimssssssssssssssssssssssss"<<std::endl;  
-    
-    for (int j=0; j<12; j++)
-    {
-    std::cout<<lims[j].name<<": "<<lims[j].av<<", "<<lims[j].lo<<", "<<lims[j].hi<<std::endl;
-    }
-    
-    std::cout<<"end-llllllllllllllllllllllimssssssssssssssssssssssss"<<std::endl;  
-  */
-  
-  
+
   // Define data sets
   RooRealVar mass("mass","mass",lims[0].lo, lims[0].hi);
   mass.setBins(30);
