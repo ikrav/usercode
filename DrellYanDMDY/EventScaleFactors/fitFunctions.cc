@@ -4,6 +4,10 @@
 #include <TEntryList.h>
 #endif
 
+const int targetSpecificBin=0;
+const int targetEt=0;
+const int targetEta=1;
+
 /*
 void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,TTree *passTree, TTree *failTree,TCanvas *passCanvas, TCanvas *failCanvas,const char* setBinsType){
 
@@ -168,7 +172,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
 				 saveCountingToRootFile, resultsRootFile, 
 				 plotsRootFile);
   
-  if( method == DYTools::COUNTnFIT || method == DYTools::FITnFIT )
+  if( method == DYTools::COUNTnFIT || method == DYTools::FITnFIT ) {
     measureEfficiencyWithFit(passTree, failTree, 
 			     method, etBinning, etaBinning, 
 			     canvas, effOutput, fitLog,
@@ -176,6 +180,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
 			     resultsRootFile, plotsRootFile,
 			     NsetBins, isRECO, setBinsType, dirTag, 
 			     picFileExtraTag, puBin);
+  }
   
 
   return;
@@ -368,26 +373,27 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 			       DYTools::EFF_CLOPPER_PEARSON,
 			       effCountWeighted, 
 			       effErrLowCountWeighted,effErrHighCountWeighted);
-      char strOut[200];
-      sprintf(strOut, "hweightPass_Et_%1.0f-%1.0f__Eta_%5.3f-%5.3f",
+      const int len=200;
+      char strOut[len+1];
+      snprintf(strOut,len, "hweightPass_Et_%1.0f-%1.0f__Eta_%5.3f-%5.3f",
 	      limitsEt[i],limitsEt[i+1],
 	      limitsEta[j],limitsEta[j+1]);
       hwPass->SetName(strOut);
       if (resultPlotsFile) { resultPlotsFile->cd(); hwPass->Write(); }
-      sprintf(strOut, "hweightFail_Et_%1.0f-%1.0f__Eta_%5.3f-%5.3f",
+      snprintf(strOut,len, "hweightFail_Et_%1.0f-%1.0f__Eta_%5.3f-%5.3f",
 	      limitsEt[i],limitsEt[i+1],
 	      limitsEta[j],limitsEta[j+1]);
       hwFail->SetName(strOut);
       if (resultPlotsFile) { resultPlotsFile->cd(); hwFail->Write(); }
 
-      sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f    %10.0f  %10.0f\n",
+      snprintf(strOut,len, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f    %10.0f  %10.0f\n",
 	     limitsEt[i], limitsEt[i+1],
 	     limitsEta[j], limitsEta[j+1],
 	     effCount*100, effErrHighCount*100, effErrLowCount*100,
 	     probesPass, probesFail);
       effOutput << strOut;
 
-      sprintf(strOut, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f    %10.0f  %10.0f\n",
+      snprintf(strOut,len, "   %3.0f - %3.0f   %5.3f - %5.3f   %5.1f +%5.1f -%5.1f    %10.0f  %10.0f\n",
 	      limitsEt[i], limitsEt[i+1],
 	      limitsEta[j], limitsEta[j+1],
 	      effCountWeighted*100, 
@@ -484,11 +490,22 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
   effOutput << endl;
   effOutput << "Efficiency, " << methodStr << " method:\n";  
   effOutput << "     SC ET         SC eta           efficiency             pass         fail\n";
+  if (targetSpecificBin) {
+    TString msg= Form("\n\ttargetSpecificBin is on. targetEt=%d, targetEta=%d\n",targetEt,targetEta);
+    std::cout << msg;
+    effOutput << msg;
+  }
+
   for(int j=0; j<nEta; j++){
     for(int i=0; i<nEt; i++){
   //for(int j=0; j<1; j++){
     //for(int i=0; i<1; i++){
-       TString etCut = TString::Format(" ( et >=%6.1f && et <%6.1f ) ",
+      if (targetSpecificBin==1)  {
+	if ((targetEt>=0) && (targetEt!=i)) continue;
+	if ((targetEta>=0) && (targetEta!=j)) continue;
+      }
+
+      TString etCut = TString::Format(" ( et >=%6.1f && et <%6.1f ) ",
 				      limitsEt[i], limitsEt[i+1]);
       TString etaCut = 
 	TString::Format(" ( eta >= %5.3f && eta < %5.3f ) ",
