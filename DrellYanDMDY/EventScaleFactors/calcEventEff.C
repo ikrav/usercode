@@ -1452,11 +1452,11 @@ double findScaleFactorSmeared(int kind, int etBin, int etaBin,
   double effData=
     (*dataEff[kind])[etBin][etaBin] + 
     dataRndWeight[kind][etBin][etaBin] * (*dataEffAvgErr[kind])[etBin][etaBin];
-  if (effData>100.) effData=100.;
+  //if (effData>100.) effData=100.;
   double effMC=
     (*mcEff[kind])[etBin][etaBin] + 
     mcRndWeight[kind][etBin][etaBin] * (*mcEffAvgErr[kind])[etBin][etaBin];
-  if (effMC>100.) effMC=100.;
+  //if (effMC>100.) effMC=100.;
   //std::cout << "scaleFactorSmeared[kind=" << kind << "][etBin=" << etBin << "][etaBin=" << etaBin << "]=" << effData << '/' << effMC << "=" << (effData/effMC) << "\n";
   return (effData/effMC);
 }
