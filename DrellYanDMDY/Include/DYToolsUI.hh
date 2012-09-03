@@ -86,8 +86,11 @@ TString EtBinSetName(DYTools::TEtBinSet_t set) {
   case ETBINS1: name="EtBins1"; break;
   case ETBINS5: name="EtBins5"; break;
   case ETBINS6: name="EtBins6"; break;
+  case ETBINS6alt: name="EtBins6alt"; break;
+  case ETBINS6altB: name="EtBins6altB"; break;
   case ETBINS7: name="EtBins7"; break;
   case ETBINS7alt: name="EtBins7alt"; break;
+  case ETBINS7altB: name="EtBins7altB"; break;
   case ETBINS8: name="EtBins8"; break;
   case ETBINS9: name="EtBins9"; break;
   default: name="Unknown_Et_BinSet";
@@ -117,6 +120,8 @@ TString EtaBinSetName(DYTools::TEtaBinSet_t set) {
   case ETABINS4altNegs: name="EtaBins4altNegs"; break;
   case ETABINS5alt: name="EtaBins5alt"; break;
   case ETABINS5altNegs: name="EtaBins5altNegs"; break;
+  case ETABINS8alt: name="EtaBins8alt"; break;
+  case ETABINS8altNegs: name="EtaBins8altNegs"; break;
   default: name="Unknown_Eta_BinSet";
     std::cout << "EtaBinSetName=<" << name << ">\n";
     assert(0);
@@ -193,7 +198,10 @@ DYTools::TEtBinSet_t DetermineEtBinSet(const TString& str) {
   DYTools::TEtBinSet_t kind=ETBINS1;
   if (str.Contains("ETBINS1") || str.Contains("EtBins1")) kind=ETBINS1;
   else if (str.Contains("ETBINS5") || str.Contains("EtBins5")) kind=ETBINS5;
+  else if (str.Contains("ETBINS6altB") || str.Contains("EtBins6altB")) kind=ETBINS6altB;
+  else if (str.Contains("ETBINS6alt") || str.Contains("EtBins6alt")) kind=ETBINS6alt;
   else if (str.Contains("ETBINS6") || str.Contains("EtBins6")) kind=ETBINS6;
+  else if (str.Contains("ETBINS7altB") || str.Contains("EtBins7altB")) kind=ETBINS7altB;
   else if (str.Contains("ETBINS7alt") || str.Contains("EtBins7alt")) kind=ETBINS7alt;
   else if (str.Contains("ETBINS7") || str.Contains("EtBins7")) kind=ETBINS7;
   else if (str.Contains("ETBINS8") || str.Contains("EtBins8")) kind=ETBINS8;
@@ -215,7 +223,6 @@ DYTools::TEtaBinSet_t DetermineEtaBinSet(const TString& str) {
   else if (str.Contains("ETABINS2") || str.Contains("EtaBins2")) kind=ETABINS2;
   else if (str.Contains("ETABINS3Negs") || str.Contains("EtaBins3Negs")) kind=ETABINS3Negs;
   else if (str.Contains("ETABINS3") || str.Contains("EtaBins3")) kind=ETABINS3;
-  else if (str.Contains("ETABINS5Negs") || str.Contains("EtaBins5Negs")) kind=ETABINS5Negs;
   else if (str.Contains("ETABINS5altNegs") || str.Contains("EtaBins5altNegs")) kind=ETABINS5altNegs;
   else if (str.Contains("ETABINS5alt") || str.Contains("EtaBins5alt")) kind=ETABINS5alt;
   else if (str.Contains("ETABINS5") || str.Contains("EtaBins5")) kind=ETABINS5;
@@ -223,6 +230,8 @@ DYTools::TEtaBinSet_t DetermineEtaBinSet(const TString& str) {
   else if (str.Contains("ETABINS4alt") || str.Contains("EtaBins4alt")) kind=ETABINS4alt;
   else if (str.Contains("ETABINS4testNegs") || str.Contains("EtaBins4testNegs")) kind=ETABINS4testNegs;
   else if (str.Contains("ETABINS4test") || str.Contains("EtaBins4test")) kind=ETABINS4test;
+  else if (str.Contains("ETABINS8alt") || str.Contains("EtaBins8altNegs")) kind=ETABINS8altNegs;
+  else if (str.Contains("ETABINS8alt") || str.Contains("EtaBins8alt")) kind=ETABINS8alt;
   else {
     std::cout << "DetermineEtaBinSet failed at <" << str  << ">\n";
     assert(0);
@@ -258,6 +267,10 @@ TString CrossSectionKindName(DYTools::TCrossSectionKind_t kind) {
   case _cs_preFsrNorm: name="preFsrNorm"; break;
   case _cs_preFsrDet: name="preFsrDet"; break;
   case _cs_preFsrDetNorm: name="preFsrDetNorm"; break;
+  case _cs_postFsr: name="postFsr"; break;
+  case _cs_postFsrNorm: name="postFsrNorm"; break;
+  case _cs_postFsrDet: name="postFsrDet"; break;
+  case _cs_postFsrDetNorm: name="postFsrDetNorm"; break;
   default:
     std::cout << "CrossSectionKindName: cannot determine the name\n";
     assert(0);
