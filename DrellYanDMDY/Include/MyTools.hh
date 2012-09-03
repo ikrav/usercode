@@ -162,6 +162,17 @@ void HERE(const char *msg) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
+inline bool PosOk(size_t pos) { return (pos==std::string::npos) ? 0 : 1; }
+
+//----------------------------------------------------------------------
+
+template<class T>
+inline bool PosOk(const std::string &s, const T& substr) { 
+  return (s.find(substr)==std::string::npos) ? 0 : 1; 
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
 inline
 int printHisto(std::ostream& out, const TH1F* histo) {
   if (!histo) {
@@ -179,6 +190,10 @@ int printHisto(std::ostream& out, const TH1F* histo) {
   }
   return 1;
 }
+
+//------------------------------------------------------------------------------------------------------------------------
+
+inline int printHisto(const TH1F* histo) { return printHisto(std::cout, histo); }
 
 //------------------------------------------------------------------------------------------------------------------------
 
@@ -235,10 +250,45 @@ TH1F *extractMassDependence(const TString &name, const TString &title,
 
 
 
+//-----------------------------------------------------------------
+
+inline
+void printYields(const TString &name, const TMatrixD &cs, const TMatrixD &csErr, const TMatrixD &csErrSyst, int printSystError=1) {
+  std::cout << "\nprintYields for name=<" << name << ">\n";
+  if ((cs.GetNrows() != csErr.GetNrows()) ||
+      (cs.GetNrows() != csErrSyst.GetNrows())) {
+    printf(" -- numbers of rows is different: %d, %d, %d\n",cs.GetNrows(),csErr.GetNrows(),csErrSyst.GetNrows());
+    assert(0);
+  }
+  if ((cs.GetNcols() != csErr.GetNcols()) ||
+      (cs.GetNcols() != csErrSyst.GetNcols())) {
+    printf(" -- numbers of rows is different: %d, %d, %d\n",cs.GetNcols(),csErr.GetNcols(),csErrSyst.GetNcols());
+    assert(0);
+  }
+  std::cout << "cs.GetNcols()=" << cs.GetNcols() << ", cs.GetNrows="<< cs.GetNrows() << "\n";
+  if (printSystError) {
+    for (int ir=0; ir<cs.GetNrows(); ++ir) {
+      for (int ic=0; ic<cs.GetNcols(); ++ic) {
+	printf(" %6.4lf %8.4e %8.4e\n",cs[ir][ic],csErr[ir][ic],csErrSyst[ir][ic]);
+      }
+      printf("\n");
+    }
+  }
+  else {
+    for (int ir=0; ir<cs.GetNrows(); ++ir) {
+      for (int ic=0; ic<cs.GetNcols(); ++ic) {
+	printf(" %6.4lf %8.4e\n",cs[ir][ic],csErr[ir][ic]);
+      }
+      printf("\n");
+    }
+  }
+  std::cout << "done" << std::endl;
+}
+
 //------------------------------------------------------------------------------------------------------------------------
 
 inline
-void printSanityCheck(TMatrixD val, TMatrixD err, TString name)
+void printSanityCheck(const TMatrixD &val, const TMatrixD &err, const TString &name)
 {
   using namespace DYTools;
   std::cout<<"Sanity check printout"<<std::endl;
