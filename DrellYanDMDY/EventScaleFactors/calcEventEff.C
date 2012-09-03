@@ -45,6 +45,9 @@ using namespace mithep;
 using namespace std;
 
 const int NEffTypes=3;
+const int allowToIgnoreAnalysisTag=1; // efficiencies and selected events...
+// .... are the same for 1D and 2D
+
 // Declaration of arrays for systematic studies
 typedef double EffArray_t[NEffTypes][DYTools::nEtBinsMax][DYTools::nEtaBinsMax]; // largest storage
 
@@ -464,8 +467,17 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 
   TFile *skimFile=new TFile(selectEventsFName);
   if (!skimFile || !skimFile->IsOpen()) {
-    std::cout << "failed to open file <" << selectEventsFName << ">\n";
-    assert(0);
+    if (allowToIgnoreAnalysisTag) {
+      std::cout << ".... changing analysis tag in selectEventsFName\n";
+      if (DYTools::analysisTag=="2D") selectEventsFName.ReplaceAll("2D","1D");
+      else selectEventsFName.ReplaceAll("1D","2D");
+      if (skimFile) delete skimFile;
+      skimFile=new TFile(selectEventsFName);
+    }
+    if (!skimFile || !skimFile->IsOpen()) {
+      std::cout << "failed to open file <" << selectEventsFName << ">\n";
+      assert(0);
+    }
   }
   TTree *skimTree = (TTree*)skimFile->Get("Events");
   assert(skimTree);
@@ -1011,7 +1023,8 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     etplot1.SetLogx();
     etplot1.AddHist1D(hElectronEtV[cbin] , label , "PE", kRed);
     etplot1.AddHist1D(hZpeakEt       , "60-120 mass range", "hist,f", kBlack);
-    etplot1.SetYRange(0.0,0.6);
+    if (cbin==DYTools::nMassBins-1) etplot1.SetYRange(0.0,1.0);
+    else etplot1.SetYRange(0.0,0.6);
     hElectronEtV[cbin]->GetXaxis()->SetMoreLogLabels();
     hElectronEtV[cbin]->GetXaxis()->SetNoExponent();
     hZpeakEt->SetFillStyle(3001);
@@ -1990,12 +2003,15 @@ int fillOneEfficiency(const TnPInputFileMgr_t &mgr, const TString filename,
   TString fullFName=TString("../root_files/tag_and_probe/")+mgr.dirTag()+TString("/")+filename;
   TFile *f=new TFile(fullFName);
   if(!f->IsOpen()) {
-    std::cout << "failed to open a file <" << fullFName << ">" << std::endl;
-    if (DYTools::analysisTag=="2D") fullFName.ReplaceAll("2D","1D");
-    else fullFName.ReplaceAll("1D","2D");
-    delete f;
-    f = new TFile(fullFName);
-    if (!f->IsOpen()) {
+    if (allowToIgnoreAnalysisTag) {
+      std::cout << "... changing analysis tag in efficiency file name=<" 
+		<< fullFName << ">\n";
+      if (DYTools::analysisTag=="2D") fullFName.ReplaceAll("2D","1D");
+      else fullFName.ReplaceAll("1D","2D");
+      if(f) delete f;
+      f = new TFile(fullFName);
+    }
+    if (!f || !f->IsOpen()) {
       std::cout << "failed to open a file <" << fullFName << ">" << std::endl;
       assert(0);
     }
