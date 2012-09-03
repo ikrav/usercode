@@ -138,12 +138,17 @@ TString getLabel(int sample, DYTools::TEfficiencyKind_t effType, int method,  DY
       assert(0);
   }
 
-  label += "_bins-et";
-  //label += getNEtBins(etBinning);
-  label += EtBinSetName(etBinning);
-  label += "-eta";
-  //label += getNEtaBins(etaBinning);
-  label += EtaBinSetName(etaBinning);
+  const int old_style=0;
+  if (old_style) {
+    label += "_bins-et";
+    label += getNEtBins(etBinning);
+    label += "-eta";
+    label += getNEtaBins(etaBinning);
+  }
+  else {
+    label += EtBinSetName(etBinning);
+    label += EtaBinSetName(etaBinning);
+  }
 
   return label;
 }
