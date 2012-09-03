@@ -39,6 +39,14 @@ namespace DYTools {
   const TString strLumiAtECMS="4.7 fb^{-1} at #sqrt{s} = 7 TeV";
 
 
+  // asymmetric et cuts
+  inline
+  bool goodEtPair(double et1, double et2) {
+    return ( (et1>etMinTrail) && (et2>etMinTrail) &&
+	     ((et1>etMinLead) || (et2>etMinLead)) ) ? true : false;
+  }
+
+
   // Constants that define binning in mass and rapidity
   // Note: bin zero is underflow, overflow is neglected
   const int _nMassBins2D = 7;
@@ -337,7 +345,7 @@ namespace DYTools {
   //
   // Define Et and Eta binning
   //
-  typedef enum {ETBINS_UNDEFINED=-1, ETBINS1=1, ETBINS5, ETBINS6, ETBINS7, ETBINS7alt, ETBINS8, ETBINS9} TEtBinSet_t;
+  typedef enum {ETBINS_UNDEFINED=-1, ETBINS1=1, ETBINS5, ETBINS6, ETBINS6alt, ETBINS6altB, ETBINS7, ETBINS7alt, ETBINS7altB, ETBINS8, ETBINS9} TEtBinSet_t;
   const int nEtBins1 = 1;
   const double etBinLimits1[nEtBins1 + 1] = 
     {10, 500};
@@ -347,12 +355,21 @@ namespace DYTools {
   const int nEtBins6 = 6;
   const double etBinLimits6[nEtBins6 + 1] = 
     {10, 15, 20, 30, 40, 50, 500};
+  const int nEtBins6alt = 6;
+  const double etBinLimits6alt[nEtBins6alt + 1] = 
+    {10, 20, 30, 40, 50, 75, 500};
+  const int nEtBins6altB = 6;
+  const double etBinLimits6altB[nEtBins6altB + 1] = 
+    {10, 20, 30, 40, 50, 60, 500};
   const int nEtBins7 = 7;
   const double etBinLimits7[nEtBins7 + 1] = 
     {10, 15, 20, 30, 40, 50, 100, 500};
   const int nEtBins7alt = 7;
   const double etBinLimits7alt[nEtBins7alt + 1] = 
     {10, 15, 20, 30, 40, 50, 75, 500};
+  const int nEtBins7altB = 7;
+  const double etBinLimits7altB[nEtBins7altB + 1] = 
+    {10, 20, 30, 40, 50, 75, 100, 500};
   const int nEtBins8 = 8;
   const double etBinLimits8[nEtBins8 + 1] = 
     {10, 15, 20, 30, 40, 50, 75, 100, 500};
@@ -371,8 +388,11 @@ namespace DYTools {
     case ETBINS1: n = nEtBins1; break;
     case ETBINS5: n = nEtBins5; break;
     case ETBINS6: n = nEtBins6; break;
+    case ETBINS6alt: n = nEtBins6alt; break;
+    case ETBINS6altB: n = nEtBins6altB; break;
     case ETBINS7: n = nEtBins7; break;
     case ETBINS7alt: n = nEtBins7alt; break;
+    case ETBINS7altB: n = nEtBins7altB; break;
     case ETBINS8: n = nEtBins8; break;
     case ETBINS9: n = nEtBins9; break;
     default:
@@ -391,8 +411,11 @@ namespace DYTools {
     case ETBINS1: limits=etBinLimits1; break;
     case ETBINS5: limits=etBinLimits5; break;
     case ETBINS6: limits=etBinLimits6; break;
+    case ETBINS6alt: limits=etBinLimits6alt; break;
+    case ETBINS6altB: limits=etBinLimits6altB; break;
     case ETBINS7: limits=etBinLimits7; break;
     case ETBINS7alt: limits=etBinLimits7alt; break;
+    case ETBINS7altB: limits=etBinLimits7altB; break;
     case ETBINS8: limits=etBinLimits8; break;
     case ETBINS9: limits=etBinLimits9; break;
     default:
@@ -421,7 +444,7 @@ namespace DYTools {
     return result;
   };
 
-  typedef enum {ETABINS_UNDEFINED=-1, ETABINS1=1, ETABINS2, ETABINS2Negs, ETABINS3, ETABINS3Negs, ETABINS5, ETABINS5Negs, ETABINS4test, ETABINS4testNegs,  ETABINS4alt, ETABINS4altNegs, ETABINS5alt, ETABINS5altNegs} TEtaBinSet_t;
+  typedef enum {ETABINS_UNDEFINED=-1, ETABINS1=1, ETABINS2, ETABINS2Negs, ETABINS3, ETABINS3Negs, ETABINS5, ETABINS5Negs, ETABINS4test, ETABINS4testNegs,  ETABINS4alt, ETABINS4altNegs, ETABINS5alt, ETABINS5altNegs, ETABINS8alt, ETABINS8altNegs} TEtaBinSet_t;
   const int nEtaBins1 = 1;
   const double etaBinLimits1[nEtBins1 + 1] = 
     {0, 2.5000001};
@@ -458,6 +481,12 @@ namespace DYTools {
   const int nEtaBins5altNegs = 10;
   const double etaBinLimits5altNegs[nEtaBins5altNegs + 1 ] =
     {-2.500001, -2.2, -1.556, -1.4442, -0.8, 0, 0.8, 1.4442, 1.556, 2.2, 2.500001 };
+  const int nEtaBins8alt = 8;
+  const double etaBinLimits8alt[nEtaBins8alt + 1 ] =
+    {0, 0.4, 0.8, 1.0, 1.479, 1.8, 2.0, 2.2, 2.50001 };
+  const int nEtaBins8altNegs = 16;
+  const double etaBinLimits8altNegs[nEtaBins8altNegs + 1 ] =
+    {-2.50001, -2.2, -2.0, -1.8, -1.479, -1.0, -0.8, -0.4, 0, 0.4, 0.8, 1.0, 1.479, 1.8, 2.0, 2.2, 2.5 };
 
   const int nEtaBinsMax= nEtaBins5altNegs;
 
@@ -479,6 +508,8 @@ namespace DYTools {
     case ETABINS4altNegs: n = nEtaBins4altNegs; break;
     case ETABINS5alt: n = nEtaBins5alt; break;
     case ETABINS5altNegs: n = nEtaBins5altNegs; break;
+    case ETABINS8alt: n = nEtaBins8alt; break;
+    case ETABINS8altNegs: n = nEtaBins8altNegs; break;
     default:
       printf("ERROR: unknown binning requested\n");
       assert(0);
@@ -505,6 +536,8 @@ namespace DYTools {
     case ETABINS4altNegs: limits = etaBinLimits4altNegs; break;
     case ETABINS5alt: limits = etaBinLimits5alt; break;
     case ETABINS5altNegs: limits = etaBinLimits5altNegs; break;
+    case ETABINS8alt: limits = etaBinLimits8alt; break;
+    case ETABINS8altNegs: limits = etaBinLimits8altNegs; break;
     default:
       printf("ERROR: unknown/undefined binning requested\n");
       assert(0);
@@ -527,6 +560,7 @@ namespace DYTools {
     case ETABINS4test:
     case ETABINS4alt:
     case ETABINS5alt:
+    case ETABINS8alt:
       yes=0;
       break;
     case ETABINS2Negs: 
@@ -534,6 +568,7 @@ namespace DYTools {
     case ETABINS4testNegs:
     case ETABINS4altNegs:
     case ETABINS5altNegs:
+    case ETABINS8altNegs:
       yes=1;
       break;
     default:
@@ -573,7 +608,10 @@ namespace DYTools {
   // 
   // Cross section types
   //
-  typedef enum { _cs_None=0, _cs_preFsr, _cs_preFsrNorm, _cs_preFsrDet, _cs_preFsrDetNorm } TCrossSectionKind_t;
+  typedef enum { _cs_None=0, _cs_preFsr, _cs_preFsrNorm, 
+		 _cs_preFsrDet, _cs_preFsrDetNorm,
+		 _cs_postFsr, _cs_postFsrNorm, 
+		 _cs_postFsrDet, _cs_postFsrDetNorm } TCrossSectionKind_t;
 
   // 
   // Triggers vs run numbers
@@ -765,6 +803,12 @@ namespace DYTools {
       result = true;
     }
     return result;
+  }
+
+
+  inline 
+  bool goodEtaPair(double eta1, double eta2) {
+    return (goodEta(eta1) && goodEta(eta2));
   }
 
 
