@@ -509,7 +509,8 @@ void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vect
 //for prepareYields
 void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
                     vector<CSample*> samplev, vector<TString> snamev, 
-		   bool hasData, double dataOverMc, double* dataOverMcEachBin, bool normEachBin, bool singleCanvas,
+		   bool hasData, double dataOverMc, double* dataOverMcEachBin, 
+		   bool normEachBin, int singleCanvas,
 		   TFile *histoFile) 
 {
 
@@ -524,7 +525,8 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
   TH1F *ratioClone[DYTools::nMassBins];
   THStack *mcHists[DYTools::nMassBins]; 
   TString normStr =(normEachBin) ? "normEachBin-" : "normZpeak-";
-  normStr.Append((singleCanvas) ? "sngl-" : "multi-");
+  normStr.Append((singleCanvas!=0) ? "sngl-" : "multi-");
+  if (singleCanvas==-1) normStr.Append("rot-");
   std::cout << "normStr=" << normStr << "\n";
 
   for (int i=1; i<DYTools::nMassBins; i++)
@@ -541,11 +543,9 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
       ewkHist[i]=new TH1F(ewkName,"",DYTools::nYBins[i],DYTools::yRangeMin,DYTools::yRangeMax);
 
 
- 
       for (UInt_t j=0; j<samplev.size(); j++)
       // loop over data, signal MC and background MC samples
         {
-
           TString histName="hist-" + normStr;
           histName+=i; histName+="-"; histName+=j; 
           allHists[i][j]=new TH1F(histName,"",DYTools::nYBins[i],DYTools::yRangeMin,DYTools::yRangeMax);
@@ -609,7 +609,7 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
     {
       if (snamev[j]=="zee") ;
 	// Do nothing, already handled signal MC before
-      else if (snamev[j]=="wjets" || snamev[j]=="ww" || snamev[j]=="wz" || snamev[j]=="zz"); 
+      else if (snamev[j]=="wjets" || snamev[j]=="ww" || snamev[j]=="wz" || snamev[j]=="zz");
       else if (snamev[j] == "qcd" )
 	legend->AddEntry(allHists[1][j],"QCD","PF");
       else if (snamev[j] == "ttbar" )
@@ -657,8 +657,18 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
   TString canvNames="y-Single-";
   if (normEachBin) canvNames+="norm-each-mass-bin";
   else canvNames+="norm-Z-peak";
-  TCanvas* canvSingle=(singleCanvas) ? MakeCanvas(canvNames,canvNames,1200,1800) : NULL;
-  if (canvSingle) canvSingle->Divide(2,6,0,0);
+  TCanvas* canvSingle=NULL;
+  if (singleCanvas!=0) {
+    if (singleCanvas==1) {
+      canvSingle= MakeCanvas(canvNames,canvNames,1200,1800);
+      canvSingle->Divide(2,6,0,0);
+    }
+    else {
+      canvNames.Append("-rot");
+      canvSingle= MakeCanvas(canvNames,canvNames,1800,1200);
+      canvSingle->Divide(3,4,0,0);
+    }
+  }
   TPad* pad1[DYTools::nMassBins];
   TPad* pad2[DYTools::nMassBins];
 
@@ -670,8 +680,8 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
   for (int i=1; i<DYTools::nMassBins; i++) {
     int idx=(i-1)%6+1;
 
-      if (singleCanvas)
-       {
+    switch (singleCanvas) {
+      case 1: { // portrait
           double xi=0,xf=0,yi=0,yf=0;
           if ((idx%2)==1) {xi=0.0; xf=0.5;}
           if ((idx%2)==0) {xi=0.5; xf=1.0;}
@@ -683,9 +693,23 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
           pad1[i]->SetPad(xi,yi+0.3*(yf-yi),xf,yf);
           pad2[i] = (TPad*)canvSingle->GetPad(2*idx);
           pad2[i]->SetPad(xi,yi,xf,yi+0.28*(yf-yi));
-       }
-      else
-       {
+      }
+	break;
+      case -1: { // landscape
+          double xi=0,xf=0,yi=0,yf=0;
+          if (((idx-1)/3)==1) {yi=0.0; yf=0.5;}
+          if (((idx-1)/3)==0) {yi=0.5; yf=1.0;}
+          if (idx==1 || idx==4) {xi=0.00; xf=0.33;}
+          if (idx==2 || idx==5) {xi=0.33; xf=0.66;}
+          if (idx==3 || idx==6) {xi=0.66; xf=1.00;}
+
+          pad1[i] = (TPad*)canvSingle->GetPad(2*idx-1);
+          pad1[i]->SetPad(xi,yi+0.3*(yf-yi),xf,yf);
+          pad2[i] = (TPad*)canvSingle->GetPad(2*idx);
+          pad2[i]->SetPad(xi,yi,xf,yi+0.28*(yf-yi));
+      }
+	break;
+    case 0: {
           canvName="y-";
           canvName+=i;
           canvName+="-";
@@ -698,6 +722,11 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
           pad2[i] = (TPad*)canv[i]->GetPad(2);
           pad2[i]->SetPad(0,0,1.0,0.28);
         }
+      break;
+    default:
+      std::cout << "\n\n\tDraw6Canvases: do not know what to do with pads for singleCanvas=" << singleCanvas << "\n\n";
+      return;
+    }
 
       pad1[i]->SetLeftMargin(0.18);
       pad1[i]->SetTopMargin(0.08);

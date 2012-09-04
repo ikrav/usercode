@@ -34,7 +34,8 @@ void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vect
 //for prepareYields
 void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
 		   vector<CSample*> samplev, vector<TString> snamev, 
-		   bool hasData, double dataOverMc, double* dataOverMcEachBin, bool normEachBin, bool singleCanvas,
+		   bool hasData, double dataOverMc, double* dataOverMcEachBin, 
+		   bool normEachBin, int singleCanvas,
 		   TFile *histoFile);
 //		   bool hasData, double dataOverMc, double* dataOverMcEachBin, bool normEachBin=1, bool singleCanvas=0,
 //		   TFile *histoFile=NULL);
