@@ -543,7 +543,9 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
       ewkHist[i]=new TH1F(ewkName,"",DYTools::nYBins[i],DYTools::yRangeMin,DYTools::yRangeMax);
 
 
-      for (UInt_t j=0; j<samplev.size(); j++)
+      // add entries taking into accout that the order will be reversed
+      for (UInt_t j=samplev.size()-1; (j<samplev.size()); j--)
+      //for (UInt_t j=0; j<samplev.size(); j++)
       // loop over data, signal MC and background MC samples
         {
           TString histName="hist-" + normStr;
@@ -605,22 +607,22 @@ void Draw6Canvases(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2,
 	legend->AddEntry(allHists[1][j],"#gamma*/Z#rightarrow ee","PF");
     }
 
+  legend->AddEntry(ewkHist[1],"EWK","PF");
   for (UInt_t j=1; j<samplev.size(); j++)
     {
       if (snamev[j]=="zee") ;
 	// Do nothing, already handled signal MC before
-      else if (snamev[j]=="wjets" || snamev[j]=="ww" || snamev[j]=="wz" || snamev[j]=="zz");
+      else if (snamev[j]=="wjets" || snamev[j]=="ww" || snamev[j]=="wz" || snamev[j]=="zz") ;
+        // Do nothing, already listed
       else if (snamev[j] == "qcd" )
 	legend->AddEntry(allHists[1][j],"QCD","PF");
       else if (snamev[j] == "ttbar" )
 	legend->AddEntry(allHists[1][j],"t#bar{t}","PF");
-      else if (snamev[j] == "W+t" )
+      else if (snamev[j] == "wtop" )
 	legend->AddEntry(allHists[1][j],"Wt + W#bar{t}","PF");
       else if (snamev[j] == "ztt" )
 	legend->AddEntry(allHists[1][j],"#gamma*/Z#rightarrow#tau#tau","PF");
     }
-
-  legend->AddEntry(ewkHist[1],"EWK","PF");
 
   TLatex *cmsText = new TLatex();
   cmsText->SetTextFont(42);
@@ -864,10 +866,10 @@ void SetSomeHistAttributes (TH1F* hist, TString samplename)
 	  hist->SetMarkerColor(kOrange+10);
           hist->SetLineColor(kOrange+3);
         }
-      else if (samplename=="W+t") 
+      else if (samplename=="wtop") 
         {
-	  hist->SetFillColor(634);
-	  hist->SetMarkerColor(634);
+	  hist->SetFillColor(46);
+	  hist->SetMarkerColor(46);
 	  hist->SetLineColor(kOrange+3);
         }
       else if (samplename=="ztt") 
