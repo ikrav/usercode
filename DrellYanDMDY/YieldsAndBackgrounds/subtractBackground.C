@@ -378,7 +378,7 @@ TString subtractBackground(const TString conf,
   // 1. determine counts in Z-peak area in data and MC
   double countDataNoBkg=0., countMCsignal=0.;
   for (int i=0; i<DYTools::nMassBins; i++) {
-    if ((DYTools::massBinLimits[i]>59.999) && (DYTools::massBinLimits[i]<120.0001)) {
+    if ((DYTools::massBinLimits[i]>59.999) && (DYTools::massBinLimits[i+1]<120.0001)) {
       for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
 	countDataNoBkg += signalYields[i][yi];
       }
@@ -498,12 +498,11 @@ TString subtractBackground(const TString conf,
   const int makeDebugPlots=1;
   if (makeDebugPlots) {
     if (0) {
-      std::vector<int> indices;
-      indices.push_back(0);
+      const int plot_idx=0;
+      const int fnc_of_rapidity=0;
       TMatrixD tmpErr=zeeMCShapeReweight;
-      tmpErr=0;
-      PlotMatrixMYSlices(indices,0,zeeMCShapeReweight, tmpErr, "zeeMCShapeReweight",
-		       "hist", NULL, "zeeMCShapeReweight");
+      tmpErr=0;      
+      PlotMatrixMYSlices(plot_idx,fnc_of_rapidity,zeeMCShapeReweight,  "zeeMCShapeReweight");
     }
 
     if (1) {
@@ -530,6 +529,7 @@ TString subtractBackground(const TString conf,
       PlotMatrixMYSlices(indices,0,matrV, matrErrV, labelV, "dataVsMC",
 		       "hist", NULL, "dataVsMC");
     }
+
   }
 
 
