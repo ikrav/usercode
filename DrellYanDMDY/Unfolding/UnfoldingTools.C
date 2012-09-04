@@ -15,7 +15,7 @@ namespace unfolding {
   {
     
     // Read unfolding constants
-    std::cout << "unfold: Load constants from <" << unfoldingConstFileName 
+    std::cout << "unfold (V): Load constants from <" << unfoldingConstFileName 
 	      << ">" << std::endl;
     
     int res=checkBinningConsistency(unfoldingConstFileName);
@@ -33,7 +33,6 @@ namespace unfolding {
     for(int i=0; i<nBins; i++){
       for(int j=0; j<nBins; j++){
 	vout[i] += DetInvertedResponse(j,i) * vin[j];
-	
       }
     }
     
@@ -47,7 +46,7 @@ namespace unfolding {
   {
 
     // Read unfolding constants
-    std::cout << "unfold: Load constants from <" << unfoldingConstFileName 
+    std::cout << "unfoldTrueToReco(V): Load constants from <" << unfoldingConstFileName 
 	      << ">" << std::endl;
 
     int res=checkBinningConsistency(unfoldingConstFileName);
