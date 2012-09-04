@@ -92,7 +92,7 @@ public:
   // FSR, FSR_DET: ini --> PreFsrGen,  fin -->PostFsrGen
 public:
   TUnfoldingMatrixType_t kind;
-  TString name;
+  TString name, iniYieldsName, finYieldsName;
   TMatrixD *yieldsIni; //(DYTools::nMassBins,DYTools::nYBinsMax);
   TMatrixD *yieldsFin; //(DYTools::nMassBins,DYTools::nYBinsMax);
 
@@ -127,7 +127,7 @@ public:
 public:
   UnfoldingMatrix_t(TUnfoldingMatrixType_t set_kind, const TString &set_name) : 
     kind(set_kind),
-    name(set_name),
+    name(set_name), iniYieldsName(), finYieldsName(),
     yieldsIni(0), yieldsFin(0),
     DetMigration(0), DetMigrationErr(0),
     DetResponse(0), DetResponseErrPos(0), DetResponseErrNeg(0),
@@ -146,6 +146,7 @@ public:
     DetResponseArr=new TVectorD(arr);
     DetInvertedResponseArr=new TVectorD(arr); DetInvertedResponseErrArr=new TVectorD(arr);
     yieldsIniArr=new TVectorD(arr); yieldsFinArr=new TVectorD(arr);
+    UnfoldingMatrix_t::getYieldNames(set_kind, iniYieldsName, finYieldsName);
   }
 
   void fillIni(int iMassBinGen, int iYBinGen, double fullWeight) {
@@ -245,20 +246,9 @@ public:
     }
   }
 
-  void saveToFile(const TString &fileName, const TString &refFileName) const {
-    TFile fConst(fileName, "recreate" );
-    //name.Write("matrixName");
-    (*DetResponse)             .Write("DetResponse");
-    (*DetInvertedResponse)     .Write("DetInvertedResponse");
-    (*DetInvertedResponseErr)  .Write("DetInvertedResponseErr");
-    (*DetResponseArr)          .Write("DetResponseFIArray");
-    (*DetInvertedResponseArr)  .Write("DetInvertedResponseFIArray");
-    (*DetInvertedResponseErrArr).Write("DetInvertedResponseErrFIArray");
-    unfolding::writeBinningArrays(fConst);
-    fConst.Close();
 
-    TString iniName,finName;
-    switch(kind) {
+  static void getYieldNames(TUnfoldingMatrixType_t theKind, TString &iniName, TString &finName) {
+    switch(theKind) {
     case _cDET_Response: 
       iniName="yieldsMcPostFsrGen";
       finName="yieldsMcPostFsrRec";
@@ -272,18 +262,46 @@ public:
       finName="yieldsMcPostFsrGenDET";
       break;
     default:
-      std::cout << "saveToFile is cannot handle this 'kind'=" << kind << "\n";
+      std::cout << "getYieldNames cannot handle this 'kind'=" << theKind << "\n";
       assert(0);
     }
+  }
+
+
+  void saveToFile(const TString &fileName, const TString &refFileName) const {
+    std::cout << "UnfoldingMatrix_t::saveToFile(\n  <" << fileName << ">\n  <" << refFileName << ">) for name=" << this->name << "\n";
+    TFile fConst(fileName, "recreate" );
+    //name.Write("matrixName");
+    (*DetResponse)             .Write("DetResponse");
+    (*DetInvertedResponse)     .Write("DetInvertedResponse");
+    (*DetInvertedResponseErr)  .Write("DetInvertedResponseErr");
+    (*DetResponseArr)          .Write("DetResponseFIArray");
+    (*DetInvertedResponseArr)  .Write("DetInvertedResponseFIArray");
+    (*DetInvertedResponseErrArr).Write("DetInvertedResponseErrFIArray");
+    unfolding::writeBinningArrays(fConst);
+    fConst.Close();
 
     // Store reference MC arrays in a file
     TFile fRef(refFileName, "recreate" );
-    (*yieldsIni).Write(iniName);
-    (*yieldsIni).Write(finName);
-    (*yieldsIniArr).Write(iniName + TString("FIArray"));
-    (*yieldsFinArr).Write(finName + TString("FIArray"));
+    (*yieldsIni).Write(iniYieldsName);
+    (*yieldsFin).Write(finYieldsName);
+    (*yieldsIniArr).Write(iniYieldsName + TString("FIArray"));
+    (*yieldsFinArr).Write(finYieldsName + TString("FIArray"));
     unfolding::writeBinningArrays(fRef);
     fRef.Close();
+  }
+
+
+  void printYields() const {
+    std::cout << "Yields of matrix=" << name << " (" 
+	      << iniYieldsName << " and " << finYieldsName << ")\n";
+    for (int ir=0; ir<(*yieldsIni).GetNrows(); ++ir) {
+      std::cout << "ir=" << ir << "\n";
+      for (int ic=0; ic<(*yieldsIni).GetNcols(); ++ic) {
+	printf(" % 9.6lf  % 9.6lf\n",(*yieldsIni)[ir][ic],(*yieldsFin)[ir][ic]);
+      }
+      printf("\n");
+    }
   }
 
   void printConditionNumber() const {
@@ -468,7 +486,7 @@ void makeUnfoldingMatrixFsr(const TString input,
   //==============================================================================================================
 
   //for the FSR case
-  const bool useFewzWeights = true;
+  const bool useFewzWeights = false;
   const bool cutZPT100 = true;
   FEWZ_t fewz(useFewzWeights,cutZPT100);
   if (useFewzWeights && !fewz.isInitialized()) {
@@ -580,7 +598,7 @@ void makeUnfoldingMatrixFsr(const TString input,
   
     // loop over events    
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-      if (debugMode && (ientry>10)) break;
+      if (debugMode && (ientry>1000000)) break;
 
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
@@ -591,7 +609,7 @@ void makeUnfoldingMatrixFsr(const TString input,
       else reweight=reweightFsr;
 
       double fewz_weight = 1.0;
-      fewz_weight=fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
+      if (useFewzWeights) fewz_weight=fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
  
       if (ientry<20) {
 	printf("reweight=%4.2lf, fewz_weight=%4.2lf,dE_fsr=%+6.4lf\n",reweight,fewz_weight,(gen->mass-gen->vmass));
@@ -630,6 +648,13 @@ void makeUnfoldingMatrixFsr(const TString input,
 	     &&
 	     ( (gen->pt_1 > 20) || (gen->pt_2 > 20) ) 
 	     ) {
+	  /*
+	  if ((iMassBinGenPostFsr>=0) && (iYBinGenPostFsr>=0)) {
+	    if ((iMassBinGenPostFsr==1) && (iYBinGenPostFsr==0)) {
+	      printf("adding %6.4lf for ientry=%d\n",fullGenWeight,ientry);
+	    }
+	  }
+	  */
 	  fsrDET.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr,fullGenWeight);
 	  if (validFlatIndices(idxGenPreFsr,idxGenPostFsr)) {
 	    fsrDET.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
@@ -803,25 +828,29 @@ void makeUnfoldingMatrixFsr(const TString input,
   CPlot::sOutDir=TString("plots") + fnameTag;
 
   //TString unfoldingConstFileName(outputDir+TString("/unfolding_constants.root"));
+  const TString unfoldingConstFNameStart="/new_unfolding_constants";
   TString unfoldingConstFileName=outputDir+
-    TString("/new_unfolding_constants") + fnameTag + TString(".root");
+    unfoldingConstFNameStart + fnameTag + TString(".root");
   std::cout << "unfoldingConstFileName=<" << unfoldingConstFileName << ">\n";
 
-  TString refFileName(outputDir+TString("/new_yields_MC_unfolding_reference_") + DYTools::analysisTag + TString(".root"));
+  const TString refFNameStart="/new_yields_MC";
+  TString refFileName(outputDir+refFNameStart +
+		      TString("_unfolding_reference_") + 
+		      DYTools::analysisTag + TString(".root"));
 
   detResponse.saveToFile(unfoldingConstFileName, refFileName);  // detResonse, reference mc arrays
 
   TString fsrFileName=unfoldingConstFileName;
-  fsrFileName.ReplaceAll("/unfolding_","/fsr_unfolding_");
+  fsrFileName.ReplaceAll(unfoldingConstFNameStart,"/fsr_unfolding_constants");
   TString fsrRefFileName=refFileName;
-  fsrRefFileName.ReplaceAll("/yields_MC_","/gen_yields_");
+  fsrRefFileName.ReplaceAll(refFNameStart,"/gen_yields");
   std::cout << "fsrUnfoldingConstFileName=<" << fsrFileName << ">\n";
   fsr.saveToFile(fsrFileName,fsrRefFileName);
 
   TString fsrDETFileName=unfoldingConstFileName;
-  fsrDETFileName.ReplaceAll("/unfolding_","/fsrDET_unfolding_");
+  fsrDETFileName.ReplaceAll(unfoldingConstFNameStart,"/fsrDET_unfolding_constants");
   TString fsrDETRefFileName=refFileName;
-  fsrRefFileName.ReplaceAll("/yields_MC_","/genDET_yields_");
+  fsrDETRefFileName.ReplaceAll(refFNameStart,"/genDET_yields");
   std::cout << "fsrDETUnfoldingConstFileName=<" << fsrDETFileName << ">\n";
   fsrDET.saveToFile(fsrDETFileName,fsrDETRefFileName);
 
@@ -1015,6 +1044,10 @@ void makeUnfoldingMatrixFsr(const TString input,
     //yieldsMcGen.Print();
   }
   */
+
+  detResponse.printYields();
+  fsr.printYields();
+  fsrDET.printYields();
 
   gBenchmark->Show("makeUnfoldingMatrix");
 }
