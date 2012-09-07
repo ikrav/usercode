@@ -30,16 +30,18 @@ template<class T> T SQR(const T &x) { return x*x; }
 
 // This global constants will be filled from 
 // the configuration file. This is not great C++...
-TString tagDirYields = "";
-TString tagDirConstants = "";
-TString tagDirScaleFactorConstants = ""; // event scale factors
-TString tagDirXSect = ""; // will be set to tagDirScaleFactorConstants
+TString gTagDirYields = "";
+TString gTagDirConstants = "";
+TString gTagDirScaleFactorConstants = ""; // event scale factors
+TString gTagDirXSect = ""; // will be set to tagDirScaleFactorConstants
 // but will be placed to ../root_files/${tagDirXSect}/"
 Double_t lumi = 0;
 
 const int includeEScaleSystematics=0;
 const int includeUnfoldingSystematics=0;
+const int doClosureTest=1;
 const int fsrCorrection_BinByBin=0;
+const int useExactVectorsForMcClosureTest=0;
 
 
 const int printFSRcorrectionTable=0;
@@ -54,35 +56,39 @@ const int printAllCorrectionTable=0;
 const int printRelativeSystErrTable=0;
 const int callPrintTableForNotes=0;
 
-const TString fileEnd(DYTools::analysisTag + TString(".root"));
 
-const TString fileDataYields        (TString("yields_bg-subtracted") + fileEnd);
-const TString fileMcReferenceYields (
-     (fsrCorrection_BinByBin) ?
-     (TString("yields_MC_unfolding_reference_") + fileEnd) :
-     (TString("new_yields_MC_unfolding_reference_") + fileEnd) );
-const TString fileMcReferenceYieldsFsr(TString("gen_yields_unfolding_reference_") + fileEnd);
-const TString fileMcReferenceYieldsFsrDET(TString("genDET_yields_unfolding_reference_") + fileEnd);
+TString pathYields;
+TString pathConstants;
+TString pathSystematics;
+TString pathScaleFactors;
+TString pathXSect;
 
-// This file contains unfolding matrix 
-const TString unfFileStart=(fsrCorrection_BinByBin) ? "" : "new_";
-const TString fileUnfoldingConstants(unfFileStart + TString("unfolding_constants") + fileEnd);
-// Contains relative unfolding systematic errors
-const TString fileUnfoldingErrors(TString("unfolding_systematics") + fileEnd);
-// Contains relative escale systematic errors
-const TString fileEscaleErrors(TString("escale_systematics") + fileEnd);
-const TString fileEfficiencyConstants(TString("event_efficiency_constants") + fileEnd);
-TString fileScaleFactorConstants(TString("scale_factors_") + fileEnd);
-const TString fileAcceptanceConstants(TString("acceptance_constants") + fileEnd);
-const TString fileAcceptanceSystematics(TString("theoretical_uncertainties.root"));
-const TString fileAcceptanceFSRSystematics(TString("acceptance_FSR_systematics") + fileEnd);
-const TString fileFsrCorrectionConstants(TString("fsr_constants_") + fileEnd);
-const TString fileFsrCorrectionSansAccConstants(TString("fsr_constants_") + DYTools::analysisTag + TString("_sans_acc.root"));
-const TString fileFsrCorrectionConstantsUnf(TString("fsr_unfolding_constants") + fileEnd);
-const TString fileFsrCorrectionDETConstantsUnf(TString("fsrDET_unfolding_constants") + fileEnd);
+TString fnameDataYields;  // bg-subtracted
+TString fnameMcReferenceYields; // yields for MC closure test of unfolding
+TString fnameMcReferenceYieldsFsr; // yields for MC closure test of FSR unfolding
+TString fnameMcReferenceYieldsFsrDET; // yields for MC closure test of FSR unfolding in the DET acceptance
+
+TString fnameUnfoldingConstants; // unfolding matrix for DET response
+TString fnameUnfoldingSystErrors; // unfolding (DET response) systematic errors (relative)
+TString fnameEscaleSystErrors; // escale systematic errors (relative)
+
+TString fnameEfficiencyConstants; // event_efficiency_constants
+TString fnameScaleFactorConstants; // scale_factors
+TString fnameAcceptanceConstants; // "acceptance_constants"
+TString fnameAcceptanceSystematics; // "theoretical_uncertainties";
+TString fnameAcceptanceFSRSystematics; // "acceptance_FSR_systematics"
+
+TString fnameFsrCorrectionConstantsBbB; // FSR correction bin-by-bin
+TString fnameFsrCorrectionSansAccConstantsBbB; // FSR correction bin-by-bin in the DET acceptance
+TString fnameFsrCorrectionConstantsUnf; // FSR correction by unfolding
+TString fnameFsrCorrectionDETConstantsUnf; // FSR correction by unfolding in the DET acceptance
+
 
 // Forward declarations
 //-----------------------------------------------------------------
+
+void initGlobalFileNames(const TriggerSelection &triggers, const TString &tagDirYields, const TString &tagDirConstants, const TString &tagDirScaleFactorConstants, const TString &tagDirXSect, int fsrBinByBin);
+
 
 void readData(TMatrixD &v, TMatrixD &vErr1, TMatrixD &vErr2);
 void saveYields(const TMatrixD &cs, const TMatrixD &csErr, const TMatrixD &csErrSyst, const TriggerSelection &triggers, const TString specTag, int DET);
@@ -156,11 +162,12 @@ TMatrixD systAcceptanceRelative(DYTools::nMassBins,nMaxYBins);
 TMatrixD systEfficiency(DYTools::nMassBins,nMaxYBins);
 TMatrixD systOthers(DYTools::nMassBins,nMaxYBins);
 
+
 // ---------------------------------------------------------------
 // Main function
 // ---------------------------------------------------------------
 
-void calcCrossSection(const TString conf="../config_files/xsecCalc.conf"){
+void calcCrossSection(const TString conf) { //="../config_files/xsecCalc.conf")
 
   // Read from configuration file only the location of the root files
   ifstream ifs;
@@ -175,14 +182,14 @@ void calcCrossSection(const TString conf="../config_files/xsecCalc.conf"){
       stringstream ss1(line); ss1 >> lumi;
       state++;
     }else if(state==1){
-      tagDirYields = TString(line);
+      gTagDirYields = TString(line);
       state++;
     }else if(state==2){
-      tagDirConstants = TString(line);
+      gTagDirConstants = TString(line);
       state++;
     } 
     else if (state==3) {
-      tagDirScaleFactorConstants = TString(line);
+      gTagDirScaleFactorConstants = TString(line);
       if (PosOk(line,"hltEff")) {
 	std::cout << "input file probably does not contain a line for tagDirESFConstants\n";
 	assert(0);
@@ -196,21 +203,22 @@ void calcCrossSection(const TString conf="../config_files/xsecCalc.conf"){
   }
   ifs.close();
 
-  tagDirXSect = tagDirScaleFactorConstants;
+  gTagDirXSect = gTagDirScaleFactorConstants;
   CPlot::sOutDir = TString("plots_") + DYTools::analysisTag + 
-    TString("_") +  tagDirScaleFactorConstants;
+    TString("_") +  gTagDirScaleFactorConstants;
 
   // Construct the trigger object
   TriggerSelection triggers(triggerSetString, true, 0);
-  assert ( triggers.isDefined() );
-  // update the name of the file with per-event scale factors
-  fileScaleFactorConstants.Insert(fileScaleFactorConstants.Index(".root"),
-				  TString("_") + triggers.triggerConditionsName()
-				  + TString("_PU")
-				  );
-  std::cout << "using fileScaleFactorConstants=" << fileScaleFactorConstants <<  "from <" << tagDirScaleFactorConstants << ">\n";
+  if (!triggers.isDefined()) {
+    std::cout << "failed to construct trigger object from <" << triggerSetString << ">\n";
+    assert ( triggers.isDefined() );
+  }
+
+  // Prepare global file names
+  initGlobalFileNames(triggers,gTagDirYields,gTagDirConstants,gTagDirScaleFactorConstants,gTagDirXSect, fsrCorrection_BinByBin);
 
   // Do a closure test on MC
+  if (doClosureTest) {
   applyUnfoldingToMc(0);
 
   if (0) if (!fsrCorrection_BinByBin) {
@@ -221,6 +229,7 @@ void calcCrossSection(const TString conf="../config_files/xsecCalc.conf"){
   if (1 || !fsrCorrection_BinByBin) {
     applyUnfoldingToMc(3);
     applyUnfoldingToMc(4);
+  }
   }
 
 
@@ -324,7 +333,7 @@ void calcCrossSection(const TString conf="../config_files/xsecCalc.conf"){
   // Calculate absolute and relative cross-sections
   std::cout << "absolute and relative cross sections" << std::endl;
   std::cout << "1. crossSections" << std::endl;
-  if (0) {
+  if (DYTools::study2D==0) {
     crossSections(preFsrYields, preFsrYieldsStatErr, preFsrYieldsSystErr,
 		  absCrossSection, absCrossSectionStatErr, absCrossSectionSystErr,
 		  relCrossSection, relCrossSectionStatErr, relCrossSectionSystErr,
@@ -402,9 +411,8 @@ void calcCrossSection(const TString conf="../config_files/xsecCalc.conf"){
 //-----------------------------------------------------------------
 void readData(TMatrixD &v, TMatrixD &vErr1, TMatrixD &vErr2){
 
-  printf("Load data yields\n"); fflush(stdout);
-  TString fileYieldsFullName=TString("../root_files/yields/")+tagDirYields+TString("/")+fileDataYields;
-  TFile fileYields   (fileYieldsFullName);
+  std::cout << "Load data yields from <" << fnameDataYields << ">" << std::endl;
+  TFile fileYields   (fnameDataYields);
   TMatrixD *YieldsSignalPtr       = (TMatrixD *)fileYields.FindObjectAny("YieldsSignal");
   TMatrixD *YieldsSignalErrPtr    = (TMatrixD *)fileYields.FindObjectAny("YieldsSignalErr");
   TMatrixD *YieldsSignalSystErrPtr= (TMatrixD *)fileYields.FindObjectAny("YieldsSignalSystErr");
@@ -414,7 +422,7 @@ void readData(TMatrixD &v, TMatrixD &vErr1, TMatrixD &vErr2){
 
   if (!YieldsSignalPtr || !YieldsSignalErrPtr || !YieldsSignalSystErrPtr ||
       !MassBinLimitsForYieldsPtr || !YBinCountsForYieldsPtr) {
-    std::cout << "failed to get at least one of the required objects from file <" << fileDataYields << ">\n";
+    std::cout << "failed to get at least one of the required objects from file <" << fnameDataYields << ">\n";
     assert(0);
   }
 
@@ -427,7 +435,7 @@ void readData(TMatrixD &v, TMatrixD &vErr1, TMatrixD &vErr2){
   // Check that the binning is consistent
   bool checkResult = true;
   checkResult=unfolding::checkRangesMY(v,"v in readData");
-  if (checkResult) checkResult=unfolding::checkBinningRanges(MassBinLimitsForYields,YBinCountsForYields,fileYieldsFullName);
+  if (checkResult) checkResult=unfolding::checkBinningRanges(MassBinLimitsForYields,YBinCountsForYields,fnameDataYields);
   if (checkResult) checkResult=unfolding::checkRangesMY(YieldsSignal,"YieldsSignal");
   if( !checkResult ){
     printf("ERROR: inconsistent binning in the inputs\n");
@@ -447,7 +455,7 @@ void readData(TMatrixD &v, TMatrixD &vErr1, TMatrixD &vErr2){
     }
   }
 
-  printYields(fileDataYields, v,vErr1,vErr2);
+  //printYields(fnameDataYields, v,vErr1,vErr2);
 
   return;
 }
@@ -491,18 +499,14 @@ void  applyUnfolding(const TMatrixD &vinM, const TMatrixD &vinStatErrM, const TM
              TMatrixD &voutM, TMatrixD &voutStatErrM, TMatrixD &voutSystErrM)
 {
 
-  // Construct file names
-  TString fullUnfoldingConstFileName = TString("../root_files/constants/")+tagDirConstants+TString("/")+fileUnfoldingConstants;
-  TString fullUnfoldingErrFileName   = TString("../root_files/systematics/")+tagDirConstants+TString("/")+fileUnfoldingErrors;
-
   int nUnfoldingBins = DYTools::getTotalNumberOfBins();
   TVectorD vin(nUnfoldingBins),vinStatErr(nUnfoldingBins),vinSystErr(nUnfoldingBins);
   TVectorD vout(nUnfoldingBins),voutStatErr(nUnfoldingBins),voutSystErr(nUnfoldingBins);
 
   // First, propagate through unfolding the signal yields with stat and syst errors
-  assert(unfolding::unfold(vinM, voutM, fullUnfoldingConstFileName, vin, vout)==1);
-  assert(unfolding::propagateErrorThroughUnfolding(vinStatErrM,voutStatErrM, fullUnfoldingConstFileName, vinStatErr, voutStatErr)==1);
-  assert(unfolding::propagateErrorThroughUnfolding(vinSystErrM,voutSystErrM, fullUnfoldingConstFileName, vinSystErr, voutSystErr)==1);
+  assert(unfolding::unfold(vinM, voutM, fnameUnfoldingConstants, vin, vout)==1);
+  assert(unfolding::propagateErrorThroughUnfolding(vinStatErrM,voutStatErrM, fnameUnfoldingConstants, vinStatErr, voutStatErr)==1);
+  assert(unfolding::propagateErrorThroughUnfolding(vinSystErrM,voutSystErrM, fnameUnfoldingConstants, vinSystErr, voutSystErr)==1);
 
   // Second, propagate separately systematic error components that need it.
   // These are already included in the total systematic error above in vinSystErr,
@@ -510,7 +514,7 @@ void  applyUnfolding(const TMatrixD &vinM, const TMatrixD &vinStatErrM, const TM
   // table of systematic errors
   TMatrixD systBackgrM(DYTools::nMassBins,nMaxYBins);
   TVectorD systBackgrBeforeUnfoldingV(nUnfoldingBins), systBackgrV(nUnfoldingBins);
-  unfolding::propagateErrorThroughUnfolding(systBackgrBeforeUnfolding, systBackgrM, fullUnfoldingConstFileName, systBackgrBeforeUnfoldingV,systBackgrV);
+  unfolding::propagateErrorThroughUnfolding(systBackgrBeforeUnfolding, systBackgrM, fnameUnfoldingConstants, systBackgrBeforeUnfoldingV,systBackgrV);
 
   // The electron energy scale systematics that is loaded here
   // is estimated on the unfolded yields. So we read it in at this time
@@ -518,26 +522,23 @@ void  applyUnfolding(const TMatrixD &vinM, const TMatrixD &vinStatErrM, const TM
   TVectorD systEscaleV(nUnfoldingBins);
   systEscaleV=0;
   if (includeEScaleSystematics) {
-  TString fullEscaleSystErrorsFileName = TString("../root_files/systematics/")
-    +tagDirYields+TString("/")
-    +fileEscaleErrors;
-  TFile fileEscaleSystematics(fullEscaleSystErrorsFileName);
-  if( ! fileEscaleSystematics.IsOpen()){
-    printf("ERROR: required file with escale errors %s is not found!\n",
-	   fullEscaleSystErrorsFileName.Data());
-    assert(0);
-  }
-  assert(unfolding::checkBinningArrays(fileEscaleSystematics));
-  TVectorD *escaleSystematicsPercentPtr
-    = (TVectorD *)fileEscaleSystematics.FindObjectAny("escaleSystPercentFI");
-  assert(escaleSystematicsPercentPtr);
-  assert(unfolding::checkRangesFI(*escaleSystematicsPercentPtr,"escaleSystPercent"));
-  TVectorD escaleSystematicsPercent = *escaleSystematicsPercentPtr;
+    TFile fileEscaleSystematics(fnameEscaleSystErrors);
+    if( ! fileEscaleSystematics.IsOpen()){
+      printf("ERROR: required file with escale errors %s is not found!\n",
+	     fnameEscaleSystErrors.Data());
+      assert(0);
+    }
+    assert(unfolding::checkBinningArrays(fileEscaleSystematics));
+    TVectorD *escaleSystematicsPercentPtr
+      = (TVectorD *)fileEscaleSystematics.FindObjectAny("escaleSystPercentFI");
+    assert(escaleSystematicsPercentPtr);
+    assert(unfolding::checkRangesFI(*escaleSystematicsPercentPtr,"escaleSystPercent"));
+    TVectorD escaleSystematicsPercent = *escaleSystematicsPercentPtr;
   
-  systEscaleV=0;
-  for(int idx=0; idx<nUnfoldingBins; ++idx) {
-    systEscaleV[idx] = (escaleSystematicsPercent[idx]/100.0) * vout[idx];
-  }
+    systEscaleV=0;
+    for(int idx=0; idx<nUnfoldingBins; ++idx) {
+      systEscaleV[idx] = (escaleSystematicsPercent[idx]/100.0) * vout[idx];
+    }
   }
 
   // Pool together the unfolding systematics and add it to the total systematics
@@ -545,8 +546,8 @@ void  applyUnfolding(const TMatrixD &vinM, const TMatrixD &vinStatErrM, const TM
   systUnfoldingV=0;
   if (includeUnfoldingSystematics) {
     unfolding::calculateTotalUnfoldingSystErrorFlat(vin, systUnfoldingV, 
-						    fullUnfoldingConstFileName, 
-						    fullUnfoldingErrFileName);
+						    fnameUnfoldingConstants,
+						    fnameUnfoldingSystErrors);
   }
 
   // Add unfolding and escale systematics to the total systematic error
@@ -570,7 +571,7 @@ void  applyUnfolding(const TMatrixD &vinM, const TMatrixD &vinStatErrM, const TM
   }
 
   // Print the result
-  if (1) {
+  if (0) {
     printf("\nUNFOLD: Results for the data, yields:\n");
     printf(" mass        |y| range      yields observed        after unfolding            \n");
     for(int i=0; i<DYTools::nMassBins; i++){
@@ -611,36 +612,28 @@ void applyUnfoldingToMc(int fsr) { //TString fullUnfoldingConstFileName, TString
     return;
     //assert(0);
   }
-
-  TString path=TString("../root_files/constants/")+tagDirConstants+TString("/");
-  TString fullUnfoldingConstFileName = path;
-  TString fullMcRefYieldsFileName    = path;
+  TString unfoldingConstFileName;
+  TString mcRefYieldsFileName;
   TString iniArrName, finArrName;
 
   switch(fsr) {
   case 0: 
-    if (fsrCorrection_BinByBin) {
-      fullUnfoldingConstFileName.Append(fileUnfoldingConstants);
-      fullMcRefYieldsFileName.Append(fileMcReferenceYields);
-    }
-    else {
-      fullUnfoldingConstFileName.Append(fileUnfoldingConstants);
-      fullMcRefYieldsFileName.Append(fileMcReferenceYields);
-    }
+    unfoldingConstFileName=fnameUnfoldingConstants;
+    mcRefYieldsFileName=fnameMcReferenceYields;
     iniArrName="yieldsMcPostFsrGenFIArray";
     finArrName="yieldsMcPostFsrRecFIArray";
     break;
   case 1:
   case 3:
-    fullUnfoldingConstFileName.Append(fileFsrCorrectionConstantsUnf);
-    fullMcRefYieldsFileName.Append(fileMcReferenceYieldsFsr);
+    unfoldingConstFileName = fnameFsrCorrectionConstantsUnf;
+    mcRefYieldsFileName = fnameMcReferenceYieldsFsr;
     iniArrName="yieldsMcPreFsrGenFIArray";
     finArrName="yieldsMcPostFsrGenFIArray";
     break;
   case 2:
   case 4:
-    fullUnfoldingConstFileName.Append(fileFsrCorrectionDETConstantsUnf);
-    fullMcRefYieldsFileName.Append(fileMcReferenceYieldsFsrDET);
+    unfoldingConstFileName = fnameFsrCorrectionDETConstantsUnf;
+    mcRefYieldsFileName = fnameMcReferenceYieldsFsrDET;
     iniArrName="yieldsMcPreFsrGenDETFIArray";
     finArrName="yieldsMcPostFsrGenDETFIArray";
     break;
@@ -649,17 +642,17 @@ void applyUnfoldingToMc(int fsr) { //TString fullUnfoldingConstFileName, TString
     assert(0);
   }
 
-  printf("Load MC reference yields\n"); fflush(stdout);
+  HERE("Load MC reference yields");
 
-  TFile fileMcRef(fullMcRefYieldsFileName);
+  TFile fileMcRef(mcRefYieldsFileName);
   if (!fileMcRef.IsOpen()) {
-    std::cout << "failed to open a file <" << fullMcRefYieldsFileName << ">\n";
+    std::cout << "failed to open a file <" << mcRefYieldsFileName << ">\n";
     assert(fileMcRef.IsOpen());
   }
   TVectorD *yieldsMcGenPtr = (TVectorD *)fileMcRef.FindObjectAny(iniArrName);
   TVectorD *yieldsMcRecPtr = (TVectorD *)fileMcRef.FindObjectAny(finArrName);
   if (!yieldsMcRecPtr || !yieldsMcGenPtr) {
-    std::cout << "null pointers from <" << fullMcRefYieldsFileName << ">\n";
+    std::cout << "null pointers from <" << mcRefYieldsFileName << ">\n";
     std::cout << "  was looking for <" << iniArrName << ">\n";
     std::cout << "  and <" << finArrName << ">\n";
     assert(0);
@@ -675,8 +668,8 @@ void applyUnfoldingToMc(int fsr) { //TString fullUnfoldingConstFileName, TString
   dNdMmcCheckVgen = 0; 
   dNdMmcCheckVreco = 0;
 
-  unfolding::unfold(yieldsMcRecV, dNdMmcCheckVgen, fullUnfoldingConstFileName);
-  unfolding::unfoldTrueToReco(yieldsMcGenV, dNdMmcCheckVreco, fullUnfoldingConstFileName);
+  unfolding::unfold(yieldsMcRecV, dNdMmcCheckVgen, unfoldingConstFileName);
+  unfolding::unfoldTrueToReco(yieldsMcGenV, dNdMmcCheckVreco, unfoldingConstFileName);
 
   int saveTestRes=0;
   if (!fsrCorrection_BinByBin) {
@@ -773,25 +766,23 @@ void  efficiencyCorrection(const TMatrixD &vin, const TMatrixD &vinStatErr, cons
   const int nUnfoldingBins= DYTools::getTotalNumberOfBins();
 
   // Read efficiency constants
-  printf("Efficiency: Load constants\n"); fflush(stdout);
+  HERE("Efficiency: Load constants");
     
-  TString fileConstantsFullName=TString("../root_files/constants/")+tagDirConstants+TString("/")+fileEfficiencyConstants;
-  TFile fileConstants(fileConstantsFullName);
+  TFile fileConstants(fnameEfficiencyConstants);
   TMatrixD* efficiencyArrayPtr    = (TMatrixD *)fileConstants.FindObjectAny("efficiencyArray");
   TMatrixD* efficiencyErrArrayPtr = (TMatrixD *)fileConstants.FindObjectAny("efficiencyErrArray");
 
   if (!efficiencyArrayPtr || !efficiencyErrArrayPtr) {
-    std::cout << "at least one needed object is not present in <" << fileConstantsFullName << ">\n";
+    std::cout << "at least one needed object is not present in <" << fnameEfficiencyConstants << ">\n";
     assert(0);
   }
 
-  TString fileScaleConstantsFullName=TString("../root_files/constants/")+tagDirScaleFactorConstants+TString("/")+fileScaleFactorConstants;
-  TFile fileScaleConstants(fileScaleConstantsFullName);
+  TFile fileScaleConstants(fnameScaleFactorConstants);
   TVectorD* rhoDataMcPtr    = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorFlatIdxArray");
   TVectorD* rhoDataMcErrPtr = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorErrFlatIdxArray");
 
   if (!rhoDataMcPtr || !rhoDataMcErrPtr) {
-    std::cout << "a least one needed object is not present in <" << fileScaleConstantsFullName << ">\n";
+    std::cout << "a least one needed object is not present in <" << fnameScaleFactorConstants << ">\n";
     assert(0);
   }
 
@@ -874,60 +865,61 @@ void  acceptanceCorrection(const TMatrixD &vin, const TMatrixD &vinStatErr, cons
   // Read efficiency constants
   printf("Acceptance: Load constants\n"); fflush(stdout);
     
-  TString fileConstantsFullName=TString("../root_files/constants/")+tagDirConstants+TString("/")+fileAcceptanceConstants;
-  TFile fileConstants(fileConstantsFullName);
+  TFile fileConstants(fnameAcceptanceConstants);
   if (!fileConstants.IsOpen()) {
-    std::cout << "failed to open acceptance systematics file <" << fileConstantsFullName << ">\n";
+    std::cout << "failed to open acceptance systematics file <" << fnameAcceptanceConstants << ">\n";
     assert(0);
   }
   TMatrixD *acceptanceMatrixPtr    = (TMatrixD *)fileConstants.FindObjectAny("acceptanceMatrix");
   TMatrixD *acceptanceErrMatrixPtr = (TMatrixD *)fileConstants.FindObjectAny("acceptanceErrMatrix");
   if (!acceptanceMatrixPtr || !acceptanceErrMatrixPtr) {
-    std::cout << "at least one object from file <" << fileConstantsFullName << "> is null\n";
+    std::cout << "at least one object from file <" << fnameAcceptanceConstants << "> is null\n";
     assert(0);
   }
 
   TMatrixD acceptanceMatrix = *acceptanceMatrixPtr;
   TMatrixD acceptanceErrMatrix = *acceptanceErrMatrixPtr;
 
-  TString fileSystematicsFullName=TString("../root_files/systematics/")+tagDirConstants+TString("/")+fileAcceptanceSystematics;
   TVectorD acceptanceTheoryErrArray(nUnfoldingBins);
   acceptanceTheoryErrArray=0;
 
   if (DYTools::study2D==0) {
-    TFile fileSystematics(fileSystematicsFullName);
+    TFile fileSystematics(fnameAcceptanceSystematics);
 			
     TVectorD *acceptanceTheoryErrArrayPtr = (TVectorD *)fileSystematics.FindObjectAny("acceptanceTheoryErrArray");
     if (!acceptanceTheoryErrArrayPtr) {
-      std::cout << "failed to get object from <" << fileSystematicsFullName << ">\n";
+      std::cout << "failed to get object from <" << fnameAcceptanceSystematics << ">\n";
       if (0) {
 	assert(0);
       }
       else {
-	std::cout << "\n\tfailing acceptanceCorrection\n";
+	std::cout << "\n\tfailing acceptanceTheoryErrArray from <" << fnameAcceptanceSystematics << ">\n";
 	vout=0; voutStatErr=0; voutSystErr=0;
-	return;
+	if (DYTools::study2D==0) assert(0);
       }
     }
     acceptanceTheoryErrArray = *acceptanceTheoryErrArrayPtr;
     fileSystematics.Close();
   }
 
-  TString fileAccFSRSystFullName=TString("../root_files/systematics/")+tagDirConstants+TString("/")+fileAcceptanceFSRSystematics;
-  TFile fileAccFSRSyst(fileAccFSRSystFullName);
+  TFile fileAccFSRSyst(fnameAcceptanceFSRSystematics);
   TMatrixD *acceptanceFSRErrMatrixPtr = (TMatrixD *)fileAccFSRSyst.FindObjectAny("accSystPercent");
   if (!acceptanceFSRErrMatrixPtr) {
-    std::cout << "failed to get object from <" << fileAccFSRSystFullName << ">\n";
+    std::cout << "failed to get object from <" << fnameAcceptanceFSRSystematics << ">\n";
     if (0) {
       assert(0);
     }
     else {
-      std::cout << "\n\tfailing acceptanceCorrection\n";
+      std::cout << "\n\tfailing acceptanceCorrection (FSR systematics)\n";
       vout=0; voutStatErr=0; voutSystErr=0;
-      return;
+      //if (DYTools::study2D==0) assert(0);
     }
   }
-  TMatrixD acceptanceFSRErrMatrix=*acceptanceFSRErrMatrixPtr;
+  TMatrixD acceptanceFSRErrMatrix=acceptanceMatrix;
+  if (acceptanceFSRErrMatrixPtr) {
+    acceptanceFSRErrMatrix=*acceptanceFSRErrMatrixPtr;
+  }
+  else acceptanceFSRErrMatrix=0;
 
   // Check that the binning is consistent
   bool checkResult = true;
@@ -996,20 +988,20 @@ void  acceptanceCorrection(const TMatrixD &vin, const TMatrixD &vinStatErr, cons
 
 void  fsrCorrectionViaUnfolding(const TMatrixD &vinM, const TMatrixD &vinStatErrM, const TMatrixD &vinSystErrM,
 				TMatrixD &voutM, TMatrixD &voutStatErrM, TMatrixD &voutSystErrM,
-				const TString &fname, const TString &name)
+				const TString &unfFileName, const TString &name)
 {
-
-  // Construct file names
-  TString fullUnfoldingConstFileName = TString("../root_files/constants/")+tagDirConstants+TString("/")+fname;
 
   int nUnfoldingBins = DYTools::getTotalNumberOfBins();
   TVectorD vin(nUnfoldingBins),vinStatErr(nUnfoldingBins),vinSystErr(nUnfoldingBins);
   TVectorD vout(nUnfoldingBins),voutStatErr(nUnfoldingBins),voutSystErr(nUnfoldingBins);
 
   // First, propagate through unfolding the signal yields with stat and syst errors
-  assert(unfolding::unfold(vinM, voutM, fullUnfoldingConstFileName, vin, vout)==1);
-  assert(unfolding::propagateErrorThroughUnfolding(vinStatErrM,voutStatErrM, fullUnfoldingConstFileName, vinStatErr, voutStatErr)==1);
-  assert(unfolding::propagateErrorThroughUnfolding(vinSystErrM,voutSystErrM, fullUnfoldingConstFileName, vinSystErr, voutSystErr)==1);
+  if ( (unfolding::unfold(vinM, voutM, unfFileName, vin, vout) != 1 ) ||
+       (unfolding::propagateErrorThroughUnfolding(vinStatErrM,voutStatErrM, unfFileName, vinStatErr, voutStatErr) != 1 ) ||
+       (unfolding::propagateErrorThroughUnfolding(vinSystErrM,voutSystErrM, unfFileName, vinSystErr, voutSystErr) != 1) ) {
+    std::cout << "fsrCorrectionViaUnfolding: unfolding procedure failed for name=<" << name << ">\n";
+    assert(0);
+  }
 }
 
 // -------------------------------------------------------------------------
@@ -1021,7 +1013,7 @@ void  fsrCorrectionBase(const TMatrixD &vin, const TMatrixD &vinStatErr, const T
   // Read efficiency constants
   std::cout << "FsrCorrectionBase(" << title << "): Load constants" << std::endl;
     
-  TFile fileConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fname);
+  TFile fileConstants(fname);
   assert(fileConstants.IsOpen());
   TMatrixD *fsrCorrectionMatrixPtr  = (TMatrixD *)fileConstants.FindObjectAny("fsrCorrectionMatrix");
   TMatrixD *fsrCorrectionErrMatrixPtr = (TMatrixD *)fileConstants.FindObjectAny("fsrCorrectionErrMatrix");
@@ -1084,71 +1076,15 @@ void  fsrCorrectionBase(const TMatrixD &vin, const TMatrixD &vinStatErr, const T
 void  fsrCorrection(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatrixD &vinSystErr,
 		    TMatrixD &vout, TMatrixD &voutStatErr, TMatrixD &voutSystErr)
 {
-  if (1) {
-    if (fsrCorrection_BinByBin) {
-      fsrCorrectionBase(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
-			fileFsrCorrectionConstants,"FsrCorrection");
-    }
-    else {
-      fsrCorrectionViaUnfolding(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
-		       fileFsrCorrectionDETConstantsUnf, "FsrCorrection");
-   }
+  if (fsrCorrection_BinByBin) {
+    fsrCorrectionBase(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
+		      fnameFsrCorrectionConstantsBbB,"FsrCorrectionBbB");
   }
   else {
-  // Read efficiency constants
-  printf("FsrCorrection: Load constants\n"); fflush(stdout);
-    
-  TFile fileConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileFsrCorrectionConstants);
-  assert(fileConstants.IsOpen());
-  TMatrixD *fsrCorrectionMatrixPtr  = (TMatrixD *)fileConstants.FindObjectAny("fsrCorrectionMatrix");
-  TMatrixD *fsrCorrectionErrMatrixPtr = (TMatrixD *)fileConstants.FindObjectAny("fsrCorrectionErrMatrix");
-  assert(fsrCorrectionMatrixPtr && fsrCorrectionErrMatrixPtr);
-  TMatrixD fsrCorrectionMatrix= *fsrCorrectionMatrixPtr;
-  TMatrixD fsrCorrectionErrMatrix= *fsrCorrectionErrMatrixPtr;
-
-  // Check that the binning is consistent
-  bool checkResult = true;
-  if (checkResult) checkResult=unfolding::checkRangesMY(fsrCorrectionMatrix,"fsrCorrectionMatrix");
-  //if( fsrCorrectionArray.GetNoElements() != DYTools::nMassBins) checkResult = false;
-  if( !checkResult ){
-    printf("FsrCorrection: ERROR: inconsistent binning in the inputs\n");
-    assert(0);
-  }else
-    printf("FsrCorrection: Binning in the inputs is consistent\n");
-
-  // Apply the correction
-
-  TMatrixD systErrorPropagated(DYTools::nMassBins,nMaxYBins);
-  for(int i=0; i<DYTools::nMassBins; i++){
-    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
-      double fsrFactor = fsrCorrectionMatrix[i][yi];
-      double fsrErr    = fsrCorrectionErrMatrix[i][yi];
-      vout[i][yi]        = vin[i][yi] / fsrFactor;
-      voutStatErr[i][yi] = vinStatErr[i][yi] / fsrFactor;
-      systErrorPropagated[i][yi] = vinSystErr[i][yi] / fsrFactor;
-      double systNew = (vin[i][yi]/fsrFactor)*(fsrErr/fsrFactor);
-      voutSystErr[i][yi] = sqrt(SQR(systErrorPropagated[i][yi]) + SQR(systNew));
-    }
+    fsrCorrectionViaUnfolding(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
+			      fnameFsrCorrectionDETConstantsUnf, "FsrCorrectionUnf");
   }
 
-  printf("\nFsrCorrection: Results for the data, yields:\n");
-  printf("                          acc-corrected               fsr. factors            fsr-corrected                  sys-err-fsr\n");
-  for(int i=0; i<DYTools::nMassBins; i++){
-    double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
-      printf("%4.0f-%4.0f  %4.2f-%4.2f  %9.1f +- %8.1f +- %8.1f   %4.3f +- %4.3f      %9.1f +- %8.1f +- %8.1f        %5.2f\n",
-	     DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
-	     rapidityBinLimits[yi],rapidityBinLimits[yi+1],
-	     vin[i][yi], vinStatErr[i][yi], vinSystErr[i][yi],
-	     fsrCorrectionMatrix[i][yi], fsrCorrectionErrMatrix[i][yi], 
-	     vout[i][yi], voutStatErr[i][yi], voutSystErr[i][yi],
-	     fsrCorrectionErrMatrix[i][yi]*100.0/fsrCorrectionMatrix[i][yi]);
-    }
-    delete rapidityBinLimits;
-  }
-
-  fileConstants.Close();
-  }
   return;
 }
 
@@ -1157,64 +1093,15 @@ void  fsrCorrection(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatr
 void  fsrCorrectionSansAcceptance(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatrixD &vinSystErr,
 				  TMatrixD &vout, TMatrixD &voutStatErr, TMatrixD &voutSystErr)
 {
-  if (1) {
-    if (fsrCorrection_BinByBin) {
-      fsrCorrectionBase(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
-			fileFsrCorrectionSansAccConstants, "FsrCorrectionSansAcc");
-    }
-    else {
-      fsrCorrectionViaUnfolding(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
-		       fileFsrCorrectionDETConstantsUnf, "FsrCorrectionDET");
-    }
+  if (fsrCorrection_BinByBin) {
+    fsrCorrectionBase(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
+		      fnameFsrCorrectionSansAccConstantsBbB, "FsrCorrectionSansAcc");
   }
   else {
-  // Read efficiency constants
-  printf("FsrCorrection: Load constants\n"); fflush(stdout);
-  
-  TFile fileConstants(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileFsrCorrectionSansAccConstants);
-  TMatrixD fsrCorrectionArray    = *(TMatrixD *)fileConstants.FindObjectAny("fsrCorrectionArray");
-  TMatrixD fsrCorrectionErrArray = *(TMatrixD *)fileConstants.FindObjectAny("fsrCorrectionErrArray");
-  
-  // Check that the binning is consistent
-  bool checkResult = true;
-  //if( fsrCorrectionArray.GetNoElements() != DYTools::nMassBins) checkResult = false;
-  if (checkResult) checkResult=unfolding::checkRangesMY(fsrCorrectionArray,"fsrCorrectionArray");
-  if( !checkResult ){
-    printf("FsrCorrectionSansAcceptance: ERROR: inconsistent binning in the inputs\n");
-    assert(0);
-  }else
-    printf("FsrCorrectionSansAcceptance: Binning in the inputs is consistent\n");
-
-  std::cout << "Error this branch is not ready\n";
-  assert(0);
-  /*
-  // Apply the correction
-  TMatrixD systErrorPropagated(DYTools::nMassBins,nMaxYBins);
-  for(int i=0; i<DYTools::nMassBins; i++){
-    double fsrFactor = fsrCorrectionArray[i];
-    double fsrErr    = fsrCorrectionErrArray[i];
-    vout[i]        = vin[i] / fsrFactor;
-    voutStatErr[i] = vinStatErr[i] / fsrFactor;
-    systErrorPropagated[i] = vinSystErr[i] / fsrFactor;
-    double systNew = (vin[i]/fsrFactor)*(fsrErr/fsrFactor);
-    voutSystErr[i] = sqrt(systErrorPropagated[i]*systErrorPropagated[i] + systNew*systNew);
+    fsrCorrectionViaUnfolding(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
+			      fnameFsrCorrectionDETConstantsUnf, "FsrCorrectionDET");
   }
 
-  printf("\nThis printout below is FSR correction being applied to data without acceptance correction.\n");
-  printf("\nFsrCorrectionSansAcceptance: Results for the data, yields:\n");
-  printf("                acc-corrected                 fsr. factors             fsr-corrected                  sys-err-fsr\n");
-  for(int i=0; i<DYTools::nMassBins; i++){
-    printf("%4.0f-%4.0f   %9.1f +- %8.1f +- %8.1f   %4.3f +- %4.3f      %9.1f +- %8.1f +- %8.1f        %5.2f\n",
-	   DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
-	   vin[i], vinStatErr[i], vinSystErr[i],
-	   fsrCorrectionArray[i], fsrCorrectionErrArray[i], 
-	   vout[i], voutStatErr[i], voutSystErr[i],
-	   fsrCorrectionErrArray[i]*100.0/fsrCorrectionArray[i]);
-  }
-
-  fileConstants.Close();
-  */
-  }
   return;
 }
 
@@ -1225,6 +1112,7 @@ void  crossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatr
 		    TMatrixD &voutNorm, TMatrixD &voutNormStatErr, TMatrixD &voutNormSystErr,
 		    const TriggerSelection &triggers, const TString specTag)
 {
+  assert(triggers.isDefined()); // eliminate compiler warning
 
   // Find absolute cross-section
   for(int i=0; i<DYTools::nMassBins; i++) {
@@ -1327,11 +1215,10 @@ void  crossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatr
     delete rapidityBinLimits;
   }
 
-  TString outputDir(TString("../root_files/") + tagDirXSect);
-  gSystem->mkdir(outputDir,kTRUE);
+  gSystem->mkdir(pathXSect,kTRUE);
   TString extraTag=DYTools::analysisTag + TString("_") + specTag;
   if (fsrCorrection_BinByBin) extraTag.Append("_fsrBbB"); else extraTag.Append("_fsrUnf");
-  TString xSecResultFileName(outputDir+TString("/xSec_results_") + 
+  TString xSecResultFileName(pathXSect+TString("xSec_results_") + 
 			     extraTag + TString(".root"));
   std::cout << "xSecResultFileName= " << xSecResultFileName << "\n";
   TFile fa(xSecResultFileName,"recreate");
@@ -1367,6 +1254,7 @@ void  crossSectionsDET(const TMatrixD &vin, const TMatrixD &vinStatErr, const TM
 		       TMatrixD &voutNormSystErr,
 		       const TriggerSelection &triggers, const TString specTag)
 {
+  assert(triggers.isDefined()); // eliminate compiler warning
 
   // Find absolute cross-section
   for(int i=0; i<DYTools::nMassBins; i++) {
@@ -1433,11 +1321,10 @@ void  crossSectionsDET(const TMatrixD &vin, const TMatrixD &vinStatErr, const TM
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
 
 
-  TString outputDir(TString("../root_files/") + tagDirXSect);
-  gSystem->mkdir(outputDir,kTRUE);
+  gSystem->mkdir(pathXSect,kTRUE);
   TString extraTag=DYTools::analysisTag + TString("_") + specTag;
   if (fsrCorrection_BinByBin) extraTag.Append("_fsrBbB"); else extraTag.Append("_fsrUnf");
-  TString xSecResultFileName(outputDir+TString("/xSecDET_results_") + 
+  TString xSecResultFileName(pathXSect+TString("xSecDET_results_") + 
 			     extraTag + TString(".root"));
   std::cout << "xSecDETResultFileName= " << xSecResultFileName << "\n";
 
@@ -1541,9 +1428,8 @@ void  postFsrCrossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, cons
 //     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
 
 
-  TString outputDir(TString("../root_files/") + tagDirXSect);
-  gSystem->mkdir(outputDir,kTRUE);
-  TString xSecResultFileName(outputDir+TString("/xSecPostFsr_results_") + 
+  gSystem->mkdir(pathXSect,kTRUE);
+  TString xSecResultFileName(pathXSect+TString("xSecPostFsr_results_") + 
 			     DYTools::analysisTag + TString("_") +
 			     specTag +
 			     triggers.triggerConditionsName() + TString(".root"));
@@ -1639,9 +1525,8 @@ void  postFsrCrossSectionsDET(const TMatrixD &vin, const TMatrixD &vinStatErr, c
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
 
-  TString outputDir(TString("../root_files/") + tagDirXSect);
-  gSystem->mkdir(outputDir,kTRUE);
-  TString xSecResultFileName(outputDir+TString("/xSecPostFsrDET_results_") + 
+  gSystem->mkdir(pathXSect,kTRUE);
+  TString xSecResultFileName(pathXSect+TString("xSecPostFsrDET_results_") + 
 			     DYTools::analysisTag + TString("_") +
 			     specTag +
 			     triggers.triggerConditionsName() + TString(".root"));
@@ -1699,42 +1584,51 @@ void printTableForNotes(const TMatrixD& obs, const TMatrixD& obsErr,
 
 void printAllCorrections(){
 
-  TFile fileConstantsEff(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileEfficiencyConstants);
+  TFile fileConstantsEff(fnameEfficiencyConstants);
   TMatrixD *efficiencyArrayPtr    = (TMatrixD *)fileConstantsEff.FindObjectAny("efficiencyArray");
   TMatrixD *efficiencyErrArrayPtr = (TMatrixD *)fileConstantsEff.FindObjectAny("efficiencyErrArray");
   assert(efficiencyArrayPtr); 
   assert(efficiencyErrArrayPtr);
+  fileConstantsEff.Close();
 
-  TFile fileScaleConstants(TString("../root_files/constants/")+tagDirScaleFactorConstants+TString("/")+fileScaleFactorConstants);
+  TFile fileScaleConstants(fnameScaleFactorConstants);
   TVectorD *rhoDataMcPtr    = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorArray");
   TVectorD *rhoDataMcErrPtr = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorErrArray");
   assert(rhoDataMcPtr);
   assert(rhoDataMcErrPtr);
+  fileScaleConstants.Close();
 
-  TFile fileConstantsAcc(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileAcceptanceConstants);
-  TMatrixD *acceptanceMatrixPtr    = (TMatrixD *)fileConstantsAcc.FindObjectAny("acceptanceMatrix");
-  TMatrixD *acceptanceErrMatrixPtr = (TMatrixD *)fileConstantsAcc.FindObjectAny("acceptanceErrMatrix");
-  assert(acceptanceMatrixPtr);
-  assert(acceptanceErrMatrixPtr);
-
-  TFile fileConstantsFsr(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileFsrCorrectionConstants);
+  TFile fileConstantsAcc(fnameAcceptanceConstants);
+  TMatrixD *acceptanceMatrixPtr    = NULL;
+  TMatrixD *acceptanceErrMatrixPtr = NULL;
+  if (fileConstantsAcc.IsOpen()) {
+    acceptanceMatrixPtr=(TMatrixD *)fileConstantsAcc.FindObjectAny("acceptanceMatrix");
+    acceptanceErrMatrixPtr=(TMatrixD *)fileConstantsAcc.FindObjectAny("acceptanceErrMatrix");
+    assert(acceptanceMatrixPtr);
+    assert(acceptanceErrMatrixPtr);
+    fileConstantsAcc.Close();
+  }
+  
+  TFile fileConstantsFsr(fnameFsrCorrectionConstantsBbB);
   TMatrixD *fsrCorrectionArrayPtr    = (TMatrixD *)fileConstantsFsr.FindObjectAny("fsrCorrectionArray");
   TMatrixD *fsrCorrectionErrArrayPtr = (TMatrixD *)fileConstantsFsr.FindObjectAny("fsrCorrectionErrArray");
   assert(fsrCorrectionArrayPtr);
   assert(fsrCorrectionErrArrayPtr);
 
-  TFile fileConstantsFsrSansAcc(TString("../root_files/constants/")+tagDirConstants+TString("/")+fileFsrCorrectionSansAccConstants);
+  TFile fileConstantsFsrSansAcc(fnameFsrCorrectionSansAccConstantsBbB);
   TMatrixD *fsrCorrectionSansAccArrayPtr    = (TMatrixD *)fileConstantsFsrSansAcc.FindObjectAny("fsrCorrectionArray");
   TMatrixD *fsrCorrectionSansAccErrArrayPtr = (TMatrixD *)fileConstantsFsrSansAcc.FindObjectAny("fsrCorrectionErrArray");
   assert(fsrCorrectionSansAccArrayPtr);
   assert(fsrCorrectionSansAccErrArrayPtr);
 
+  TMatrixD zero= *efficiencyArrayPtr;
+  zero=0;
   TMatrixD efficiencyArray= *efficiencyArrayPtr;
   TMatrixD efficiencyErrArray= *efficiencyErrArrayPtr;
   TVectorD rhoDataMc= *rhoDataMcPtr;
   TVectorD rhoDataMcErr= *rhoDataMcErrPtr;
-  TMatrixD acceptanceMatrix= *acceptanceMatrixPtr;
-  TMatrixD acceptanceErrMatrix= *acceptanceErrMatrixPtr;
+  TMatrixD acceptanceMatrix= (acceptanceMatrixPtr) ? (*acceptanceMatrixPtr) : zero;
+  TMatrixD acceptanceErrMatrix= (acceptanceErrMatrixPtr) ? (*acceptanceErrMatrixPtr) : zero;
   TMatrixD fsrCorrectionArray= *fsrCorrectionArrayPtr;
   TMatrixD fsrCorrectionErrArray= *fsrCorrectionErrArrayPtr;
   TMatrixD fsrCorrectionSansAccArray= *fsrCorrectionSansAccArrayPtr;
@@ -1802,6 +1696,8 @@ void printAllCorrections(){
   return;
 }
 
+// -------------------------------------------------------------
+
 void printRelativeSystErrors(){
 
   std::string fileName="tbl_relativeSystErrors.tex";
@@ -1849,6 +1745,7 @@ void printRelativeSystErrors(){
   return;
 }
 
+// --------------------------------------------------------------
   ////////////////////////////////////////////////////////////
 void getNormBinRange(int &firstNormBin, int &lastNormBin){
 
@@ -1873,3 +1770,84 @@ void getNormBinRange(int &firstNormBin, int &lastNormBin){
   return;
 }
 
+// --------------------------------------------------------------
+
+
+void initGlobalFileNames(const TriggerSelection &triggers, const TString &tagDirYields, const TString &tagDirConstants, const TString &tagDirScaleFactorConstants, const TString &tagDirXSect, int fsrBinByBin) {
+  const TString fnameEnd(DYTools::analysisTag + TString(".root"));
+  pathYields=TString("../root_files/yields/") + tagDirYields +
+    TString("/");
+  pathSystematics=TString("../root_files/systematics/") + tagDirConstants +
+    TString("/");
+  pathConstants= TString("../root_files/constants/") + tagDirConstants +
+    TString("/");
+  pathScaleFactors= TString("../root_files/constants/") + tagDirScaleFactorConstants + TString("/");
+  pathXSect= TString("../root_files/") + tagDirXSect + TString("/");
+
+
+  // Data yields
+  fnameDataYields= pathYields + TString("yields_bg-subtracted") + fnameEnd;
+
+  // Vectors for MC closure test
+  if (fsrCorrection_BinByBin) {
+    fnameMcReferenceYields= 
+      pathConstants + TString("yields_MC_unfolding_reference_");
+  }
+  else {
+    fnameMcReferenceYields= pathConstants + TString("yields_detResponse");
+    if (useExactVectorsForMcClosureTest) fnameMcReferenceYields.Append("Exact");
+  }
+  fnameMcReferenceYields.Append(fnameEnd);
+  
+  fnameMcReferenceYieldsFsr=pathConstants + TString("yields_fsr") + fnameEnd;
+
+  fnameMcReferenceYieldsFsrDET=pathConstants + TString("yields_fsrDET");
+  if (useExactVectorsForMcClosureTest) fnameMcReferenceYieldsFsrDET.Append("exact");
+  fnameMcReferenceYieldsFsrDET.Append(fnameEnd);
+
+
+// This file contains unfolding matrix 
+  TString unfFileStart=pathConstants;
+  if (!fsrBinByBin) unfFileStart.Append("detResponse_");
+  fnameUnfoldingConstants=unfFileStart + TString("unfolding_constants") + fnameEnd;
+
+// Contains relative unfolding systematic errors
+  fnameUnfoldingSystErrors=pathSystematics +
+    TString("unfolding_systematics") + fnameEnd;
+
+// Contains relative escale systematic errors
+  fnameEscaleSystErrors= pathSystematics + 
+    TString("escale_systematics") + fnameEnd;
+
+  // efficiency factors
+  fnameEfficiencyConstants = pathConstants +
+    TString("event_efficiency_constants") + fnameEnd;
+
+  fnameScaleFactorConstants = pathScaleFactors +
+    TString("scale_factors_") + DYTools::analysisTag +
+    TString("_") + triggers.triggerConditionsName() +
+    TString("_PU") +
+    TString(".root");
+
+  // acceptance factors
+  fnameAcceptanceConstants = pathConstants +
+    TString("acceptance_constants") + fnameEnd;
+  fnameAcceptanceSystematics = pathSystematics +
+    TString("theoretical_uncertainties.root");
+  fnameAcceptanceFSRSystematics = pathConstants + 
+    TString("acceptance_FSR_systematics") + fnameEnd;
+
+  // FSR correction
+  fnameFsrCorrectionConstantsBbB = pathConstants + 
+    TString("fsr_constants_") + fnameEnd;
+  fnameFsrCorrectionSansAccConstantsBbB = pathConstants +
+    TString("fsr_constants_") + DYTools::analysisTag + TString("_sans_acc.root");
+  fnameFsrCorrectionConstantsUnf = pathConstants +
+    TString("fsr_unfolding_constants") + fnameEnd;
+  fnameFsrCorrectionDETConstantsUnf = pathConstants +
+    TString("fsrDET_unfolding_constants") + fnameEnd;
+}
+
+
+
+// --------------------------------------------------------------
