@@ -287,6 +287,20 @@ void printYields(const TString &name, const TMatrixD &cs, const TMatrixD &csErr,
 
 //------------------------------------------------------------------------------------------------------------------------
 
+inline void printCSMatrixValues(const TString &name, const TMatrixD &cs, const TMatrixD &csErr, const TMatrixD &csSystErr, int printSystError=1) {
+  printYields(name,cs,csErr,csSystErr,printSystError);
+}
+
+
+//------------------------------------------------------------------------------------------------------------------------
+
+inline void printProgress(const char *msg, int idx, int idxMax) {
+  double r=trunc(idx/double(idxMax)*1000)*0.1;
+  std::cout << msg << idx << "/" << idxMax << " (" << r << "%)\n";
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
 inline
 void printSanityCheck(const TMatrixD &val, const TMatrixD &err, const TString &name)
 {
