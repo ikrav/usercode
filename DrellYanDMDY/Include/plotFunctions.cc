@@ -97,8 +97,6 @@ void PlotMatrixVariousBinning(const TMatrixD &matr, TString name,
    canv->SetFillColor(0);
    canv->SetLeftMargin     (0.1);
    canv->SetRightMargin    (0.1);
-   
-    
 
    TMatrixD matrDraw = AdjustMatrixBinning(matr);
    gStyle->SetPalette(1);
@@ -109,6 +107,7 @@ void PlotMatrixVariousBinning(const TMatrixD &matr, TString name,
    TString histName = "Hist" + name;
    TH2D* Hist= new TH2D(histName,title, nM, DYTools::massBinLimits, nY, 
 			DYTools::yRangeMin, DYTools::yRangeMax);
+   Hist->SetDirectory(0);
    for (int i=0; i<nM; i++)
      for (int j=0; j<nY; j++)
        {
@@ -130,12 +129,26 @@ void PlotMatrixVariousBinning(const TMatrixD &matr, TString name,
   //CPlot::sOutDir="plots" + DYTools::analysisTag;
   SaveCanvas(canv, name, CPlot::sOutDir);
 
-  name+="_Rotated";
   canv->SetPhi(120);
   canv->SetTheta(30);
-  SaveCanvas(canv, name, CPlot::sOutDir);
+  SaveCanvas(canv, name + TString("_Rotated"), CPlot::sOutDir);
 
   if (histoFile) canv->Write();
+
+  std::cout << "DYTools::study2D=" << DYTools::study2D << "\n";
+  if (DYTools::study2D==0) {
+    const TString str1D="_1D";
+    TMatrixD zeroErr=matr; zeroErr=0;
+    TH1F* h1D= extractMassDependence(name + str1D, title + str1D,
+				     matr, zeroErr, 0, 0,0);
+    h1D->SetDirectory(0);
+    TCanvas *c1=MakeCanvas(name+str1D, name+str1D, 800,600);
+    c1->SetLogx(1);
+    h1D->Draw();
+    c1->Update();
+    SaveCanvas(c1, name + str1D, CPlot::sOutDir);
+    if (histoFile) c1->Write();
+  }
 
 }
 
