@@ -82,7 +82,7 @@ Bool_t scMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TPho
 
 bool passID(const mithep::TElectron *electron, double rho){
 
-  bool result = passEGM2011(electron, WP_TIGHT, rho);
+  bool result = passEGM2011(electron, WP_MEDIUM, rho);
   return result;
 }
 

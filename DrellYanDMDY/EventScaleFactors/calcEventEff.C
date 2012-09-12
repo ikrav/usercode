@@ -1219,8 +1219,9 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 
 	// ID cuts
  	//if( !( passSmurf(ele1) && passSmurf(ele2) ) ) continue;
-	if( !( passEGM2011(ele1, WP_MEDIUM, info->rhoLowEta)
-	       && passEGM2011(ele2, WP_MEDIUM, info->rhoLowEta) ) ) continue;
+	// 
+	if( !( passID(ele1, info->rhoLowEta) 
+	       && passID(ele2, info->rhoLowEta) ) ) continue;
 
 	// ET and trigger cut on the leading electron
 	const TElectron *leading = ele1;
