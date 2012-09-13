@@ -24,6 +24,7 @@
 #include "../Include/MyTools.hh"        // miscellaneous helper functions
 #include "../Include/DYTools.hh"
 #include "../Include/plotFunctions.hh"
+#include "../Include/latexPrintouts.hh"
 
 // define classes and constants to read in ntuple
 #include "../Include/EWKAnaDefs.hh"
@@ -493,55 +494,15 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   cout << labelv[0] << " file: " << fnamev[0] << endl;
   cout << "     Number of generated events: " << nZv << endl;
 
-  FILE* txtFile;
-  TString txtFileName;
-  if (DYTools::study2D) txtFileName="tables2D.txt";
-  else txtFileName="tables1D.txt";
-  txtFile = fopen(txtFileName,"w");
+
   //printout to the txtFile in latex format
   if (DYTools::study2D)
     {
-      fprintf(txtFile,"%Table of Acceptance in 2D measurement\n\n\n");  
-      for (int mslice=0; mslice<DYTools::nMassBins; mslice++) 
-        {   
-           fprintf(txtFile,"\\begin{table}\n");
-           fprintf(txtFile,"\\caption{\\label{tab:acceptance2D-%d} Numerical values of the post-FSR acceptance for %4.0f-%4.0f mass slice of \\DYee candidates}\n",mslice, DYTools::massBinLimits[mslice], DYTools::massBinLimits[mslice+1] ); 
-           fprintf(txtFile,"\\begin{center}\\small{\n");
-           fprintf(txtFile,"\\begin{tabular}[2]{|c|c||c|c|}\n");
-           fprintf(txtFile,"\\hline\n");
-           fprintf(txtFile," $|Y|$  &   acceptance \\%  & $|Y|$  &   acceptance \\% \\\\ \n");
-           fprintf(txtFile,"\\hline\n");
-           int halfBins=DYTools::nYBins[mslice]/2;
-           for (int j=0; j<halfBins; j++)
-             {
-               fprintf(txtFile,"%1.1f-%1.1f &", j*(DYTools::yRangeMax-DYTools::yRangeMin)/DYTools::nYBins[mslice], (j+1)*(DYTools::yRangeMax-DYTools::yRangeMin)/DYTools::nYBins[mslice]);
-               fprintf(txtFile,"$ %7.4f \\pm %6.4f $ & ", accv(mslice,j), accErrv(mslice,j));
-               if (halfBins+j<DYTools::nYBins[mslice])
-                 {
-                    fprintf(txtFile,"%1.1f-%1.1f &", (halfBins+j)*(DYTools::yRangeMax-DYTools::yRangeMin)/DYTools::nYBins[mslice], (halfBins+j+1)*(DYTools::yRangeMax-DYTools::yRangeMin)/DYTools::nYBins[mslice]); 
-                    fprintf(txtFile,"$ %7.4f \\pm %6.4f $ \\\\ \n ", accv(mslice,halfBins+j), accErrv(mslice,halfBins+j));
-                 }
-               else fprintf(txtFile,"& \\\\ \n ");
-             }
-           fprintf(txtFile,"\\hline\n");
-           fprintf(txtFile,"\\end{tabular}}\n");
-           fprintf(txtFile,"\\end{center}\n");
-           fprintf(txtFile,"\\end{table}\n");
-           fprintf(txtFile,"\n\n");
-        }
+      latexPrintoutAcceptance2D(accv,accErrv);
     }
   else if (DYTools::study2D==0)
     {
-      fprintf(txtFile," mass bin    preselected      passed     total_A_GEN      BB-BB_A_GEN      EB-BB_A_GEN      EB-EB_A_GEN\n");
-      for(int i=0; i<DYTools::nMassBins; i++){
-        fprintf(txtFile," %4.0f-%4.0f   %10.1f   %10.1f   %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f  %7.4f+-%6.4f \n",
-	DYTools::massBinLimits[i], DYTools::massBinLimits[i+1],
-	nEventsv(i,0), nPassv(i,0),
-	accv(i,0), accErrv(i,0),
-	accBBv(i,0), accErrBBv(i,0),
-	accBEv(i,0), accErrBEv(i,0),
-	accEEv(i,0), accErrEEv(i,0));
-      }
+
     }
 
   //printout to the screen
@@ -559,7 +520,7 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       }
     }
   cout << endl;
-  std::cout<<"printout in the Latex format is saved to the file"<<txtFileName<<std::endl;
+  std::cout<<"printout in the Latex format is saved to the text file"<<std::endl;
 
   //sanity check printout
   printSanityCheck(accv, accErrv, "acc");
