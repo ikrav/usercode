@@ -7,6 +7,7 @@
 #include "TString.h"
 #include "TSystem.h"
 #include "TMatrixD.h"
+#include "TVectorD.h"
 #include <iostream>
 #include <math.h>
 #include "../Include/CPlot.hh"
@@ -160,6 +161,14 @@ void HERE(const char *msg) {
   std::cout << ((msg) ? msg : "HERE") << std::endl;
 }
 
+//--------------------------------------------------------------
+
+template<class Type_t>
+inline
+void HERE(const char *format, const Type_t &a) {
+  std::cout << Form(format,a) << std::endl;
+}
+
 //------------------------------------------------------------------------------------------------------------------------
 
 inline bool PosOk(size_t pos) { return (pos==std::string::npos) ? 0 : 1; }
@@ -174,17 +183,21 @@ inline bool PosOk(const std::string &s, const T& substr) {
 //------------------------------------------------------------------------------------------------------------------------
 
 inline
-int printHisto(std::ostream& out, const TH1F* histo) {
+int printHisto(std::ostream& out, const TH1F* histo, int exponent=0) {
   if (!histo) {
     out << "printHisto: histo is null\n";
     return 0;
   }
   char buf[100];
+  const char *format= (exponent) ? 
+    " %5.2f-%5.2f    %e    %e\n" : 
+    " %5.2f-%5.2f    %f    %f\n";
+
   out << "values of " << histo->GetName() << "\n";
   for(int i=1; i<=histo->GetNbinsX(); i++) {
     double x=histo->GetBinLowEdge(i);
     double w=histo->GetBinWidth(i);
-    sprintf(buf," %5.2f-%5.2f    %f    %f\n",
+    sprintf(buf,format,
 	    x,x+w,histo->GetBinContent(i),histo->GetBinError(i));
     out << buf;
   }
@@ -193,7 +206,7 @@ int printHisto(std::ostream& out, const TH1F* histo) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
-inline int printHisto(const TH1F* histo) { return printHisto(std::cout, histo); }
+inline int printHisto(const TH1F* histo, int exponent=0) { return printHisto(std::cout, histo, exponent); }
 
 //------------------------------------------------------------------------------------------------------------------------
 
@@ -223,6 +236,19 @@ TH1F *extractMassDependence(const TString &name, const TString &title,
 			    int iYBin, 
 			    int perMassBinWidth=1, int perRapidityBinWidth=0) {
   if (perRapidityBinWidth) std::cout << "\n\tWARNING: extractMassDependence: perRapidityBinWidth=1 is experimental\n\n";
+  std::cout << "dims  m[" << m.GetNrows() << ',' << m.GetNcols() << "], "
+	    << " mErr[" << mErr.GetNrows() << ',' << mErr.GetNcols() << "]"
+	    << std::endl;
+  if ((m.GetNrows()!=DYTools::nMassBins) ||
+      (m.GetNcols()!=DYTools::nYBinsMax) ||
+      (mErr.GetNrows()!=DYTools::nMassBins) ||
+      (mErr.GetNcols()!=DYTools::nYBinsMax)) {
+    std::cout << "extractMassDependence: expecting matrices "
+	      << DYTools::nMassBins << "x" << DYTools::nYBinsMax 
+	      << "  instead of  " 
+	      << m.GetNrows() << "x" << m.GetNcols() << "\n";
+    assert(0);
+  }
   TString hName= name + Form("_yBin%d",iYBin);
   TString hTitle= title + Form("_yBin%d",iYBin);
   TH1F *h=new TH1F(name,title,DYTools::nMassBins,DYTools::massBinLimits);
@@ -245,6 +271,61 @@ TH1F *extractMassDependence(const TString &name, const TString &title,
     h->SetBinContent(iM+1, val);
     h->SetBinError(iM+1, fabs(mErr[iM][iYBin]));
   }
+  return h;
+}
+
+//-----------------------------------------------------------------
+
+inline
+TH1F *extractMassDependenceSpec(const TString &name, const TString &title,
+			    const TMatrixD &m, const TMatrixD &mErr,
+			    int iYBin,
+			const TVectorD &massGrid, const TVectorD &yBinCount,
+			    int perMassBinWidth=1, int perRapidityBinWidth=0) {
+  if (perRapidityBinWidth) std::cout << "\n\tWARNING: extractMassDependenceSpec: perRapidityBinWidth=1 is experimental\n\n";
+  std::cout << "dims  m[" << m.GetNrows() << ',' << m.GetNcols() << "], "
+	    << " mErr[" << mErr.GetNrows() << ',' << mErr.GetNcols() << "]"
+	    << ", massGrid[" << massGrid.GetNoElements() << "]"
+	    << ", yBinCount[" << yBinCount.GetNoElements() << "]"
+	    << std::endl;
+  TVectorD yBinCountCheck(massGrid.GetNoElements()-1);
+  yBinCountCheck=1;
+  if (iYBin!=0) {
+    std::cout << "extractMassDependenceSpec: iYBin should be 0\n";
+    assert(0);
+  }
+  if ((m.GetNrows()!=massGrid.GetNoElements()-1) ||
+      (m.GetNcols()!=1) ||
+      (mErr.GetNrows()!=massGrid.GetNoElements()-1) ||
+      (mErr.GetNcols()!=1)) {
+    std::cout << "extractMassDependenceSpec: expecting matrices "
+	      << massGrid.GetNoElements() << "x" << 1
+	      << "  instead of  " 
+	      << m.GetNrows() << "x" << m.GetNcols() << "\n";
+    assert(0);
+  }
+  TString hName= name + Form("_yBin%d",iYBin);
+  TString hTitle= title + Form("_yBin%d",iYBin);
+  double *massBins=new double[massGrid.GetNoElements()];
+  for (int i=0; i<massGrid.GetNoElements(); ++i) {
+    massBins[i]=massGrid[i];
+    //std::cout << "massBins[i=" << i << "]=" << massBins[i] << "\n";
+  }
+  TH1F *h=new TH1F(name,title,massGrid.GetNoElements()-1,massBins);
+  delete massBins;
+
+  h->SetDirectory(0);
+  h->Sumw2();
+  for (int iM=0; iM<m.GetNrows(); ++iM) {
+    double val=m[iM][iYBin];
+    if (perRapidityBinWidth) {
+      val *= (DYTools::yRangeMax-DYTools::yRangeMin)/double(yBinCount[iM]);
+    }
+    if (perMassBinWidth) val/=(massGrid[iM+1]-massGrid[iM]);
+    h->SetBinContent(iM+1, val);
+    h->SetBinError(iM+1, fabs(mErr[iM][iYBin]));
+  }
+
   return h;
 }
 
@@ -330,6 +411,19 @@ void printSanityCheck(const TMatrixD &val, const TMatrixD &err, const TString &n
         if ( fabs(err(i,yi))>0.1*fabs(val(i,yi)) || fabs(err(i,yi))>0.1)
            std::cout<<name<<"("<<i<<","<<yi<<")="<<val(i,yi)<<", "<<name<<"Err("<<i<<","<<yi<<")="<<err(i,yi)<<std::endl;
       }
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+template<class Histo_t>
+inline
+int AppendToHistoName(Histo_t* h, const TString &add) {
+  if (!h) {
+    std::cout << "AppendToHistoName got null histo ptr\n";
+    return 0;
+  }
+  h->SetName(h->GetName() + add);
+  return 1;
 }
 
 //------------------------------------------------------------------------------------------------------------------------
