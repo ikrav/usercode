@@ -230,6 +230,8 @@ public:
     CPlot::Draw(c,false,"png",subpad1);
 
     padRatio->cd();
+    TVectorD hratioActive(fHRatioIndices.size());
+    hratioActive=0;
 
     if (1 && fHRatioIndices.size()) {
       //unsigned int imin=(fHRatioIndices.size()==1) ? 0 : 1;
@@ -253,6 +255,7 @@ public:
 	int skip=(i==fRefIdx) ? 1:0;
 	for (unsigned int k=0; !skip && (k<fExcludeIndices.size()); ++k) 
 	  skip= (i==fExcludeIndices[k]) ? 1:0;
+	hratioActive[fHRatioItems.size()-1]=1-skip;
 	if (skip) { 
 	  std::cout << "skipping entry #" << i << "\n";
 	  continue;
@@ -389,10 +392,7 @@ public:
     if (fPrintRatioNames) {
       std::cout << "\nComparisonPlot::Draw -- printing ratio names:\n";
       for (unsigned int i=0; i<fHRatioItems.size(); ++i) {
-	int skip=(i==fRefIdx) ? 1:0;
-	for (unsigned int k=0; !skip && (k<fExcludeIndices.size()); ++k) 
-	  skip= (i==fExcludeIndices[k]) ? 1:0;
-	if (skip) { 
+	if (!hratioActive[i]) {
 	  std::cout << "skipping entry #" << i << "\n";
 	  continue;
 	}
