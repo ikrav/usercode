@@ -247,6 +247,8 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
       if (debugMode && (ientry>1000)) break;
 
+      if (ientry%1000000==0) printProgress("ientry=",ientry,eventTree->GetEntriesFast());
+
       genBr->GetEntry(ientry);
 
       // Which mass is used?
