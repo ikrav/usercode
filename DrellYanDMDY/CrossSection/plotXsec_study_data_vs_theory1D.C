@@ -40,8 +40,8 @@
 DYTools::TCrossSectionKind_t kind=DYTools::_cs_preFsrNorm;
 
 
-int c_plotTheoryWithFEWZ=1*kBlack;
-int c_plotTheoryWithFEWZfine=1*kBlack;
+int c_plotTheoryWithFEWZ=1*(kGreen+2);
+int c_plotTheoryWithFEWZfine=1*(kGreen+2);
 int c_plotTheoryNoFEWZfine=1*(48+1);
 int c_plotTheoryNoFEWZ=1*47;
 int c_plotTheory2011=1*(kBlue+1);
@@ -70,9 +70,9 @@ void plotXsec_study_data_vs_theory1D(){
   TString dataLabel="data";
   dataFName="../root_files/DY_m10+pr+a05+o03+pr_4680pb/xSecDET_results_1D__fsrUnf.root";
   
-  dataFName="../root_files/date_20120825-et6-eta5/xSec_results_1D__fsrUnf.root";
+  //dataFName="../root_files/date_20120825-et6-eta5/xSec_results_1D__fsrUnf.root";
   //dataFName="../root_files/date_20120825-et6-eta5/xSecDET_results_1D__fsrUnf.root";
-  dataFName="../root_files/date_20120825-et7altB-eta8altNegs/xSec_results_1D__fsrUnf.root";
+  //dataFName="../root_files/date_20120825-et7altB-eta8altNegs/xSec_results_1D__fsrUnf.root";
   //dataFName="../root_files/date_20120825/xSecDET_results_2D_Full2011_hltEffOld.root";
   if (testTheoryPredictions!=0) dataFName="";
   std::vector<TString> dataFNamesV, labelsV;
@@ -164,7 +164,7 @@ void plotXsec_data_vs_theory1D_work(TString dataFName, TString dataLabel, std::v
   ComparisonPlot_t compPlot(ComparisonPlot_t::_ratioRel,
 			    "check","",
 			    (DYTools::study2D) ? "rapidity |y|" : "m_{ee} [GeV]",
-			    compPlotYAxisLabel,"(dt-th)/th");
+			    compPlotYAxisLabel,"(th-dt)/th");
   compPlot.ErrorsOnRatios(0);
   compPlot.SetLogx(1);
   compPlot.SetLogy(1);
@@ -216,13 +216,13 @@ void plotXsec_data_vs_theory1D_work(TString dataFName, TString dataLabel, std::v
 
   if (dataFName.Length()) {
     hData->SetMarkerSize(0.8);
-    compPlot.AddHist1D(hData,dataLabel,"L",kBlack,1,0,1);
+    compPlot.AddHist1D(hData,dataLabel,"LP",kBlack,1,0,1);
   }
 
   for (unsigned int i=0; i<hDataV.size(); ++i) {
     hDataV[i]->SetMarkerStyle(21+i);
     hDataV[i]->SetMarkerSize(0.8);
-    compPlot.AddHist1D(hDataV[i],(*labelsV)[i],"L",getStandardColor(i),1,0,1);
+    compPlot.AddHist1D(hDataV[i],(*labelsV)[i],"LP",getStandardColor(i),1,0,1);
   }
 
   int subpad1=1;
@@ -266,7 +266,7 @@ void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &t
     plotTheoryWithFEWZfine *=0;
     plotTheoryWithFEWZ *=1;
     plotTheoryNoFEWZfine *=0;
-    plotTheoryNoFEWZ *=1;
+    plotTheoryNoFEWZ *=0;
     plotTheory2011 *=1;
     plotTheoryWithFEWZ_2MCfiles *=0;
     plotTheoryWithFEWZ_2MCfilesFine *=0;
