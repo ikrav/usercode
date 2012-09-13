@@ -188,6 +188,7 @@ void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelect
   TString xSecResultFileName(TString("../root_files/xSec_results_") + 
 			     DYTools::analysisTag + TString("_") +
 		   triggers.triggerConditionsName() + TString(".root"));
+  xSecResultFileName="../root_files/DY_m10+pr+a05+o03+pr_4680pb/xSecDET_results_1D__fsrUnf.root";
   std::cout << "xSecResultFileName= " << xSecResultFileName << "\n";
 
   //TFile fileXsecResult   (TString("../root_files/xSec_results.root"));
@@ -234,12 +235,13 @@ void readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers){
   TString xSecThResultFileName(TString("../root_files/xSecTh_results_") +
 			       DYTools::analysisTag + TString("_") +
 		      triggers.triggerConditionsName() + TString(".root"));
+  xSecThResultFileName="../root_files/xSecTh2011_1D.root";
   std::cout << "Load theory predictions\n";
   std::cout << "xSecThResultFileName=" << xSecThResultFileName << std::endl;
 
   TFile fileXsecTh   (xSecThResultFileName);
-  TVectorD xSecTh          = *(TVectorD *)fileXsecTh.FindObjectAny("XSecTh");
-  TVectorD xSecThErr      = *(TVectorD *)fileXsecTh.FindObjectAny("XSecThErr");
+  TVectorD xSecTh          = *(TVectorD *)fileXsecTh.FindObjectAny("xSecTh");
+  TVectorD xSecThErr      = *(TVectorD *)fileXsecTh.FindObjectAny("xSecThErr");
 
   // Check that the binning is consistent
   bool checkResult = true;
