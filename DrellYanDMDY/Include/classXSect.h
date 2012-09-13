@@ -17,6 +17,8 @@ const int extraFlag_2MCfilesFineGrid=3;
 const int extraFlag_2MCfiles_debug=4;
 
 
+const int extraFlagData_oldStyle=1;
+
 
 // -------------------------------------------------------------
 
@@ -253,7 +255,7 @@ TH1F* readThCT10(TVectorD &v, TVectorD &vErr, DYTools::TCrossSectionKind_t theKi
 
 
 inline
-TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, TString fname){
+TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, TString fname, int extraFlag=0){
 
   //printf("Load data yields\n"); fflush(stdout);
   std::cout << "Load data yields for iMassBin=" << iMassBin << std::endl;
@@ -277,6 +279,10 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
   case DYTools::_cs_preFsrDetNorm:
   case DYTools::_cs_preFsrNorm:
     xSecName="normXSec"; xSecErrName="normXSecErr"; xSecSystErrName="normXSecErrSyst";
+    if (extraFlagData_oldStyle) {
+      xSecName="normXSecByBin"; xSecErrName="normXSecErrByBin";
+      xSecSystErrName="normXSecErrByBinSyst";
+    }
     break;
   case DYTools::_cs_preFsrDet:
   case DYTools::_cs_preFsr:
@@ -308,7 +314,9 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
   bool ok=true;
   TString name=Form("xsec_%s_%s_massBin%d",DYTools::analysisTag.Data(),CrossSectionKindName(theKind).Data(),iMassBin);
   if (ok && (DYTools::study2D==0)) {
-    histo= extractMassDependence(name,name, xSecM, xSecErr1M, 0, 0,0);
+    int perMassBinWidth=(extraFlagData_oldStyle) ? 0:1;
+    int perRapidityBinWidth=0;
+    histo= extractMassDependence(name,name, xSecM, xSecErr1M, 0, perMassBinWidth,perRapidityBinWidth);
     HERE("loop");
     for(int i=0; i<DYTools::nMassBins; i++){
       HERE("i=%d",i);
