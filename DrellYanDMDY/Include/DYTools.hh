@@ -36,7 +36,8 @@ namespace DYTools {
   const double etMinLead  = 20;
   const double etMinTrail = 10;
 
-  const TString strLumiAtECMS="4.7 fb^{-1} at #sqrt{s} = 7 TeV";
+  //const TString strLumiAtECMS="4.7 fb^{-1} at #sqrt{s} = 7 TeV";
+  const TString strLumiAtECMS="5.0 fb^{-1} at #sqrt{s} = 7 TeV";
 
 
   // asymmetric et cuts
