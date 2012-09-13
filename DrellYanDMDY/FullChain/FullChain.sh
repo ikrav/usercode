@@ -497,7 +497,7 @@ if [ -f ${expectEScaleSystFile} ] ; then
   cp ${finalEScaleSystFile} ${finalEScaleSystFile}.bak${timeStamp}
   cp ${expectEScaleSystFile} ${finalEScaleSystFile}
 fi
-statusCrossSection=$RUN_STATUS
+statusEScaleSyst=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "DONE: evaluateEScaleSyst.sh \"${filename_data}\" \"${filename_mc}\" ${anTag} \"${anTagUser}\""
