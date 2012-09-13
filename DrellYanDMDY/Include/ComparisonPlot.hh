@@ -24,7 +24,7 @@ public:
   vector<TH1F*> fHRatioItems;
 
   double fRatioYMin,fRatioYMax;
-  int fRatioNdivisions;
+  int fRatioNdivisions, fPrintRatios, fPrintRatioNames;
   double fRatioYTitleSize,fRatioYLabelSize;
   double fRatioYTitleOffset;
 
@@ -38,6 +38,7 @@ public:
     fRatioLabel(ratioYLabel), fHRatioItems(),
     fRatioYMin(0.), fRatioYMax(0.),
     fRatioNdivisions(805),
+    fPrintRatios(0), fPrintRatioNames(0),
     fRatioYTitleSize(0.15), 
     fRatioYLabelSize(0.13),
     fRatioYTitleOffset(0.45)
@@ -50,6 +51,8 @@ public:
   void SetRatioTitleSize(double size, double offset=-99) { fRatioYTitleSize=size; if (offset>=0) fRatioYTitleOffset=offset; }
   void SetRatioTitleOffset(double size) { fRatioYTitleOffset=size; }
   void SetRefIdx(int refIdx) { fRefIdx=refIdx; }
+  void SetPrintRatio(int yes=1) { fPrintRatios=yes; }
+  void SetPrintRatioNames(int yes=1) { fPrintRatioNames=yes; }
 
   void SetRefIdx(const TH1F* h) {
     if (!h) { 
@@ -62,12 +65,31 @@ public:
 	fRefIdx=i;
       }
     }
-    if (fRefIdx==-1) {
+    if (fRefIdx==(unsigned int)(-1)) {
       std::cout << "ComparisonPlot::SetRefIdx(ptr): failed to determine fRefIdx\n";
       fRefIdx=0;
     }
   }
   
+  void SkipInRatioPlots(const TH1F* h) {
+    if (!h) {
+      std::cout << "error ComparisonPlot::SkipInRatioPlots(ptr=NULL)\n";
+      assert(0);
+    }
+    unsigned int idx=-1;
+    for (unsigned int i=0; i<fItems.size(); ++i) {
+      if (fItems[i].hist1D==h) {
+	idx=i;
+      }
+    }
+    if (idx==(unsigned int)(-1)) {
+      std::cout << "ComparisonPlot::SkipInRatioPlots(ptr): failed to determine idx\n";
+    }
+    else {
+      fExcludeIndices.push_back(idx);
+    }
+  }
+
 
   TLatex* AddTextCMSPreliminary(double x=0.93, double y=0.94) {
     TLatex *cmsText = new TLatex();
@@ -303,7 +325,7 @@ public:
 	hratio->GetYaxis()->SetRangeUser(yrMin,yrMax);
 	//hratio->SetMarkerStyle(kFullCircle);
 
-	printHisto(std::cout,hratio);
+	if (fPrintRatios) printHisto(std::cout,hratio);
 	TString opt=item->drawopt;
 	if (first) {
 	  first=0;
@@ -363,6 +385,23 @@ public:
 	c->SaveAs(outname+format);
       }
     }
+
+    if (fPrintRatioNames) {
+      std::cout << "\nComparisonPlot::Draw -- printing ratio names:\n";
+      for (unsigned int i=0; i<fHRatioItems.size(); ++i) {
+	int skip=(i==fRefIdx) ? 1:0;
+	for (unsigned int k=0; !skip && (k<fExcludeIndices.size()); ++k) 
+	  skip= (i==fExcludeIndices[k]) ? 1:0;
+	if (skip) { 
+	  std::cout << "skipping entry #" << i << "\n";
+	  continue;
+	}
+	std::cout << " - " << fHRatioItems[i]->GetName() << "\n";
+      }
+      std::cout << "Ratio computed with reference to " << fItems[fHRatioIndices[fRefIdx]].hist1D->GetName() << "\n";
+      std::cout << "\n";
+    }
+
     return;
   }
 
