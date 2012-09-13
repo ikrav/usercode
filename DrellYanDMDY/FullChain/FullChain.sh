@@ -15,13 +15,19 @@ filename_data="../config_files/data.conf"
 filename_mc="../config_files/fall11mc.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffOld"
-tnpMCFile="../config_files/sf_mc_eta2.conf"
-tnpDataFile="../config_files/sf_data_eta2.conf"
+
+#tnpMCFile="../config_files/sf_mc_eta2.conf"
+#tnpDataFile="../config_files/sf_data_eta2.conf"
+
+tnpTag="et6alt_eta4test_20120801"
+tnpTag="eta2"
+tnpMCFile="../config_files/sf_mc_${tnpTag}.conf"
+tnpDataFile="../config_files/sf_data_${tnpTag}.conf"
 debugMode=0
 
 ## controlling your work
 # catch-all flag
-do_all_steps=1
+do_all_steps=0
 do_post_selection_steps=0
 
 # specify whether you want to clean the old logs
@@ -39,18 +45,19 @@ do_selection=0
 do_prepareYields=0
 do_subtractBackground=0
 do_unfolding=0
+do_unfoldingFsr=0
 do_unfoldingSyst=0    # long calculation!  (also, some steps are skipped)
 do_acceptance=0
 do_acceptanceSyst=0
 do_efficiency=0
 do_plotFSRCorrections=0
 do_plotFSRCorrectionsSansAcc=0
-do_theoryErrors=0
+do_setupTheory=0
 do_crossSection=0
 
 #          check EventScaleFactors/*sh script settings! 
 #          long calculation!
-do_efficiencyScaleFactors=0   
+do_efficiencyScaleFactors=0
 
 do_escaleSystematics=0  # very long calculation!
 
@@ -63,10 +70,10 @@ expectSelectedEventsFile2="../root_files/selected_events/${crossSectionTag}/npv$
 expectYieldsFile="../root_files/yields/${crossSectionTag}/yields${anTag}.root"
 expectBkgSubtractedFile="../root_files/yields/${crossSectionTag}/yields_bg-subtracted${anTag}.root"
 expectUnfoldingFile="../root_files/constants/${crossSectionTag}/unfolding_constants${anTag}.root"
-expectUnfoldingSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/unfolding_systematics${anTag}.root"
+expectUnfoldingSystematicsFile="../root_files/systematics/${crossSectionTag}/unfolding_systematics${anTag}.root"
 expectEfficiencyFile="../root_files/constants/${crossSectionTag}/event_efficiency_constants${anTag}.root"
-expectEventScaleFactorsFile="../root_files/constants/DY_m10+pr+a05+o03+pr_4680pb/scale_factors_${anTag}_${triggerSet}_PU.root"
-expectAcceptanceSystematicsFile="../root_files/systematics/DY_m10+pr+a05+o03+pr_4680pb/acceptance_FSR_systematics${anTag}.root"
+expectEventScaleFactorsFile="../root_files/constants/${crossSectionTag}/scale_factors_${anTag}_${triggerSet}_PU.root"
+expectAcceptanceSystematicsFile="../root_files/systematics/${crossSectionTag}/acceptance_FSR_systematics${anTag}.root"
 expectFsrSansAcc0File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}.root"
 expectFsrSansAcc1File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}_sans_acc.root"
 expectXSecFile="../root_files/xSec_results_${anTag}_${triggerSet}.root"
@@ -86,7 +93,7 @@ export tnpFileStart="${tnpFileStart}"
 # use logDir="./" if you want that the log files are placed in the directory
 # where the producing script resides
 logDir="./"
-logDir="../logs"
+logDir="../logs-${anTag}"
 if [ ! -d ${logDir} ] ; then mkdir ${logDir}; fi
 if [ ${clear_old_logs} -eq 1 ] && [ "${logDir}"="../logs" ] ; then
     echo -e "\tclean old logs\n"
@@ -115,6 +122,7 @@ if [ ${do_post_selection_steps} -eq 1 ] ; then
     do_prepareYields=1
     do_subtractBackground=1
     do_unfolding=1
+    do_unfoldingFsr=1
     do_unfoldingSyst=1  # long calculation
     do_acceptance=1
     do_acceptanceSyst=1
@@ -122,7 +130,7 @@ if [ ${do_post_selection_steps} -eq 1 ] ; then
     do_efficiencyScaleFactors=1  # long calculation
     do_plotFSRCorrections=1
     do_plotFSRCorrectionsSansAcc=1
-    do_theoryErrors=1
+    do_setupTheory=1
     do_crossSection=1
 #   do_escaleSystematics=0   # very long calculation
 fi
@@ -275,6 +283,27 @@ else
     statusUnfolding=skipped
 fi
 
+#Unfolding
+if [ ${do_unfoldingFsr} -eq 1 ] && [ ${noError} -eq 1 ] ; then
+statusUnfoldingFsr=OK
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+echo "WILL DO: makeUnfoldingMatrixFsr(\"${filename_mc}\",\"${triggerSet}\",debug=${debugMode})"
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+cd ../Unfolding
+rm -f *.so ${expectUnfoldingFileFsr}
+echo
+checkFile makeUnfoldingMatrixFsr.C
+root -b -q -l ${LXPLUS_CORRECTION} makeUnfoldingMatrixFsr.C+\(\"$filename_mc\",\"${triggerSet}\",DYTools::NORMAL,1,1.0,-1.0,${debugMode}\)    | tee ${logDir}/out${timeStamp}-04-makeUnfoldingMatrixFsr${anTag}.log
+get_status ${expectUnfoldingFileFsr}
+statusUnfoldingFsr=$RUN_STATUS
+cd ../FullChain
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+echo "DONE: makeUnfoldingMatrixFsr(\"${filename_mc}\",\"${triggerSet}\")"
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+else
+    statusUnfoldingFsr=skipped
+fi
+
 #Unfolding Systematics
 if [ ${do_unfoldingSyst} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusUnfoldingSyst=OK
@@ -405,25 +434,25 @@ else
     statusPlotDYFSRCorrectionsSansAcc=skipped
 fi
 
-#TheoryErrors
-if [ ${do_theoryErrors} -eq 1 ] && [ ${noError} -eq 1 ] ; then
+#SetupTheory
+if [ ${do_setupTheory} -eq 1 ] && [ ${noError} -eq 1 ] ; then
 statusTheoryErrors=OK
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "WILL DO: TheoryErrors(\"${filename_mc}\")"
+echo "WILL DO: setupTheory(\"${filename_mc}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../Theory
 rm -f *.so
 echo
-checkFile TheoryErrors.C
-root -b -q -l ${LXPLUS_CORRECTION} TheoryErrors.C+\(\"$filename_mc\"\)     | tee ${logDir}/out${timeStamp}-11-TheoryErrors${anTag}.out
+checkFile setupTheory.sh
+source setupTheory.sh ${filename_mc}  | tee ${logDir}/out${timeStamp}-11-setupTheory${anTag}.out
 get_status
-statusTheoryErrors=$RUN_STATUS
+statusSetupTheory=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
-echo "DONE: TheoryErrors(\"${filename_mc}\")"
+echo "DONE: setupTheory(\"${filename_mc}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 else
-    statusTheoryErrors=skipped
+    statusSetupTheory=skipped
 fi
 
 #Event Scale Factors
@@ -506,13 +535,14 @@ echo "              Selection:    " $statusSelection
 echo "          PrepareYields:    " $statusPrepareYields
 echo "     SubtractBackground:    " $statusSubtractBackground
 echo "              Unfolding:    " $statusUnfolding
+echo "           UnfoldingFsr:    " ${statusUnfoldingFsr}
 echo "         Syst Unfolding:    " $statusUnfoldingSyst
 echo "             Acceptance:    " $statusAcceptance
 echo "        Syst Acceptance:    " $statusAcceptanceSyst
 echo "             Efficiency:    " $statusEfficiency
 echo "         FSRCorrections:    " $statusPlotDYFSRCorrections
 echo "  FSRCorrectionsSansAcc:    " $statusPlotDYFSRCorrectionsSansAcc
-echo "           TheoryErrors:    " $statusTheoryErrors
+echo "            SetupTheory:    " $statusSetupTheory
 echo "      EventScaleFactors:    " $statusEventScaleFactors
 echo "      EScaleSystematics:    " $statusEScaleSyst
 echo "           CrossSection:    " $statusCrossSection
