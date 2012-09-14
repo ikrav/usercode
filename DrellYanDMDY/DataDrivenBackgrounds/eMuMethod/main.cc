@@ -11,6 +11,7 @@ int main(int argc, char** argv){
   bool doDMDY(false); //run 2D rapidity analysis
   bool saveRootFile(false);// save output to a root file
   bool activateVerbose(false);
+  string dirTag="DY_m10+pr+a05+o03+pr_4680pb";
 
   myOpts.addOption("--doDMDY", doDMDY,
                    "--doDMDY: Will run 2D rapidity analysis, need dilepton rapidity value in the ntuple");
@@ -20,12 +21,14 @@ int main(int argc, char** argv){
 		   "--reWeight: Will reweight events by specified factor");
   myOpts.addOption("--saveRootFile", saveRootFile,
 		   "--saveRootFile: Will save histos etc to root file");
+  myOpts.addOption("--dirTag",dirTag,
+		   "--dirTag: directory tag of a form DY_....pb");
   myOpts.addOption("--verbose", activateVerbose,
                    "--verbose: Will turn on verbosity");
 
   myOpts.readCmdLine();// process the command line options
 
-  eMu emuMethod;
+  eMu emuMethod(dirTag);
 
   //set options
   emuMethod.doDMDYanal(doDMDY);
