@@ -130,6 +130,7 @@ evaluateTrue2eBkg() {
       flags=" --saveRootFile"
       flags="${flags} --doPUreWeight"
       flags="${flags} --verbose" # debug
+      flags="${flags} --dirTag ${dirTag}"
       if [ ${study2D} -eq 1 ] ; then
 	  flags="--doDMDY ${flags}"
       fi
