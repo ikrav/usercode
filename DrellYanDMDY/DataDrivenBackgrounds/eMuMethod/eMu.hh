@@ -24,7 +24,7 @@ using boost::shared_ptr;
 
 struct eMu {
 
-  eMu();
+  eMu(const string &directoryTag="DY_m10+pr+a05+o03+pr_4680pb");
   virtual ~eMu(){};
   int run();
   bool doDMDY; ///< flag to look at rapidity in mass bins
@@ -34,6 +34,7 @@ struct eMu {
   string emuNtupleDir; ///< eMu Ntuple directory
   string eeNtupleDir; ///< ee Ntuple directory
   string subDir; ///< sub directory for both eMu and ee
+  string dirTag; ///< directory tag where selected events are placed
   string filePostfix; ///<
   string lumiVal;
   TString outFileName;

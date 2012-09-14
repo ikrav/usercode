@@ -37,11 +37,14 @@ using DYTools::yRangeMax;
 using DYTools::_nYBinsMax2D;
 */
 
-eMu::eMu():doDMDY(false),doPUreWeight(false),saveToRootFile(false), verbose(false), reWeight(1.00){
+eMu::eMu(const string &directoryTag):doDMDY(false),doPUreWeight(false),saveToRootFile(false), verbose(false), reWeight(1.00){
+  dirTag= directoryTag;
   //set default parameters
   //These params can be overidden via python interface
-  emuNtupleDir = "../../root_files/selected_events/DY_m10+pr+a05+o03+pr_4680pb/ntuples_emu";
-  eeNtupleDir = "../../root_files/selected_events/DY_m10+pr+a05+o03+pr_4680pb/ntuples";
+  emuNtupleDir = string("../../root_files/selected_events/") + dirTag + 
+    ("/ntuples_emu");
+  eeNtupleDir = string("../../root_files/selected_events/") + dirTag + 
+    string("/ntuples");
   gSystem->mkdir(_plotsPath,kFALSE);
 
   //emuNtupleDir = "EMU_TEST";
