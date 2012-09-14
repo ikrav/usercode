@@ -17,14 +17,15 @@
 
 // -----------------------------------------------------------------------------
 
-void latexPrintoutAcceptance2D(TMatrixD accv, TMatrixD accErrv)
+void latexPrintoutAcceptance2D(TMatrixD accv, TMatrixD accErrv, TString producedBy)
 {
    FILE* txtFile;
-   TString txtFileName;
-   if (DYTools::study2D) txtFileName="tables2D.txt";
-   else txtFileName="tables1D.txt";
+   TString txtFileName="tables2D.txt";
    txtFile = fopen(txtFileName,"w");
-   fprintf(txtFile,"%Table of Acceptance in 2D measurement\n\n\n");  
+   fprintf(txtFile,"% Tables of Acceptance in 2D measurement\n"); 
+   fprintf(txtFile,"% The tables are produced by ");   
+   fprintf(txtFile,producedBy);   
+   fprintf(txtFile,"\n\n\n");
    for (int mslice=0; mslice<DYTools::nMassBins; mslice++) 
      {   
        fprintf(txtFile,"\\begin{table}\n");
@@ -52,5 +53,43 @@ void latexPrintoutAcceptance2D(TMatrixD accv, TMatrixD accErrv)
         fprintf(txtFile,"\\end{table}\n");
         fprintf(txtFile,"\n\n");
      }
+   fclose(txtFile);
 }
 
+
+void latexPrintoutAcceptance1D(TMatrixD accv, TMatrixD accErrv, TString producedBy)
+{
+   FILE* txtFile;
+   TString txtFileName="tables1D.txt";
+   txtFile = fopen(txtFileName,"w");
+   fprintf(txtFile,"% Table of Acceptance in 1D measurement\n"); 
+   fprintf(txtFile,"% The table is produced by ");   
+   fprintf(txtFile,producedBy);   
+   fprintf(txtFile,"\n"); 
+ 
+   fprintf(txtFile,"\\begin{table}\n");
+   fprintf(txtFile,"\\caption{\\label{tab:acceptance1D} Numerical values of the post-FSR acceptance for 1D measurement of \\DYee candidates}\n"); 
+   fprintf(txtFile,"\\begin{center}\\small{\n");
+   fprintf(txtFile,"\\begin{tabular}[2]{|c|c||c|c|}\n");
+   fprintf(txtFile,"\\hline\n");
+   fprintf(txtFile," $|Y|$  &   acceptance \\%  & $|Y|$  &   acceptance \\% \\\\ \n");
+   fprintf(txtFile,"\\hline\n");
+   int halfBins=DYTools::nMassBins/2;
+   for (int mslice=0; mslice<halfBins; mslice++)
+     {
+       fprintf(txtFile,"%4.0f-%4.0f &", DYTools::massBinLimits[mslice], DYTools::massBinLimits[mslice+1] );
+       fprintf(txtFile,"$ %7.4f \\pm %6.4f $ & ", accv(mslice,0), accErrv(mslice,0));
+       if (halfBins+mslice<DYTools::nMassBins)
+         {
+           fprintf(txtFile,"%4.0f-%4.0f &", DYTools::massBinLimits[halfBins+mslice], DYTools::massBinLimits[halfBins+mslice+1]); 
+           fprintf(txtFile,"$ %7.4f \\pm %6.4f $ \\\\ \n ", accv(mslice+halfBins,0), accErrv(mslice+halfBins,0));
+         }
+       else fprintf(txtFile,"& \\\\ \n ");
+     }
+   fprintf(txtFile,"\\hline\n");
+   fprintf(txtFile,"\\end{tabular}}\n");
+   fprintf(txtFile,"\\end{center}\n");
+   fprintf(txtFile,"\\end{table}\n");
+   fprintf(txtFile,"\n\n");
+   fclose(txtFile);
+}

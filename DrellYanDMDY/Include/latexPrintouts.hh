@@ -10,7 +10,9 @@
      
 #endif
 
-void latexPrintoutAcceptance2D(TMatrixD accv, TMatrixD accErrv);
+void latexPrintoutAcceptance2D(TMatrixD accv, TMatrixD accErrv, TString producedBy);
+void latexPrintoutAcceptance1D(TMatrixD accv, TMatrixD accErrv, TString producedBy);
+
 
 
 #endif
