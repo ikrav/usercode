@@ -40,7 +40,7 @@
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL, double reweightFsr = 1.0, double massLimit=-1, int debugMode=1)
+void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL, double reweightFsr = 1.0, double massLimit=-1, int debugMode=0)
 //systematicsMode 0 (NORMAL) - no systematic calc
 //2 (FSR_STUDY) - systematics due to FSR, reweighting
 //check mass spectra with reweight = 95%; 100%; 105%  
@@ -498,11 +498,11 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   //printout to the txtFile in latex format
   if (DYTools::study2D)
     {
-      latexPrintoutAcceptance2D(accv,accErrv);
+      latexPrintoutAcceptance2D(accv,accErrv,"Acceptance/plotDYAcceptance.C");
     }
   else if (DYTools::study2D==0)
     {
-
+      latexPrintoutAcceptance1D(accv,accErrv,"Acceptance/plotDYAcceptance.C");
     }
 
   //printout to the screen
