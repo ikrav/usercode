@@ -37,6 +37,12 @@ void CmdLineOpts::addOption(const string& optionName, double& doubleValue, strin
   cmdMap_.insert(make_pair(optionName,inVar));
 }
 
+void CmdLineOpts::addOption(const string& optionName, string& stringValue, string message){
+  string type = "string";
+  CmdVar inVar(optionName, stringValue, type ,message);
+  cmdMap_.insert(make_pair(optionName,inVar));
+}
+
 void CmdLineOpts::readCmdLine(){
   for (int i=1; i<argc_; ++i){
     string inputArg = argv_[i];
@@ -79,14 +85,26 @@ void CmdLineOpts::readCmdLine(){
             std::cerr << "Need to specify number after argument and not " <<  inputVal  << "\n";
 	    //throw "Need to specify number after argument";
 	  }
-          istringstream issValue(inputVal);	
+	  istringstream issValue(inputVal);	
 	  issValue >> *(map_iter->second.doublePtr_);
+          message_list.push_back(map_iter->second.message_);
+	}
+
+        if (map_iter->second.type_ == "string"){
+	  string inputVal = argv_[++i];
+          size_t pos = inputVal.find("--");// check that option isn't followed by another option. Returns npos if there is no match
+	  if (pos != string::npos){ 
+            std::cerr << "Need to specify number after argument and not " <<  inputVal  << "\n";
+	    //throw "Need to specify number after argument";
+	  }
+	  istringstream issValue(inputVal);	
+	  issValue >> *(map_iter->second.stringPtr_);
           message_list.push_back(map_iter->second.message_);
 	}
       } else {
         unrequestedOption_list.push_back(inputArg);
       }
-    }        
+    }
   }
 
   //Print out messages
@@ -132,6 +150,9 @@ CmdLineOpts::CmdVar::CmdVar(const string& optionName, float& floatValue, string 
 }
 CmdLineOpts::CmdVar::CmdVar(const string& optionName, double& doubleValue, string type, string message):
   optionName_(optionName), doublePtr_(&doubleValue),type_(type),message_(message){
+}
+CmdLineOpts::CmdVar::CmdVar(const string& optionName, string& stringValue, string type, string message):
+  optionName_(optionName), stringPtr_(&stringValue),type_(type),message_(message){
 }
 
 

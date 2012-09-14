@@ -25,6 +25,7 @@ public:
   void addOption(const string& optionName, int &intValue, string message="Option implemented");
   void addOption(const string& optionName, float &floatValue, string message="Option implemented");
   void addOption(const string& optionName, double &doubleValue, string message="Option implemented");
+  void addOption(const string& optionName, string &stringValue, string message="Option implemented");
 
   void readCmdLine();
   //~CmdLineOpts();/*!< Class destructor*/
@@ -39,6 +40,7 @@ private:
     CmdVar(const string& optionName, int& intValue, string type, string message);
     CmdVar(const string& optionName, float& floatValue, string type, string message);
     CmdVar(const string& optionName, double& doubleValue, string type, string message);
+    CmdVar(const string& optionName, string& stringValue, string type, string message);
 
     //bool* getBool(){return flagPtr_;}
     //int* getInt(){return intPtr_;}
@@ -50,6 +52,7 @@ private:
     int *intPtr_;
     float *floatPtr_;
     double *doublePtr_;    
+    string *stringPtr_;    
     string type_;
     string message_;
 
