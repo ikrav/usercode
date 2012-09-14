@@ -93,3 +93,80 @@ void latexPrintoutAcceptance1D(TMatrixD accv, TMatrixD accErrv, TString produced
    fprintf(txtFile,"\n\n");
    fclose(txtFile);
 }
+
+void latexPrintoutEfficiency2D(TMatrixD effv, TMatrixD effErrv, TString producedBy)
+{
+   FILE* txtFile;
+   TString txtFileName="tables2D.txt";
+   txtFile = fopen(txtFileName,"w");
+   fprintf(txtFile,"% Tables of Efficiency in 2D measurement\n"); 
+   fprintf(txtFile,"% The tables are produced by ");   
+   fprintf(txtFile,producedBy);   
+   fprintf(txtFile,"\n\n\n");
+   for (int mslice=0; mslice<DYTools::nMassBins; mslice++) 
+     {   
+       fprintf(txtFile,"\\begin{table}\n");
+       fprintf(txtFile,"\\caption{\\label{tab:efficiency2D-%d} Reconstruction and selection efficiency $\\epsilon^{mc}$ for %4.0f-%4.0f GeV mass slice of \\DYee candidates}\n",mslice, DYTools::massBinLimits[mslice], DYTools::massBinLimits[mslice+1] ); 
+       fprintf(txtFile,"\\begin{center}\\small{\n");
+       fprintf(txtFile,"\\begin{tabular}[2]{|c|c||c|c|}\n");
+       fprintf(txtFile,"\\hline\n");
+       fprintf(txtFile," $|Y|$  &   efficiency \\%  & $|Y|$  &   efficiency \\% \\\\ \n");
+       fprintf(txtFile,"\\hline\n");
+       int halfBins=DYTools::nYBins[mslice]/2;
+       for (int j=0; j<halfBins; j++)
+         {
+           fprintf(txtFile,"%1.1f-%1.1f &", j*(DYTools::yRangeMax-DYTools::yRangeMin)/DYTools::nYBins[mslice], (j+1)*(DYTools::yRangeMax-DYTools::yRangeMin)/DYTools::nYBins[mslice]);
+           fprintf(txtFile,"$ %7.4f \\pm %6.4f $ & ", effv(mslice,j), effErrv(mslice,j));
+           if (halfBins+j<DYTools::nYBins[mslice])
+             {
+               fprintf(txtFile,"%1.1f-%1.1f &", (halfBins+j)*(DYTools::yRangeMax-DYTools::yRangeMin)/DYTools::nYBins[mslice], (halfBins+j+1)*(DYTools::yRangeMax-DYTools::yRangeMin)/DYTools::nYBins[mslice]); 
+               fprintf(txtFile,"$ %7.4f \\pm %6.4f $ \\\\ \n ", effv(mslice,halfBins+j), effErrv(mslice,halfBins+j));
+             }
+           else fprintf(txtFile,"& \\\\ \n ");
+        }
+        fprintf(txtFile,"\\hline\n");
+        fprintf(txtFile,"\\end{tabular}}\n");
+        fprintf(txtFile,"\\end{center}\n");
+        fprintf(txtFile,"\\end{table}\n");
+        fprintf(txtFile,"\n\n");
+     }
+   fclose(txtFile);
+}
+
+
+void latexPrintoutEfficiency1D(TMatrixD effv, TMatrixD effErrv, TString producedBy)
+{
+   FILE* txtFile;
+   TString txtFileName="tables1D.txt";
+   txtFile = fopen(txtFileName,"w");
+   fprintf(txtFile,"% Table of Efficiency in 1D measurement\n"); 
+   fprintf(txtFile,"% The table is produced by ");   
+   fprintf(txtFile,producedBy);   
+   fprintf(txtFile,"\n"); 
+ 
+   fprintf(txtFile,"\\begin{table}\n");
+   fprintf(txtFile,"\\caption{\\label{tab:efficiency1D} Reconstruction and selection efficiency $\\epsilon^{mc}$ of \\DYee candidates}\n"); 
+   fprintf(txtFile,"\\begin{center}\\small{\n");
+   fprintf(txtFile,"\\begin{tabular}[2]{|c|c||c|c|}\n");
+   fprintf(txtFile,"\\hline\n");
+   fprintf(txtFile," $|Y|$  &   efficiency \\%  & $|Y|$  &   efficiency \\% \\\\ \n");
+   fprintf(txtFile,"\\hline\n");
+   int halfBins=DYTools::nMassBins/2;
+   for (int mslice=0; mslice<halfBins; mslice++)
+     {
+       fprintf(txtFile,"%4.0f-%4.0f &", DYTools::massBinLimits[mslice], DYTools::massBinLimits[mslice+1] );
+       fprintf(txtFile,"$ %7.4f \\pm %6.4f $ & ", effv(mslice,0), effErrv(mslice,0));
+       if (halfBins+mslice<DYTools::nMassBins)
+         {
+           fprintf(txtFile,"%4.0f-%4.0f &", DYTools::massBinLimits[halfBins+mslice], DYTools::massBinLimits[halfBins+mslice+1]); 
+           fprintf(txtFile,"$ %7.4f \\pm %6.4f $ \\\\ \n ", effv(mslice+halfBins,0), effErrv(mslice+halfBins,0));
+         }
+       else fprintf(txtFile,"& \\\\ \n ");
+     }
+   fprintf(txtFile,"\\hline\n");
+   fprintf(txtFile,"\\end{tabular}}\n");
+   fprintf(txtFile,"\\end{center}\n");
+   fprintf(txtFile,"\\end{table}\n");
+   fprintf(txtFile,"\n\n");
+   fclose(txtFile);
+}

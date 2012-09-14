@@ -24,6 +24,7 @@
 #include "../Include/MyTools.hh"        // miscellaneous helper functions
 #include "../Include/DYTools.hh"
 #include "../Include/plotFunctions.hh"
+#include "../Include/latexPrintouts.hh"
 
 // define classes and constants to read in ntuple
 #include "../Include/EWKAnaDefs.hh"
@@ -40,6 +41,8 @@
 #include "../Include/PUReweight.hh"
 #include "../Include/InputFileMgr.hh"
 
+
+
 #endif
 
 #define usePUReweight  // Whether apply PU reweighting
@@ -51,7 +54,7 @@
 
 void plotDYEfficiency(const TString input, 
 		      const TString triggerSetString="Full2011DatasetTriggers",
-		      int debugMode=0) 
+		      int debugMode=1) 
 {
   gBenchmark->Start("plotDYEfficiency");
 
@@ -585,6 +588,19 @@ void plotDYEfficiency(const TString input,
       delete rapidityBinLimits;
     }
   }
+
+  //printout to the txtFile in latex format
+  if (DYTools::study2D)
+    {
+      latexPrintoutEfficiency2D(effv,effErrv,"Efficiency/plotDYEfficiency.C");
+    }
+  else if (DYTools::study2D==0)
+    {
+      latexPrintoutEfficiency1D(effv,effErrv,"Efficiency/plotDYEfficiency.C");
+    }
+
+  cout << endl;
+  std::cout<<"printout in the Latex format is saved to the text file"<<std::endl;
 
   printf("\n\nZ-peak efficiency\n");
   printf(" PU bin    preselected      passed     total_Eff\n");

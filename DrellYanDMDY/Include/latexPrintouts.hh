@@ -12,6 +12,8 @@
 
 void latexPrintoutAcceptance2D(TMatrixD accv, TMatrixD accErrv, TString producedBy);
 void latexPrintoutAcceptance1D(TMatrixD accv, TMatrixD accErrv, TString producedBy);
+void latexPrintoutEfficiency2D(TMatrixD effv, TMatrixD effErrv, TString producedBy);
+void latexPrintoutEfficiency1D(TMatrixD effv, TMatrixD effErrv, TString producedBy);
 
 
 
