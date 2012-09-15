@@ -315,6 +315,7 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
   TString name=Form("xsec_%s_%s_massBin%d",DYTools::analysisTag.Data(),CrossSectionKindName(theKind).Data(),iMassBin);
   if (ok && (DYTools::study2D==0)) {
     int perMassBinWidth=(extraFlagData_oldStyle) ? 0:1;
+    if (DYTools::study2D) perMassBinWidth=0;
     int perRapidityBinWidth=0;
     histo= extractMassDependence(name,name, xSecM, xSecErr1M, 0, perMassBinWidth,perRapidityBinWidth);
     HERE("loop");
@@ -342,25 +343,53 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
 // -------------------------------------------------------------
 
 inline
-TH1F* readTh2011(DYTools::TCrossSectionKind_t theKind, const char *histName="th2011",const char *fname="../root_files/xSecTh2011_1D.root") {
+TH1F* readTh2011(DYTools::TCrossSectionKind_t theKind, const char *histName="th2011",const char *fname="default", int rebin=0) {
+  const char *fnameDefault="../root_files/xSecTh2011_1D.root";
   TString objName,objErrName;
   switch(theKind) {
   case DYTools::_cs_preFsrNorm: 
     objName="xSecThNorm"; objErrName="xSecThNormErr";
+    switch (rebin) {
+    case 0: break;
+    case 1: objName="xSecThNorm_mb2011"; objErrName="xSecThNormErr_mb2011"; break;
+    default:
+      std::cout << "not ready\n";
+      assert(0);
+    }
     break;
   case DYTools::_cs_preFsr:
     objName="xSecTh"; objErrName="xSecThErr";
+    switch (rebin) {
+    case 0: break;
+    case 1: objName="xSecTh_mb2011"; objErrName="xSecThErr_mb2011"; break;
+    default:
+      std::cout << "not ready\n";
+      assert(0);
+    }
     break;
   default:
     std::cout << "readTh2011 is not ready for theKind=<" << CrossSectionKindName(theKind) << ">\n";
     assert(0);
   }
-  TFile f(fname);
+
+  TString fileName=fname;
+  if (fileName == "default") fileName=fnameDefault;
+
+  TFile f(fileName);
   if (!f.IsOpen()) {
     std::cout << "readTh2011: failed to open a file <" << fname << ">\n";
     assert(0);
   }
-  TVectorD massBins= *(TVectorD*)f.FindObjectAny("massBinsTh");
+  TString massBinStr="massBinsTh";
+  switch (rebin) {
+  case 0: break;
+  case 1: massBinStr="massBinsTh_mb2011"; break;
+  default:
+    std::cout << "not ready\n";
+    assert(0);
+  }
+
+  TVectorD massBins= *(TVectorD*)f.FindObjectAny(massBinStr);
   int numBins=massBins.GetNoElements()-1;
   TVectorD xsec(numBins), xsecErr(numBins);
   xsec.Read(objName);
