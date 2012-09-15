@@ -7,6 +7,83 @@
 #include <TFile.h>
 #include <iostream>
 
+#define Extras
+
+#ifdef Extras
+#include "../Include/DYTools.hh"
+
+const int save_for_massBinLimits2011_1D=1;
+
+#endif
+
+const Double_t peak_bin_width = 1.0;
+const Double_t peak_val_theory = 1009.0;
+
+inline double SQR(double x) { return (x*x); }
+
+// -----------------------------------------------------------------
+
+void rebinCrossSection(const TVectorD &massBins, const TVectorD &XSecTh, const TVectorD &XSecThErr,
+		       int newBinCount, const double *newMassBinLimits,
+		       TVectorD &newMassBins,
+		       TVectorD &newXSec, TVectorD &newXSecErr,
+		       TVectorD &newXSecNorm, TVectorD &newXSecNormErr) {
+  //
+  int locDebug=0;
+  const int nMassBinTh=massBins.GetNoElements()-1;
+  int iTh=0;
+  newMassBins=0; newXSec=0; newXSecErr=0; newXSecNorm=0; newXSecNormErr=0;
+  for (int iM=0; iM<newBinCount; ++iM) {
+    const double massLo=newMassBinLimits[iM];
+    const double massHi=newMassBinLimits[iM+1];
+    newMassBins[iM]=massLo;
+    newMassBins[iM+1]=massHi;
+    if (locDebug) std::cout << "target mass range=" << massLo << " ... " << massHi << "\n";
+    for ( ; (iTh<=nMassBinTh) && (massBins[iTh]<massHi); ++iTh) {
+      if ((massBins[iTh]>=massLo) && (massBins[iTh+1]<=massHi)) {
+	if (locDebug) std::cout << "adding entry for mass=" << massBins[iTh] << "\n";
+	newXSec[iM]+= XSecTh[iTh];
+	newXSecErr[iM]+= SQR(XSecThErr[iTh]);
+      }
+
+      // check the next mass bin
+      if ((iTh<nMassBinTh) && (massBins[iTh+1]>massHi)) {
+	// linear approximation
+	double x=(massHi-massBins[iTh])/(massBins[iTh+1]-massBins[iTh]);
+	std::cout << "original mass range=" << massBins[iTh] << " ... " << massBins[iTh+1] << ". Linear approximation for massHi=" << massHi << "\n";
+	if (locDebug) { 
+	  std::cout << "next mass bin ends at " << massBins[iTh+1] << "\n";
+	  std::cout << "adding only x=" << x << " fraction to this bin\n";
+	}
+	newXSec[iM] += x * XSecTh[iTh+1];
+	newXSecErr[iM] += SQR( x * XSecThErr[iTh+1] )/(x*x+(1-x)*(1-x));
+	if (iM!=newBinCount) {
+	  newXSec[iM+1] += (1-x) * XSecTh[iTh+1];
+	  newXSecErr[iM] += SQR( (1-x) * XSecThErr[iTh+1] )/(x*x + (1-x)*(1-x));
+	}
+	iTh++;
+      }
+    }
+  }
+
+  for (int iM=0; iM<newBinCount; ++iM) {
+    newXSecErr[iM]=sqrt(newXSecErr[iM]);
+  }
+
+  // normalize
+  for (int iM=0; iM<newBinCount; ++iM) {
+    const double dm=newMassBinLimits[iM+1]-newMassBinLimits[iM];
+    const double xs=newXSec[iM];
+    const double xsErr=newXSecErr[iM];
+    newXSecNorm[iM]=xs*peak_bin_width/(peak_val_theory*dm);//divide to the Z peak
+    newXSecNormErr[iM]=sqrt(pow(xsErr/(peak_val_theory*dm),2)+pow(xs/(peak_val_theory*2*dm),2));
+  }
+
+  return;
+}
+
+
+// -----------------------------------------------------------------
 
 void createThXSec1Dsummer2011() {
 
@@ -127,9 +204,8 @@ void createThXSec1Dsummer2011() {
   TVectorD normXSecTh      (nMassBinTh);
   TVectorD normXSecThErr   (nMassBinTh);
 
-  Double_t peak_bin_width = 1.;
-  Double_t peak_val_theory = 1009.0;
   Double_t mxl = 14.0;
+  Double_t ZpeakXS=0.;
 
   for(int iTh=0; iTh<nMassBinTh; iTh++){
     // mass limits
@@ -144,8 +220,10 @@ void createThXSec1Dsummer2011() {
     XSecTh[iTh]=arr_xsecTh[iTh];
     XSecThErr[iTh]=arr_xsecThErr[iTh];
 
+    if ((mxl>=60) && (mxl<120)) ZpeakXS+=XSecTh[iTh];
+
     // artificially correct the errors, the reason of them being unreasonably 
-    // large is unknown (A.J. Sept 08, 2012)
+    // large is unknown. This scale is an educated guess  (A.J. Sept 08, 2012)
     if (XSecThErr[iTh]>1) XSecThErr[iTh] *= 1e-5;
     
   }
@@ -157,8 +235,30 @@ void createThXSec1Dsummer2011() {
     const double xsErr=XSecThErr[iTh];
     normXSecTh[iTh]=xs*peak_bin_width/(peak_val_theory*dm);//divide to the Z peak
     normXSecThErr[iTh]=sqrt(pow(xsErr/(peak_val_theory*dm),2)+pow(xs/(peak_val_theory*2*dm),2));
-    
   }
+
+
+  std::cout << "check: ZpeakXS=" << ZpeakXS << ", peak_val_theory=" << peak_val_theory << "\n";
+
+#ifdef Extras
+  TVectorD massBins_mb2011_1D(DYTools::_nMassBins2011+1);
+  TVectorD XSecTh_mb2011_1D(DYTools::_nMassBins2011);
+  TVectorD XSecTh_mb2011_1D_Err(DYTools::_nMassBins2011);
+  TVectorD normXSecTh_mb2011_1D(DYTools::_nMassBins2011);
+  TVectorD normXSecTh_mb2011_1D_Err(DYTools::_nMassBins2011);
+  massBins_mb2011_1D=0;
+  XSecTh_mb2011_1D=0; XSecTh_mb2011_1D_Err=0;
+  normXSecTh_mb2011_1D=0; normXSecTh_mb2011_1D_Err=0;
+
+  if (save_for_massBinLimits2011_1D) {
+    rebinCrossSection(massBins,XSecTh,XSecThErr,
+		      DYTools::_nMassBins2011, DYTools::_massBinLimits2011,
+		      massBins_mb2011_1D,
+		      XSecTh_mb2011_1D, XSecTh_mb2011_1D_Err,
+		      normXSecTh_mb2011_1D, normXSecTh_mb2011_1D_Err);
+  }
+#endif
+
 
 
   TString outputDir1(TString("../root_files/"));
@@ -171,5 +271,16 @@ void createThXSec1Dsummer2011() {
   XSecThErr.Write("xSecThErr");
   normXSecTh.Write("xSecThNorm");
   normXSecThErr.Write("xSecThNormErr");
+#ifdef Extras
+  massBins_mb2011_1D.Write("massBinsTh_mb2011");
+  XSecTh_mb2011_1D.Write("xSecTh_mb2011");
+  XSecTh_mb2011_1D_Err.Write("xSecThErr_mb2011");
+  normXSecTh_mb2011_1D.Write("xSecThNorm_mb2011");
+  normXSecTh_mb2011_1D_Err.Write("xSecThNormErr_mb2011");
+#endif
   fb.Close();
 }
+
+// -----------------------------------------------------------------
+
+ 
