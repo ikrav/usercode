@@ -16,6 +16,8 @@ TString MassBinningName(DYTools::TMassBinning_t set) {
   case _MassBins_2011: name="MassBins2011"; break;
   case _MassBins_2011_Lumi: name="MassBins2011Lumi"; break;
   case _MassBins_2011_2D: name="MassBins2011_2D"; break;
+  case _MassBins_test4: name="MassBinsTest4"; break;
+  case _MassBins_Zpeak: name="MassBinsZpeak"; break;
   default: name="UNKNOWN_MASS_BINNING";
   }
   return name;

@@ -6,6 +6,7 @@
 #include <math.h>
 #include <assert.h>
 #include <TEfficiency.h>
+#include <TString.h>
 
 #include "EWKAnaDefs.hh"
 #include "TElectron.hh"
@@ -118,6 +119,33 @@ namespace DYTools {
   const int _nYBinsLumi[_nMassBinsLumi] = { 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
 
+  const int _nMassBinsTest4 = 4;
+  const double _massBinLimitsTest4[_nMassBinsTest4+1] = 
+    {15,45,60,120,1500}; // 4 bins with Z-peak region singled-out
+  const int _nYBinsMaxTest4=1; // the largest division into Y bins
+  const int _nYBinsTest4[_nMassBinsTest4] = { 1, 1, 1, 1 };
+  const int _nYBinsTest4_2D[_nMassBinsTest4] = { 2, 2, 2, 1 };
+
+  // Z-peak region 1GeV bins
+  const int _nMassBinsZpeak = 60;
+  const double _massBinLimitsZpeak[_nMassBinsZpeak+1] = 
+    { 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+      70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+      80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+      90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
+      100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+      110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+      120 };
+  const int _nYBinsMaxZpeak=1; // the largest division into Y bins
+  const int _nYBinsZpeak[_nMassBinsZpeak] = { 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+  };
+
   // generic bin idx finder
   inline
   int _findMassBin(double mass, int nMassBinsLoc, const double *massBinLimitsLoc){  
@@ -137,20 +165,30 @@ namespace DYTools {
   inline int _findMassBin2011(double mass) { return _findMassBin(mass,_nMassBins2011,_massBinLimits2011); }
   inline int _findMassBin13(double mass) { return _findMassBin(mass,_nMassBins13,_massBinLimits13); }
   inline int _findMassBinLumi(double mass) { return _findMassBin(mass,_nMassBinsLumi,_massBinLimitsLumi); }
+  inline int _findMassBinZpeak(double mass) { return _findMassBin(mass,_nMassBinsZpeak,_massBinLimitsZpeak); }
 
 // Declare mass binnings
-  typedef enum { _MassBins_Undefined, _MassBins_2010, _MassBins_2011, _MassBins_2011_Lumi, _MassBins_2011_2D } TMassBinning_t;
+  typedef enum { _MassBins_Undefined, _MassBins_2010, _MassBins_2011, _MassBins_2011_Lumi, _MassBins_2011_2D, _MassBins_test4, _MassBins_Zpeak } TMassBinning_t;
 
 
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
   // Declare mass binning for the analysis (1D and 2D case)
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
+  
 
   const DYTools::TMassBinning_t massBinningSet=(study2D) ? _MassBins_2011_2D : _MassBins_2011;
   const int nMassBins=(study2D) ? _nMassBins2D : _nMassBins2011;
   const double *massBinLimits=(study2D) ? _massBinLimits2D : _massBinLimits2011;
   const int *nYBins=(study2D) ? _nYBins2D : _nYBins2011;
   const int nYBinsMax=(study2D) ? _nYBinsMax2D : _nYBinsMax2011;
+
+  /*
+  const DYTools::TMassBinning_t massBinningSet= _MassBins_test4;
+  const int nMassBins= _nMassBinsTest4;
+  const double *massBinLimits=_massBinLimitsTest4;
+  const int *nYBins=(study2D) ? _nYBinsTest4_2D : _nYBinsTest4;
+  const int nYBinsMax= (study2D) ? 2 : 1;
+  */
   
 
 
