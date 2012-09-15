@@ -45,8 +45,9 @@ int c_plotTheoryWithFEWZfine=1*(kGreen+2);
 int c_plotTheoryNoFEWZfine=1*(48+1);
 int c_plotTheoryNoFEWZ=1*47;
 int c_plotTheory2011=1*(kBlue+1);
+int c_plotTheory2011rebinned=1*(kBlue+1);
 
-int testTheoryPredictions=0;
+int testTheoryPredictions=1;
 
 // Forward declarations
 
@@ -70,9 +71,9 @@ void plotXsec_study_data_vs_theory1D(){
   TString dataLabel="data";
   dataFName="../root_files/DY_m10+pr+a05+o03+pr_4680pb/xSecDET_results_1D__fsrUnf.root";
   
-  //dataFName="../root_files/date_20120825-et6-eta5/xSec_results_1D__fsrUnf.root";
+  dataFName="../root_files/date_20120825-et6-eta5/xSec_results_1D__fsrUnf.root";
   //dataFName="../root_files/date_20120825-et6-eta5/xSecDET_results_1D__fsrUnf.root";
-  //dataFName="../root_files/date_20120825-et7altB-eta8altNegs/xSec_results_1D__fsrUnf.root";
+  dataFName="../root_files/date_20120825-et7altB-eta8altNegs/xSec_results_1D__fsrUnf.root";
   //dataFName="../root_files/date_20120825/xSecDET_results_2D_Full2011_hltEffOld.root";
   if (testTheoryPredictions!=0) dataFName="";
   std::vector<TString> dataFNamesV, labelsV;
@@ -246,12 +247,14 @@ void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &t
   int plotTheoryNoFEWZfine=c_plotTheoryNoFEWZfine;
   int plotTheoryNoFEWZ=c_plotTheoryNoFEWZ;
   int plotTheory2011=c_plotTheory2011;
+  int plotTheory2011rebinned=c_plotTheory2011rebinned;
   int plotTheoryWithFEWZ_2MCfiles=kOrange+1;
   int plotTheoryWithFEWZ_2MCfilesFine=kOrange+1;
   int plotTheoryWithFEWZ_2MCfiles_debug=0;
 
   int extraFlag=0;
   TH1F *theory2011=NULL;
+  TH1F *theory2011rebinned=NULL;
   TH1F *theoryFEWZ=NULL;
   TH1F *theoryWithFEWZfine=NULL;
   TH1F *theoryNoFEWZ=NULL;
@@ -266,13 +269,16 @@ void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &t
     plotTheoryWithFEWZfine *=0;
     plotTheoryWithFEWZ *=1;
     plotTheoryNoFEWZfine *=0;
-    plotTheoryNoFEWZ *=0;
-    plotTheory2011 *=1;
+    plotTheoryNoFEWZ *=1;
+    plotTheory2011 *=0;
+    plotTheory2011rebinned *= 0;
     plotTheoryWithFEWZ_2MCfiles *=0;
     plotTheoryWithFEWZ_2MCfilesFine *=0;
     plotTheoryWithFEWZ_2MCfiles_debug *=0;
     break;
   case 1: 
+    plotTheoryWithFEWZfine *=0;
+    plotTheoryNoFEWZfine *=0;
     plotTheoryWithFEWZ_2MCfiles=0;
     plotTheoryWithFEWZ_2MCfilesFine=0;
     break;
@@ -332,8 +338,9 @@ void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &t
   if (plotTheoryWithFEWZ) {
     theoryFEWZ=readTh(triggers,theKind,iMassBin,1,extraFlag);
     AppendToHistoName(theoryFEWZ,"_withFEWZ");
-    //printHisto(theoryFEWZ);
+    printHisto(theoryFEWZ);
     compPlot.AddHist1D(theoryFEWZ,"powheg + FEWZ","P",plotTheoryWithFEWZ,1,0,1);
+    compPlot.SetRefIdx(theoryFEWZ);
   }
 
   if (plotTheoryNoFEWZfine) {
@@ -349,10 +356,12 @@ void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &t
   if (plotTheoryNoFEWZ) {
     theoryNoFEWZ=readTh(triggers,theKind,iMassBin,0,extraFlag);
     AppendToHistoName(theoryNoFEWZ,"_noFEWZ");
-    //printHisto(theoryNoFEWZ);
+    printHisto(theoryNoFEWZ);
     compPlot.AddHist1D(theoryNoFEWZ,"powheg","P",plotTheoryNoFEWZ,1,0,1);
-    if (!plotTheory2011) compPlot.SetRefIdx(theoryNoFEWZ);
+    //if (!plotTheory2011) compPlot.SetRefIdx(theoryNoFEWZ);
+    if (!plotTheoryWithFEWZ) compPlot.SetRefIdx(theoryNoFEWZ);
   }
+
   if (plotTheory2011) {
     if ((theKind!=DYTools::_cs_preFsr) && (theKind!=DYTools::_cs_preFsrNorm)) {
       std::cout << "\n\t theory2011 is only preFSR absolute or normalized\n";
@@ -360,15 +369,28 @@ void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &t
     else {
       theory2011=readTh2011(theKind);
       AppendToHistoName(theory2011,"_powheg2011");
-      //printHisto(theory2011);
+      printHisto(theory2011,1);
       removeError(theory2011);
       compPlot.AddHist1D(theory2011,"theory 2011","L",plotTheory2011,1,0,1);
       compPlot.SkipInRatioPlots(theory2011);
     }
   }
 
-  if (theoryNoFEWZ) compPlot.SetRefIdx(theoryNoFEWZ);
-  else if (theoryFEWZ) compPlot.SetRefIdx(theoryFEWZ);
+  if (plotTheory2011rebinned) {
+    if ((theKind!=DYTools::_cs_preFsr) && (theKind!=DYTools::_cs_preFsrNorm)) {
+      std::cout << "\n\t theory2011 is only preFSR absolute or normalized\n";
+    }
+    else {
+      theory2011rebinned=readTh2011(theKind,"_rebinned_mb2011","default",1);
+      printHisto(theory2011rebinned);
+      //removeError(theory2011rebinned);
+      int showLabel=(plotTheory2011==0) ? 1:-1;
+      compPlot.AddHist1D(theory2011rebinned,"theory 2011","L",plotTheory2011,1,0,showLabel);
+    }
+  }
+
+  if (theoryNoFEWZ) compPlot.SetRefIdx(theoryNoFEWZ); else
+  if (theoryFEWZ) compPlot.SetRefIdx(theoryFEWZ);
 
   if (theory2011) theories.push_back(theory2011);
   if (theoryFEWZ) theories.push_back(theoryFEWZ);
