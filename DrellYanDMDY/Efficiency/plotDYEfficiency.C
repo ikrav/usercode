@@ -54,7 +54,7 @@
 
 void plotDYEfficiency(const TString input, 
 		      const TString triggerSetString="Full2011DatasetTriggers",
-		      int debugMode=1) 
+		      int debugMode=0) 
 {
   gBenchmark->Start("plotDYEfficiency");
 
