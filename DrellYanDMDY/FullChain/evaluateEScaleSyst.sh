@@ -11,7 +11,8 @@ _sourceConfigFile=$1
 _mcConfInputFile=$2
 _anTag=$3
 _anTagUser=$4
-_debugMode=$5
+_dirTag=$5
+_debugMode=$6
 
 
 # 1) user-defined
@@ -44,6 +45,10 @@ if [ ${#_anTagUser} -gt 0 ] ; then
   _anTagUser=${tmp/\"/}
   echo -e " ... setting anTagUser to <${_anTagUser}>"
   anTagUser=${_anTagUser}
+fi
+if [ ${#_dirTag} -gt 0 ] ; then
+  echo -e " ... setting dirTag to <${_dirTag}>"
+  dirTag=${_dirTag}
 fi
 if [ ${#_debugMode} -gt 0 ] ; then
   echo -e " ... setting debugMode to <${_debugMode}>"
@@ -88,8 +93,8 @@ tmpDir="${dirTag}_escale_tmp"
 destDirT="${dirTag}_escale_STUDY"
 workMCConfInputFileT="../config_files/fall11mc_escale_MODEL.input"
 plotsDirExtraTag=""
-unfoldingStudy=DYTOOLS::NORMAL
-selectionRunMode=DYTOOLS::NORMAL
+unfoldingStudy=DYTools::NORMAL
+selectionRunMode=DYTools::NORMAL
 
 selEventsDirT="../root_files/selected_events/TMPDIR/"
 ntuplesDirT="../root_files/selected_events/TMPDIR/ntuples/"
@@ -304,6 +309,8 @@ prepareConfFile() {
   if [ ! -z ${workMCConfInputFile} ] ; then
      sed "s/#Date20120802_default/${escale}/" ${mcConfInputFile} | \
       sed "s/Date20120802_default/${escale}/" | \
+      sed "s/#Date20120101_default/${escale}/" | \
+      sed "s/Date20120101_default/${escale}/" | \
       sed "s/${dirTag}/${tag}/" \
         > ${workMCConfInputFile}
   fi
@@ -441,7 +448,7 @@ if [ ${err} -eq 0 ] && [ ${doResidualShapeSystStudy} -eq 1 ] ; then
   fi
   if [ ${err} -eq 0 ] ; then
     calculateUnfolding=2
-    unfoldingStudy=DYTOOLS::ESCALE_RESIDUAL
+    unfoldingStudy=DYTools::ESCALE_RESIDUAL
     constDir=${constDirT/TMPDIR/${dirTag}_escale_residual}
     plotsDirExtraTag="_residual"
     saveAnTag=${anTag}
