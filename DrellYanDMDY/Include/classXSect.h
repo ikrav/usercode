@@ -11,13 +11,14 @@
 const int nStandardColors=4;
 const int standardColors[nStandardColors] = { 814, 894, 906, 855 };
 
+const int extraFlag_none=0;
 const int extraFlag_fineGrid=1;
 const int extraFlag_2MCfiles=2;
 const int extraFlag_2MCfilesFineGrid=3;
 const int extraFlag_2MCfiles_debug=4;
 
 
-const int extraFlagData_oldStyle=1;
+const int extraFlagData_oldStyle=0;
 
 
 // -------------------------------------------------------------
@@ -27,6 +28,33 @@ int getStandardColor(int i) { return standardColors[i%nStandardColors]; }
 
 // -------------------------------------------------------------
 
+inline
+int csInDET(DYTools::TCrossSectionKind_t kind) {
+  int yes=-1;
+  switch(kind) {
+  case DYTools::_cs_None:
+    yes=-1;
+    break;
+  case DYTools::_cs_preFsr: 
+  case DYTools::_cs_preFsrNorm:
+  case DYTools::_cs_postFsr:
+  case DYTools::_cs_postFsrNorm:
+    yes=0;
+    break;
+  case DYTools::_cs_preFsrDet: 
+  case DYTools::_cs_preFsrDetNorm:
+  case DYTools::_cs_postFsrDet:
+  case DYTools::_cs_postFsrDetNorm:
+    yes=1;
+    break;
+  default:
+    std::cout << "csInDET cannot handle this kind=<" << CrossSectionKindName(kind) << ">\n";
+    assert(0);
+  }
+  return yes;
+}
+
+// -------------------------------------------------------------
 
 inline
 TH1F* readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, int useFEWZ, int extraFlag){
@@ -167,7 +195,6 @@ TH1F* readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers, DYTo
 
   fileXsecTh.Close();
   if (extraFlag) histo->GetXaxis()->SetRangeUser(15.,1500.);
-  HERE("leaving readTh");
   return histo;
 }
 
@@ -176,7 +203,7 @@ TH1F* readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers, DYTo
 inline
 TH1F* readThCT10(TVectorD &v, TVectorD &vErr, DYTools::TCrossSectionKind_t theKind, int iMassBin) {
 
-  TString xSecThResultFileName="xSectTheory_CTEQ10W.root";
+  TString xSecThResultFileName="../root_files/theory/xSectTheory_CTEQ10W.root";
   std::cout << "Load CT10 theory predictions\n";
   std::cout << "xSecThResultFileName=" << xSecThResultFileName << std::endl;
 
@@ -224,7 +251,6 @@ TH1F* readThCT10(TVectorD &v, TVectorD &vErr, DYTools::TCrossSectionKind_t theKi
   }
 
   TString name=Form("xsecThCT10_%s_%s",DYTools::analysisTag.Data(),CrossSectionKindName(theKind).Data());
-  HERE("a");
   if (ok && (DYTools::study2D==0)) {
     const int perMassBinWidth=1;
     const int perRapidityBinWidth=0;
@@ -244,7 +270,6 @@ TH1F* readThCT10(TVectorD &v, TVectorD &vErr, DYTools::TCrossSectionKind_t theKi
     }
   }
   
-  HERE("b");
   delete xSecTh;
   delete xSecThErr;
 
@@ -271,7 +296,7 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
   xSecResultFileName="dir-LatestResults/xSec_results_2D_Full2011_hltEffOld.root";
   //xSecResultFileName="dir-20120629-results/xSec_results_2D_Full2011_hltEffOld.root";
   if (fname.Length()) xSecResultFileName=fname;
-  std::cout << "xSecResultFileName= " << xSecResultFileName << "\n";
+  std::cout << "xSecResultFileName= " << xSecResultFileName << std::endl;
 
   TFile fileXsecResult   (xSecResultFileName);
   TString xSecName,xSecErrName,xSecSystErrName;
@@ -292,6 +317,8 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
     std::cout << "readData is not ready for theKind=<" << CrossSectionKindName(theKind) << ">\n";
     assert(0);
   }
+
+  std::cout << "loading " << xSecName << ", " << xSecErrName << ", " << xSecSystErrName << "\n";
 
   TMatrixD xSecM          = *(TMatrixD *)fileXsecResult.FindObjectAny(xSecName);
   TMatrixD xSecErr1M      = *(TMatrixD *)fileXsecResult.FindObjectAny(xSecErrName);
@@ -318,9 +345,7 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
     if (DYTools::study2D) perMassBinWidth=0;
     int perRapidityBinWidth=0;
     histo= extractMassDependence(name,name, xSecM, xSecErr1M, 0, perMassBinWidth,perRapidityBinWidth);
-    HERE("loop");
     for(int i=0; i<DYTools::nMassBins; i++){
-      HERE("i=%d",i);
       v[i] = xSecM[i][0];
       vErr1[i] = xSecErr1M[i][0];
       vErr2[i] = xSecErr2M[i][0];
