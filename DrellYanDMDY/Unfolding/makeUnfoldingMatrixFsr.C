@@ -88,9 +88,11 @@ inline bool validFlatIndices(int idx1, int idx2) {
 
 class UnfoldingMatrix_t {
 public:
-  typedef enum { _cDET_Response, _cFSR, _cFSR_DET } TUnfoldingMatrixType_t;
+  typedef enum { _cDET_Response, _cFSR, _cFSR_DET, _cFSR_DETcorrFactors } TUnfoldingMatrixType_t;
   // DET_Response: ini --> PostFsrGen, fin --> PostFsrReco
   // FSR, FSR_DET: ini --> PreFsrGen,  fin -->PostFsrGen
+  // FSR_DETcorrFactors: factors, correcting preFSR and postFSR acceptance
+  // yieldsIni: gen, yieldsFin: reco
 public:
   TUnfoldingMatrixType_t kind;
   TString name, iniYieldsName, finYieldsName;
@@ -119,6 +121,7 @@ public:
     case _cDET_Response: s="DetResponse"; break;
     case _cFSR: s="FSR"; break;
     case _cFSR_DET: s="FSR_DET"; break;
+    case _cFSR_DETcorrFactors: s="FSR_DETcorrFactors"; break;
     }
     return s;
   }
@@ -218,11 +221,152 @@ public:
 				    (*DetMigrationErr)(igen,ireco),
 				    nEventsInGenBin,
 				    nEventsInGenBinErr,
+			    tCentral, tErr);
+	(*DetResponse)      (igen,ireco) = tCentral;
+	(*DetResponseErrPos)(igen,ireco) = tErr;
+	(*DetResponseErrNeg)(igen,ireco) = tErr;
+      }
+    }
+  }
+
+  /* // A.J. test on Sept 20, 2012. This method is not accurate 
+  void computeResponseMatrix_MdfBeforeNormalization(const UnfoldingMatrix_t &exact) {
+    //this->computeResponseMatrix();
+    std::cout << "computeResponseMatrix_Mdf\n";
+    double tCentral, tErr;
+    TVectorD iniV(nUnfoldingBins), finV(nUnfoldingBins);
+    TVectorD iniVexact(nUnfoldingBins), finVexact(nUnfoldingBins);
+    int resFlatten= 
+      (
+       (unfolding::flattenMatrix(*yieldsIni, iniV) == 1 ) &&
+       (unfolding::flattenMatrix(*yieldsFin, finV) == 1 ) &&
+       (unfolding::flattenMatrix(*exact.yieldsIni, iniVexact) == 1 ) &&
+       (unfolding::flattenMatrix(*exact.yieldsFin, finVexact) == 1 ) 
+       ) ? 1:0;
+    assert(resFlatten);
+
+    for(int igen = 0; igen < (*DetMigration).GetNrows(); igen++){
+      // First find the normalization for the given generator level slice
+      double nEventsInGenBin = 0;
+      double nEventsInGenBinErr = 0;
+      for(int ireco = 0; ireco < (*DetMigration).GetNcols(); ireco++){
+	nEventsInGenBin += (*DetMigration)(igen,ireco);
+	nEventsInGenBinErr += ((*DetMigrationErr)(igen,ireco)*
+			       (*DetMigrationErr)(igen,ireco));
+      }
+      nEventsInGenBinErr = sqrt(nEventsInGenBinErr);
+      
+      // rescale event number in the generated bin
+      printf("igen=%d, nEventsInGenBin=%9.4lf, ini/fin=%9.4lf/%9.4lf, exact ini/fin=%9.4lf/%9.4lf\n",igen,nEventsInGenBin,iniV[igen],finV[igen],iniVexact[igen],finVexact[igen]);
+      double scaleIni=
+	( iniVexact[igen] == 0 ) ? 0. : (iniV[igen]/iniVexact[igen]);
+      nEventsInGenBin *= scaleIni;
+      nEventsInGenBinErr *= scaleIni;
+      printf(" scaled number of events: %9.4lf\n",nEventsInGenBin);
+
+      // Now normalize each element and find errors
+      for(int ireco = 0; ireco < (*DetMigration).GetNcols(); ireco++){
+      // prepare scale in the reconstructed bin
+	double scaleFin=
+	  ( finVexact[ireco] == 0 ) ? 0. : (finV[ireco]/finVexact[ireco] );
+
+	tCentral = 0;
+	tErr     = 0;
+	computeNormalizedBinContent((*DetMigration)(igen,ireco) * scaleFin,
+				    (*DetMigrationErr)(igen,ireco) * scaleFin,
+				    nEventsInGenBin,
+				    nEventsInGenBinErr,
 				    tCentral, tErr);
 	(*DetResponse)      (igen,ireco) = tCentral;
 	(*DetResponseErrPos)(igen,ireco) = tErr;
 	(*DetResponseErrNeg)(igen,ireco) = tErr;
       }
+    }
+  }
+  */
+
+  // This is Ilya's suggestion: modify the response matrix
+  void computeResponseMatrix_Mdf(const UnfoldingMatrix_t &exact) {
+    //this->computeResponseMatrix();
+    std::cout << "computeResponseMatrix_Mdf\n";
+    double tCentral, tErr;
+    TVectorD iniV(nUnfoldingBins), finV(nUnfoldingBins);
+    TVectorD iniVexact(nUnfoldingBins), finVexact(nUnfoldingBins);
+    int resFlatten= 
+      (
+       (unfolding::flattenMatrix(*yieldsIni, iniV) == 1 ) &&
+       (unfolding::flattenMatrix(*yieldsFin, finV) == 1 ) &&
+       (unfolding::flattenMatrix(*exact.yieldsIni, iniVexact) == 1 ) &&
+       (unfolding::flattenMatrix(*exact.yieldsFin, finVexact) == 1 ) 
+       ) ? 1:0;
+    assert(resFlatten);
+
+    for(int igen = 0; igen < (*DetMigration).GetNrows(); igen++){
+      // First find the normalization for the given generator level slice
+      double nEventsInGenBin = 0;
+      double nEventsInGenBinErr = 0;
+      for(int ireco = 0; ireco < (*DetMigration).GetNcols(); ireco++){
+	nEventsInGenBin += (*DetMigration)(igen,ireco);
+	nEventsInGenBinErr += ((*DetMigrationErr)(igen,ireco)*
+			       (*DetMigrationErr)(igen,ireco));
+      }
+      nEventsInGenBinErr = sqrt(nEventsInGenBinErr);
+      
+      //printf("igen=%d, nEventsInGenBin=%9.4lf, ini/fin=%9.4lf/%9.4lf, exact ini/fin=%9.4lf/%9.4lf\n",igen,nEventsInGenBin,iniV[igen],finV[igen],iniVexact[igen],finVexact[igen]);
+      double scaleIniInv=
+	( iniV[igen] == 0 ) ? 0. : (iniVexact[igen]/iniV[igen]);
+
+      // Now normalize each element and find errors
+      for(int ireco = 0; ireco < (*DetMigration).GetNcols(); ireco++){
+      // prepare scale in the reconstructed bin
+	double scaleFin=
+	  ( finVexact[ireco] == 0 ) ? 0. : (finV[ireco]/finVexact[ireco] );
+
+	tCentral = 0;
+	tErr     = 0;
+	computeNormalizedBinContent((*DetMigration)(igen,ireco),
+				    (*DetMigrationErr)(igen,ireco),
+				    nEventsInGenBin,
+				    nEventsInGenBinErr,
+				    tCentral, tErr);
+	if ((igen<2) && (ireco<2)) {
+	  printf("igen=%d, ireco=%d, tCentral=%8.4lf, tErr=%8.4lf, scaleIniInv=%6.4lf, scaleFin=%6.4lf\n",igen,ireco,tCentral,tErr,scaleIniInv,scaleFin);
+	}
+	(*DetResponse)      (igen,ireco) = tCentral * scaleIniInv*scaleFin;
+	(*DetResponseErrPos)(igen,ireco) = tErr  *scaleIniInv*scaleFin;
+	(*DetResponseErrNeg)(igen,ireco) = tErr *scaleIniInv*scaleFin;
+      }
+    }
+  }
+
+
+  // DET correction factors defined as all.yields/restricted.yields, where
+  // all.yields contain events in the acceptance which pass only the relevant
+  // pre-FSR or post-FSR cuts, while restricted.yields contain events in the
+  // acceptance that passed both pre-FSR and post-FSR cuts (but their masses
+  // are either pre-FSR /ini/ or post-FSR /fin/)
+  void prepareFsrDETcorrFactors(const UnfoldingMatrix_t &all, const UnfoldingMatrix_t &restricted) {
+    for (int iVec=0; iVec<2; ++iVec) {
+      TMatrixD *nomV=(iVec==0) ? all.yieldsIni : all.yieldsFin;
+      TMatrixD *denomV=(iVec==0) ? restricted.yieldsIni : restricted.yieldsFin;
+      TMatrixD *ratioV=(iVec==0) ? yieldsIni : yieldsFin;
+      for (int iM=0; iM<nomV->GetNrows(); ++iM) {
+	for (int iY=0; iY<nomV->GetNcols(); ++iY) {
+	  double d=(*denomV)[iM][iY];
+	  double r=(d==0.) ? 0. : ((*nomV)[iM][iY] / d);
+	  //std::cout << "divide " << (*nomV)[iM][iY] << " by " << d << " = " << r << "\n";
+	  (*ratioV)[iM][iY] = r;
+	}
+      }
+    }
+    if (0) {
+      std::cout << std::string(80,'-') << "\n";
+      std::cout << "prepareFsrDETcorrFactors\n";
+      std::cout << std::string(80,'-') << "\n";
+      all.printYields();
+      restricted.printYields();
+      this->printYields();
+      std::cout << std::string(80,'-') << "\n";
     }
   }
 
@@ -233,6 +377,43 @@ public:
     (*DetInvertedResponse).Invert(&det);
     calculateInvertedMatrixErrors(*DetResponse, *DetResponseErrPos, *DetResponseErrNeg, *DetInvertedResponseErr);
   }
+
+
+  // apply factors to the response and inv.response matrices to account
+  // for the event loss in DET
+  void modifyDETResponseMatrices(const UnfoldingMatrix_t &exact) {
+    HERE("modifyDETResponseMatrices");
+    TVectorD iniV(nUnfoldingBins), finV(nUnfoldingBins);
+    TVectorD iniVexact(nUnfoldingBins), finVexact(nUnfoldingBins);
+    int resFlatten= 
+      (
+       (unfolding::flattenMatrix(*yieldsIni, iniV) == 1 ) &&
+       (unfolding::flattenMatrix(*yieldsFin, finV) == 1 ) &&
+       (unfolding::flattenMatrix(*exact.yieldsIni, iniVexact) == 1 ) &&
+       (unfolding::flattenMatrix(*exact.yieldsFin, finVexact) == 1 ) 
+       ) ? 1:0;
+    assert(resFlatten);
+
+    for(int igen = 0; igen < (*DetMigration).GetNrows(); igen++){
+      for(int ireco = 0; ireco < (*DetMigration).GetNcols(); ireco++){
+	double scaleIni=
+	  ( iniVexact[igen] == 0 ) ? 0. : (iniV[igen]/iniVexact[igen]);
+	double scaleIniInv=
+	  ( iniV[igen] == 0 ) ? 0. : (iniVexact[igen]/iniV[igen]);
+	double scaleFin=
+	  ( finVexact[ireco] == 0 ) ? 0. : (finV[ireco]/finVexact[ireco] );
+	double scaleFinInv=
+	  ( finV[ireco] == 0 ) ? 0. : (finVexact[ireco]/finV[ireco] );
+
+	(*DetResponse)      (igen,ireco) *= scaleIniInv*scaleFin;
+	(*DetResponseErrPos)(igen,ireco) *= scaleIniInv*scaleFin;
+	(*DetResponseErrNeg)(igen,ireco) *= scaleIniInv*scaleFin;
+	(*DetInvertedResponse)   (ireco,igen) *= scaleIni*scaleFinInv;
+	(*DetInvertedResponseErr)(ireco,igen) *= scaleIni*scaleFinInv;
+      }
+    }
+  }
+
 
   void prepareFIArrays() {
     int resFlatten=
@@ -261,6 +442,10 @@ public:
     case _cFSR_DET:
       iniName="yieldsMcPreFsrGenDET";
       finName="yieldsMcPostFsrGenDET";
+      break;
+    case _cFSR_DETcorrFactors:
+      iniName="fsrDETcorrFactorsGen";
+      finName="fsrDETcorrFactorsReco";
       break;
     default:
       std::cout << "getYieldNames cannot handle this 'kind'=" << theKind << "\n";
@@ -294,24 +479,26 @@ public:
 
   void saveToFile(const TString &fileName, const TString &refFileName) const {
     std::cout << "UnfoldingMatrix_t::saveToFile(\n  <" << fileName << ">\n  <" << refFileName << ">) for name=" << this->name << "\n";
-    TFile fConst(fileName, "recreate" );
-    //name.Write("matrixName");
-    (*DetMigration)            .Write("DetMigration");
-    (*DetMigrationErr)         .Write("DetMigrationErr");
-    (*DetResponse)             .Write("DetResponse");
-    (*DetResponseErrPos)       .Write("DetResponseErrPos");
-    (*DetResponseErrNeg)       .Write("DetResponseErrNeg");
-    (*DetInvertedResponse)     .Write("DetInvertedResponse");
-    (*DetInvertedResponseErr)  .Write("DetInvertedResponseErr");
-    (*DetResponseArr)          .Write("DetResponseFIArray");
-    (*DetInvertedResponseArr)  .Write("DetInvertedResponseFIArray");
-    (*DetInvertedResponseErrArr).Write("DetInvertedResponseErrFIArray");
-    (*yieldsIni).Write(iniYieldsName);
-    (*yieldsFin).Write(finYieldsName);
-    (*yieldsIniArr).Write(iniYieldsName + TString("FIArray"));
-    (*yieldsFinArr).Write(finYieldsName + TString("FIArray"));
-    unfolding::writeBinningArrays(fConst);
-    fConst.Close();
+    if (kind!=_cFSR_DETcorrFactors) {
+      TFile fConst(fileName, "recreate" );
+      //name.Write("matrixName");
+      (*DetMigration)            .Write("DetMigration");
+      (*DetMigrationErr)         .Write("DetMigrationErr");
+      (*DetResponse)             .Write("DetResponse");
+      (*DetResponseErrPos)       .Write("DetResponseErrPos");
+      (*DetResponseErrNeg)       .Write("DetResponseErrNeg");
+      (*DetInvertedResponse)     .Write("DetInvertedResponse");
+      (*DetInvertedResponseErr)  .Write("DetInvertedResponseErr");
+      (*DetResponseArr)          .Write("DetResponseFIArray");
+      (*DetInvertedResponseArr)  .Write("DetInvertedResponseFIArray");
+      (*DetInvertedResponseErrArr).Write("DetInvertedResponseErrFIArray");
+      (*yieldsIni).Write(iniYieldsName);
+      (*yieldsFin).Write(finYieldsName);
+      (*yieldsIniArr).Write(iniYieldsName + TString("FIArray"));
+      (*yieldsFinArr).Write(finYieldsName + TString("FIArray"));
+      unfolding::writeBinningArrays(fConst);
+      fConst.Close();
+    }
 
     // Store reference MC arrays in a file
     TFile fRef(refFileName, "recreate" );
@@ -323,51 +510,58 @@ public:
     fRef.Close();
   }
 
+  // ------------------------------------------
+
   int loadFromFile(const TString &fileName, const TString &refFileName) {
     std::cout << "UnfoldingMatrix_t::loadFromFile(\n  <" << fileName << ">\n  <" << refFileName << ">) for name=" << this->name << "\n";
-    TFile fConst(fileName);
-    if (!fConst.IsOpen()) {
-      std::cout << "failed to open the file <" << fileName << ">\n";
-      return 0;
-    }
-    if (!unfolding::checkBinningArrays(fConst)) {
+    if (kind!=_cFSR_DETcorrFactors) {
+      TFile fConst(fileName);
+      if (!fConst.IsOpen()) {
+	std::cout << "failed to open the file <" << fileName << ">\n";
+	return 0;
+      }
+      if (!unfolding::checkBinningArrays(fConst)) {
+	fConst.Close();
+	return 0;
+      }
+      (*DetMigration)            .Read("DetMigration");
+      (*DetMigrationErr)         .Read("DetMigrationErr");
+      (*DetResponse)             .Read("DetResponse");
+      (*DetResponseErrPos)       .Read("DetResponseErrPos");
+      (*DetResponseErrNeg)       .Read("DetResponseErrNeg");
+      (*DetInvertedResponse)     .Read("DetInvertedResponse");
+      (*DetInvertedResponseErr)  .Read("DetInvertedResponseErr");
+      (*DetResponseArr)          .Read("DetResponseFIArray");
+      (*DetInvertedResponseArr)  .Read("DetInvertedResponseFIArray");
+      (*DetInvertedResponseErrArr).Read("DetInvertedResponseErrFIArray");
+      (*yieldsIni).Read(iniYieldsName);
+      (*yieldsFin).Read(finYieldsName);
+      (*yieldsIniArr).Read(iniYieldsName + TString("FIArray"));
+      (*yieldsFinArr).Read(finYieldsName + TString("FIArray"));
       fConst.Close();
-      return 0;
     }
-    (*DetMigration)            .Read("DetMigration");
-    (*DetMigrationErr)         .Read("DetMigrationErr");
-    (*DetResponse)             .Read("DetResponse");
-    (*DetResponseErrPos)       .Read("DetResponseErrPos");
-    (*DetResponseErrNeg)       .Read("DetResponseErrNeg");
-    (*DetInvertedResponse)     .Read("DetInvertedResponse");
-    (*DetInvertedResponseErr)  .Read("DetInvertedResponseErr");
-    (*DetResponseArr)          .Read("DetResponseFIArray");
-    (*DetInvertedResponseArr)  .Read("DetInvertedResponseFIArray");
-    (*DetInvertedResponseErrArr).Read("DetInvertedResponseErrFIArray");
-    (*yieldsIni).Read(iniYieldsName);
-    (*yieldsFin).Read(finYieldsName);
-    (*yieldsIniArr).Read(iniYieldsName + TString("FIArray"));
-    (*yieldsFinArr).Read(finYieldsName + TString("FIArray"));
-    fConst.Close();
 
-    // Store reference MC arrays in a file
-    TFile fRef(refFileName);
-    if (!fRef.IsOpen()) {
-      std::cout << "failed to open the file <" << refFileName << ">\n";
-      return 0;
-    }
-    if (!unfolding::checkBinningArrays(fRef)) {
+    if (kind==_cFSR_DETcorrFactors) {
+      // Retrieve reference MC arrays in a file
+      TFile fRef(refFileName);
+      if (!fRef.IsOpen()) {
+	std::cout << "failed to open the file <" << refFileName << ">\n";
+	return 0;
+      }
+      if (!unfolding::checkBinningArrays(fRef)) {
+	fRef.Close();
+	return 0;
+      }
+      (*yieldsIni).Read(iniYieldsName);
+      (*yieldsFin).Read(finYieldsName);
+      (*yieldsIniArr).Read(iniYieldsName + TString("FIArray"));
+      (*yieldsFinArr).Read(finYieldsName + TString("FIArray"));
       fRef.Close();
-      return 0;
     }
-    //(*yieldsIni).Read(iniYieldsName);
-    //(*yieldsFin).Read(finYieldsName);
-    //(*yieldsIniArr).Read(iniYieldsName + TString("FIArray"));
-    //(*yieldsFinArr).Read(finYieldsName + TString("FIArray"));
-    fRef.Close();
     return 1;
   }
 
+  // ------------------------------------------
 
   void printYields() const {
     std::cout << "Yields of matrix=" << name << " (" 
@@ -693,9 +887,17 @@ void makeUnfoldingMatrixFsr(const TString input,
 
   UnfoldingMatrix_t detResponse(UnfoldingMatrix_t::_cDET_Response,"detResponse");
   UnfoldingMatrix_t detResponseExact(UnfoldingMatrix_t::_cDET_Response,"detResponseExact");
-  UnfoldingMatrix_t fsr(UnfoldingMatrix_t::_cFSR, "fsr");
+  UnfoldingMatrix_t fsrGood(UnfoldingMatrix_t::_cFSR, "fsrGood");
+  UnfoldingMatrix_t fsrExact(UnfoldingMatrix_t::_cFSR, "fsrExact");
   UnfoldingMatrix_t fsrDET(UnfoldingMatrix_t::_cFSR_DET,"fsrDET"); // only relevant indices are checked for ini,fin
   UnfoldingMatrix_t fsrDETexact(UnfoldingMatrix_t::_cFSR_DET,"fsrDETexact"); // all indices are checked
+
+  // if computeResponseMatrix_MdfBeforeNormalization is called, then the modification is done to the migration matrix
+  // if computeResponseMatrix_Mdf is called, then the modification is done to the response matrix, and invResponse is obtained from simple inversion
+  UnfoldingMatrix_t fsrDET_Mdf(UnfoldingMatrix_t::_cFSR_DET,"fsrDET_Mdf"); 
+  
+  // a good working version: response matrix and invResponse are modified after the inversion
+  UnfoldingMatrix_t fsrDET_good(UnfoldingMatrix_t::_cFSR_DET,"fsrDET_good"); 
 
   //
   // Access samples and fill histograms
@@ -738,6 +940,7 @@ void makeUnfoldingMatrixFsr(const TString input,
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
       if (debugMode && (ientry>1000000)) break;
       if (ientry%1000000==0) { printProgress("ientry=",ientry,eventTree->GetEntriesFast()); }
+      if (ientry%100000==0) { printProgress("ientry=",ientry,eventTree->GetEntriesFast()); }
 
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
@@ -763,39 +966,45 @@ void makeUnfoldingMatrixFsr(const TString input,
 
       double fullGenWeight = reweight * scale * gen->weight * fewz_weight;
 
-      fsr.fillIni(iMassBinGenPreFsr,iYBinGenPreFsr, fullGenWeight);
-      fsr.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr, fullGenWeight);
+      fsrGood.fillIni(iMassBinGenPreFsr,iYBinGenPreFsr, fullGenWeight);
+      fsrGood.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr, fullGenWeight);
       if (validFlatIndices(idxGenPreFsr, idxGenPostFsr)) {
-	fsr.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
+	fsrGood.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
+	fsrExact.fillIni(iMassBinGenPreFsr,iYBinGenPreFsr, fullGenWeight);
+	fsrExact.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr, fullGenWeight);
+	fsrExact.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
       }
  
+      int preFsrOk=0, postFsrOk=0;
       if ( DYTools::goodEtaPair(gen->veta_1, gen->veta_2) &&
 	   DYTools::goodEtPair(gen->vpt_1, gen->vpt_2) ) {
 	if (validFlatIndex(idxGenPreFsr)) {
-	  fsrDET.fillIni(iMassBinGenPreFsr,iYBinGenPreFsr,fullGenWeight);
-	}
-
-	if ( DYTools::goodEtaPair(gen->eta_1, gen->eta_2) &&
-	     DYTools::goodEtPair(gen->pt_1, gen->pt_2) ) {
-	  if (validFlatIndex(idxGenPostFsr)) {
-	    fsrDET.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr,fullGenWeight);
-	  }
-	  /*
-	  if ((iMassBinGenPostFsr>=0) && (iYBinGenPostFsr>=0)) {
-	    if ((iMassBinGenPostFsr==1) && (iYBinGenPostFsr==0)) {
-	      printf("adding %6.4lf for ientry=%d\n",fullGenWeight,ientry);
-	    }
-	  }
-	  */
-	  if (validFlatIndices(idxGenPreFsr,idxGenPostFsr)) {
-	    fsrDET.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
-
-	    fsrDETexact.fillIni(iMassBinGenPreFsr,iYBinGenPreFsr,fullGenWeight);
-	    fsrDETexact.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr,fullGenWeight);
-	    fsrDETexact.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
-	  }
+	  preFsrOk=1;
+	  fsrDET    .fillIni(iMassBinGenPreFsr,iYBinGenPreFsr,fullGenWeight);
+	  fsrDET_Mdf.fillIni(iMassBinGenPreFsr,iYBinGenPreFsr,fullGenWeight);
+	  fsrDET_good.fillIni(iMassBinGenPreFsr,iYBinGenPreFsr,fullGenWeight);
 	}
       }
+      
+      if ( DYTools::goodEtaPair(gen->eta_1, gen->eta_2) &&
+	   DYTools::goodEtPair(gen->pt_1, gen->pt_2) ) {
+	if (validFlatIndex(idxGenPostFsr)) {
+	  postFsrOk=1;
+	  fsrDET    .fillFin(iMassBinGenPostFsr,iYBinGenPostFsr,fullGenWeight);
+	  fsrDET_Mdf.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr,fullGenWeight);
+	  fsrDET_good.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr,fullGenWeight);
+	}
+      }
+
+      if (preFsrOk && postFsrOk) {
+	fsrDET.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
+	fsrDET_Mdf.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
+	fsrDET_good.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
+      	fsrDETexact.fillIni(iMassBinGenPreFsr,iYBinGenPreFsr,fullGenWeight);
+	fsrDETexact.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr,fullGenWeight);
+	fsrDETexact.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
+      }
+
 	
       if( !(requiredTriggers.matchEventTriggerBit(info->triggerBits, 
 						  info->runNum))) 
@@ -909,35 +1118,59 @@ void makeUnfoldingMatrixFsr(const TString input,
 
   //return;
 
+
+  UnfoldingMatrix_t fsrDETcorrections(UnfoldingMatrix_t::_cFSR_DETcorrFactors,"fsrCorrFactors");
+
   if (debugMode!=-1) {
   // Compute the errors on the elements of migration matrix
   detResponse.finalizeDetMigrationErr();
   detResponseExact.finalizeDetMigrationErr();
-  fsr.finalizeDetMigrationErr();
+  fsrGood.finalizeDetMigrationErr();
+  fsrExact.finalizeDetMigrationErr();
   fsrDET.finalizeDetMigrationErr();
   fsrDETexact.finalizeDetMigrationErr();
+  fsrDET_Mdf.finalizeDetMigrationErr();
+  fsrDET_good.finalizeDetMigrationErr();
 
   // Find response matrix, which is simply the normalized migration matrix
   std::cout << "find response matrix" << std::endl;
   detResponse.computeResponseMatrix();
   detResponseExact.computeResponseMatrix();
-  fsr.computeResponseMatrix();
+  fsrGood.computeResponseMatrix();
+  fsrExact.computeResponseMatrix();
   fsrDET.computeResponseMatrix();
   fsrDETexact.computeResponseMatrix();
+  //fsrDET_Mdf.computeResponseMatrix_MdfBeforeNormalization(fsrDETexact);
+  fsrDET_Mdf.computeResponseMatrix_Mdf(fsrDETexact);
+  fsrDET_good.computeResponseMatrix();
 
   std::cout << "find inverted response matrix" << std::endl;
   detResponse.invertResponseMatrix();
   detResponseExact.invertResponseMatrix();
-  fsr.invertResponseMatrix();
+  fsrGood.invertResponseMatrix();
+  fsrExact.invertResponseMatrix();
   fsrDET.invertResponseMatrix();
   fsrDETexact.invertResponseMatrix();
+  fsrDET_Mdf.invertResponseMatrix();
+  fsrDET_good.invertResponseMatrix();
+
+  fsrDETcorrections.prepareFsrDETcorrFactors(fsrDET,fsrDETexact);
+  fsrDETcorrections.printYields();
+
+  std::cout << "finalize fsrDET_good" << std::endl;
+  fsrGood.modifyDETResponseMatrices(fsrExact);
+  fsrDET_good.modifyDETResponseMatrices(fsrDETexact);
 
   std::cout << "prepare flat-index arrays" << std::endl;
   detResponse.prepareFIArrays();
   detResponseExact.prepareFIArrays();
-  fsr.prepareFIArrays();
+  fsrGood.prepareFIArrays();
+  fsrExact.prepareFIArrays();
   fsrDET.prepareFIArrays();
   fsrDETexact.prepareFIArrays();
+  fsrDET_Mdf.prepareFIArrays();
+  fsrDET_good.prepareFIArrays();
+  fsrDETcorrections.prepareFIArrays();
   }
 
   //
@@ -980,16 +1213,24 @@ void makeUnfoldingMatrixFsr(const TString input,
   if (debugMode!=-1) {
     detResponse.autoSaveToFile(outputDir,fnameTag);  // detResonse, reference mc arrays
     detResponseExact.autoSaveToFile(outputDir,fnameTag);
-    fsr.autoSaveToFile(outputDir,fnameTag);
+    fsrGood.autoSaveToFile(outputDir,fnameTag);
+    fsrExact.autoSaveToFile(outputDir,fnameTag);
     fsrDET.autoSaveToFile(outputDir,fnameTag);
     fsrDETexact.autoSaveToFile(outputDir,fnameTag);
+    fsrDET_Mdf.autoSaveToFile(outputDir,fnameTag);
+    fsrDET_good.autoSaveToFile(outputDir,fnameTag);
+    fsrDETcorrections.autoSaveToFile(outputDir,fnameTag);
   }
   else {
     if (!detResponse.autoLoadFromFile(outputDir,fnameTag) ||
 	!detResponseExact.autoLoadFromFile(outputDir,fnameTag) ||
-	!fsr.autoLoadFromFile(outputDir,fnameTag) ||
+	!fsrGood.autoLoadFromFile(outputDir,fnameTag) ||
+	!fsrExact.autoLoadFromFile(outputDir,fnameTag) ||
 	!fsrDET.autoLoadFromFile(outputDir,fnameTag) ||
-	!fsrDETexact.autoLoadFromFile(outputDir,fnameTag)) {
+	!fsrDETexact.autoLoadFromFile(outputDir,fnameTag) ||
+	!fsrDET_Mdf.autoLoadFromFile(outputDir,fnameTag) ||
+	!fsrDET_good.autoLoadFromFile(outputDir,fnameTag) ||
+	!fsrDETcorrections.autoLoadFromFile(outputDir,fnameTag)) {
       std::cout << "loading failed\n";
       return;
     }
@@ -1078,9 +1319,11 @@ void makeUnfoldingMatrixFsr(const TString input,
   //TCanvas *e2;
   //CPlot *cpR, *cpIR;
   detResponse.prepareHResponse();
-  fsr.prepareHResponse();
+  fsrGood.prepareHResponse();
+  fsrExact.prepareHResponse();
   fsrDET.prepareHResponse();
   fsrDETexact.prepareHResponse();
+  fsrDET_good.prepareHResponse();
    
   // Create a plot of detector resolution without mass binning
   TCanvas *g = MakeCanvas("canvMassDiff","canvMassDiff",600,600);
@@ -1128,7 +1371,7 @@ void makeUnfoldingMatrixFsr(const TString input,
   TCanvas *cFsrErrorsResp = MakeCanvas("cErrorsFsr","fsr__.DetInvertedResponseErr", 1200, 600);
   cFsrErrorsResp->Divide(2,1);
   cFsrErrorsResp->cd(1);
-  fsr.DetInvertedResponseErr->Draw("LEGO2");
+  fsrExact.DetInvertedResponseErr->Draw("LEGO2");
   cFsrErrorsResp->cd(2);
   fsrDET.DetInvertedResponseErr->Draw("LEGO2");
   SaveCanvas(cFsrErrorsResp,"cErrorsFsr");
@@ -1145,14 +1388,16 @@ void makeUnfoldingMatrixFsr(const TString input,
   cout << endl; 
 
   detResponse.printConditionNumber();
-  fsr.printConditionNumber();
+  fsrExact.printConditionNumber();
   fsrDET.printConditionNumber();
   fsrDETexact.printConditionNumber();
 
   if (0) {
     //detResponse.printMatrices();
     //fsr.printMatrices();
-    fsrDET.printMatrices();
+    //fsrDET.printMatrices();
+    fsrDET_Mdf.printMatrices();
+    fsrDET_good.printMatrices();
   }
 
   //Print errors of the Unfolding matrix when they exceed 0.1
@@ -1211,10 +1456,12 @@ void makeUnfoldingMatrixFsr(const TString input,
     //yieldsMcGen.Print();
   }
   */
-
-  detResponse.printYields();
-  fsr.printYields();
-  fsrDET.printYields();
+  
+  if (0) {
+    detResponse.printYields();
+    fsrExact.printYields();
+    fsrDET.printYields();
+  }
 
   gBenchmark->Show("makeUnfoldingMatrix");
 }
