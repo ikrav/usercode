@@ -16,11 +16,19 @@ namespace unfolding{
 
   int  unfold(const TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName);
   int  unfoldTrueToReco(const TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName);
-
   // pack MatrixD to flat-indexed VectorD and apply the unfolding matrix 
   // from a file
   int  unfold(const TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingConstFileName,
 	      TVectorD &vinFlat, TVectorD &voutFlat);
+
+
+  int  unfoldFSR(const TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName, const TString &correctionsFileName);
+  int  unfoldFSRTrueToReco(const TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName, const TString &correctionsFileName);
+
+  int  unfoldFSR(const TMatrixD &vinM, TMatrixD &voutM, 
+		 const TString &unfoldingConstFileName, 
+		 const TString &correctionsFileName,
+		 TVectorD &vinFlat, TVectorD &voutFlat);
 
   int  propagateErrorThroughUnfolding(const TVectorD &errorIn, 
 				      TVectorD &errorPropagated,
@@ -32,6 +40,19 @@ namespace unfolding{
 				      const TString &unfoldingConstFileName,
 				      TVectorD &errorIn,
 				      TVectorD &errorPropagated);
+
+  int  propagateErrorThroughFsrUnfolding(const TVectorD &errorIn, 
+				      TVectorD &errorPropagated,
+					 const TString &unfoldingConstFileName,
+					 const TString &correctionsFileName
+					 );
+
+  int  propagateErrorThroughFsrUnfolding(const TMatrixD &errorInMatrix, 
+				      TMatrixD &errorPropagatedMatrix,
+				      const TString &unfoldingConstFileName,
+				      const TString &correctionsFileName,
+				      TVectorD &errorIn,
+					 TVectorD &errorPropagated);
   
 
   /* int calculateTotalUnfoldingSystError(const TVectorD &yieldsBeforeUnfolding, 
@@ -85,5 +106,9 @@ namespace unfolding{
   bool checkFlatVectorRanges(const TVectorD &v1, const TVectorD &v2, const TString &info, const TString info2="");
 }
 
+
+// -------------------------------------------------------
+
+// -------------------------------------------------------
 
 #endif

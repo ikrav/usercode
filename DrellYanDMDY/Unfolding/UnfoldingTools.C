@@ -72,6 +72,7 @@ namespace unfolding {
  }
 
 
+
 //-----------------------------------------------------------------
 // Function that packs matrix to a vector and executes the unfolding
 //-----------------------------------------------------------------
@@ -110,6 +111,162 @@ namespace unfolding {
     fileConstants.Close();
     return 1;
   }
+
+
+//-----------------------------------------------------------------
+// Function that executes FSR unfolding
+//-----------------------------------------------------------------
+
+int loadFSRcorrections(const TString &correctionsFileName, TVectorD **genF, TVectorD **genFErr, TVectorD **recF, TVectorD **recFErr, const TString &calledFromFnc) {
+  TFile fileCorrections(correctionsFileName);
+  if (!fileCorrections.IsOpen() || !checkBinningArrays(fileCorrections)) {
+    std::cout << "loadFSRcorrections: failed to open the file <" 
+	      << correctionsFileName 
+	      << "> or binning mismatch. Function called from " 
+	      << calledFromFnc << "\n";
+    assert(0);
+  }
+
+  const TString genFName="fsrDETcorrFactorsGenFIArray";
+  const TString recFName="fsrDETcorrFactorsRecoFIArray";
+  (*genF)=(TVectorD*)fileCorrections.FindObjectAny(genFName);
+  (*recF)=(TVectorD*)fileCorrections.FindObjectAny(recFName);
+  if (!(*genF) || !(*recF)) {
+    std::cout << "loadFSRcorrections: failed to get objects from <" 
+	      << correctionsFileName 
+	      << ">. Function called from "
+	      << calledFromFnc << "\n";
+    assert(0);
+      
+  }
+  //std::cout << "genF: "; (*genF)->Print();
+
+  (*genFErr)=new TVectorD(**genF);
+  *(*genFErr)=0; 
+  (*recFErr)=new TVectorD(**genFErr);
+  return 1;
+}
+
+  //-----------------------------------------------------------------
+
+int  unfoldFSR(const TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName, const TString &correctionsFileName)
+  {
+    
+    // Read unfolding constants
+    std::cout << "unfoldFSR (V): Load constants from <" << unfoldingConstFileName 
+	      << ">" << std::endl;
+    
+    int res=checkBinningConsistency(unfoldingConstFileName);
+    if (res!=1) return res;
+    if (!checkFlatVectorRanges(vin,vout,unfoldingConstFileName," operates")) return 0;
+    
+    TFile fileConstants(unfoldingConstFileName); // file had to exist to reach this point
+    //TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
+    TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
+    //TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
+
+    TVectorD *genF=NULL, *genFErr=NULL;
+    TVectorD *recF=NULL, *recFErr=NULL;
+    assert(loadFSRcorrections(correctionsFileName,
+			      &genF, &genFErr,
+			      &recF, &recFErr,
+			      "unfoldFSR"));
+
+    // Apply unfolding matrix
+    vout = 0;
+    int nBins = DYTools::getTotalNumberOfBins();
+    for(int i=0; i<nBins; i++){
+      const double fgen=((*genF)[i]==0) ? 0 : (*genF)[i];
+      for(int j=0; j<nBins; j++){
+	const double frec=((*recF)[j]==0) ? 0 : 1/(*recF)[j];
+	//const double 
+	if (0) printf("i=%d, j=%d, vin[j]=%8.3lf, genF[i]=%6.3e, recF[j]=%6.3e; vin[j]*recF[j]=%8.3lf, vin[j]*frec=%8.3lf\n",
+	       i,j,vin[j],(*genF)[i],(*recF)[j],
+		      vin[j]*(*recF)[j], vin[j]*frec);
+	if (0) printf("i=%d, j=%d, vin[j]=%8.3lf, genF[i]=%6.3e, recF[j]=%6.3e; vin[j]*frec=%8.3lf, DetInvResp(j,i)=%8.3lf, fgen*DetInvResp(j,i)*frec=%8.3lf\n",
+	       i,j,vin[j],(*genF)[i],(*recF)[j],
+		      vin[j]*frec, DetInvertedResponse(j,i),
+		      fgen*DetInvertedResponse(j,i)*frec);
+	vout[i] += fgen*DetInvertedResponse(j,i) * vin[j] * frec;
+      }
+    }
+    
+    fileConstants.Close();
+    if (genF) delete genF; 
+    if (genFErr) delete genFErr;
+    if (recF) delete recF;
+    if (recFErr) delete recFErr;
+    return 1;
+  }
+
+  //-----------------------------------------------------------------
+ 
+ int  unfoldFSRTrueToReco(const TVectorD &vin, TVectorD &vout, const TString &unfoldingConstFileName, const TString &correctionsFileName)
+  {
+
+    // Read unfolding constants
+    std::cout << "unfoldTrueToReco(V): Load constants from <" << unfoldingConstFileName 
+	      << ">" << std::endl;
+
+    int res=checkBinningConsistency(unfoldingConstFileName);
+    if (res!=1) return res;
+    if (!checkFlatVectorRanges(vin,vout,unfoldingConstFileName," operates")) return 0;
+
+    TFile fileConstants(unfoldingConstFileName); // file had to exist to reach this point
+   TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
+   //TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
+   //TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
+
+    TVectorD *genF=NULL, *genFErr=NULL;
+    TVectorD *recF=NULL, *recFErr=NULL;
+    assert(loadFSRcorrections(correctionsFileName,
+			      &genF, &genFErr,
+			      &recF, &recFErr,
+			      "unfoldFSRTrueToReco"));
+
+   // Apply unfolding matrix
+   vout = 0;
+   int nBins = DYTools::getTotalNumberOfBins();
+   for(int i=0; i<nBins; i++){
+     const double f=((*recF)[i]==0) ? 0 : (*recF)[i];
+     for(int j=0; j<nBins; j++){
+       const double fgen=((*genF)[j]==0) ? 0 : 1/(*genF)[j];
+       if (0) printf("i=%d, j=%d, vin[j]=%8.3lf, genF[j]=%6.3e, recF[i]=%6.3e; vin[j]*genF[j]=%8.3lf, vin[j]/genF[j]=%8.3lf\n",
+		     i,j,vin[j],(*genF)[j],(*recF)[i], vin[j]*(*genF)[j],
+		     vin[j]*fgen);
+       if (1) printf("i=%d, j=%d, vin[j]=%8.3lf, genF[j]=%6.3e, recF[i]=%6.3e; vin[j]*fgen=%8.3lf, DetResponse(j,i)=%8.3lf, frec*DetResponse(j,i)*fgen=%8.3lf\n",
+		     i,j,vin[j],(*genF)[j],(*recF)[i], 
+		     vin[j]*fgen, DetResponse(j,i), f*DetResponse(j,i)*fgen);
+       vout[i] += f * DetResponse(j,i) * vin[j] * fgen;
+     }
+   }
+
+   fileConstants.Close();
+   if (genF) delete genF; 
+   if (genFErr) delete genFErr;
+   if (recF) delete recF;
+   if (recFErr) delete recFErr;
+   return 1;
+ }
+
+//-----------------------------------------------------------------
+
+int unfoldFSR(const TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingConstFileName, const TString &correctionsFileName, TVectorD &vin, TVectorD &vout) {
+  // Read unfolding constants
+  std::cout << "unfoldFSR(M): use constants from <" << unfoldingConstFileName << ">, corrections from <" << correctionsFileName << ">" << std::endl;
+  
+  // Pack the matrix
+  int res= ((flattenMatrix(vinM, vin)==1)
+    // Apply unfolding matrix
+    && (unfoldFSR(vin,vout,unfoldingConstFileName,correctionsFileName)==1)
+    // Unpack the final matrix
+	    && (deflattenMatrix(vout, voutM)==1)) ? 1:0;
+  if (!res) {
+    std::cout << "error in unfoldFSR(M)\n";
+  }
+  return res;
+}
+
 
 //-----------------------------------------------------------------
 // Function that propagates systematic errors through unfolding
@@ -187,6 +344,84 @@ namespace unfolding {
 
     fileConstants.Close();
     return 1;
+  }
+
+//-----------------------------------------------------------------
+// Function that propagates systematic errors through unfolding
+//-----------------------------------------------------------------
+ int  propagateErrorThroughFsrUnfolding(const TVectorD &errorIn, 
+				     TVectorD &errorPropagated,
+				     const TString &unfoldingConstFileName,
+				     const TString &correctionsFileName)
+  {
+
+    // Read unfolding constants
+    std::cout << "propagateErrorThroughFsrUnfolding(V): Load constants from <" << unfoldingConstFileName << ">" << std::endl;
+    
+    int res=checkBinningConsistency(unfoldingConstFileName);
+    if (res!=1) return res;
+    if (!checkFlatVectorRanges(errorIn,errorPropagated,unfoldingConstFileName," operates")) return 0;
+
+    TFile fileConstants(unfoldingConstFileName);
+    //TMatrixD DetResponse             = *(TMatrixD *)fileConstants.FindObjectAny("DetResponse");
+    TMatrixD DetInvertedResponse     = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponse");
+    //TMatrixD DetInvertedResponseErr  = *(TMatrixD *)fileConstants.FindObjectAny("DetInvertedResponseErr");
+
+    TVectorD *genF=NULL, *genFErr=NULL;
+    TVectorD *recF=NULL, *recFErr=NULL;
+    assert(loadFSRcorrections(correctionsFileName,
+			      &genF, &genFErr,
+			      &recF, &recFErr,
+			      "unfoldFSR"));
+
+    // Apply unfolding matrix
+    int nBins = DYTools::getTotalNumberOfBins();
+    errorPropagated = 0;
+    for(int i=0; i<nBins; i++){
+      const double fgen=((*genF)[i]==0) ? 0 : (*genF)[i];
+      for(int j=0; j<nBins; j++){
+	const double frec=((*recF)[j]==0) ? 0 : 1/(*recF)[j];
+	errorPropagated[i] += pow( fgen*DetInvertedResponse(j,i)*frec*errorIn[j], 2);
+      }
+      errorPropagated[i] = sqrt(errorPropagated[i]);
+    }
+    
+    fileConstants.Close();
+    if (genF) delete genF; 
+    if (genFErr) delete genFErr;
+    if (recF) delete recF;
+    if (recFErr) delete recFErr;
+    return 1;
+  }
+
+//-----------------------------------------------------------------
+// Function that propagates flattens the matrix and propages the 
+// systematic errors through unfolding
+//-----------------------------------------------------------------
+  int  propagateErrorThroughFsrUnfolding(const TMatrixD &errorInM,
+				      TMatrixD &errorPropagatedM,
+				      const TString &unfoldingConstFileName,
+					 const TString &correctionsFileName,
+				      TVectorD &errorIn, 
+				      TVectorD &errorPropagated)
+  {
+
+    // Read unfolding constants
+    std::cout << "propagateErrorThroughFsrUnfolding(M): Load constants from <" << unfoldingConstFileName << ">" << std::endl;
+    
+    int res=checkBinningConsistency(unfoldingConstFileName);
+    if (res!=1) return res;
+    if (!checkRangesMY(errorInM,"errorInM",errorPropagatedM,"errorPropagatedFsrM") ||
+	!checkFlatVectorRanges(errorIn,errorPropagated,unfoldingConstFileName," operates")) return 0;
+
+    res=( (flattenMatrix(errorInM, errorIn)==1) &&
+	  (propagateErrorThroughFsrUnfolding(errorIn,errorPropagated,unfoldingConstFileName,correctionsFileName)==1) &&
+	  (deflattenMatrix(errorPropagated,errorPropagatedM)==1) ) ? 1:0;
+    if (!res) {
+      std::cout << "error in propagateErrorsThroughFsrUnfolding(M)\n";
+    }
+
+    return res;
   }
 
   // ------------------------------------------
