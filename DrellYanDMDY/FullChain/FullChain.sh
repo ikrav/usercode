@@ -54,6 +54,7 @@ do_plotFSRCorrections=0
 do_plotFSRCorrectionsSansAcc=0
 do_setupTheory=0
 do_crossSection=0
+do_crossSectionFsr=0
 
 #          check EventScaleFactors/*sh script settings! 
 #          long calculation!
@@ -131,7 +132,8 @@ if [ ${do_post_selection_steps} -eq 1 ] ; then
     do_plotFSRCorrections=1
     do_plotFSRCorrectionsSansAcc=1
     do_setupTheory=1
-    do_crossSection=1
+    do_crossSection=0
+    do_crossSectionFsr=1
 #   do_escaleSystematics=0   # very long calculation
 fi
 
@@ -195,7 +197,7 @@ fi
 
 # prepare support libraries
 cd ../Include
-root -b -q -l rootlogon.C+              | tee ${logDir}/out${timeStamp}-00-include${anTag}.log
+root -b -q -l rootlogon.C+             # | tee ${logDir}/out${timeStamp}-00-include${anTag}.log
 
 
 #Selection
@@ -528,6 +530,28 @@ else
     statusCrossSection=skipped
 fi
 
+#CrossSectionFsr
+if [ ${do_crossSectionFsr} -eq 1 ] && [ ${noError} -eq 1 ] ; then
+statusCrossSectionFsr=OK
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+echo "WILL DO: CrossSectionFsr(\"${filename_cs}\")"
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+cd ../CrossSection
+rm -f *.so ${expectXSecFile} ${expectXSecThFile}
+echo
+checkFile calcCrossSectionFsr.C
+root -q -b -l ${LXPLUS_CORRECTION} calcCrossSectionFsr.C+\(\"$filename_cs\"\)    \
+ | tee ${logDir}/out${timeStamp}-15-CrossSectionFsr${anTag}.out
+get_status ${expectXSecFile} ${expectXSecThFile}
+statusCrossSectionFsr=$RUN_STATUS
+cd ../FullChain
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+echo "DONE: CrossSectionFsr(\"${filename_cs}\")"
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+else
+    statusCrossSectionFsr=skipped
+fi
+
 # ------------------------------ final summary
 
 echo "Full chain summary:"
@@ -546,6 +570,7 @@ echo "            SetupTheory:    " $statusSetupTheory
 echo "      EventScaleFactors:    " $statusEventScaleFactors
 echo "      EScaleSystematics:    " $statusEScaleSyst
 echo "           CrossSection:    " $statusCrossSection
+echo "        CrossSectionFsr:    " $statusCrossSectionFsr
 
 
 if [ ${noError} -eq 0 ] ; then 
