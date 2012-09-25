@@ -102,6 +102,12 @@ public:
     return cmsText;
   }
 
+  TLatex* AddTextCMSSimulation(double x=0.93, double y=0.94) {
+    TLatex* txt=this->AddTextCMSPreliminary();
+    txt->SetText(x, y, "#it{CMS Simulation}");
+    return txt;
+  }
+
   TLatex* AddTextLumi(double x=0.91, double y=0.90) {
     TLatex *lumiText = new TLatex();
     lumiText->SetTextFont(42);
