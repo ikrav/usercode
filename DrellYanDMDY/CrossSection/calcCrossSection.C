@@ -333,15 +333,10 @@ void calcCrossSection(const TString conf) { //="../config_files/xsecCalc.conf")
   // Calculate absolute and relative cross-sections
   std::cout << "absolute and relative cross sections" << std::endl;
   std::cout << "1. crossSections" << std::endl;
-  if (DYTools::study2D==0) {
-    crossSections(preFsrYields, preFsrYieldsStatErr, preFsrYieldsSystErr,
-		  absCrossSection, absCrossSectionStatErr, absCrossSectionSystErr,
-		  relCrossSection, relCrossSectionStatErr, relCrossSectionSystErr,
-		  triggers,"");
-  }
-  else {
-    std::cout << "...skipped\n";
-  }
+  crossSections(preFsrYields, preFsrYieldsStatErr, preFsrYieldsSystErr,
+		absCrossSection, absCrossSectionStatErr, absCrossSectionSystErr,
+		relCrossSection, relCrossSectionStatErr, relCrossSectionSystErr,
+		triggers,"");
 
   // Calculate absolute and relative cross-sections DET (shapes, no Acc, but with FSR)
   std::cout << "2. crossSectionsDET" << std::endl;
@@ -1834,7 +1829,7 @@ void initGlobalFileNames(const TriggerSelection &triggers, const TString &tagDir
     TString("acceptance_constants") + fnameEnd;
   fnameAcceptanceSystematics = pathSystematics +
     TString("theoretical_uncertainties.root");
-  fnameAcceptanceFSRSystematics = pathConstants + 
+  fnameAcceptanceFSRSystematics = pathSystematics + 
     TString("acceptance_FSR_systematics") + fnameEnd;
 
   // FSR correction
