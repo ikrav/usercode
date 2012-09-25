@@ -400,7 +400,7 @@ void getXsecExtended(const TString mc_input, int debugMode=0, bool useFEWZ=true,
 
 
   TString outFile= TString("../root_files/xSecThExt_");
-  outFile.Append("2MCfiles_");
+  //outFile.Append("2MCfiles_");
   if (!useFewzWeights) outFile.Append("noFEWZ_");
   if (fineGrid) outFile.Append("fineGrid_");
   if (debugMode==1) outFile.Append("debug_");
