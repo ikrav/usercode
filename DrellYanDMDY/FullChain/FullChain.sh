@@ -444,7 +444,7 @@ cd ../Theory
 rm -f *.so
 echo
 checkFile setupTheory.sh
-source setupTheory.sh ${filename_mc}  | tee ${logDir}/out${timeStamp}-11-setupTheory${anTag}.out
+source setupTheory.sh ${filename_mc}  -debug ${debugMode} | tee ${logDir}/out${timeStamp}-11-setupTheory${anTag}.out
 get_status
 statusSetupTheory=$RUN_STATUS
 cd ../FullChain
