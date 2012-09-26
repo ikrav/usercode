@@ -39,7 +39,7 @@
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=1) 
+void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0) 
 {
   gBenchmark->Start("plotDYFSRCorrections");
 
