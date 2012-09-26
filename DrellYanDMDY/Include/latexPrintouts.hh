@@ -16,6 +16,10 @@ void latexPrintoutEfficiency2D(TMatrixD effv, TMatrixD effErrv, TString produced
 void latexPrintoutEfficiency1D(TMatrixD effv, TMatrixD effErrv, TString producedBy);
 void latexPrintoutScaleFactors2D(TMatrixD scalev, TMatrixD scaleErrv, TString producedBy);
 void latexPrintoutScaleFactors1D(TMatrixD scalev, TMatrixD scaleErrv, TString producedBy);
+void latexPrintoutFsr2D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy);
+void latexPrintoutFsr1D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy);
+void latexPrintoutFsrInAcceptance2D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy);
+void latexPrintoutFsrInAcceptance1D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy);
 
 void latexPrintoutOneValue2D(TMatrixD value, TMatrixD valueErr, TString producedBy, TString valueName, TString baseOfReferenceName, TString tableName);
 void latexPrintoutOneValue1D(TMatrixD value, TMatrixD valueErr, TString producedBy, TString valueName, TString baseOfReferenceName, TString tableName);

@@ -31,6 +31,7 @@
 #include "../Include/FEWZ.hh"
 #include "../Include/UnfoldingTools.hh"
 #include "../Include/InputFileMgr.hh"
+#include "../Include/latexPrintouts.hh"
 
 #endif
 
@@ -38,7 +39,7 @@
 
 //=== MAIN MACRO =================================================================================================
 
-void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0) 
+void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=1) 
 {
   gBenchmark->Start("plotDYFSRCorrections");
 
@@ -433,6 +434,21 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
   sprintf(buf,"%3.1lf",nZweighted);
   cout << "     Number of weighted gen.events: " << buf << endl;
 
+  if (sansAcc==0)
+    {
+      if (DYTools::study2D)    
+        latexPrintoutFsr2D(corrv,corrErrv,"Fsr/plotDYFSRCorrections.C");
+      else if (DYTools::study2D==0)
+        latexPrintoutFsr1D(corrv,corrErrv,"Fsr/plotDYFSRCorrections.C");
+    }
+  else if (sansAcc==1)
+    {
+      if (DYTools::study2D)    
+        latexPrintoutFsrInAcceptance2D(corrv,corrErrv,"Fsr/plotDYFSRCorrections.C");
+      else if (DYTools::study2D==0)
+        latexPrintoutFsrInAcceptance1D(corrv,corrErrv,"Fsr/plotDYFSRCorrections.C");
+    }
+
   if (DYTools::study2D==0)
    {
      printf(" mass bin    preselected      passed     FSR correction\n");
@@ -444,8 +460,10 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
      }
    }
   else
-    printf("printout way for 2D was not chosen");
+    printf("printout for 2D in latex format is saved to the txt file");
   cout << endl;
+
+
 
   //sanity check printout
   if (sansAcc) printSanityCheck(corrv, corrErrv, "sansAccFsrYields");

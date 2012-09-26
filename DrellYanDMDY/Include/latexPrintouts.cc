@@ -17,63 +17,56 @@
 
 // -----------------------------------------------------------------------------
 
-//void latexPrintoutOneValue2D(TMatrixD value, TMatrixD valueErr, TString producedBy, TString valueName, TString baseOfReferenceName, TString tableName);
-//void latexPrintoutOneValue1D(TMatrixD value, TMatrixD valueErr, TString producedBy, TString valueName, TString baseOfReferenceName, TString tableName);
-
-//void latexPrintoutTwoColumn2D(const int nValues, int* valuesType, TMatrixD** values, TMatrixD** valuesErr1, TMatrixD** valuesErr2, TString producedBy, TString* valuesName, TString baseOfReferenceName, TString tableName);
-//void latexPrintoutTwoColumns1D(const int nValues, int* valuesType, TMatrixD** values, TMatrixD** valuesErr1, TMatrixD** valuesErr2,TString producedBy, TString* valuesName, TString baseOfReferenceName, TString tableName);
-
-
-
 void latexPrintoutAcceptance2D(TMatrixD accv, TMatrixD accErrv, TString producedBy)
 {
    latexPrintoutOneValue2D(accv, accErrv, producedBy, "acceptance  \\%", "acceptance2D" , "Numerical values of the post-FSR acceptance for %4.0f-%4.0f GeV mass slice of \\DYee candidates");
-   //TString baseOfReferenceName="acceptance2D";
-   //TString tableName = "Numerical values of the post-FSR acceptance for %4.0f-%4.0f GeV mass slice of \\DYee candidates";
-   //TString valueName = "acceptance"
 }
 
 
 void latexPrintoutAcceptance1D(TMatrixD accv, TMatrixD accErrv, TString producedBy)
 {
    latexPrintoutOneValue1D(accv, accErrv, producedBy, "acceptance  \\%", "acceptance1D" , "Numerical values of the post-FSR acceptance for 1D measurement of \\DYee candidates" );
-   //TString baseOfReferenceName="acceptance1D";
-   //TString tableName = "Numerical values of the post-FSR acceptance for 1D measurement of \\DYee candidates";
-   //TString valueName = "acceptance"
-
 }
 
 void latexPrintoutEfficiency2D(TMatrixD effv, TMatrixD effErrv, TString producedBy)
 {
    latexPrintoutOneValue2D(effv, effErrv, producedBy, "efficiency  \\%", "efficiency2D" , "Reconstruction and selection efficiency $\\epsilon^{mc}$ for %4.0f-%4.0f GeV mass slice of \\DYee candidates");
-   //TString baseOfReferenceName="efficiency2D";
-   //TString tableName = "Reconstruction and selection efficiency $\\epsilon^{mc}$ for %4.0f-%4.0f GeV mass slice of \\DYee candidates";
-   //TString valueName = "efficiency"
 }
 
 
 void latexPrintoutEfficiency1D(TMatrixD effv, TMatrixD effErrv, TString producedBy)
 {
    latexPrintoutOneValue1D(effv, effErrv, producedBy, "efficiency \\%", "efficiency1D" , "Reconstruction and selection efficiency $\\epsilon^{mc}$ of \\DYee candidates" );
-   //TString baseOfReferenceName="event-sf1D";
-   //TString tableName = "Reconstruction and selection efficiency $\\epsilon^{mc}$ of \\DYee candidates";
-   //TString valueName = "$\rho_{data/mc}$"
 }
 
 void latexPrintoutScaleFactors2D(TMatrixD scalev, TMatrixD scaleErrv, TString producedBy)
 {
    latexPrintoutOneValue2D(scalev, scaleErrv, producedBy, "$\rho_{data/mc}$", "event-sf2D" , "Scale factors for correcting MC event efficiency for %4.0f-%4.0f GeV mass slice of \\DYee candidates");
-   //TString baseOfReferenceName="event-sf2D";
-   //TString tableName = "Scale factors for correcting MC event efficiency for %4.0f-%4.0f GeV mass slice of \\DYee candidates";
-   //TString valueName = "$\rho_{data/mc}$"
 }
 
 void latexPrintoutScaleFactors1D(TMatrixD scalev, TMatrixD scaleErrv, TString producedBy)
 {
    latexPrintoutOneValue1D(scalev, scaleErrv, producedBy, "$\rho_{data/mc}$", "event-sf1D" , "Scale factors for correcting MC event efficiency" );
-   //TString baseOfReferenceName="event-sf1D";
-   //TString tableName = "Scale factors for correcting MC event efficiency";
-   //TString valueName = "$\rho_{data/mc}$"
+}
+
+void latexPrintoutFsr2D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy)
+{
+   latexPrintoutOneValue2D(corrv, corrErrv, producedBy, "FSR \\%", "fsr-binbybin-2D" , "Numerical values of the Fsr corrections in full phase space for %4.0f-%4.0f GeV mass slice of \\DYee candidates");
+}
+
+void latexPrintoutFsr1D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy)
+{
+   latexPrintoutOneValue1D(corrv, corrErrv, producedBy, "FSR \\%", "fsr-binbybin-1D" , "Numerical values of the Fsr corrections in full phase space of \\DYee candidates");
+}
+
+void latexPrintoutFsrInAcceptance2D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy)
+{
+   latexPrintoutOneValue2D(corrv, corrErrv, producedBy, "FSR in acceptance \\%", "fsrInAcc-binbybin-2D" , "Numerical values of the Fsr corrections in detector phase space  (i.e within acceptance) for %4.0f-%4.0f GeV mass slice of \\DYee candidates");
+}
+
+void latexPrintoutFsrInAcceptance1D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy)
+{
+   latexPrintoutOneValue1D(corrv, corrErrv, producedBy, "FSR in acceptance \\%", "fsrInAcc-binbybin-2D" , "Numerical values of the Fsr corrections in full phase space of \\DYee candidates");
 }
 
 void latexPrintoutOneValue2D(TMatrixD value, TMatrixD valueErr, TString producedBy, TString valueName, TString baseOfReferenceName, TString tableName)
@@ -146,7 +139,7 @@ void latexPrintoutTwoColumns2D(const int nValues, int* valuesType, TMatrixD** va
            strQuantities+=" & ";
            strQuantities+=valuesName[i];       
          }   
-       strQuantities = " $|Y|$  ";
+       strQuantities += " $|Y|$  ";
        for (int i=0; i<nValues; i++)
          {
            strQuantities+=" & ";
@@ -166,11 +159,11 @@ void latexPrintoutTwoColumns2D(const int nValues, int* valuesType, TMatrixD** va
                 TMatrixD& temp1= *valuesErr1[i];
                 TMatrixD& temp2= *valuesErr2[i];
                 if (valuesType[i]==0) 
-                  fprintf(txtFile,"& $ %7.4f$ ", temp0(mslice,j));
+                  fprintf(txtFile," & $ %7.4f$ ", temp0(mslice,j));
                 else if (valuesType[i]==1) 
-                  fprintf(txtFile,"& $ %7.4f \\pm %6.4f $ ", temp0(mslice,j), temp1(mslice,j));
+                  fprintf(txtFile," & $ %7.4f \\pm %6.4f $ ", temp0(mslice,j), temp1(mslice,j));
                 else if (valuesType[i]==2) 
-                  fprintf(txtFile,"& $ %7.4f \\pm %6.4f \\pm %6.4f $", temp0(mslice,j), temp1(mslice,j), temp2(mslice,j));
+                  fprintf(txtFile," & $ %7.4f \\pm %6.4f \\pm %6.4f $", temp0(mslice,j), temp1(mslice,j), temp2(mslice,j));
              }
 
            fprintf(txtFile,"&");
@@ -184,11 +177,11 @@ void latexPrintoutTwoColumns2D(const int nValues, int* valuesType, TMatrixD** va
                    TMatrixD& temp1= *valuesErr1[i];
                    TMatrixD& temp2= *valuesErr2[i];
                    if (valuesType[i]==0) 
-                     fprintf(txtFile,"& $ %7.4f$ ", temp0(mslice,j));
+                     fprintf(txtFile," & $ %7.4f$ ", temp0(mslice,j));
                    else if (valuesType[i]==1) 
-                     fprintf(txtFile,"& $ %7.4f \\pm %6.4f $ ", temp0(mslice,j), temp1(mslice,j));
+                     fprintf(txtFile," & $ %7.4f \\pm %6.4f $ ", temp0(mslice,j), temp1(mslice,j));
                    else if (valuesType[i]==2) 
-                     fprintf(txtFile,"& $ %7.4f \\pm %6.4f \\pm %6.4f $", temp0(mslice,j), temp1(mslice,j), temp2(mslice,j));
+                     fprintf(txtFile," & $ %7.4f \\pm %6.4f \\pm %6.4f $", temp0(mslice,j), temp1(mslice,j), temp2(mslice,j));
                  }
 
                fprintf(txtFile,"& \\\\ \n ");
@@ -247,7 +240,7 @@ void latexPrintoutTwoColumns1D(const int nValues, int* valuesType, TMatrixD** va
        strQuantities+=" & ";
        strQuantities+=valuesName[i];       
      }   
-   strQuantities = " & mass, GeV  ";
+   strQuantities += " & mass, GeV  ";
    for (int i=0; i<nValues; i++)
      {
        strQuantities+=" & ";
@@ -267,29 +260,29 @@ void latexPrintoutTwoColumns1D(const int nValues, int* valuesType, TMatrixD** va
             TMatrixD& temp1= *valuesErr1[i];
             TMatrixD& temp2= *valuesErr2[i];
             if (valuesType[i]==0) 
-              fprintf(txtFile,"& $ %7.4f$ ", temp0(mslice,0));
+              fprintf(txtFile," & $ %7.4f$ ", temp0(mslice,0));
             else if (valuesType[i]==1) 
-              fprintf(txtFile,"& $ %7.4f \\pm %6.4f $ ", temp0(mslice,0), temp1(mslice,0));
+              fprintf(txtFile," & $ %7.4f \\pm %6.4f $ ", temp0(mslice,0), temp1(mslice,0));
             else if (valuesType[i]==2) 
-              fprintf(txtFile,"& $ %7.4f \\pm %6.4f \\pm %6.4f $", temp0(mslice,0), temp1(mslice,0), temp2(mslice,0));
+              fprintf(txtFile," & $ %7.4f \\pm %6.4f \\pm %6.4f $ ", temp0(mslice,0), temp1(mslice,0), temp2(mslice,0));
          }
 
        fprintf(txtFile,"&");
 
        if (halfBins+mslice<DYTools::nMassBins)
          {
-           fprintf(txtFile,"%4.0f-%4.0f &", DYTools::massBinLimits[halfBins+mslice], DYTools::massBinLimits[halfBins+mslice+1]); 
+           fprintf(txtFile,"%4.0f-%4.0f", DYTools::massBinLimits[halfBins+mslice], DYTools::massBinLimits[halfBins+mslice+1]); 
            for (int i=0; i<nValues; i++)
              {
                TMatrixD& temp0= *values[i];
                TMatrixD& temp1= *valuesErr1[i];
                TMatrixD& temp2= *valuesErr2[i];
                if (valuesType[i]==0) 
-                 fprintf(txtFile,"& $ %7.4f$ ", temp0(mslice+halfBins,0));
+                 fprintf(txtFile," & $ %7.4f$ ", temp0(mslice+halfBins,0));
                else if (valuesType[i]==1) 
-                 fprintf(txtFile,"& $ %7.4f \\pm %6.4f $ ", temp0(mslice+halfBins,0), temp1(mslice+halfBins,0));
+                 fprintf(txtFile," & $ %7.4f \\pm %6.4f $ ", temp0(mslice+halfBins,0), temp1(mslice+halfBins,0));
                else if (valuesType[i]==2) 
-                 fprintf(txtFile,"& $ %7.4f \\pm %6.4f \\pm %6.4f $", temp0(mslice+halfBins,0), temp1(mslice+halfBins,0), temp2(mslice+halfBins,0));
+                 fprintf(txtFile," & $ %7.4f \\pm %6.4f \\pm %6.4f $ ", temp0(mslice+halfBins,0), temp1(mslice+halfBins,0), temp2(mslice+halfBins,0));
              }
            fprintf(txtFile,"& \\\\ \n ");
 
