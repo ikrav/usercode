@@ -20,6 +20,9 @@ void latexPrintoutScaleFactors1D(TMatrixD scalev, TMatrixD scaleErrv, TString pr
 void latexPrintoutOneValue2D(TMatrixD value, TMatrixD valueErr, TString producedBy, TString valueName, TString baseOfReferenceName, TString tableName);
 void latexPrintoutOneValue1D(TMatrixD value, TMatrixD valueErr, TString producedBy, TString valueName, TString baseOfReferenceName, TString tableName);
 
+void latexPrintoutTwoColumns2D(const int nValues, int* valuesType, TMatrixD** values, TMatrixD** valuesErr1, TMatrixD** valuesErr2, TString producedBy, TString* valuesName, TString baseOfReferenceName, TString tableName);
+void latexPrintoutTwoColumns1D(const int nValues, int* valuesType, TMatrixD** values, TMatrixD** valuesErr1, TMatrixD** valuesErr2,TString producedBy, TString* valuesName, TString baseOfReferenceName, TString tableName);
+
 
 
 #endif
