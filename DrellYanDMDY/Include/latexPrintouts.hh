@@ -21,11 +21,20 @@ void latexPrintoutFsr1D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy);
 void latexPrintoutFsrInAcceptance2D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy);
 void latexPrintoutFsrInAcceptance1D(TMatrixD corrv, TMatrixD corrErrv, TString producedBy);
 
+void latexPrintoutBackgroundRates2D(TMatrixD observedYields, TMatrixD observedYieldsErr, 
+                                    TMatrixD totalBackground, TMatrixD totalBackgroundError, 
+                                    TMatrixD totalBackgroundErrorSyst, TMatrixD bkgRatesUsual, 
+                                    TString producedBy);
+void latexPrintoutBackgroundRates1D(TMatrixD observedYields, TMatrixD observedYieldsErr, 
+                                    TMatrixD totalBackground, TMatrixD totalBackgroundError, 
+                                    TMatrixD totalBackgroundErrorSyst, TMatrixD bkgRatesUsual, 
+                                    TString producedBy);
+
 void latexPrintoutOneValue2D(TMatrixD value, TMatrixD valueErr, TString producedBy, TString valueName, TString baseOfReferenceName, TString tableName);
 void latexPrintoutOneValue1D(TMatrixD value, TMatrixD valueErr, TString producedBy, TString valueName, TString baseOfReferenceName, TString tableName);
 
-void latexPrintoutTwoColumns2D(const int nValues, int* valuesType, TMatrixD** values, TMatrixD** valuesErr1, TMatrixD** valuesErr2, TString producedBy, TString* valuesName, TString baseOfReferenceName, TString tableName);
-void latexPrintoutTwoColumns1D(const int nValues, int* valuesType, TMatrixD** values, TMatrixD** valuesErr1, TMatrixD** valuesErr2,TString producedBy, TString* valuesName, TString baseOfReferenceName, TString tableName);
+void latexPrintoutTwoColumns2D(const int nValues, int* valuesType, TMatrixD** values, TMatrixD** valuesErr1, TMatrixD** valuesErr2, TString producedBy, TString* valuesName, TString* floatFormats, TString baseOfReferenceName, TString tableName);
+void latexPrintoutTwoColumns1D(const int nValues, int* valuesType, TMatrixD** values, TMatrixD** valuesErr1, TMatrixD** valuesErr2,TString producedBy, TString* valuesName, TString* floatFormats, TString baseOfReferenceName, TString tableName);
 
 
 

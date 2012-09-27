@@ -12,6 +12,7 @@
 #include "../Include/CPlot.hh"
 #include "../Include/plotFunctions.hh"
 #include "../Include/UnfoldingTools.hh"
+#include "../Include/latexPrintouts.hh"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -491,6 +492,23 @@ TString subtractBackground(const TString conf,
       printf("\n");
     }
   }
+
+//Latex printout
+   TMatrixD observedYieldsErr(DYTools::nMassBins,nYBinsMax);
+   for (int i=0; i<DYTools::nMassBins; i++)
+     for (int j=0; j<DYTools::nYBins[i]; j++)
+       observedYieldsErr(i,j)=sqrt(observedYieldsErrorSquared(i,j));
+   if (DYTools::study2D==1)
+     latexPrintoutBackgroundRates2D(observedYields, observedYieldsErr, 
+                                  totalBackground, totalBackgroundError, 
+                                  totalBackgroundErrorSyst, bkgRatesUsual, 
+                                    "YieldsAndBackgrounds/subtractBackground.C");
+   else if (DYTools::study2D==0)
+     latexPrintoutBackgroundRates1D(observedYields, observedYieldsErr, 
+                                  totalBackground, totalBackgroundError, 
+                                  totalBackgroundErrorSyst, bkgRatesUsual, 
+                                    "YieldsAndBackgrounds/subtractBackground.C");
+
  
   //
   // debug plots
