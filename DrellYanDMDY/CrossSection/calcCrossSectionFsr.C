@@ -38,7 +38,23 @@ TString gTagDirXSect = ""; // will be set to tagDirScaleFactorConstants
 Double_t lumi = 0;
 
 
-typedef enum { _fsrCorr_binByBin=1, _fsrCorr_unfPure, _fsrCorr_unf, _fsrCorr_unfMdf, _fsrCorr_unfGood };
+typedef enum { _fsrCorr_binByBin=1, _fsrCorr_unfPure, _fsrCorr_unf, _fsrCorr_unfMdf, _fsrCorr_unfGood } TFsrCorrectionType_t;
+
+
+
+TString fsrCorrectionName(TFsrCorrectionType_t kind) {
+  TString name;
+  switch(kind) {
+  case _fsrCorr_binByBin: name="_fsrBbB"; break;
+  case _fsrCorr_unfPure: name="_fsrUnfPure"; break;
+  case _fsrCorr_unf: name="_fsrUnf"; break;
+  case _fsrCorr_unfMdf: name="_fsrUnfMdf"; break;
+  case _fsrCorr_unfGood: name="_fsrUnfGood"; break;
+  default:
+    name="_fsrUNKNOWN";
+  }
+  return name;
+}
 
 
 const int includeEScaleSystematics=0;
@@ -208,7 +224,7 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
   }
   ifs.close();
 
-  gTagDirXSect = gTagDirScaleFactorConstants + TString("_mdfFsr");
+  gTagDirXSect = gTagDirScaleFactorConstants + fsrCorrectionName(TFsrCorrectionType_t(fsrCorrection_BinByBin));
   CPlot::sOutDir = TString("plots_") + DYTools::analysisTag + 
     TString("_") +  gTagDirScaleFactorConstants;
 
@@ -302,38 +318,38 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
   std::cout << "read bg-subtracted data yields\n";
   readData(signalYields, signalYieldsStatErr, signalYieldsSystErr);
 
-  saveYields(signalYields,signalYieldsStatErr,signalYieldsSystErr, triggers,"debug_raw_",0);
+  saveYields(signalYields,signalYieldsStatErr,signalYieldsSystErr, triggers,"debug_raw",0);
 
   // Apply unfolding
   std::cout << "apply unfolding\n";
   applyUnfolding(signalYields, signalYieldsStatErr, signalYieldsSystErr,
 		 unfoldedYields, unfoldedYieldsStatErr, unfoldedYieldsSystErr);
-  saveYields(unfoldedYields,unfoldedYieldsStatErr,unfoldedYieldsSystErr, triggers,"debug_unf_",0);
+  saveYields(unfoldedYields,unfoldedYieldsStatErr,unfoldedYieldsSystErr, triggers,"debug_unf",0);
 
   // Apply efficiency correction
   std::cout << "efficiency correction\n";
   efficiencyCorrection(unfoldedYields, unfoldedYieldsStatErr, unfoldedYieldsSystErr,
 		       effCorrectedYields, effCorrectedYieldsStatErr, effCorrectedYieldsSystErr);
-  saveYields(effCorrectedYields,effCorrectedYieldsStatErr,effCorrectedYieldsSystErr, triggers, "debug_effCorr_",0);
+  saveYields(effCorrectedYields,effCorrectedYieldsStatErr,effCorrectedYieldsSystErr, triggers, "debug_effCorr",0);
 
   // Acceptance corrections
   std::cout << "acceptance correction\n";
   acceptanceCorrection(effCorrectedYields, effCorrectedYieldsStatErr, effCorrectedYieldsSystErr,
 		       accCorrectedYields, accCorrectedYieldsStatErr, accCorrectedYieldsSystErr);
-  saveYields(accCorrectedYields,accCorrectedYieldsStatErr,accCorrectedYieldsSystErr, triggers, "debug_effAccCorr_",0);
+  saveYields(accCorrectedYields,accCorrectedYieldsStatErr,accCorrectedYieldsSystErr, triggers, "debug_effAccCorr",0);
   
   // FSR corrections
   std::cout << "fsr correction\n";
   fsrCorrection(accCorrectedYields, accCorrectedYieldsStatErr, accCorrectedYieldsSystErr,
 		preFsrYields, preFsrYieldsStatErr, preFsrYieldsSystErr);
   saveYields(preFsrYields,preFsrYieldsStatErr,preFsrYieldsSystErr,
-	     triggers,"debug_preFSR_",0);
+	     triggers,"debug_preFSR",0);
 
   // Alternative (for DET shapes): all corrections except for acceptance correction 
   fsrCorrectionSansAcceptance(effCorrectedYields, effCorrectedYieldsStatErr, effCorrectedYieldsSystErr,
 			      preFsrSansAccYields, preFsrSansAccYieldsStatErr, preFsrSansAccYieldsSystErr);
   saveYields(preFsrSansAccYields,preFsrSansAccYieldsStatErr,preFsrSansAccYieldsSystErr,
-	     triggers,"debug_preFSRDET_",0);
+	     triggers,"debug_preFSRDET",0);
  
   // Calculate absolute and relative cross-sections
   std::cout << "absolute and relative cross sections" << std::endl;
@@ -1245,8 +1261,8 @@ void  crossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatr
   }
 
   gSystem->mkdir(pathXSect,kTRUE);
-  TString extraTag=DYTools::analysisTag + TString("_") + specTag;
-  if (fsrCorrection_BinByBin) extraTag.Append("_fsrBbB"); else extraTag.Append("_fsrUnf");
+  TString extraTag=DYTools::analysisTag;
+  if (specTag.Length()) extraTag.Append(TString("_") + specTag);
   TString xSecResultFileName(pathXSect+TString("xSec_results_") + 
 			     extraTag + TString(".root"));
   std::cout << "xSecResultFileName= " << xSecResultFileName << "\n";
@@ -1351,8 +1367,8 @@ void  crossSectionsDET(const TMatrixD &vin, const TMatrixD &vinStatErr, const TM
 
 
   gSystem->mkdir(pathXSect,kTRUE);
-  TString extraTag=DYTools::analysisTag + TString("_") + specTag;
-  if (fsrCorrection_BinByBin) extraTag.Append("_fsrBbB"); else extraTag.Append("_fsrUnf");
+  TString extraTag=DYTools::analysisTag;
+  if (specTag.Length()) extraTag.Append(TString("_") + specTag);
   TString xSecResultFileName(pathXSect+TString("xSecDET_results_") + 
 			     extraTag + TString(".root"));
   std::cout << "xSecDETResultFileName= " << xSecResultFileName << "\n";
@@ -1458,9 +1474,10 @@ void  postFsrCrossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, cons
 
 
   gSystem->mkdir(pathXSect,kTRUE);
+  TString extraTag=DYTools::analysisTag;
+  if (specTag.Length()) extraTag.Append(TString("_") + specTag);
   TString xSecResultFileName(pathXSect+TString("xSecPostFsr_results_") + 
-			     DYTools::analysisTag + TString("_") +
-			     specTag +
+			     extraTag +
 			     triggers.triggerConditionsName() + TString(".root"));
   std::cout << "xSecDETResultFileName= " << xSecResultFileName << "\n";
 
@@ -1555,9 +1572,10 @@ void  postFsrCrossSectionsDET(const TMatrixD &vin, const TMatrixD &vinStatErr, c
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
 
   gSystem->mkdir(pathXSect,kTRUE);
+  TString extraTag=DYTools::analysisTag;
+  if (specTag.Length()) extraTag.Append(TString("_") + specTag);
   TString xSecResultFileName(pathXSect+TString("xSecPostFsrDET_results_") + 
-			     DYTools::analysisTag + TString("_") +
-			     specTag +
+			     extraTag +
 			     triggers.triggerConditionsName() + TString(".root"));
   std::cout << "xSecDETResultFileName= " << xSecResultFileName << "\n";
 
