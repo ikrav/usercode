@@ -684,7 +684,7 @@ void applyUnfoldingToMc(int fsr) { //TString fullUnfoldingConstFileName, TString
   }
 
   int saveTestRes=0;
-  if (!fsrCorrection_BinByBin) {
+  if (fsrCorrection_BinByBin!=_fsrCorr_binByBin) {
     switch(fsr) {
     case 3:
     case 4: {
@@ -1002,7 +1002,6 @@ void  fsrCorrectionViaUnfolding(const TMatrixD &vinM, const TMatrixD &vinStatErr
 				TMatrixD &voutM, TMatrixD &voutStatErrM, TMatrixD &voutSystErrM,
 				const TString &unfFileName, const TString &name)
 {
-  assert(0);
   int nUnfoldingBins = DYTools::getTotalNumberOfBins();
   TVectorD vin(nUnfoldingBins),vinStatErr(nUnfoldingBins),vinSystErr(nUnfoldingBins);
   TVectorD vout(nUnfoldingBins),voutStatErr(nUnfoldingBins),voutSystErr(nUnfoldingBins);
@@ -1106,13 +1105,13 @@ void  fsrCorrectionBase(const TMatrixD &vin, const TMatrixD &vinStatErr, const T
 void  fsrCorrection(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatrixD &vinSystErr,
 		    TMatrixD &vout, TMatrixD &voutStatErr, TMatrixD &voutSystErr)
 {
-  if (fsrCorrection_BinByBin) {
+  if (fsrCorrection_BinByBin==_fsrCorr_binByBin) {
     fsrCorrectionBase(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
 		      fnameFsrCorrectionConstantsBbB,"FsrCorrectionBbB");
   }
   else {
     fsrCorrectionViaUnfolding(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
-			      fnameFsrCorrectionDETConstantsUnf, "FsrCorrectionUnf");
+			      fnameFsrCorrectionConstantsUnf, "FsrCorrectionUnf");
   }
 
   return;
@@ -1123,7 +1122,7 @@ void  fsrCorrection(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatr
 void  fsrCorrectionSansAcceptance(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatrixD &vinSystErr,
 				  TMatrixD &vout, TMatrixD &voutStatErr, TMatrixD &voutSystErr)
 {
-  if (fsrCorrection_BinByBin) {
+  if (fsrCorrection_BinByBin==_fsrCorr_binByBin) {
     fsrCorrectionBase(vin,vinStatErr,vinSystErr, vout,voutStatErr,voutSystErr,
 		      fnameFsrCorrectionSansAccConstantsBbB, "FsrCorrectionSansAcc");
   }
