@@ -22,6 +22,7 @@
 #include "../Include/TriggerSelection.hh"
 #include "../Include/CPlot.hh"
 #include "../Include/plotFunctions.hh"
+#include "../Include/latexPrintouts.hh"
 
 using std::string;
 using std::stringstream;
@@ -168,6 +169,8 @@ TMatrixD systOthers(DYTools::nMassBins,nMaxYBins);
 // ---------------------------------------------------------------
 
 void calcCrossSection(const TString conf) { //="../config_files/xsecCalc.conf")
+
+
 
   // Read from configuration file only the location of the root files
   ifstream ifs;
@@ -329,7 +332,7 @@ void calcCrossSection(const TString conf) { //="../config_files/xsecCalc.conf")
 			      preFsrSansAccYields, preFsrSansAccYieldsStatErr, preFsrSansAccYieldsSystErr);
   saveYields(preFsrSansAccYields,preFsrSansAccYieldsStatErr,preFsrSansAccYieldsSystErr,
 	     triggers,"debug_preFSRDET_",0);
- 
+
   // Calculate absolute and relative cross-sections
   std::cout << "absolute and relative cross sections" << std::endl;
   std::cout << "1. crossSections" << std::endl;
@@ -371,8 +374,32 @@ void calcCrossSection(const TString conf) { //="../config_files/xsecCalc.conf")
 		     effCorrectedYields, effCorrectedYieldsStatErr,
 		     accCorrectedYields, accCorrectedYieldsStatErr,
 		     preFsrYields      , preFsrYieldsStatErr);
+
  
   }
+
+  latexPrintoutCrossSection(signalYields,       signalYieldsStatErr, 
+		            unfoldedYields,     unfoldedYieldsStatErr,
+		            effCorrectedYields, effCorrectedYieldsStatErr,
+		            accCorrectedYields, accCorrectedYieldsStatErr,
+		            preFsrYields      , preFsrYieldsStatErr ,
+                            relCrossSection,           relCrossSectionStatErr, 
+                                                       relCrossSectionSystErr,
+                            relCrossSectionDET,        relCrossSectionStatErrDET, 
+                                                       relCrossSectionSystErrDET,
+                            relPostFsrCrossSection,    relPostFsrCrossSectionStatErr, 
+                                                       relPostFsrCrossSectionSystErr,
+                            relPostFsrCrossSectionDET, relPostFsrCrossSectionStatErrDET, 
+                                                       relPostFsrCrossSectionSystErrDET,
+                            absCrossSection,           absCrossSectionStatErr, 
+                                                       absCrossSectionSystErr,
+                            absCrossSectionDET,        absCrossSectionStatErrDET, 
+                                                       absCrossSectionSystErrDET,
+                            absPostFsrCrossSection,    absPostFsrCrossSectionStatErr, 
+                                                       absPostFsrCrossSectionSystErr,
+                            absPostFsrCrossSectionDET, absPostFsrCrossSectionStatErrDET, 
+                                                       absPostFsrCrossSectionSystErrDET,
+                            "CrossSection/calcCrossSection.C");
 
   ////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////
@@ -398,6 +425,7 @@ void calcCrossSection(const TString conf) { //="../config_files/xsecCalc.conf")
 
   std::cout << "Leaving" << std::endl;
   return;
+
 }
 
 
