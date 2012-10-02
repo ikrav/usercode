@@ -13,9 +13,11 @@ const int standardColors[nStandardColors] = { 814, 894, 906, 855 };
 
 const int extraFlag_none=0;
 const int extraFlag_fineGrid=1;
-const int extraFlag_2MCfiles=2;
-const int extraFlag_2MCfilesFineGrid=3;
-const int extraFlag_2MCfiles_debug=4;
+const int extraFlag_gridSummer2011=2;
+const int extraFlag_gridSummer2011spec=3;
+const int extraFlag_2MCfiles=4;
+const int extraFlag_2MCfilesFineGrid=5;
+const int extraFlag_2MCfiles_debug=6;
 
 
 const int extraFlagData_oldStyle=0;
@@ -74,6 +76,8 @@ TH1F* readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers, DYTo
   int fineGrid=0;
   switch(extraFlag) {
   case extraFlag_fineGrid: extra= "fineGrid_"; fineGrid=1; break;
+  case extraFlag_gridSummer2011: extra="summer2011Grid_"; fineGrid=1; break;
+  case extraFlag_gridSummer2011spec: extra="summer2011specGrid_"; fineGrid=1; break;
   case extraFlag_2MCfiles: extra= "2MCfiles_"; break;
   case extraFlag_2MCfilesFineGrid: extra="2MCfiles_fineGrid_"; fineGrid=1; break;
   case extraFlag_2MCfiles_debug: extra= "2MCfiles_debug_"; break;
@@ -377,6 +381,7 @@ TH1F* readTh2011(DYTools::TCrossSectionKind_t theKind, const char *histName="th2
     switch (rebin) {
     case 0: break;
     case 1: objName="xSecThNorm_mb2011"; objErrName="xSecThNormErr_mb2011"; break;
+    case 2: objName="xSecThNorm_spec2011"; objErrName="xSecThNormErr_spec2011"; break;
     default:
       std::cout << "not ready\n";
       assert(0);
@@ -387,6 +392,7 @@ TH1F* readTh2011(DYTools::TCrossSectionKind_t theKind, const char *histName="th2
     switch (rebin) {
     case 0: break;
     case 1: objName="xSecTh_mb2011"; objErrName="xSecThErr_mb2011"; break;
+    case 2: objName="xSecTh_spec2011"; objErrName="xSecThErr_spec2011"; break;
     default:
       std::cout << "not ready\n";
       assert(0);
@@ -409,6 +415,7 @@ TH1F* readTh2011(DYTools::TCrossSectionKind_t theKind, const char *histName="th2
   switch (rebin) {
   case 0: break;
   case 1: massBinStr="massBinsTh_mb2011"; break;
+  case 2: massBinStr="massBinsTh_spec2011"; break;
   default:
     std::cout << "not ready\n";
     assert(0);
