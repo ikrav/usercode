@@ -157,11 +157,131 @@ void getXsecExtended(const TString mc_input, int debugMode=0, bool useFEWZ=true,
   //Bool_t doSave  = false;    // save plots?
   TString format = "png";   // output file format
   MCInputFileMgr_t inpMgr;
+  TString fineGridStr;
+  if (fineGrid==1) fineGridStr="fineGrid_";
+  else if (fineGrid==2) fineGridStr="summer2011Grid_";
+  else if (fineGrid==3) fineGridStr="summer2011specGrid_";
   
   Double_t massLow  = DYTools::massBinLimits[0];
   Double_t massHigh = DYTools::massBinLimits[DYTools::nMassBins];
 
-  int locMassBinCount=(fineGrid) ? int(massHigh+1.e-3) : DYTools::nMassBins;
+  // fine grid: 0, 1, 2, ..., (fineGrid_1GeVstop-1), fineGrid_1GeVstop, fineGrid_1GeVstop+fineGridLargerStep, fineGrid_1GeVstop+2*fineGridLargerStep, ..., 1500
+  //
+  double fineGrid_1GeVstop=200.;
+  double fineGrid_LargerStep=20.;
+
+  int locMassBinCount=DYTools::nMassBins;
+  double *massRangeEdges=NULL;
+  if (!fineGrid) {
+    massRangeEdges=new double[locMassBinCount+1];
+    for (int i=0; i<=DYTools::nMassBins; ++i) {
+      massRangeEdges[i]=DYTools::massBinLimits[i];
+    }
+  }
+  else if (fineGrid==1) {
+    // 1GeV grid
+    locMassBinCount=int(fineGrid_1GeVstop-massLow+1e-3);
+    std::cout << "1GeV grid size=" << locMassBinCount << "\n";
+    // fineGrid_LargerStep
+    double upperRange= (massHigh-fineGrid_1GeVstop);
+    double upperCount= upperRange/fineGrid_LargerStep + 1e-3;
+    if (upperCount - trunc(upperCount) > 1e-3) {
+      std::cout << "(upperCount -1e-3)=" << (upperCount -1e-3) << "\n";
+      std::cout << "should be integer value\n";
+      return;
+    }
+    locMassBinCount += int(upperCount);
+    std::cout << "mass grid[" << locMassBinCount << "]\n";
+
+    massRangeEdges=new double[locMassBinCount+1];
+    double m=massLow, dm=1;
+    int count=0;
+    while (m<=massHigh) {
+      massRangeEdges[count]=m;
+      if (1) {
+	if (m<massHigh) std::cout << "count=" << count << ", massRange=" << m << " .. " << (m+dm) << "\n";
+	else std::cout << "last edge=" << m << "\n";
+      }
+      count++;
+      m+=dm;
+      if (m==fineGrid_1GeVstop) dm=fineGrid_LargerStep;
+    }
+  }
+  else if (fineGrid==2) {
+    const int nMassBinTh=518;
+    Double_t mxl = 14.0;
+    locMassBinCount=nMassBinTh;
+    massRangeEdges=new double[nMassBinTh+1];
+
+    for(int iTh=0; iTh<=nMassBinTh; iTh++){
+      // mass limits
+      if     ( iTh >=   0 && iTh <  11 ) {mxl += 1.0;}
+      else if( iTh >=  11 && iTh <  18 ) {mxl += 5.0;}
+      else if( iTh >=  18 && iTh < 118 ) {mxl += 1.0;}
+      else if( iTh >= 118 && iTh < 340 ) {mxl += 2.0;}
+      else if( iTh >= 340 && iTh < nMassBinTh)   {mxl += 5.0; }
+      else if( iTh == nMassBinTh)                {mxl = 1500; }
+      massRangeEdges[iTh]=mxl;
+    }
+  }
+  else if (fineGrid==3) {
+    const int nMassBinTh=518;
+    Double_t mxl = 14.0;
+    locMassBinCount=nMassBinTh;
+    massRangeEdges=new double[nMassBinTh+1];
+
+    int iTh_new=0, tmpCounter=0;
+    for(int iTh=0; iTh<=nMassBinTh; iTh++, iTh_new++){
+      // mass limits
+      if     ( iTh >=   0 && iTh <  11 ) {mxl += 1.0;}
+      else if( iTh >=  11 && iTh <  18 ) {mxl += 5.0;}
+      else if( iTh >=  18 && iTh < 118 ) {mxl += 1.0;}
+      else if( iTh >= 118 && iTh < 340 ) {
+	if (iTh>=139) {
+	  std::cout << "iTh=" << iTh << ", current mxl=" << mxl << " +2\n";
+	  if (iTh==139) tmpCounter=10;
+	  tmpCounter--;
+	  if (tmpCounter>0) iTh_new--;
+	  else if (tmpCounter==0) {
+	    tmpCounter=10;
+	    std::cout << "iTh=" << iTh << ", iTh_new=" << iTh_new << ", current mxl=" << mxl << " +10\n";
+	  }
+	}
+	mxl += 2.0;
+      }
+      else if( iTh >= 340 && iTh < nMassBinTh)   {
+	std::cout << "iTh=" << iTh << ", current mxl=" << mxl << " +5\n";
+	if (iTh<342) iTh_new--;
+	else {
+	  if ((iTh-342)%4>0) iTh_new--;
+	  else std::cout << "iTh=" << iTh << ", iTh_new=" << iTh_new << ", current mxl=" << mxl << " +10\n";
+	}
+	mxl += 5.0; 
+      }
+      else if( iTh == nMassBinTh)                {mxl = 1500; }
+      massRangeEdges[iTh_new]=mxl;
+    }
+    massRangeEdges[iTh_new-2]=1500.;
+    std::cout << "iTh_new=" << iTh_new << "\n";
+    locMassBinCount=iTh_new-2;
+  }
+
+  TVectorD massGrid(locMassBinCount+1);
+  for (int i=0; i<=locMassBinCount; ++i) massGrid[i]=massRangeEdges[i];
+  TH1F hMassIdx("h_massIdx","h_massIdx",locMassBinCount-1,massRangeEdges);
+  //delete massRangeEdges;
+
+  if (0) {
+    printHisto(&hMassIdx);
+    if (0) {
+      for (int i=0; i<int(massHigh); ++i) {
+	double m=i+0.5;
+	std::cout << "i=" << i << ", m=" << m << ", idx=" << (hMassIdx.FindBin(m)-1) << "\n";
+      }
+    }
+    return;
+  }
+
   //std::cout << "massHigh=" << massHigh << "\n";
   //std::cout << "locMassBinCount=" << locMassBinCount << "\n";
 
@@ -242,7 +362,7 @@ void getXsecExtended(const TString mc_input, int debugMode=0, bool useFEWZ=true,
     double lumi  = eventTree->GetEntries()/inpMgr.xsec(ifile);
     if (ifile==0) lumi0=lumi;
     double scale = lumi0/lumi;
-    cout << "       -> sample weight is " << scale << endl;
+    std::cout << "       -> sample weight is " << scale << endl;
 
     // Set branch address to structures that will store the info  
     eventTree->SetBranchAddress("Gen",&gen);
@@ -266,10 +386,22 @@ void getXsecExtended(const TString mc_input, int debugMode=0, bool useFEWZ=true,
       if ((fabs(yPreFsr) < DYTools::yRangeMin) || 
 	  (fabs(yPreFsr) > DYTools::yRangeMax)) continue;
 
-      int ibinMassPreFsr = (fineGrid) ? int(massPreFsr+1e-3) : DYTools::findMassBin(massPreFsr);
-      int ibinYPreFsr = (fineGrid) ? 0 : DYTools::findAbsYBin(ibinMassPreFsr, yPreFsr);
-      int ibinMassPostFsr = (fineGrid) ? int(massPostFsr+1e-3) : DYTools::findMassBin(massPostFsr);
-      int ibinYPostFsr = (fineGrid) ? 0 : DYTools::findAbsYBin(ibinMassPostFsr, yPostFsr);
+      int ibinMassPreFsr=-1, ibinYPreFsr=-1;
+      int ibinMassPostFsr=-1, ibinYPostFsr=-1;
+
+      if (!fineGrid) {
+	ibinMassPreFsr = DYTools::findMassBin(massPreFsr);
+	ibinMassPostFsr= DYTools::findMassBin(massPostFsr);
+	ibinYPreFsr = DYTools::findAbsYBin(ibinMassPreFsr, yPreFsr);
+	ibinYPostFsr= DYTools::findAbsYBin(ibinMassPostFsr, yPostFsr);
+      }
+      else {
+	ibinMassPreFsr=hMassIdx.FindBin(massPreFsr)-1;
+	ibinMassPostFsr=hMassIdx.FindBin(massPostFsr)-1;
+	ibinYPreFsr=0;
+	ibinYPostFsr=0;
+	//printf("massPreFsr=%8.4lf, idx=%3d;  massPostFsr=%8.4lf, idx=%3d\n", massPreFsr,ibinMassPreFsr, massPostFsr,ibinMassPostFsr);
+      }
 
       // We are only interested in the events, reconstructed with 
       // good mass and rapidity 
@@ -316,13 +448,9 @@ void getXsecExtended(const TString mc_input, int debugMode=0, bool useFEWZ=true,
   // Determine Z-peak event count
   for (int i=0; i<locMassBinCount; i++) {
     int isZpeak=0;
-    if (fineGrid) {
-      isZpeak = ((i>=60) && (i<=120)) ? 1:0;
-    }
-    else {
-      if ((DYTools::massBinLimits[i]>=60-1e-3) 
-	  && (DYTools::massBinLimits[i+1]<=120+1e-3)) isZpeak=1;
-    }
+    // bin idx is (i+1)
+    if ((hMassIdx.GetBinLowEdge(i+1)>=60-1e-3) 
+	&& (hMassIdx.GetBinLowEdge(i+1+1)<=120+1e-3)) isZpeak=1;
     if (isZpeak) {
       int yiMax=(fineGrid) ? 1:DYTools::nYBins[i];
       for (int yi=0; yi<yiMax; ++yi) {
@@ -402,24 +530,13 @@ void getXsecExtended(const TString mc_input, int debugMode=0, bool useFEWZ=true,
   TString outFile= TString("../root_files/xSecThExt_");
   //outFile.Append("2MCfiles_");
   if (!useFewzWeights) outFile.Append("noFEWZ_");
-  if (fineGrid) outFile.Append("fineGrid_");
+  if (fineGridStr.Length()) outFile.Append(fineGridStr);
   if (debugMode==1) outFile.Append("debug_");
   outFile.Append( DYTools::analysisTag + TString("_tmp.root") );
 
 
-  TVectorD massGrid(locMassBinCount+1);
-  TVectorD rapidityGrid(locMassBinCount);
+  TVectorD rapidityGrid(massGrid.GetNoElements()-1);
   rapidityGrid=1;
-  if (fineGrid) {
-    for (int i=0; i<=locMassBinCount; ++i) {
-      massGrid[i]=i;
-    }
-  }
-  else {
-    for (int i=0; i<=DYTools::nMassBins; ++i) {
-      massGrid[i]=DYTools::massBinLimits[i];
-    }
-  }
 
   if (debugMode!=-1) {
     TFile thFile(outFile,"recreate");
@@ -510,7 +627,7 @@ void getXsecExtended(const TString mc_input, int debugMode=0, bool useFEWZ=true,
   }
 
   {
-    TString canvName=(fineGrid) ? "canvXsectTh_fineGrid_1D" : "canvXsectTh_1D";
+    TString canvName=TString("canvXsectTh_") + fineGridStr + TString("1D");
     if (useFewzWeights) canvName.Append("_FEWZ");
     TCanvas *c1D = MakeCanvas(canvName,canvName,600,600);
     CPlot *cp=new CPlot("cplot_1D","","M_{ee} (GeV)","counts");
@@ -523,7 +640,7 @@ void getXsecExtended(const TString mc_input, int debugMode=0, bool useFEWZ=true,
   }
 	
   {
-    TString canvName=(fineGrid) ? "canvXsectThNorm_fineGrid_1D" : "canvXsectThNorm_1D";
+    TString canvName=TString("canvXsectThNorm_") + fineGridStr + TString("1D");
     if (useFewzWeights) canvName.Append("_FEWZ");
     TCanvas *c1D = MakeCanvas(canvName,canvName,600,600);
     CPlot *cp=new CPlot("cplotNorm_1D","","M_{ee} (GeV)","normalized counts");
