@@ -24,7 +24,7 @@ public:
   vector<TH1F*> fHRatioItems;
 
   double fRatioYMin,fRatioYMax;
-  int fRatioNdivisions, fPrintRatios, fPrintRatioNames;
+  int fRatioNdivisions, fPrintValues, fPrintRatios, fPrintRatioNames;
   double fRatioYTitleSize,fRatioYLabelSize;
   double fRatioYTitleOffset;
 
@@ -38,6 +38,7 @@ public:
     fRatioLabel(ratioYLabel), fHRatioItems(),
     fRatioYMin(0.), fRatioYMax(0.),
     fRatioNdivisions(805),
+    fPrintValues(0),
     fPrintRatios(0), fPrintRatioNames(0),
     fRatioYTitleSize(0.15), 
     fRatioYLabelSize(0.13),
@@ -51,7 +52,9 @@ public:
   void SetRatioTitleSize(double size, double offset=-99) { fRatioYTitleSize=size; if (offset>=0) fRatioYTitleOffset=offset; }
   void SetRatioTitleOffset(double size) { fRatioYTitleOffset=size; }
   void SetRefIdx(int refIdx) { fRefIdx=refIdx; }
+  void SetPrintValues(int yes=1) { fPrintValues=yes; }
   void SetPrintRatio(int yes=1) { fPrintRatios=yes; }
+  void SetPrintRatios(int yes=1) { fPrintRatios=yes; }
   void SetPrintRatioNames(int yes=1) { fPrintRatioNames=yes; }
 
   void SetRefIdx(const TH1F* h) {
@@ -247,6 +250,8 @@ public:
       }
       std::cout << "imin=" << imin << "\n";
 
+      if (fPrintValues) printHisto(fItems[fRefIdx].hist1D);
+
       // prepare ratios
       double yrMin=1e9, yrMax=-1e9;
       for (unsigned int i=imin; i<fHRatioIndices.size(); ++i) {
@@ -263,9 +268,11 @@ public:
 	  skip= (i==fExcludeIndices[k]) ? 1:0;
 	hratioActive[fHRatioItems.size()-1]=1-skip;
 	if (skip) { 
-	  std::cout << "skipping entry #" << i << "\n";
+	  std::cout << "skipping entry #" << i << " (" << histo->GetName() << ")\n";
 	  continue;
 	}
+
+	if (fPrintValues) printHisto(histo,1);
 
 	switch(fRatioType) {
 	case _ratioPlain: 
@@ -336,6 +343,7 @@ public:
 
 	if (fPrintRatios) printHisto(std::cout,hratio);
 	TString opt=item->drawopt;
+	opt="P";
 	if (first) {
 	  first=0;
 	  hratio->GetYaxis()->SetTitle(fRatioLabel);
@@ -377,6 +385,24 @@ public:
 	lineAtOne->SetLineWidth(1);
 	lineAtOne->SetLineColor(kBlue);
 	lineAtOne->Draw();
+      }
+      TLine *linePlus10 = 
+	new TLine(hRef->GetXaxis()->GetXmin(), nominal+0.1,
+		  hRef->GetXaxis()->GetXmax(), nominal+0.1);
+      if ((nominal+0.1>yrMin) && (nominal+0.1<yrMax)) {
+	linePlus10->SetLineStyle(8);
+	linePlus10->SetLineWidth(1);
+	linePlus10->SetLineColor(kGreen+1);
+	linePlus10->Draw();
+      }
+      TLine *lineMinus10 = 
+	new TLine(hRef->GetXaxis()->GetXmin(), nominal-0.1,
+		  hRef->GetXaxis()->GetXmax(), nominal-0.1);
+      if ((nominal-0.1>yrMin) && (nominal-0.1<yrMax)) {
+	lineMinus10->SetLineStyle(8);
+	lineMinus10->SetLineWidth(1);
+	lineMinus10->SetLineColor(kGreen+1);
+	lineMinus10->Draw();
       }
       
       c->cd();
