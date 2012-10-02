@@ -37,6 +37,9 @@
 
 // constants
 
+typedef enum { _study_data=0, _study_theoryGrid2011, _study_theoryGrid2011spec, _study_theoryFineGrid, _study_theoryMassBinGrid1D } TStudyKind_t;
+
+
 DYTools::TCrossSectionKind_t kind=DYTools::_cs_preFsrNorm;
 
 
@@ -47,25 +50,29 @@ int c_plotTheoryNoFEWZ=1*47;
 int c_plotTheory2011=1*(kBlue+1);
 int c_plotTheory2011rebinned=1*(kBlue+1);
 
-int testTheoryPredictions=1;
+TStudyKind_t testTheoryPredictions= _study_data
+  //_study_theoryMassBinGrid1D
+  //_study_theoryFineGrid
+  //_study_theoryGrid2011spec
+  ;
 
 // Forward declarations
 
 void plotXsec_data_vs_theory1D_work(TString dataFName="", TString dataLabel="", std::vector<TString> *extra_dataFNamesV=NULL, std::vector<TString> *extra_labelsV=NULL);
 
-void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, std::vector<TH1F*> &theories, int testFlag);
+void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, std::vector<TH1F*> &theories, TStudyKind_t testFlag);
 
 // -----------------------------------------------------
 
 // Main function
 
-const int testFsrUnfolding=0;
+const int testFsrUnfolding=1;
 //int useFEWZ=0;
 TCanvas *canvas=NULL;
 
 void plotXsec_study_data_vs_theory1D(){
   //TGaxis ::fgMaxDigits=3;
-  TGaxis::SetMaxDigits(3);
+  TGaxis::SetMaxDigits(4);
 
   TString dataFName="";
   TString dataLabel="data";
@@ -75,44 +82,69 @@ void plotXsec_study_data_vs_theory1D(){
   //dataFName="../root_files/date_20120825-et6-eta5/xSecDET_results_1D__fsrUnf.root";
   dataFName="../root_files/date_20120825-et7altB-eta8altNegs/xSec_results_1D__fsrUnf.root";
   //dataFName="../root_files/date_20120825/xSecDET_results_2D_Full2011_hltEffOld.root";
-  if (testTheoryPredictions!=0) dataFName="";
+  if (testTheoryPredictions!=_study_data) dataFName="";
+  dataFName="";
   std::vector<TString> dataFNamesV, labelsV;
 
-  if (0) {
-    dataFNamesV.push_back("../root_files/date_20120825-et6-eta5/xSec_results_1D__fsrUnf.root");
-    labelsV.push_back("et6-eta5");
-    dataFNamesV.push_back("../root_files/date_20120825-et6altB-eta4test/xSec_results_1D__fsrUnf.root");
-    labelsV.push_back("et6altB-eta4test");
-    dataFNamesV.push_back("../root_files/date_20120825-et7altB-eta8altNegs/xSec_results_1D__fsrUnf.root");
-    labelsV.push_back("et7altB-eta8altNegs");
-  }
+  if (testTheoryPredictions==_study_data) {
 
-  // Test FSR unfolding
-  if (0 && testFsrUnfolding) {
-    const char *preFsrDet="xSecDET_results_2D_yieldsMcPreFsrGenDET_orig_fsrUnf.root";
-    const char *postFsrDet="xSecDET_results_2D_yieldsMcPostFsrGenDET_orig_fsrUnf.root";
-    const char *postFsrDet_unfolded="xSecDET_results_2D_yieldsMcPreFsrGenDET_from_unf_test_fsrUnf.root";
-    const char *postFsr_unfolded="xSec_results_2D_yieldsMcPreFsrGen_from_unf_test_fsrUnf.root";
-    const char *postFsrDet_unfoldedTest="xSecDET_results_2D_yieldsMcPreFsrGenDET_from_unf_test_fsrUnf.root";
-    const char *preFsrDet_fromFnc="xSecDET_results_2D_yieldsMcPreFsrGenDET_from_fnc_fsrUnf.root";
-    if (1) {
-      const char* path="../root_files/date_20120825-et7altB-eta8alt/";
-      const char *label="et7altB-eta8alt";
-      //dataFNamesV.push_back(Form("%s%s",path,postFsrDet));
-      //labelsV.push_back(Form("%s (postFsrDet)",label));
-      //dataFNamesV.push_back(Form("%s%s",path,preFsrDet));
-      //labelsV.push_back(Form("%s (preFsrDet)",label));
-      //dataFNamesV.push_back(Form("%s%s",path,preFsrDet_fromFnc));
-      //labelsV.push_back(Form("%s (fnc.unf.postFsrDet)",label));
-      //dataFNamesV.push_back(Form("%s%s",path,postFsrDet_unfolded));
-      //labelsV.push_back(Form("%s (unf.postFsrDet)",label));
-      //dataFNamesV.push_back(Form("%s%s",path,postFsrDet_unfoldedTest));
-      //labelsV.push_back(Form("%s (unf.postFsrDet.tst)",label));
+    if (0) {
+      dataFNamesV.push_back("../root_files/date_20120825-et6-eta5/xSec_results_1D__fsrUnf.root");
+      labelsV.push_back("et6-eta5");
+      dataFNamesV.push_back("../root_files/date_20120825-et6altB-eta4test/xSec_results_1D__fsrUnf.root");
+      labelsV.push_back("et6altB-eta4test");
+      dataFNamesV.push_back("../root_files/date_20120825-et7altB-eta8altNegs/xSec_results_1D__fsrUnf.root");
+      labelsV.push_back("et7altB-eta8altNegs");
+    }
+    
+    // Test FSR unfolding
+    if (1 && testFsrUnfolding) {
+      const char *preFsrDet="xSecDET_results_1D_yieldsMcPreFsrGenDET_orig.root";
+      const char *postFsrDet="xSecDET_results_1D_yieldsMcPostFsrGenDET_orig.root";
+      const char *postFsrDet_unfolded="xSecDET_results_1D_yieldsMcPreFsrGenDET_from_unf_test.root";
+      const char *postFsrDet_unfoldedTest="xSecDET_results_1D_yieldsMcPreFsrGenDET_from_unf_test.root";
+      const char *preFsrDet_fromFnc="xSecDET_results_1D_yieldsMcPreFsrGenDET_from_fnc.root";
 
-      //dataFName=Form("%s%s",path,postFsrDet_unfolded);
-      //dataLabel="unf.postFsrDet";
-      dataFName=Form("%s%s",path,postFsr_unfolded);
-      dataLabel="unf.postFsr";
+      const char *preFsr="xSec_results_1D_yieldsMcPreFsrGen_orig.root";
+      const char *postFsr="xSec_results_1D_yieldsMcPostFsrGen_orig.root";
+      const char *postFsr_unfolded="xSec_results_1D_yieldsMcPreFsrGen_from_unf_test.root";
+      const char *postFsr_unfoldedTest="xSec_results_1D_yieldsMcPreFsrGen_from_unf_test.root";
+      const char *preFsr_fromFnc="xSec_results_1D_yieldsMcPreFsrGen_from_fnc.root";
+
+      if (1) {
+	const char* path="../root_files/date_20120825-et7altB-eta8altNegs_fsrUnfGood/";
+	const char *label="et7altB-eta8alt";
+	if (kind==DYTools::_cs_preFsrDetNorm) {
+	  if (0) {
+	    dataFNamesV.push_back(Form("%s%s",path,postFsrDet));
+	    labelsV.push_back(Form("%s (postFsrDet)",label));
+	  }
+	  dataFNamesV.push_back(Form("%s%s",path,preFsrDet));
+	  labelsV.push_back(Form("%s (preFsrDet)",label));
+	  dataFNamesV.push_back(Form("%s%s",path,preFsrDet_fromFnc));
+	  labelsV.push_back(Form("%s (fnc.unf.postFsrDet)",label));
+	  dataFNamesV.push_back(Form("%s%s",path,postFsrDet_unfolded));
+	  labelsV.push_back(Form("%s (unf.postFsrDet)",label));
+	  dataFNamesV.push_back(Form("%s%s",path,postFsrDet_unfoldedTest));
+	  labelsV.push_back(Form("%s (unf.postFsrDet.tst)",label));
+	  //dataFName=Form("%s%s",path,postFsrDet_unfolded);
+	  //dataLabel="unf.postFsrDet";
+	}
+	else {
+	  if (0) {
+	    dataFNamesV.push_back(Form("%s%s",path,postFsr));
+	    labelsV.push_back("postFsr");
+	  }
+	  dataFNamesV.push_back(Form("%s%s",path,preFsr));
+	  labelsV.push_back("preFsr");
+	  dataFNamesV.push_back(Form("%s%s",path,postFsr_unfoldedTest));
+	  labelsV.push_back("unf.unfTest");
+	  dataFNamesV.push_back(Form("%s%s",path,preFsr_fromFnc));
+	  labelsV.push_back("unf.fromFnc");
+	  dataFNamesV.push_back(Form("%s%s",path,postFsr_unfolded));
+	  labelsV.push_back("unf.postFsr");
+	}
+      }
     }
   }
 
@@ -162,16 +194,23 @@ void plotXsec_data_vs_theory1D_work(TString dataFName, TString dataLabel, std::v
     compPlotYAxisLabel="y axis";
   }
 
+  TString compPlotRatioAxisLabel="(th_{}-th_{p})/th_{}";
+
   ComparisonPlot_t compPlot(ComparisonPlot_t::_ratioRel,
 			    "check","",
 			    (DYTools::study2D) ? "rapidity |y|" : "m_{ee} [GeV]",
-			    compPlotYAxisLabel,"(th-dt)/th");
+			    compPlotYAxisLabel,compPlotRatioAxisLabel);
   compPlot.ErrorsOnRatios(0);
   compPlot.SetLogx(1);
   compPlot.SetLogy(1);
   //compPlot.SetYRange(5e-11,1.);
-  //compPlot.SetRatioYRange(-0.06,0.06);
+  //compPlot.SetRatioYRange(-0.12,0.12);
+  if ((testTheoryPredictions==_study_data) && (testFsrUnfolding==1)) {
+    compPlot.SetRatioYRange(-0.001, 0.001);
+  }
   compPlot.SetRatioNdivisions(805);
+  //compPlot.SetPrintValues(1);
+  compPlot.SetPrintRatios(1);
   compPlot.SetPrintRatioNames(1);
 
   const int cWidth=600;
@@ -229,7 +268,9 @@ void plotXsec_data_vs_theory1D_work(TString dataFName, TString dataLabel, std::v
   int subpad1=1;
   compPlot.Draw(canvas,false,"png");
   canvas->cd(subpad1);
-  compPlot.AddTextCMSPreliminary();
+  //if (testTheoryPredictions==_study_data) compPlot.AddTextCMSPreliminary();
+  //else 
+    compPlot.AddTextCMSSimulation();
   //compPlot.AddTextLumi(0.55,0.27);
 
   canvas->Update();
@@ -240,7 +281,216 @@ void plotXsec_data_vs_theory1D_work(TString dataFName, TString dataLabel, std::v
 
 // ------------------------------------------------------------
 
-void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, std::vector<TH1F*> &theories, int testFlag) {
+void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, std::vector<TH1F*> &theories, TStudyKind_t testFlag) {
+  typedef enum { _th_summer2011=0, _th_summer2011rebinned, _th_summer2011spec,
+		 _th_powhegWithFEWZ, _th_powhegWithFEWZ_gridSummer2011, _th_powhegWithFEWZ_gridSummer2011spec, _th_powhegWithFEWZ_fineGrid,
+		 _th_powhegNoFEWZ, _th_powhegNoFEWZ_gridSummer2011, _th_powhegNoFEWZ_gridSummer2011spec, _th_powhegNoFEWZ_fineGrid,
+		 _th_Last };
+  typedef enum { _col_summer2011=kBlue, _col_summer2011rebinned=kRed+1, 
+	_col_powhegWithFEWZ=kBlack, _col_powhegNoFEWZ=kGreen+1, _col_Last=0 
+};
+  typedef enum { _col_powhegWithFEWZ_gridSummer2011=kBlack, _col_powhegNoFEWZ_gridSummer2011=_col_powhegNoFEWZ }; 
+  typedef enum { _col_powhegWithFEWZ_gridSummer2011spec=kBlack, _col_powhegNoFEWZ_gridSummer2011spec=_col_powhegNoFEWZ };
+  typedef enum { _col_powhegWithFEWZ_fineGrid=kBlack, _col_powhegNoFEWZ_fineGrid=_col_powhegNoFEWZ };
+  std::vector<int> plotTh(_th_Last);
+  for (unsigned int i=0; i<plotTh.size(); ++i) plotTh[i]=0;
+
+  int extraFlag=0;
+
+  switch(testFlag) {
+  case _study_data: 
+    if (!testFsrUnfolding) plotTh[_th_powhegWithFEWZ]=1;
+    break;
+  case _study_theoryGrid2011: 
+    plotTh[_th_summer2011]=1;
+    plotTh[_th_summer2011rebinned]=0;
+    plotTh[_th_powhegWithFEWZ_gridSummer2011]=1;
+    plotTh[_th_powhegNoFEWZ_gridSummer2011]=1;
+    break;
+  case _study_theoryGrid2011spec: 
+    plotTh[_th_summer2011]=0;
+    plotTh[_th_summer2011spec]=1;
+    plotTh[_th_powhegWithFEWZ_gridSummer2011spec]=1;
+    plotTh[_th_powhegNoFEWZ_gridSummer2011spec]=1;
+    break;
+  case _study_theoryFineGrid: 
+    //plotTh[_th_summer2011]=1;
+    //plotTh[_th_summer2011spec]=1;
+    plotTh[_th_powhegWithFEWZ_fineGrid]=1;
+    plotTh[_th_powhegNoFEWZ_fineGrid]=1;
+    break;
+  case _study_theoryMassBinGrid1D: 
+    plotTh[_th_summer2011]=1;
+    plotTh[_th_summer2011rebinned]=1;
+    plotTh[_th_powhegWithFEWZ]=1;
+    plotTh[_th_powhegNoFEWZ]=1;
+    break;
+  default:
+    std::cout << "PlotTheoryPredictions is not ready for testFlag=" << testFlag << "\n";
+    return;
+  }
+
+  //if (plotTh[_th_powhegNoFEWZ] || plotTh[_th_powhegNoFEWZ_gridSummer2011]) {
+    for (int i=0; i<4; ++i) {
+      TString str="_noFEWZ";
+      int color=kBlack;
+      extraFlag=0;
+      TString plotChar="P";
+      int skip=0;
+      switch(i) {
+      case 0: 
+	if (!plotTh[_th_powhegNoFEWZ]) skip=1;
+	else {
+	  color=_col_powhegNoFEWZ;
+	}
+	break;
+      case 1:
+	if (!plotTh[_th_powhegNoFEWZ_gridSummer2011]) skip=1;
+	else {
+	  extraFlag=extraFlag_gridSummer2011;
+	  str.Append("grid2011");
+	  color=_col_powhegNoFEWZ_gridSummer2011;
+	  plotChar="L";
+	}
+	break;
+      case 2:
+	if (!plotTh[_th_powhegNoFEWZ_gridSummer2011spec]) skip=1;
+	else {
+	  extraFlag=extraFlag_gridSummer2011spec;
+	  str.Append("grid2011spec");
+	  color=_col_powhegNoFEWZ_gridSummer2011spec;
+	  plotChar="L";
+	}
+	break;
+      case 3:
+	if (!plotTh[_th_powhegNoFEWZ_fineGrid]) skip=1;
+	else {
+	  extraFlag=extraFlag_fineGrid;
+	  str.Append("fineGrid");
+	  color=_col_powhegNoFEWZ_fineGrid;
+	  plotChar="LP";
+	}
+	break;
+      }
+      if (skip) continue;
+      TH1F *theoryNoFEWZ=readTh(triggers,theKind,iMassBin,0,extraFlag);
+      AppendToHistoName(theoryNoFEWZ,str);
+      //printHisto(theoryNoFEWZ);
+      compPlot.AddHist1D(theoryNoFEWZ,"powheg",plotChar,color,1,0,1);
+      theories.push_back(theoryNoFEWZ);
+    }
+    //}
+  
+    //if (plotTh[_th_powhegWithFEWZ] || plotTh[_th_powhegWithFEWZ_gridSummer2011]) {
+    for (int i=0; i<4; ++i) {
+      TString str="_withFEWZ";
+      int color=kBlack;
+      extraFlag=0;
+      TString plotChar="P";
+      int skip=0;
+      switch(i) {
+      case 0:
+	if (!plotTh[_th_powhegWithFEWZ]) skip=1;
+	else {
+	  color=_col_powhegWithFEWZ;
+	}
+	break;
+      case 1:
+	if (!plotTh[_th_powhegWithFEWZ_gridSummer2011]) skip=1;
+	else {
+	  extraFlag=extraFlag_gridSummer2011;
+	  str.Append("grid2011");
+	  color=_col_powhegWithFEWZ_gridSummer2011;
+	  plotChar="L";
+	}
+	break;
+      case 2:
+	if (!plotTh[_th_powhegWithFEWZ_gridSummer2011spec]) skip=1;
+	else {
+	  extraFlag=extraFlag_gridSummer2011spec;
+	  str.Append("grid2011spec");
+	  color=_col_powhegWithFEWZ_gridSummer2011spec;
+	  plotChar="L";
+	}
+	break;
+      case 3:
+	if (!plotTh[_th_powhegWithFEWZ_fineGrid]) skip=1;
+	else {
+	  extraFlag=extraFlag_fineGrid;
+	  str.Append("fineGrid");
+	  color=_col_powhegWithFEWZ_fineGrid;
+	  plotChar="LP";
+	}
+	break;
+      }
+      if (testFlag==_study_data) color=kBlue;
+      if (skip) continue;
+      TH1F *theoryWithFEWZ=readTh(triggers,theKind,iMassBin,1,extraFlag);
+      //if (i==2) { int rebin=2; theoryWithFEWZ->Rebin(rebin); theoryWithFEWZ->Scale(1/double(rebin)); }
+      AppendToHistoName(theoryWithFEWZ,str);
+      //printHisto(theoryWithFEWZ);
+      compPlot.AddHist1D(theoryWithFEWZ,"powheg+FEWZ",plotChar,color,1,0,1);
+      theories.push_back(theoryWithFEWZ);
+    }
+    //}
+
+    extraFlag=0;
+  if (plotTh[_th_summer2011rebinned]) {
+    if ((theKind!=DYTools::_cs_preFsr) && (theKind!=DYTools::_cs_preFsrNorm)) {
+      std::cout << "\n\t theory2011 is only preFSR absolute or normalized\n";
+    }
+    else {
+      TH1F* theory2011rebinned=readTh2011(theKind,"_rebinned_mb2011","default",1);
+      //printHisto(theory2011rebinned);
+      //removeError(theory2011rebinned);
+      int showLabel=(plotTh[_th_summer2011]==0) ? 1:-1;
+      compPlot.AddHist1D(theory2011rebinned,"NNLO, FEWZ+MSTW08","L",_col_summer2011rebinned,1,0,showLabel);
+      theories.push_back(theory2011rebinned);
+      if (testFlag==_study_theoryMassBinGrid1D) compPlot.SetRefIdx(theory2011rebinned);
+    }
+  }
+
+  if (plotTh[_th_summer2011spec]) {
+    if ((theKind!=DYTools::_cs_preFsr) && (theKind!=DYTools::_cs_preFsrNorm)) {
+      std::cout << "\n\t theory2011 is only preFSR absolute or normalized\n";
+    }
+    else {
+      TH1F* theory2011=readTh2011(theKind,"_summer2011spec","default",2);
+      //AppendToHistoName(theory2011,"_summer2011spec");
+      //printHisto(theory2011,1);
+      removeError(theory2011);
+      compPlot.AddHist1D(theory2011,"NNLO, FEWZ+MSTW08","L",_col_summer2011,1,0,1);
+      theories.push_back(theory2011);
+      if ((testFlag==_study_theoryGrid2011)) compPlot.SetRefIdx(theory2011);
+      if (testFlag==_study_theoryMassBinGrid1D) compPlot.SkipInRatioPlots(theory2011);
+      if (testFlag== _study_theoryGrid2011spec) compPlot.SetRefIdx(theory2011);
+    }
+  }
+
+  if (plotTh[_th_summer2011]) {
+    if ((theKind!=DYTools::_cs_preFsr) && (theKind!=DYTools::_cs_preFsrNorm)) {
+      std::cout << "\n\t theory2011 is only preFSR absolute or normalized\n";
+    }
+    else {
+      TH1F* theory2011=readTh2011(theKind);
+      AppendToHistoName(theory2011,"_summer2011");
+      //printHisto(theory2011,1);
+      removeError(theory2011);
+      compPlot.AddHist1D(theory2011,"NNLO, FEWZ+MSTW08","L",_col_summer2011,1,0,1);
+      theories.push_back(theory2011);
+      if ((testFlag==_study_theoryGrid2011)) compPlot.SetRefIdx(theory2011);
+      if (testFlag==_study_theoryMassBinGrid1D) compPlot.SkipInRatioPlots(theory2011);
+    }
+  }
+
+  for (unsigned int i=0; i<theories.size(); ++i) {
+    theories[i]->SetDirectory(0);
+  }
+}
+
+// ------------------------------------------------------------
+/*
+void PlotTheoryPredictions_old(ComparisonPlot_t &compPlot, const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, std::vector<TH1F*> &theories, int testFlag) {
 
   int plotTheoryWithFEWZ=c_plotTheoryWithFEWZ;
   int plotTheoryWithFEWZfine=c_plotTheoryWithFEWZfine;
@@ -278,7 +528,7 @@ void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &t
     break;
   case 1: 
     plotTheoryWithFEWZfine *=0;
-    plotTheoryNoFEWZfine *=0;
+    plotTheoryNoFEWZfine *=1;
     plotTheoryWithFEWZ_2MCfiles=0;
     plotTheoryWithFEWZ_2MCfilesFine=0;
     break;
@@ -402,7 +652,7 @@ void PlotTheoryPredictions(ComparisonPlot_t &compPlot, const TriggerSelection &t
   if (theoryWithFEWZ_2MCfiles_debug) theories.push_back(theoryWithFEWZ_2MCfiles_debug);
 }
 
-
+*/
 // ------------------------------------------------------------
 
 
