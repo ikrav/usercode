@@ -21,11 +21,14 @@ root -l -q -b createThXSec1Dsummer2011.C+
 
 # theoretical cross section from Zee MC signal sample
 useFEWZarr="true false"
-fineGridArr="0 1"
+#useFEWZarr="true"
+#fineGridArr="0 1 2"
+#fineGridArr="1"
+fineGridArr="0 1 2 3"
 for fineGrid in ${fineGridArr} ; do
   for useFEWZ in ${useFEWZarr} ; do
       echo "useFEWZ=${useFEWZ}, fineGrid=${fineGrid}"
-      root -l -q -b getXsecExtended.C+\(\"${mcInput}\",${debugMode},${useFEWZ},${fineGrid}\)
+      root -l -q -b getXsecExtended.C+\(\"${mcInput}\",${debugMode},${useFEWZ},${fineGrid}\) | tee log-xSec-FEWZ${useFEWZ}-fineGrid${fineGrid}-debug${debugMode}.out
   done
 done
 
