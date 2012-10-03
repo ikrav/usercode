@@ -167,8 +167,8 @@ void SkimNtuples(const TString input = "skim.input")
 	  bool idCut = false;
 // 	  if( passSmurf(extractElectron(dielectron,1)) ||
 // 	      passSmurf(extractElectron(dielectron,2)) )
-	  if( passEGM2011(extractElectron(dielectron,1), WP_MEDIUM, info->rhoLowEta)
-	      || passEGM2011(extractElectron(dielectron,2), WP_MEDIUM, info->rhoLowEta) )
+	  if( passEGM2011( DYTools::extractElectron(dielectron,1), WP_MEDIUM, info->rhoLowEta)
+	      || passEGM2011(DYTools::extractElectron(dielectron,2), WP_MEDIUM, info->rhoLowEta) )
 	    idCut = true;
 	  if( etCut && idCut )
 	    nDielectronsPass++;
