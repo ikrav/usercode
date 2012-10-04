@@ -10,6 +10,8 @@
 #include "../Include/DYToolsUI.hh"
 #include "../Include/MyTools.hh"
 #include "../Include/CPlot.hh"
+#include "../Include/MitStyleRemix.hh"
+#include "../Include/ComparisonPlot.hh"
 #include "../Include/plotFunctions.hh"
 #include "../Include/UnfoldingTools.hh"
 #include "../Include/latexPrintouts.hh"
@@ -546,6 +548,54 @@ TString subtractBackground(const TString conf,
       labelV.push_back("reweighted MC");
       PlotMatrixMYSlices(indices,0,matrV, matrErrV, labelV, "dataVsMC",
 		       "hist", NULL, "dataVsMC");
+    }
+
+    if (1) {
+      const int iYBin=0;
+      const int perMassBinWidth=0;
+      const int perRapidityBinWidth=0;
+      TCanvas *canvZpeak=MakeCanvas("canvZpeak","canvZpeak",800,900);
+      TH1F* hDataNoBkg=extractMassDependence("hDataNoBkg","", 
+					     signalYields,signalYieldsError,
+					     iYBin,
+					     perMassBinWidth,perRapidityBinWidth);
+      TH1F* hZee=NULL;
+      for (int i=0; i<NSamples; ++i) {
+	if (sample_names[i]->String() == TString("zee")) {
+	  TMatrixD err=*yieldsSumw2[i];
+	  for (int iM=0; iM<err.GetNrows(); ++iM) {
+	    for (int iY=0; iY<err.GetNcols(); ++iY) {
+	      err[iM][iY]= sqrt(err[iM][iY]);
+	    }
+	  }
+	  hZee=extractMassDependence("hZee","",
+				     *yields[i],err,
+				     iYBin,
+				     perMassBinWidth,perRapidityBinWidth);
+	}
+      }
+      if (!hZee) {
+	std::cout << "\n\n\tError: failed to locate Zee sample\n\n";
+      }
+      else {
+	ComparisonPlot_t cp(ComparisonPlot_t::_ratioPlain,"compPlot","",
+			    "mass [GeV]", "counts", "MC/data");
+	std::cout << "hZee normalization factor=" << (hDataNoBkg->Integral()/hZee->Integral()) << "\n";
+	hZee->Scale(hDataNoBkg->Integral()/hZee->Integral());
+	hZee->SetMarkerStyle(24);
+	double dy=0.2;
+	cp.SetRatioYRange(1-dy,1+dy);
+#ifndef _check_Zpeak
+	cp.SetLogx();
+#endif
+	removeError(hZee);
+	canvZpeak->Divide(1,2);
+	cp.PreparePads(canvZpeak);
+	cp.AddHist1D(hDataNoBkg, "data signal", "LPE", kBlack, 1,0,1);
+	cp.AddHist1D(hZee, "MC (normalized)", "LP same", kBlue, 1,0,1);
+	cp.Draw(canvZpeak,false,"png");
+	SaveCanvas(canvZpeak,canvZpeak->GetName());
+      }
     }
 
   }
