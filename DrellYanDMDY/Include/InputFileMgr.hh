@@ -264,6 +264,30 @@ public:
 // --------------------------------------------------------
 // --------------------------------------------------------
 
+class EScaleTagFileMgr_t {
+protected:
+  std::vector<TString> FEScaleTags;
+public:
+  EScaleTagFileMgr_t() : FEScaleTags() {}
+  unsigned int size() const { return FEScaleTags.size(); }
+  const TString& escaleTag(int i) const { return FEScaleTags[i]; }
+  const std::vector<TString>& getEScaleTags() const { return FEScaleTags; }
+
+  int Load(const TString &inputFileName);
+  
+  friend std::ostream& operator<<(std::ostream& out, const EScaleTagFileMgr_t &m) {
+    out << "eScaleTagFileMgr> (" << m.size() << " items):\n";
+    for (unsigned int i=0; i<m.size(); i++) {
+      out << "  #" << i << " <" << m.FEScaleTags[i] << ">\n";
+    }
+    return out;
+  }
+};
+
+
+// --------------------------------------------------------
+// --------------------------------------------------------
+
 
 class TDescriptiveInfo_t : public TObject {
 public:
