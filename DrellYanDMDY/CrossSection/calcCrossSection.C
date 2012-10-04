@@ -205,6 +205,7 @@ void calcCrossSection(const TString conf) { //="../config_files/xsecCalc.conf")
     }
   }
   ifs.close();
+  if (!DYTools::checkTotalLumi(lumi)) return;
 
   gTagDirXSect = gTagDirScaleFactorConstants;
   CPlot::sOutDir = TString("plots_") + DYTools::analysisTag + 

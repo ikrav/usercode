@@ -223,6 +223,7 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
     }
   }
   ifs.close();
+  if (!DYTools::checkTotalLumi(lumi)) return;
 
   gTagDirXSect = gTagDirScaleFactorConstants + fsrCorrectionName(TFsrCorrectionType_t(fsrCorrection_BinByBin));
   CPlot::sOutDir = TString("plots_") + DYTools::analysisTag + 
