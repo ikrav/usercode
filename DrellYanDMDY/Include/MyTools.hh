@@ -428,4 +428,14 @@ int AppendToHistoName(Histo_t* h, const TString &add) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
+inline
+void removeError(TH1F* h) {
+  std::cout << "nulifying error for " << h->GetName() << "\n";
+  for (int ibin=0; ibin<=h->GetNbinsX(); ++ibin) {
+    h->SetBinError(ibin,0);
+  }
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
 #endif
