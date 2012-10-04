@@ -2,6 +2,7 @@
 #define ComparisonPlot_HH
 
 
+#include <TLatex.h>
 #include "../Include/CPlot.hh"
 #include "../Include/DYTools.hh"
 #include "../Include/MyTools.hh"
@@ -228,7 +229,8 @@ public:
     
     for (unsigned int i=0; i<fItems.size(); ++i) {
       if (fItems[i].hist1D!=0) {
-	fHRatioIndices.push_back(i);	
+	fHRatioIndices.push_back(i);
+	fItems[i].hist1D->GetXaxis()->SetLabelOffset(0.05);
       }
     }
     if ( fHRatioIndices.size() ==0 ) return;
