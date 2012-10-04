@@ -1,4 +1,5 @@
 #include "../Include/InputFileMgr.hh"
+#include "../Include/DYTools.hh"
 #include <assert.h>
 #include <fstream>
 #include <sstream>
@@ -98,7 +99,7 @@ int InitialInputMgr_t::Load(const TString &inputfname) {
   ifs.close();
   
   FLoadedFileName=inputfname;
-  return 1;
+  return DYTools::checkTotalLumi(FTotLumi);
 }
 
 // -----------------------------------------------------------
@@ -279,6 +280,31 @@ int MCInputFileMgr_t::Load(const TString& inputFileName) {
 }
 
 // -----------------------------------------------------------
+// -----------------------------------------------------------
+
+int EScaleTagFileMgr_t::Load(const TString& inputFileName) {
+  std::ifstream ifs;
+  ifs.open(inputFileName.Data());
+  if (!ifs.is_open()) {
+    std::cout << "EScaleTagFileMgr: failed to open file <" << inputFileName << ">\n";
+    return 0;
+  }
+  std::string line;
+  TString tag;
+  while(getline(ifs,line)) {
+    if(line[0]=='#') continue;
+    if(line[0]=='%') break;
+    getline(ifs,line);
+    stringstream ss3(line); ss3 >> tag;
+    FEScaleTags.push_back(tag);
+  }
+  ifs.close();
+  std::cout << "Loaded:\n" << *this << "\n";
+  return FEScaleTags.size();
+}
+
+// -----------------------------------------------------------
+
 
 // -----------------------------------------------------------
 // -----------------------------------------------------------
