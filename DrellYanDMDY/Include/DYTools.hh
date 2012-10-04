@@ -12,6 +12,8 @@
 #include "TElectron.hh"
 #include "TDielectron.hh"
 
+//#define _check_Zpeak
+
 namespace DYTools {
 
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
@@ -178,11 +180,19 @@ namespace DYTools {
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
   
 
+#ifndef _check_Zpeak
   const DYTools::TMassBinning_t massBinningSet=(study2D) ? _MassBins_2011_2D : _MassBins_2011;
   const int nMassBins=(study2D) ? _nMassBins2D : _nMassBins2011;
   const double *massBinLimits=(study2D) ? _massBinLimits2D : _massBinLimits2011;
   const int *nYBins=(study2D) ? _nYBins2D : _nYBins2011;
   const int nYBinsMax=(study2D) ? _nYBinsMax2D : _nYBinsMax2011;
+#else
+  const DYTools::TMassBinning_t massBinningSet=(study2D) ? _MassBins_2011_2D : _MassBins_Zpeak;
+  const int nMassBins=(study2D) ? _nMassBins2D : _nMassBinsZpeak;
+  const double *massBinLimits=(study2D) ? _massBinLimits2D : _massBinLimitsZpeak;
+  const int *nYBins=(study2D) ? _nYBins2D : _nYBinsZpeak;
+  const int nYBinsMax=(study2D) ? _nYBinsMax2D : _nYBinsMaxZpeak;
+#endif
 
   /*
   const DYTools::TMassBinning_t massBinningSet= _MassBins_test4;
