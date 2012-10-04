@@ -665,6 +665,7 @@ void applyUnfoldingToMc(int fsr) { //TString fullUnfoldingConstFileName, TString
 
   HERE("Load MC reference yields");
 
+  std::cout << "mcRefYieldsFileName=<" << mcRefYieldsFileName << ">\n";
   TFile fileMcRef(mcRefYieldsFileName);
   if (!fileMcRef.IsOpen()) {
     std::cout << "failed to open a file <" << mcRefYieldsFileName << ">\n";
@@ -690,7 +691,7 @@ void applyUnfoldingToMc(int fsr) { //TString fullUnfoldingConstFileName, TString
   dNdMmcCheckVreco = 0;
 
   if ((fsrCorrection_BinByBin!=int(_fsrCorr_unf)) ||
-      (fsrCorrection_BinByBin==int(_fsrCorr_unf)) && (fsr!=2) && (fsr!=4)) {
+      ((fsrCorrection_BinByBin==int(_fsrCorr_unf)) && (fsr!=2) && (fsr!=4))) {
     unfolding::unfold(yieldsMcRecV, dNdMmcCheckVgen, unfoldingConstFileName);
     unfolding::unfoldTrueToReco(yieldsMcGenV, dNdMmcCheckVreco, unfoldingConstFileName);
   }
@@ -1846,10 +1847,14 @@ void initGlobalFileNames(const TriggerSelection &triggers, const TString &tagDir
   }
   fnameMcReferenceYields.Append(fnameEnd);
   
-  fnameMcReferenceYieldsFsr=pathConstants + TString("yields_fsr") + fnameEnd;
+  fnameMcReferenceYieldsFsr=pathConstants + TString("yields_fsr");
+  if (useExactVectorsForMcClosureTest) fnameMcReferenceYieldsFsr.Append("Exact");
+  else fnameMcReferenceYieldsFsr.Append("Good");
+  fnameMcReferenceYieldsFsr.Append(fnameEnd);
 
   fnameMcReferenceYieldsFsrDET=pathConstants + TString("yields_fsrDET");
   if (useExactVectorsForMcClosureTest) fnameMcReferenceYieldsFsrDET.Append("exact");
+  else fnameMcReferenceYieldsFsrDET.Append("_good");
   fnameMcReferenceYieldsFsrDET.Append(fnameEnd);
 
 
