@@ -39,6 +39,8 @@ namespace DYTools {
 
   //const TString strLumiAtECMS="4.7 fb^{-1} at #sqrt{s} = 7 TeV";
   const TString strLumiAtECMS="5.0 fb^{-1} at #sqrt{s} = 7 TeV";
+  const double lumiAtECMS=4977.;
+  const double lumiAtECMS_accuracy=1.;
 
 
   // asymmetric et cuts
@@ -905,6 +907,22 @@ namespace DYTools {
   }
 
 }
+
+// --------------------------------------------------------
+
+namespace DYTools {
+
+  inline int checkTotalLumi(double lumi) {
+    if (fabs(lumi-DYTools::lumiAtECMS)>lumiAtECMS_accuracy) {
+      std::cout << "checkTotalLumi detected mismatch: lumi=" << lumi 
+		<< ", DYTools::lumiAtECMS=" << DYTools::lumiAtECMS
+		<< " +/- " << DYTools::lumiAtECMS_accuracy << std::endl;
+      return 0;
+    }
+    return 1;
+  }
+ 
+};
 
 // ------------------------------------------------------------------
 
