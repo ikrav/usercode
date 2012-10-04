@@ -13,7 +13,7 @@ if [ ${#mcInput} -eq 0 ] ; then
 fi
 
 # acceptance correction theoretical uncertainty used in 2011 summer
-root -l -q -b TheoryErrors.C+
+root -l -q -b TheoryErrors.C+\(\"${mcInput}\"\)
 
 # theoretical cross section used in 2011
 root -l -q -b createThXSec1Dsummer2011.C+
