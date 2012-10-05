@@ -1,4 +1,4 @@
 {
-  gROOT->ProcessLine(".L calcCrossSection.C+");
-  calcCrossSection("../config_files/xsecCalc.conf");
+  gROOT->ProcessLine(".L calcCrossSectionFsr.C+");
+  calcCrossSectionFsr("../config_files/xsecCalc.conf");
 }

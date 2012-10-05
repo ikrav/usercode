@@ -423,7 +423,7 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
                                                        absPostFsrCrossSectionSystErr,
                             absPostFsrCrossSectionDET, absPostFsrCrossSectionStatErrDET, 
                                                        absPostFsrCrossSectionSystErrDET,
-                            "CrossSection/calcCrossSection.C");
+                            "CrossSection/calcCrossSectionFsr.C");
 
   ////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////
