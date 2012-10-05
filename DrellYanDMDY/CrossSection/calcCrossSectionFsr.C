@@ -22,6 +22,7 @@
 #include "../Include/TriggerSelection.hh"
 #include "../Include/CPlot.hh"
 #include "../Include/plotFunctions.hh"
+#include "../Include/latexPrintouts.hh"
 
 using std::string;
 using std::stringstream;
@@ -400,6 +401,29 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
 		     preFsrYields      , preFsrYieldsStatErr);
  
   }
+
+  latexPrintoutCrossSection(signalYields,       signalYieldsStatErr, 
+		            unfoldedYields,     unfoldedYieldsStatErr,
+		            effCorrectedYields, effCorrectedYieldsStatErr,
+		            accCorrectedYields, accCorrectedYieldsStatErr,
+		            preFsrYields      , preFsrYieldsStatErr ,
+                            relCrossSection,           relCrossSectionStatErr, 
+                                                       relCrossSectionSystErr,
+                            relCrossSectionDET,        relCrossSectionStatErrDET, 
+                                                       relCrossSectionSystErrDET,
+                            relPostFsrCrossSection,    relPostFsrCrossSectionStatErr, 
+                                                       relPostFsrCrossSectionSystErr,
+                            relPostFsrCrossSectionDET, relPostFsrCrossSectionStatErrDET, 
+                                                       relPostFsrCrossSectionSystErrDET,
+                            absCrossSection,           absCrossSectionStatErr, 
+                                                       absCrossSectionSystErr,
+                            absCrossSectionDET,        absCrossSectionStatErrDET, 
+                                                       absCrossSectionSystErrDET,
+                            absPostFsrCrossSection,    absPostFsrCrossSectionStatErr, 
+                                                       absPostFsrCrossSectionSystErr,
+                            absPostFsrCrossSectionDET, absPostFsrCrossSectionStatErrDET, 
+                                                       absPostFsrCrossSectionSystErrDET,
+                            "CrossSection/calcCrossSection.C");
 
   ////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////
