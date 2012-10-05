@@ -19,7 +19,7 @@ _debugMode=$6
 
 extraPath="./"
 debugMode=0
-dirTag="DY_m10+pr+a05+o03+pr_4680pb";
+dirTag="DY_m10+pr+a05+o03+pr_4977pb";
 sourceConfigFile="../config_files/data.conf"       # needed to prepare yields
 mcConfInputFile="../config_files/fall11mc.input"   # needed for unfolding
 tmpConfFilePath="../config_files/escale"
