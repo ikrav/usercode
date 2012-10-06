@@ -864,40 +864,40 @@ void  efficiencyCorrection(const TMatrixD &vin, const TMatrixD &vinStatErr, cons
   TMatrixD systErrorAdditional(DYTools::nMassBins,nMaxYBins);
   systErrorAdditional = 0;
 
-  for(int i=0; i<DYTools::nMassBins; i++){
-    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
-      double effFactor = efficiencyArray[i][yi] * rhoDataMc[i];
+  for(int mi=0, idx=0; mi<DYTools::nMassBins; mi++){
+    for (int yi=0; yi<DYTools::nYBins[mi]; ++yi,++idx) {
+      double effFactor = efficiencyArray[mi][yi] * rhoDataMc[idx];
       double effErr = effFactor
-	* sqrt( efficiencyErrArray[i][yi]*efficiencyErrArray[i][yi]/efficiencyArray[i][yi]/efficiencyArray[i][yi]
-		+ rhoDataMcErr[i]*rhoDataMcErr[i]/rhoDataMc[i]/rhoDataMc[i]);
-      vout[i][yi]        = vin[i][yi] / effFactor;
+	* sqrt( efficiencyErrArray[mi][yi]*efficiencyErrArray[mi][yi]/efficiencyArray[mi][yi]/efficiencyArray[mi][yi]
+		+ rhoDataMcErr[idx]*rhoDataMcErr[idx]/rhoDataMc[idx]/rhoDataMc[idx]);
+      vout[mi][yi]        = vin[mi][yi] / effFactor;
       // Statistical error propagated
-      voutStatErr[i][yi] = vinStatErr[i][yi] / effFactor;
+      voutStatErr[mi][yi] = vinStatErr[mi][yi] / effFactor;
       // Old systematic error, propagated
-      systErrorPropagated[i][yi] = vinSystErr[i][yi] / effFactor;
+      systErrorPropagated[mi][yi] = vinSystErr[mi][yi] / effFactor;
       // Extra systematic error due to the errors on the efficiency and scale factor
-      systErrorAdditional[i][yi] = (vin[i][yi]/effFactor)*(effErr/effFactor);
-      systEfficiency[i][yi] = systErrorAdditional[i][yi]/vout[i][yi];
-      voutSystErr[i][yi] = 
-	sqrt(systErrorPropagated[i][yi]*systErrorPropagated[i][yi]
-	     + systErrorAdditional[i][yi]*systErrorAdditional[i][yi]);
+      systErrorAdditional[mi][yi] = (vin[mi][yi]/effFactor)*(effErr/effFactor);
+      systEfficiency[mi][yi] = systErrorAdditional[mi][yi]/vout[mi][yi];
+      voutSystErr[mi][yi] = 
+	sqrt(systErrorPropagated[mi][yi]*systErrorPropagated[mi][yi]
+	     + systErrorAdditional[mi][yi]*systErrorAdditional[mi][yi]);
     }
   }
 
   if (printEfficiencyTable) {
   printf("\nEfficiency: Results for the data, yields:\n");
   printf("                after unfolding            eff. factors,%%       rho(data/mc)         efficiency-corrected        syst-err-eff, %%\n");
-  for(int i=0; i<DYTools::nMassBins; i++){
-    double *rapidityBinLimits=DYTools::getYBinLimits(i);
-    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+  for(int mi=0, idx=0; mi<DYTools::nMassBins; mi++){
+    double *rapidityBinLimits=DYTools::getYBinLimits(mi);
+    for (int yi=0; yi<DYTools::nYBins[mi]; ++yi,++idx) {
       printf("%4.0f-%4.0f  %4.2lf-%4.2lf  %8.1f +- %7.1f +- %7.1f   %5.2f +- %5.2f      %4.3f +- %4.3f      %8.1f +- %7.1f +- %7.1f        %4.2f\n",
-	     DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
+	     DYTools::massBinLimits[mi],DYTools::massBinLimits[mi+1],
 	     rapidityBinLimits[yi],rapidityBinLimits[yi+1],
-	     vin[i][yi], vinStatErr[i][yi], vinSystErr[i][yi],
-	     efficiencyArray[i][yi]*100, efficiencyErrArray[i][yi]*100, 
-	     rhoDataMc[i], rhoDataMcErr[i],
-	     vout[i][yi], voutStatErr[i][yi], voutSystErr[i][yi],
-	     systErrorAdditional[i][yi]*100.0/vout[i][yi]);
+	     vin[mi][yi], vinStatErr[mi][yi], vinSystErr[mi][yi],
+	     efficiencyArray[mi][yi]*100, efficiencyErrArray[mi][yi]*100, 
+	     rhoDataMc[idx], rhoDataMcErr[idx],
+	     vout[mi][yi], voutStatErr[mi][yi], voutSystErr[mi][yi],
+	     systErrorAdditional[mi][yi]*100.0/vout[mi][yi]);
     }
     delete rapidityBinLimits;
   }
