@@ -371,14 +371,15 @@ void latexPrintoutTwoColumns2D(const int nValues, int* valuesType, TMatrixD** va
    valueNameForSaving.ReplaceAll(";","");
    valueNameForSaving.ReplaceAll("%","");
    TString txtFileName="tables2D"+valueNameForSaving+".txt";
-   if (FILE * file = fopen(txtFileName, "r"))
+   FILE* file;
+   if ((file = fopen(txtFileName, "r")))
      {
        for (int i=1; 1; i++)
          {
            TString probeFileName="tables1D"+valueNameForSaving+"-";
            probeFileName+=i;
            probeFileName+=".txt";
-           if (FILE * file = fopen(probeFileName, "r"));
+           if ((file = fopen(probeFileName, "r")));
            else
              {
                txtFileName=probeFileName;
@@ -491,14 +492,15 @@ void latexPrintoutTwoColumns1D(const int nValues, int* valuesType, TMatrixD** va
    valueNameForSaving.ReplaceAll(";","");
    valueNameForSaving.ReplaceAll("%","");
    TString txtFileName="tables1D"+valueNameForSaving+".txt";
-   if (FILE * file = fopen(txtFileName, "r"))
+   FILE *file;
+   if ((file = fopen(txtFileName, "r")))
      {
        for (int i=1; 1; i++)
          {
            TString probeFileName="tables1D"+valueNameForSaving+"-";
            probeFileName+=i;
            probeFileName+=".txt";
-           if (FILE * file = fopen(probeFileName, "r"));
+           if ((file = fopen(probeFileName, "r")));
            else
              {
                txtFileName=probeFileName;
@@ -609,14 +611,15 @@ void latexPrintoutOneColumn2D(const int nValues, int* valuesType, TMatrixD** val
    valueNameForSaving.ReplaceAll(";","");
    valueNameForSaving.ReplaceAll("%","");
    TString txtFileName="tables2D"+valueNameForSaving+".txt";
-   if (FILE * file = fopen(txtFileName, "r"))
+   FILE *file;
+   if ((file = fopen(txtFileName, "r")))
      {
        for (int i=1; 1; i++)
          {
-           TString probeFileName="tables1D"+valueNameForSaving+"-";
+           TString probeFileName="tables2D"+valueNameForSaving+"-";
            probeFileName+=i;
            probeFileName+=".txt";
-           if (FILE * file = fopen(probeFileName, "r"));
+           if ((file = fopen(probeFileName, "r")));
            else
              {
                txtFileName=probeFileName;
@@ -698,15 +701,15 @@ void latexPrintoutOneColumn1D(const int nValues, int* valuesType, TMatrixD** val
    valueNameForSaving.ReplaceAll(";","");
    valueNameForSaving.ReplaceAll("%","");
    TString txtFileName="tables1D"+valueNameForSaving+".txt";
-
-   if (FILE * file = fopen(txtFileName, "r"))
+   FILE * file;
+   if ((file = fopen(txtFileName, "r")))
      {
        for (int i=1; 1; i++)
          {
            TString probeFileName="tables1D"+valueNameForSaving+"-";
            probeFileName+=i;
            probeFileName+=".txt";
-           if (FILE * file = fopen(probeFileName, "r"));
+           if ((file = fopen(probeFileName, "r")));
            else
              {
                txtFileName=probeFileName;
