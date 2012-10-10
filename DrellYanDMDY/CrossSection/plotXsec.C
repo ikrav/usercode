@@ -1,26 +1,11 @@
-//// Run by following commands
-////$ root -l 
-////root [0] .L plotXsec.C+
-////root [1] plotXsec();
-////////////////////////
-#include "TCanvas.h"
-#include "TGraph.h"
-#include "TMultiGraph.h"
-#include "TAxis.h"
-#include "TAxis.h"
-#include "TGraphErrors.h"
-#include "TH1.h"
-#include "TH1D.h"
-#include "TFile.h"
-#include "TPad.h"
-#include "TObject.h"
-#include "TMath.h"
-#include "TLatex.h"
-#include "THStack.h"
-#include "TLegend.h"
-#include "TLine.h"
-#include "TFrame.h"
-#include "TString.h"
+#include <TCanvas.h>
+#include <TAxis.h>
+#include <TGaxis.h>
+#include <TH1F.h>
+#include <TPad.h>
+#include <TFile.h>
+#include <TLatex.h>
+#include <TString.h>
 
 #include <sstream>
 #include <iostream>
@@ -31,233 +16,224 @@
 #include "../Include/UnfoldingTools.hh"
 #include "../Include/MyTools.hh"        // miscellaneous helper functions
 #include "../Include/TriggerSelection.hh"
+#include "../Include/InputFileMgr.hh"
+#include "../Include/ComparisonPlot.hh"
+#include "../Include/classXSect.h"
 
-void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelection &triggers);
-void readTh(TVectorD &vTh, TVectorD &vThErr, const TriggerSelection &triggers);
-const int nMassBinTh=518;
+//
+// User defined constants
+//
 
-// Forward declarations
-//void setHistAttributes(bool doIt, TH1F *hist, int fillColor, int lineColor,	Width_t lineWidth);
+const int landscape=1;  // page orientation for 2D plots
+const int plot_theoryCT10=1; // 2D theory prediction
+const int plot_theoryMSTW2008=1; // 2D theory prediction
 
+const int showPoints=0; // whether to show 1D theory prediction in 40 bins
+
+//
 // Main function
+//
 
-void plotXsec(){
-  TriggerSelection triggers("Full2011_hltEffOld",true,0);
-  TVectorD xSec(DYTools::nMassBins);
-  TVectorD xSecErr(DYTools::nMassBins);
-  TVectorD xSecErrSyst(DYTools::nMassBins);
+void plotXsec(const TString xsecConfFile, const TString xSecKindString, 
+	      const TString crossSectionSet="_fsrUnfGood"){
 
-  TVectorD BinLimitsForXsec(DYTools::nMassBins+1);
-  for(int ibin=0; ibin<=DYTools::nMassBins; ibin++){
-    BinLimitsForXsec[ibin] = DYTools::massBinLimits[ibin];
+  // --------------------------------------------------------------
+  //           Process input
+  // --------------------------------------------------------------
+
+  XSecInputFileMgr_t inpMgr;
+  if (!inpMgr.Load(xsecConfFile)) {
+    std::cout << "failed to load file <" << xsecConfFile << ">\n";
+    return;
   }
 
-  TVectorD xSecTh(nMassBinTh);
-  TVectorD xSecThErr(nMassBinTh);
-
-//-----------------------------------------------------------------
-// Read data
-//-----------------------------------------------------------------
-  readData(xSec, xSecErr, xSecErrSyst, triggers);
-
-  // Create a canvas with pads
-  TCanvas *c1 = MakeCanvas("cXsec","cXsec",600,600);
-  //c1->SetGrid();
-  c1->SetLogx(1);
-  c1->SetFillColor(0);
-  c1->SetLogy(1);
-  c1->SetTickx(1);
-  c1->SetTicky(1);
-
-  // draw a frame to define the range
-  TMultiGraph *mg = new TMultiGraph();
-        // create first graph
-  const Int_t n1 = DYTools::nMassBins, n2=nMassBinTh;
-  Double_t x1[n1], x3[n2], ex1[n1], ex3[n2] ;
-  Double_t y1[n1], y2[n2],  y3[n2], ey1[n1], ey2[n2], ey3[n2];
-////  printf("Bin  MeanMass  Width        Xsec         ErrXsec\n");
-  //Int_t i1=-1, i2=0;
-  for (int iL=0; iL < n1; iL++ )
-  {
-      x1[iL]=(BinLimitsForXsec[iL+1]+BinLimitsForXsec[iL])/2;
-      ex1[iL]=(BinLimitsForXsec[iL+1]-BinLimitsForXsec[iL])/2;
-      y1[iL]=fabs(xSec[iL]);
-      ey1[iL]=xSecErr[iL];
-////      printf(" %4.2f     %4.2f       %1.7f      %1.7f\n",
-////	   x1[iL], ex1[iL], y1[iL],ey1[iL]);
+  DYTools::TCrossSectionKind_t csKind=DYTools::_cs_None;
+  if (xSecKindString.Contains("auto") ||
+      xSecKindString.Contains("default")) {
+    if (DYTools::study2D==1) csKind=DYTools::_cs_preFsrDetNorm;
+    else csKind=DYTools::_cs_preFsrNorm;
   }
-  Double_t peak_bin_width = 1.;
-  Double_t peak_val_theory = 1009.0;
-  Double_t mass_xlow4[n2+1];
-  Double_t mxl = 14.0;
-  for( int i = 0; i < n2+1; i++ ) {
-
-    if     ( i >=   0 && i <  11 ) {mxl += 1.0;}
-    else if( i >=  11 && i <  18 ) {mxl += 5.0;}
-    else if( i >=  18 && i < 118 ) {mxl += 1.0;}
-    else if( i >= 118 && i < 340 ) {mxl += 2.0;}
-    else if( i >= 340 && i < n2)   {mxl += 5.0;}
-    else if( i == n2)              {mxl = 1500; }
-     mass_xlow4[i] = mxl;
-////     if (i > 10  && i < 330) continue;
-////     cout <<"i= "<<i <<" mxl= "<<mass_xlow4[i] << endl;
-  }
-  readTh(xSecTh, xSecThErr, triggers);
-  for (int iL2=0; iL2 < n2; iL2++ )
-  {   
-      x3[iL2]=(mass_xlow4[iL2+1]+mass_xlow4[iL2])/2;
-      ex3[iL2]=mass_xlow4[iL2+1]-mass_xlow4[iL2];
-      y2[iL2]=xSecTh[iL2];
-      ey2[iL2]=xSecThErr[iL2];
-      y3[iL2]=y2[iL2]*peak_bin_width/(peak_val_theory*ex3[iL2]);//divide to the Z peak
-      ey3[iL2]=sqrt(pow(ey2[iL2]/(peak_val_theory*ex3[iL2]),2)+pow(y2[iL2]/(peak_val_theory*2*ex3[iL2]),2));
+  else {
+    csKind=DetermineCrossSectionKind(xSecKindString);  // auto-stop on failure
   }
 
-   TGraphErrors *gr1 = new TGraphErrors(n1,x1,y1,ex1,ey1);
+  // --------------------------------------------------------------
+  //           Prepare variables
+  // --------------------------------------------------------------
 
-   gr1->SetFillColor(0);
-   gr1->SetMarkerColor(kBlack);
-   gr1->SetMarkerStyle(20);
-   gr1->SetMarkerSize(1.0);
-   gr1->SetLineColor(kBlack);
+  TGaxis::SetMaxDigits(3);
 
-   TGraphErrors *gr2 = new TGraphErrors(n2,x3,y3);
+  TriggerSelection triggers(inpMgr.triggerSetName(),true,0);
+  
+  ComparisonPlot_t::TRatioType_t ratio=
+      ComparisonPlot_t::_ratioPlain;  //   #1/#2
+    //ComparisonPlot_t::_ratioRel;  //   (#1-#2)/#1
+  TString ratioYLabel=(ratio==ComparisonPlot_t::_ratioPlain) ?
+    "data/theory" : "(th-dt)/th";
+  if (DYTools::study2D) {
+    ratioYLabel=(ratio==ComparisonPlot_t::_ratioPlain) ?
+      "theory/data" : "(dt-th)/dt";
+  }
 
-   gr2->SetFillColor(0);
-   gr2->SetMarkerColor(kBlue);
-   //gr2->SetMarkerStyle(20);
-   gr2->SetLineWidth(2);
-   gr2->SetLineColor(kBlue);
-////   gr2->SetFillColor(kBlue);
-////   gr2->SetFillStyle(3001);
+  ComparisonPlot_t compPlot(ratio, "check","",
+    (DYTools::study2D) ? "rapidity |y|" : "m_{ee} [GeV]",
+			    CrossSectionKindLongName(csKind),
+			    ratioYLabel);
 
-   mg->Add(gr2,"L");
-   mg->Add(gr1,"Psame");
-   //mg->Add(gr2);
-   //mg->Add(gr1);
-   //gr1->Draw("ap");
-   mg->Draw("A");
-   mg->GetYaxis()->SetRangeUser(5e-11,1.0);
-   mg->GetXaxis()->SetRangeUser(15,1500);
-   mg->GetXaxis()->SetTitle("M_{ee} [GeV]");
-   mg->GetYaxis()->SetTitle("1/#sigma_{z} d#sigma/dM [GeV^{-1}]");
+  //compPlot.SetRatioNdivisions(805);
+  //compPlot.SetPrintValues(1);
+  //compPlot.SetPrintRatios(1);
+  compPlot.SetPrintRatioNames(1);
 
-   TLatex *cmsText = new TLatex();
-   cmsText->SetTextFont(42);
-   cmsText->SetTextSize(0.055);
-   cmsText->SetTextAlign(31);
-   cmsText->SetNDC();
-   cmsText->SetText(0.93, 0.94, "CMS Preliminary");
+  int cWidth=600, cHeight=700;
+  if (DYTools::study2D) {
+    //double rdy=0.15; compPlot.SetRatioYRange(1-rdy,1+rdy);
+    cWidth=400*(2+landscape); cHeight=400*(3-landscape);
+  }
+  else {
+    compPlot.SetLogx(1);
+    compPlot.SetLogy(1);
+    //double rdy=0.15; compPlot.SetRatioYRange(1-rdy,1+rdy);
+    cWidth=600; cHeight=700;
+  }
 
-   TLatex *chText = new TLatex();
-   chText->SetTextFont(42);
-   chText->SetTextSize(0.055);
-   chText->SetTextAlign(33);
-   chText->SetNDC();
-   chText->SetText(0.90, 0.80, "#gamma*/Z #rightarrow ee");
+  TString dataFName=TString("../root_files/") + 
+    inpMgr.evtEffScaleTag() +
+    crossSectionSet +
+    TString("/xSec");
+  if (!csPreFsr(csKind)) dataFName.Append("PostFsr");
+  if (csInDET(csKind)) dataFName.Append("DET");
+  dataFName.Append("_results_"); 
+  dataFName.Append(DYTools::analysisTag);
+  if (!csPreFsr(csKind)) dataFName.Append(triggers.triggerConditionsName());
+  dataFName.Append(".root");
+  
 
-   TLatex *lumiText = new TLatex();
-   lumiText->SetTextFont(42);
-   lumiText->SetTextSize(0.04);
-   lumiText->SetTextAlign(33);
-   lumiText->SetNDC();
-   lumiText->SetText(0.91, 0.90, "4.7 fb^{-1} at #sqrt{s} = 7 TeV");
+  // --------------------------------------------------------------
+  //      Prepare plots
+  // --------------------------------------------------------------
 
-   TLegend *leg = new TLegend(.20,.20,.60,.30);
-   leg->AddEntry(gr1,"Data ee 4.7 fb^{-1} 2011 ");
-   leg->AddEntry(gr2,"NNLO, FEWZ+MSTW08");
-   leg->SetTextSize(0.03);
-   leg->SetFillColor(0);
-   leg->SetLineColor(0);
-   leg->SetShadowColor(0);
-   leg->Draw();
+  TString canvasName=TString("cXsec_") + CrossSectionKindName(csKind) + 
+    TString("_") + DYTools::analysisTag;
+  TCanvas *canvas=MakeCanvas(canvasName,canvasName,cWidth,cHeight);
 
-   cmsText->Draw();
-   chText->Draw();
-   lumiText->Draw();
 
-   SaveCanvas(c1,"cXsec");
+  std::vector<ComparisonPlot_t*> compPlotsV;
+  //std::vector<TH1F*> dataHistos;
+  std::vector<TH1F*> histos;
+
+  if (DYTools::study2D) { // 2D
+
+    compPlot.Prepare6Pads(canvas,landscape);
+
+    vector<TLatex*> massLabels;
+    prepareMassRanges(massLabels,0.55,0.17, kBlue+2);
+
+    // 
+
+    // data
+    for (int i=0; i<6; ++i) {
+      const int iM=i+1; // skip 1st mass bin
+      ComparisonPlot_t *cp=new ComparisonPlot_t(compPlot,Form("compPlot_%d",i+1),"");
+      compPlotsV.push_back(cp);
+      std::vector<TH1F*> localHV;
+
+      if ((csKind==DYTools::_cs_preFsrDet) || (csKind==DYTools::_cs_preFsrDetNorm)) {
+	if (plot_theoryCT10) {
+	  TH1F* hTh=readTh2D_CT10(csKind, iM);
+	  hTh->SetMarkerStyle(27);
+	  hTh->SetMarkerSize(0.8);
+	  cp->AddHist1D(hTh,"CTEQ10W","L",kGreen+1,1,0,1);
+	  histos.push_back(hTh);
+	  localHV.push_back(hTh);
+	}
+	if (plot_theoryMSTW2008) {
+	  TH1F* hTh=readTh2D_MSTW2008(csKind, iM);
+	  hTh->SetMarkerStyle(24);
+	  hTh->SetMarkerSize(0.8);
+	  cp->AddHist1D(hTh,"MSTW2008","L",kBlue,1,0,1);
+	  histos.push_back(hTh);
+	  localHV.push_back(hTh);
+	}
+      }
+
+      // data
+      TH1F* hData=readData(triggers,csKind,iM,dataFName);
+      histos.push_back(hData);
+      localHV.push_back(hData);
+      cp->AddHist1D(hData,"data","P",kBlack,1,0,1);
+      cp->SetRefIdx(hData);
+
+      for (unsigned int ii=0; ii<localHV.size(); ++ii) {
+	localHV[ii]->GetYaxis()->SetTitleOffset(1.2);
+      }
+
+      // Plotting and beautifying
+      int subpad=-1;
+      cp->Draw6(canvas,landscape,i+1,false,"png",&subpad);
+      canvas->cd(subpad);
+      massLabels[iM]->Draw();
+      if (i==2) {
+	cp->AddTextCMSPreliminary();
+	cp->AddTextLumi(0.55,0.27);
+      }
+    }
+
+  }
+  else { // 1D
+
+    canvas->Divide(1,2);
+    compPlot.PreparePads(canvas);
+
+    // theory
+    if ((csKind==DYTools::_cs_preFsr) || (csKind==DYTools::_cs_preFsrNorm)) {
+      TH1F* hTh=readTh1D_MSTW2008(csKind);
+      removeError(hTh);
+      compPlot.AddHist1D(hTh,"NNLO, FEWZ+MSTW08","L",kBlue,1,0,0);
+      compPlot.SkipInRatioPlots(hTh); // do not consider for ratios
+      histos.push_back(hTh);
+    }
+    // theory: special set to calculate ratios
+    if (csKind==DYTools::_cs_preFsrNorm) {
+      int showLabel=-1;
+      TString draw_opt=(showPoints) ? "P" : "P skip";
+      TH1F* hTh=readTh1D_MSTW2008(csKind,"_NNLO","default",_th2011_nnlo);
+      hTh->SetMarkerSize(0.8);
+      compPlot.AddHist1D(hTh,"NNLO, FEWZ+MSTW08 (40bins)",draw_opt,kBlue,1,0,showLabel);
+      compPlot.SetRefIdx(hTh); // use to calculate ratios
+      histos.push_back(hTh);
+    }
+
+    // data 1D
+    TH1F* hData=readData(triggers,csKind,-1, dataFName);
+    histos.push_back(hData);
+    compPlot.AddHist1D(hData,"data","P",kBlack,1,0,1);
+
+  }
+
+
+  for (unsigned int i=0; i<histos.size(); i++) {
+    histos[i]->SetDirectory(0);
+  }
+
+  // --------------------------------------------------------------
+  //      Plot
+  // --------------------------------------------------------------
+
+  if (DYTools::study2D) {
+  }
+  else { // 1D
+    compPlot.Draw(canvas,false,"png");
+    canvas->cd(1);
+    compPlot.AddTextCMSPreliminary();
+    compPlot.AddTextLumi(0.55,0.27);
+  }
+
+  canvas->Update();
+  canvas->cd();
+  SaveCanvas(canvas,canvas->GetName());
+  
   return;
 }
 
 
-void readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelection &triggers){
-
-  //printf("Load data yields\n"); fflush(stdout);
-  std::cout << "Load data yields" << std::endl;
-  TString xSecResultFileName(TString("../root_files/xSec_results_") + 
-			     DYTools::analysisTag + TString("_") +
-		   triggers.triggerConditionsName() + TString(".root"));
-  xSecResultFileName="../root_files/DY_m10+pr+a05+o03+pr_4680pb/xSecDET_results_1D__fsrUnf.root";
-  std::cout << "xSecResultFileName= " << xSecResultFileName << "\n";
-
-  //TFile fileXsecResult   (TString("../root_files/xSec_results.root"));
-  TFile fileXsecResult   (xSecResultFileName);
-  TMatrixD xSecM          = *(TMatrixD *)fileXsecResult.FindObjectAny("normXSecByBin");
-  TMatrixD xSecErr1M      = *(TMatrixD *)fileXsecResult.FindObjectAny("normXSecErrByBin");
-  TMatrixD xSecErr2M      = *(TMatrixD *)fileXsecResult.FindObjectAny("normXSecErrByBinSyst");
-
-  const int nUnfoldingBins=DYTools::getTotalNumberOfBins();
-  TVectorD xSec(nUnfoldingBins);
-  TVectorD xSecErr1(nUnfoldingBins);
-  TVectorD xSecErr2(nUnfoldingBins);
-
-  std::cout << "nUnfoldingBins=" << nUnfoldingBins << ", nMassBins=" << DYTools::nMassBins << "\n";
-
-  unfolding::flattenMatrix(xSecM, xSec);
-  unfolding::flattenMatrix(xSecErr1M, xSecErr1);
-  unfolding::flattenMatrix(xSecErr1M, xSecErr1);
-
-  // Check that the binning is consistent
-  bool checkResult = true;
-  if( v.GetNoElements() != DYTools::nMassBins ) checkResult = false;
-  if( !checkResult ){
-    printf("ERROR: Data inconsistent binning in the inputs\n");
-    assert(0);
-  }else
-    printf("readData: Binning in the inputs is consistent\n");
-
-  // Prepare output yields and errors
-  for(int i=0; i<DYTools::nMassBins; i++){
-    v[i] = xSec[i];
-    vErr1[i] = xSecErr1[i];
-    vErr2[i] = xSecErr2[i];
-  }
-
-  fileXsecResult.Close();
-  return;
-}
-void readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers){
-
-  //printf("Load data yields\n"); fflush(stdout);
-  //TFile fileXsecTh   (TString("../root_files/xSecTh_results.root"));
-
-  TString xSecThResultFileName(TString("../root_files/xSecTh_results_") +
-			       DYTools::analysisTag + TString("_") +
-		      triggers.triggerConditionsName() + TString(".root"));
-  xSecThResultFileName="../root_files/xSecTh2011_1D.root";
-  std::cout << "Load theory predictions\n";
-  std::cout << "xSecThResultFileName=" << xSecThResultFileName << std::endl;
-
-  TFile fileXsecTh   (xSecThResultFileName);
-  TVectorD xSecTh          = *(TVectorD *)fileXsecTh.FindObjectAny("xSecTh");
-  TVectorD xSecThErr      = *(TVectorD *)fileXsecTh.FindObjectAny("xSecThErr");
-
-  // Check that the binning is consistent
-  bool checkResult = true;
-  if( v.GetNoElements() != nMassBinTh ) checkResult = false;
-  if( !checkResult ){
-    printf("ERROR: Th inconsistent binning in the inputs\n");
-    assert(0);
-  }else
-    printf("readTh: Binning in the inputs is consistent\n");
-
-  // Prepare output yields and errors
-  for(int i=0; i<nMassBinTh; i++){
-    v[i] = xSecTh[i];
-    vErr[i] = xSecThErr[i];
-  }
-
-  fileXsecTh.Close();
-  return;
-}
