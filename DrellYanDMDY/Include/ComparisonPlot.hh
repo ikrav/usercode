@@ -29,7 +29,7 @@ public:
   double fRatioYTitleSize,fRatioYLabelSize;
   double fRatioYTitleOffset;
 
-  ComparisonPlot_t(TRatioType_t ratioType, TString name, TString title, TString xtitle, TString ytitle, TString ratioYLabel) :
+  ComparisonPlot_t(TRatioType_t ratioType, const TString &name, const TString &title, const TString &xtitle, const TString &ytitle, const TString &ratioYLabel) :
     CPlot(name,title,xtitle,ytitle),
     fRefIdx(0), fErrorsOnRatios(1),
     fRatioType(ratioType),
@@ -44,6 +44,25 @@ public:
     fRatioYTitleSize(0.15), 
     fRatioYLabelSize(0.13),
     fRatioYTitleOffset(0.45)
+  {}
+
+  ComparisonPlot_t(const ComparisonPlot_t &cp, 
+		   const TString &newName, const TString &newTitle="") :
+    CPlot(newName,newTitle,cp.fXTitle,cp.fYTitle),
+    fRefIdx(0), fErrorsOnRatios(cp.fErrorsOnRatios),
+    fRatioType(cp.fRatioType),
+    fHRatioIndices(),
+    fExcludeIndices(),
+    padMain(NULL), padRatio(NULL),
+    fRatioLabel(cp.fRatioLabel), fHRatioItems(),
+    fRatioYMin(cp.fRatioYMin), fRatioYMax(cp.fRatioYMax),
+    fRatioNdivisions(cp.fRatioNdivisions),
+    fPrintValues(cp.fPrintValues),
+    fPrintRatios(cp.fPrintRatios),
+    fPrintRatioNames(cp.fPrintRatioNames),
+    fRatioYTitleSize(cp.fRatioYTitleSize),
+    fRatioYLabelSize(cp.fRatioYLabelSize),
+    fRatioYTitleOffset(cp.fRatioYTitleOffset)
   {}
 
 
@@ -204,6 +223,12 @@ public:
       PreparePads(c, 10,12, name + sf, padYDivPoint);      
     }
 
+    for (int i=1; i<=12; i++) {
+      TPad *pad=(TPad*)c->GetPad(i);
+      pad->SetFillColor(0);
+      pad->SetTickx(1);
+      pad->SetTicky(1);
+    }
   }
 
   void Draw6(TCanvas *c, int landscape, int idx, bool doSave=false, TString format="png", int *subpad1=NULL, int *subpad2=NULL) {
@@ -236,7 +261,6 @@ public:
     if ( fHRatioIndices.size() ==0 ) return;
 
     TH1F *hRef=fItems[fHRatioIndices[fRefIdx]].hist1D;
-    hRef->GetYaxis()->SetTitleOffset(1.2);
 
     CPlot::Draw(c,false,"png",subpad1);
 
