@@ -62,6 +62,7 @@ void plotXsec(const TString xsecConfFile, const TString xSecKindString,
   // --------------------------------------------------------------
 
   TGaxis::SetMaxDigits(3);
+  CPlot::sOutDir = TString("plots_") + DYTools::analysisTag;
 
   TriggerSelection triggers(inpMgr.triggerSetName(),true,0);
   
