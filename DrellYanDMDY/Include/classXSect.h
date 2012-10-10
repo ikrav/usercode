@@ -8,6 +8,8 @@
 
 // -------------------------------------------------------------
 
+typedef enum { _th2011_default, _th2011_mb2011, _th2011_spec2011, _th2011_nnlo } TTheory2011Set_t;
+
 const int nStandardColors=4;
 const int standardColors[nStandardColors] = { 814, 894, 906, 855 };
 
@@ -55,7 +57,6 @@ int csInDET(DYTools::TCrossSectionKind_t kind) {
   }
   return yes;
 }
-
 // -------------------------------------------------------------
 
 inline
@@ -176,11 +177,11 @@ TH1F* readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers, DYTo
   // Prepare output yields and errors
   bool ok=true;
   if ((DYTools::study2D==0) && (v.GetNoElements()!=DYTools::nMassBins)) {
-    std::cout << "readTh: for 1D case v[DYTools::nMassBins] is expected\n";
+    std::cout << "readTh: for 1D case v[DYTools::nMassBins]=" << DYTools::nMassBins << " is expected\n";
     ok=false;
   }
   else if ((DYTools::study2D==1) && (v.GetNoElements()!=DYTools::nYBins[iMassBin])) {
-    std::cout << "readTh: for 2D case v[DYTools::nYBins[iMassBin=" << iMassBin << "] is expected\n";
+    std::cout << "readTh: for 2D case v[DYTools::nYBins[iMassBin=" << iMassBin << "]=" << DYTools::nYBins[iMassBin] << " is expected, not " << v.GetNoElements() << "\n";
     ok=false;
   }
 
@@ -233,10 +234,8 @@ TH1F* readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers, DYTo
 // -------------------------------------------------------------
 
 inline
-TH1F* readThCT10(TVectorD &v, TVectorD &vErr, DYTools::TCrossSectionKind_t theKind, int iMassBin) {
-
-  TString xSecThResultFileName="../root_files/theory/xSectTheory_CTEQ10W.root";
-  std::cout << "Load CT10 theory predictions\n";
+TH1F* readTheory2D(TVectorD &v, TVectorD &vErr, DYTools::TCrossSectionKind_t theKind, int iMassBin, TString xSecThResultFileName, const char *histName) {
+  std::cout << "Load 2D theory predictions\n";
   std::cout << "xSecThResultFileName=" << xSecThResultFileName << std::endl;
 
   TFile fileXsecTh   (xSecThResultFileName);
@@ -282,7 +281,7 @@ TH1F* readThCT10(TVectorD &v, TVectorD &vErr, DYTools::TCrossSectionKind_t theKi
     ok=false;
   }
 
-  TString name=Form("xsecThCT10_%s_%s",DYTools::analysisTag.Data(),CrossSectionKindName(theKind).Data());
+  TString name=Form("%s_%s_%s",histName,DYTools::analysisTag.Data(),CrossSectionKindName(theKind).Data());
   if (ok && (DYTools::study2D==0)) {
     const int perMassBinWidth=1;
     const int perRapidityBinWidth=0;
@@ -315,7 +314,7 @@ inline
 TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, TString fname, int extraFlag=0){
 
   //printf("Load data yields\n"); fflush(stdout);
-  std::cout << "Load data yields for iMassBin=" << iMassBin << std::endl;
+  std::cout << "Load data yields for iMassBin=" << iMassBin << ", extraFlag=" << extraFlag << std::endl;
   if ((iMassBin>=0) && (DYTools::study2D==0)) {
     std::cout << "readData. iMassBin should be -1, if study2D=0\n";
     assert(0);
@@ -384,7 +383,8 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
     }
   }
   else if (ok && (DYTools::study2D==1)) {
-    histo= extractRapidityDependence(name,name, xSecM, xSecErr1M, iMassBin, 0);
+    int perMassBinWidth=0;
+    histo= extractRapidityDependence(name,name, xSecM, xSecErr1M, iMassBin, perMassBinWidth);
     for(int iY=0; iY<DYTools::nYBins[iMassBin]; iY++){
       v[iY] = xSecM[iMassBin][iY];
       vErr1[iY] = xSecErr1M[iMassBin][iY];
@@ -400,16 +400,17 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
 // -------------------------------------------------------------
 
 inline
-TH1F* readTh2011(DYTools::TCrossSectionKind_t theKind, const char *histName="th2011",const char *fname="default", int rebin=0) {
-  const char *fnameDefault="../root_files/xSecTh2011_1D.root";
+TH1F* readTh1D_MSTW2008(DYTools::TCrossSectionKind_t theKind, const char *histName="th2011",const char *fname="default", TTheory2011Set_t rebin=_th2011_default ) {
+  const char *fnameDefault="../root_files/theory/xSectTheory1D_MSTW2008.root";
   TString objName,objErrName;
   switch(theKind) {
   case DYTools::_cs_preFsrNorm: 
     objName="xSecThNorm"; objErrName="xSecThNormErr";
     switch (rebin) {
-    case 0: break;
-    case 1: objName="xSecThNorm_mb2011"; objErrName="xSecThNormErr_mb2011"; break;
-    case 2: objName="xSecThNorm_spec2011"; objErrName="xSecThNormErr_spec2011"; break;
+    case _th2011_default: break;
+    case _th2011_mb2011: objName="xSecThNorm_mb2011"; objErrName="xSecThNormErr_mb2011"; break;
+    case _th2011_spec2011: objName="xSecThNorm_spec2011"; objErrName="xSecThNormErr_spec2011"; break;
+    case _th2011_nnlo: objName="xSecThNorm_NNLO"; objErrName="xSecThNormErr_NNLO"; break;
     default:
       std::cout << "not ready\n";
       assert(0);
@@ -418,16 +419,17 @@ TH1F* readTh2011(DYTools::TCrossSectionKind_t theKind, const char *histName="th2
   case DYTools::_cs_preFsr:
     objName="xSecTh"; objErrName="xSecThErr";
     switch (rebin) {
-    case 0: break;
-    case 1: objName="xSecTh_mb2011"; objErrName="xSecThErr_mb2011"; break;
-    case 2: objName="xSecTh_spec2011"; objErrName="xSecThErr_spec2011"; break;
+    case _th2011_default: break;
+    case _th2011_mb2011: objName="xSecTh_mb2011"; objErrName="xSecThErr_mb2011"; break;
+    case _th2011_spec2011: objName="xSecTh_spec2011"; objErrName="xSecThErr_spec2011"; break;
+    case _th2011_nnlo: // not available
     default:
       std::cout << "not ready\n";
       assert(0);
     }
     break;
   default:
-    std::cout << "readTh2011 is not ready for theKind=<" << CrossSectionKindName(theKind) << ">\n";
+    std::cout << "readTh1D_MSTW2008 is not ready for theKind=<" << CrossSectionKindName(theKind) << ">\n";
     assert(0);
   }
 
@@ -436,14 +438,15 @@ TH1F* readTh2011(DYTools::TCrossSectionKind_t theKind, const char *histName="th2
 
   TFile f(fileName);
   if (!f.IsOpen()) {
-    std::cout << "readTh2011: failed to open a file <" << fname << ">\n";
+    std::cout << "readTh1D_MSTW2008: failed to open a file <" << fname << ">\n";
     assert(0);
   }
   TString massBinStr="massBinsTh";
   switch (rebin) {
-  case 0: break;
-  case 1: massBinStr="massBinsTh_mb2011"; break;
-  case 2: massBinStr="massBinsTh_spec2011"; break;
+  case _th2011_default: break;
+  case _th2011_mb2011: massBinStr="massBinsTh_mb2011"; break;
+  case _th2011_spec2011: massBinStr="massBinsTh_spec2011"; break;
+  case _th2011_nnlo: massBinStr="massBinsTh_NNLO"; break;
   default:
     std::cout << "not ready\n";
     assert(0);
@@ -472,31 +475,40 @@ TH1F* readTh2011(DYTools::TCrossSectionKind_t theKind, const char *histName="th2
 
 inline
 TH1F* readTh(const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, int useFEWZ, int extraFlag) {
-  int nUnfoldingBins=DYTools::nUnfoldingBinsMax;
-  TVectorD v(nUnfoldingBins);
-  TVectorD vErr(nUnfoldingBins);
+  int nBins=(DYTools::study2D) ? DYTools::nYBins[iMassBin] : DYTools::nMassBins;
+  TVectorD v(nBins);
+  TVectorD vErr(nBins);
   return readTh(v,vErr,triggers,theKind,iMassBin,useFEWZ,extraFlag);
 }
 
 // -------------------------------------------------------------
 
 inline
-TH1F* readThCT10(DYTools::TCrossSectionKind_t theKind, int iMassBin) {
-  int nUnfoldingBins=DYTools::nUnfoldingBinsMax;
-  TVectorD v(nUnfoldingBins);
-  TVectorD vErr(nUnfoldingBins);
-  return readThCT10(v,vErr,theKind,iMassBin);
+TH1F* readTh2D_CT10(DYTools::TCrossSectionKind_t theKind, int iMassBin) {
+  int nBins=(DYTools::study2D) ? DYTools::nYBins[iMassBin] : DYTools::nMassBins;
+  TVectorD v(nBins);
+  TVectorD vErr(nBins);
+  return readTheory2D(v,vErr,theKind,iMassBin,"../root_files/theory/xSectTheory_CTEQ10W.root","hCT10");
+}
+
+// -------------------------------------------------------------
+
+inline
+TH1F* readTh2D_MSTW2008(DYTools::TCrossSectionKind_t theKind, int iMassBin) {
+  int nBins=(DYTools::study2D) ? DYTools::nYBins[iMassBin] : DYTools::nMassBins;
+  TVectorD v(nBins);
+  TVectorD vErr(nBins);
+  return readTheory2D(v,vErr,theKind,iMassBin,"../root_files/theory/xSectTheory2D_MSTW2008.root","hMSTW2008");
 }
 
 // -------------------------------------------------------------
 
 inline
 TH1F* readData(const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, TString fname){
-
-  int nUnfoldingBins=DYTools::nUnfoldingBinsMax;
-  TVectorD v(nUnfoldingBins);
-  TVectorD vErr1(nUnfoldingBins);
-  TVectorD vErr2(nUnfoldingBins);
+  int nBins=(DYTools::study2D) ? DYTools::nYBins[iMassBin] : DYTools::nMassBins;
+  TVectorD v(nBins);
+  TVectorD vErr1(nBins);
+  TVectorD vErr2(nBins);
   return readData(v,vErr1,vErr2,triggers,theKind,iMassBin,fname);
 }
 
