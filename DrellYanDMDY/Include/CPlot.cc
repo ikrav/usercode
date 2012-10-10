@@ -586,13 +586,16 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
       
       if(fYmin < fYmax) {
         h->GetYaxis()->SetRangeUser(fYmin,fYmax);
-      } else {
-        if(ymax < h->GetMaximum()) {
-	  ymax = h->GetMaximum();
-	  ifirst = vHists.size();
-	}
-	if (fYmin > fYmax*1.001) {
-	  h->GetYaxis()->SetRangeUser(fYmin,ymax);
+      }
+      else {
+	if (!fItems[i].drawopt.Contains("skip")) {
+	  if(ymax < h->GetMaximum()) {
+	    ymax = h->GetMaximum();
+	    ifirst = vHists.size();
+	  }
+	  if (fYmin > fYmax*1.001) {
+	    h->GetYaxis()->SetRangeUser(fYmin,ymax);
+	  }
 	}
       }
       
@@ -650,6 +653,7 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
       TH1F *h = vHists[i];              
       h->SetLineWidth(2);
       char opt[100];
+      if (vHistOpts[i].Contains("skip")) continue;
       sprintf(opt,"same %s",vHistOpts[i].Data());    
       //std::cout << "drawing option=" << opt << "\n";
       h->Draw(opt);
