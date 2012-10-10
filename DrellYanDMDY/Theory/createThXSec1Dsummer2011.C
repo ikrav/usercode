@@ -18,6 +18,9 @@ const int save_for_massBinLimits2011_1D=1;
 
 #endif
 
+#include <fstream>
+
+
 const Double_t peak_bin_width = 1.0;
 const Double_t peak_val_theory = 1009.0;
 
@@ -45,7 +48,7 @@ void rebinCrossSection(const TVectorD &massBins, const TVectorD &XSecTh, const T
     if (locDebug) std::cout << "target mass range=" << massLo << " ... " << massHi << "\n";
     for ( ; (iTh<nMassBinTh) && (massBins[iTh]<massHi); ++iTh) {
       if ((massBins[iTh]>=massLo) && (massBins[iTh+1]<=massHi)) {
-	if (locDebug) std::cout << "adding entry for mass=" << massBins[iTh] << "\n";
+	if (locDebug) std::cout << "adding entry for mass=" << massBins[iTh] << " (val=" << XSecTh[iTh] << ")\n";
 	newXSec[iM]+= XSecTh[iTh];
 	newXSecErr[iM]+= SQR(XSecThErr[iTh]);
       }
@@ -53,6 +56,7 @@ void rebinCrossSection(const TVectorD &massBins, const TVectorD &XSecTh, const T
       // check the next mass bin
       if ((iTh<nMassBinTh) && (massBins[iTh+1]>massHi)) {
 	// linear approximation
+	// this is a FAILING APPROXIMATION !!!
 	double x=(massHi-massBins[iTh])/(massBins[iTh+1]-massBins[iTh]);
 	std::cout << "original mass range=" << massBins[iTh] << " ... " << massBins[iTh+1] << ". Linear approximation for massHi=" << massHi << "\n";
 	if (locDebug) { 
@@ -81,6 +85,7 @@ void rebinCrossSection(const TVectorD &massBins, const TVectorD &XSecTh, const T
     const double xsErr=newXSecErr[iM];
     newXSecNorm[iM]=xs*peak_bin_width/(peak_val_theory*dm);//divide to the Z peak
     newXSecNormErr[iM]=sqrt(pow(xsErr/(peak_val_theory*dm),2)+pow(xs/(peak_val_theory*2*dm),2));
+    if (locDebug) std::cout << "iM=" << iM << ", dM=" << dm << ", newMassBinLimits[iM]=" << newMassBinLimits[iM] << ", newXSec=" << newXSec[iM] << ", normXSec=" << newXSecNorm[iM] << "\n";
   }
 
   return;
@@ -130,10 +135,12 @@ void rebinCrossSectionSpec(const TVectorD &massBins, const TVectorD &XSecTh, con
   massRangeEdges[iTh_new-2]=1500.;
   std::cout << "iTh_new=" << iTh_new << "\n";
 
-  if (0) {
+#ifdef MYTOOLS_HH
+  if (0) { // check the mass ranges
     TH1F hMassIdx("h_massIdx","h_massIdx",iTh_new-2,massRangeEdges);
     printHisto(&hMassIdx);
   }
+#endif
 
   rebinCrossSection(massBins,XSecTh,XSecThErr,
 		    iTh_new-2, massRangeEdges,
@@ -149,6 +156,70 @@ void rebinCrossSectionSpec(const TVectorD &massBins, const TVectorD &XSecTh, con
 
 
 // -----------------------------------------------------------------
+
+// normalized r-shape taken from muon group (H.D.Yoo)
+// "theory r // 11232011 from Stoyan (from fit of theory shape r distribution on the plot)"
+// the errors are the ones used in the muon group code
+
+void fillStoyanRShape1D(TVectorD &massBins, TVectorD &normXSec, TVectorD &normXSecErr) {
+  // mass min, mass max, xsec, xsecErr
+  const double rshape[4*40] = {
+    15 , 20 , 0.161196 , 0.00801778
+ ,   20 , 25 , 0.0652464 , 0.00301619
+ ,   25 , 30 , 0.0324762 , 0.00144218
+ ,   30 , 35 , 0.017822 , 0.000756543
+ ,   35 , 40 , 0.0104631 , 0.000416689
+ ,   40 , 45 , 0.00665895 , 0.0002168
+ ,   45 , 50 , 0.00453091 , 0.000139579
+ ,   50 , 55 , 0.00328228 , 0.000101962
+ ,   55 , 60 , 0.0024752 , 7.30918e-05
+ ,   60 , 64 , 0.00205569 , 5.516e-05
+ ,   64 , 68 , 0.00191615 , 4.98199e-05
+ ,   68 , 72 , 0.00198721 , 5.02729e-05
+ ,   72 , 76 , 0.00227068 , 5.61735e-05
+ ,   76 , 81 , 0.00335782 , 8.50132e-05
+ ,   81 , 86 , 0.00802862 , 0.000201357
+ ,   86 , 91 , 0.0760769 , 0.00167376
+ ,   91 , 96 , 0.0894752 , 0.00196919
+ ,   96 , 101 , 0.00782657 , 0.000219702
+ ,   101 , 106 , 0.00260345 , 7.33138e-05
+ ,   106 , 110 , 0.00136427 , 3.58883e-05
+ ,   110 , 115 , 0.000849739 , 2.2498e-05
+ ,   115 , 120 , 0.000555006 , 1.48094e-05
+ ,   120 , 126 , 0.000389536 , 1.01129e-05
+ ,   126 , 133 , 0.00026674 , 7.00161e-06
+ ,   133 , 141 , 0.000183322 , 4.9361e-06
+ ,   141 , 150 , 0.000127482 , 3.48192e-06
+ ,   150 , 160 , 9.00876e-05 , 2.14892e-06
+ ,   160 , 171 , 6.40219e-05 , 1.60055e-06
+ ,   171 , 185 , 4.38833e-05 , 1.15188e-06
+ ,   185 , 200 , 2.95683e-05 , 8.15678e-07
+ ,   200 , 220 , 1.96126e-05 , 5.96494e-07
+ ,   220 , 243 , 1.25999e-05 , 4.11382e-07
+ ,   243 , 273 , 7.43531e-06 , 2.66221e-07
+ ,   273 , 320 , 3.8182e-06 , 1.4935e-07
+ ,   320 , 380 , 1.71576e-06 , 7.59987e-08
+ ,   380 , 440 , 7.9912e-07 , 3.96834e-08
+ ,   440 , 510 , 4.13632e-07 , 2.24317e-08
+ ,   510 , 600 , 1.91377e-07 , 1.14459e-08
+ ,   600 , 1000 , 3.67528e-08 , 2.62081e-09
+ ,   1000 , 1500 , 2.41571e-09 , 2.5735e-10 };
+
+  for (int i=0; i<40; ++i) {
+    massBins[i]= rshape[i*4];
+  }
+  massBins[40]=rshape[39*4+1];
+
+  for (int i=0; i<40; ++i) {
+    normXSec[i]= rshape[i*4 + 2];
+    normXSecErr[i]= rshape[i*4 + 3];
+  }
+  return;
+}
+
+
+// -----------------------------------------------------------------
+
 
 void createThXSec1Dsummer2011() {
 
@@ -268,6 +339,7 @@ void createThXSec1Dsummer2011() {
   TVectorD XSecThErr   (nMassBinTh);
   TVectorD normXSecTh      (nMassBinTh);
   TVectorD normXSecThErr   (nMassBinTh);
+  double *dblArr=new double[nMassBinTh+1];
 
   Double_t mxl = 14.0;
   Double_t ZpeakXS=0.;
@@ -281,6 +353,8 @@ void createThXSec1Dsummer2011() {
     else if( iTh >= 340 && iTh < nMassBinTh)   {mxl += 5.0; }
     else if( iTh == nMassBinTh)                {mxl = 1500; }
     massBins[iTh]=mxl;
+    dblArr[iTh]=mxl;
+    //std::cout << "iTh=" << iTh << ", mxl=" << mxl << "\n";
     
     XSecTh[iTh]=arr_xsecTh[iTh];
     XSecThErr[iTh]=arr_xsecThErr[iTh];
@@ -293,15 +367,28 @@ void createThXSec1Dsummer2011() {
     
   }
   massBins[nMassBinTh]=1500;
+  dblArr[nMassBinTh]=1500;
 
   for (int iTh=0; iTh<nMassBinTh; ++iTh) {
     const double dm=massBins[iTh+1]-massBins[iTh];
     const double xs=XSecTh[iTh];
     const double xsErr=XSecThErr[iTh];
     normXSecTh[iTh]=xs*peak_bin_width/(peak_val_theory*dm);//divide to the Z peak
+    //// error calculation from muon group code
+    //normXSecThErr[iTh]=sqrt(pow(xsErr/(peak_val_theory),2)+pow(xs*10./(peak_val_theory*peak_val_theory),2));
     normXSecThErr[iTh]=sqrt(pow(xsErr/(peak_val_theory*dm),2)+pow(xs/(peak_val_theory*2*dm),2));
   }
 
+#ifdef MYTOOLS_HH
+  if (0) {
+    TH1F *hTh=new TH1F("hTh","hTh",nMassBinTh,dblArr);
+    for (int i=1; i<nMassBinTh; ++i) {
+      hTh->SetBinContent(i,XSecTh[i-1]);
+      hTh->SetBinError(i,XSecThErr[i-1]);
+    }
+    printHisto(hTh,1);
+  }
+#endif
 
   std::cout << "check: ZpeakXS=" << ZpeakXS << ", peak_val_theory=" << peak_val_theory << "\n";
 
@@ -342,11 +429,14 @@ void createThXSec1Dsummer2011() {
   }
 #endif
 
+  TVectorD massBins_nnlo(41);
+  TVectorD normXSecTh_nnlo(40);
+  TVectorD normXSecTh_nnloErr(40);
+  fillStoyanRShape1D(massBins_nnlo,normXSecTh_nnlo, normXSecTh_nnloErr);
 
-
-  TString outputDir1(TString("../root_files/"));
+  TString outputDir1(TString("../root_files/theory/"));
   gSystem->mkdir(outputDir1,kTRUE);
-  TString xSecResultFileName1(outputDir1+TString("xSecTh2011_1D.root"));
+  TString xSecResultFileName1(outputDir1+TString("xSectTheory1D_MSTW2008.root"));
   std::cout << "xSecResultFileName1=" << xSecResultFileName1 << "\n";
   TFile fb(xSecResultFileName1,"recreate");
   massBins.Write("massBinsTh");
@@ -368,6 +458,10 @@ void createThXSec1Dsummer2011() {
   normXSecTh_spec2011_1D.Write("xSecThNorm_spec2011");
   normXSecTh_spec2011_1D_Err.Write("xSecThNormErr_spec2011");
 #endif
+  massBins_nnlo.Write("massBinsTh_NNLO");
+  normXSecTh_nnlo.Write("xSecThNorm_NNLO");
+  normXSecTh_nnloErr.Write("xSecThNormErr_NNLO");
+
   fb.Close();
 }
 
