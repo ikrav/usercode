@@ -59,6 +59,34 @@ int csInDET(DYTools::TCrossSectionKind_t kind) {
 // -------------------------------------------------------------
 
 inline
+int csPreFsr(DYTools::TCrossSectionKind_t kind) {
+  int yes=-1;
+  switch(kind) {
+  case DYTools::_cs_None:
+    yes=-1;
+    break;
+  case DYTools::_cs_preFsr: 
+  case DYTools::_cs_preFsrNorm:
+  case DYTools::_cs_preFsrDet: 
+  case DYTools::_cs_preFsrDetNorm:
+    yes=1;
+    break;
+  case DYTools::_cs_postFsr:
+  case DYTools::_cs_postFsrNorm:
+  case DYTools::_cs_postFsrDet:
+  case DYTools::_cs_postFsrDetNorm:
+    yes=0;
+    break;
+  default:
+    std::cout << "csPreFsr cannot handle this kind=<" << CrossSectionKindName(kind) << ">\n";
+    assert(0);
+  }
+  return yes;
+}
+
+// -------------------------------------------------------------
+
+inline
 TH1F* readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, int useFEWZ, int extraFlag){
 
   v=0; vErr=0;
