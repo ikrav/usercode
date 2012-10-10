@@ -25,6 +25,7 @@ useFEWZarr="true false"
 #fineGridArr="0 1 2"
 #fineGridArr="1"
 fineGridArr="0 1 2 3"
+fineGridArr="0"
 for fineGrid in ${fineGridArr} ; do
   for useFEWZ in ${useFEWZarr} ; do
       echo "useFEWZ=${useFEWZ}, fineGrid=${fineGrid}"
