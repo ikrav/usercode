@@ -261,15 +261,16 @@ TH1F *extractMassDependence(const TString &name, const TString &title,
       iYBin=DYTools::findAbsYBin(iM,yc);
     }
     double val=m[iM][iYBin];
+    double factor=1.;
     if (iM==DYTools::nMassBins-1) {
-      val *= DYTools::nYBins[iM]/double(DYTools::nYBins[0]);
+     factor *= DYTools::nYBins[iM]/double(DYTools::nYBins[0]);
     }
     if (perRapidityBinWidth) {
-      val *= (DYTools::yRangeMax-DYTools::yRangeMin)/double(DYTools::nYBins[iM]);
+      factor *= (DYTools::yRangeMax-DYTools::yRangeMin)/double(DYTools::nYBins[iM]);
     }
-    if (perMassBinWidth) val/=(DYTools::massBinLimits[iM+1]-DYTools::massBinLimits[iM]);
-    h->SetBinContent(iM+1, val);
-    h->SetBinError(iM+1, fabs(mErr[iM][iYBin]));
+    if (perMassBinWidth) factor/=(DYTools::massBinLimits[iM+1]-DYTools::massBinLimits[iM]);
+    h->SetBinContent(iM+1, val*factor);
+    h->SetBinError(iM+1, fabs(mErr[iM][iYBin])*factor);
   }
   return h;
 }
@@ -318,12 +319,13 @@ TH1F *extractMassDependenceSpec(const TString &name, const TString &title,
   h->Sumw2();
   for (int iM=0; iM<m.GetNrows(); ++iM) {
     double val=m[iM][iYBin];
+    double factor=1.;
     if (perRapidityBinWidth) {
-      val *= (DYTools::yRangeMax-DYTools::yRangeMin)/double(yBinCount[iM]);
+      factor *= (DYTools::yRangeMax-DYTools::yRangeMin)/double(yBinCount[iM]);
     }
-    if (perMassBinWidth) val/=(massGrid[iM+1]-massGrid[iM]);
-    h->SetBinContent(iM+1, val);
-    h->SetBinError(iM+1, fabs(mErr[iM][iYBin]));
+    if (perMassBinWidth) factor/=(massGrid[iM+1]-massGrid[iM]);
+    h->SetBinContent(iM+1, val*factor);
+    h->SetBinError(iM+1, fabs(mErr[iM][iYBin])*factor);
   }
 
   return h;
