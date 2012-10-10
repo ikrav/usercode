@@ -15,6 +15,7 @@ filename_data="../config_files/data.conf"
 filename_mc="../config_files/fall11mc.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffOld"
+fsrUnfSet="_fsrUnfGood"
 
 #tnpMCFile="../config_files/sf_mc_eta2.conf"
 #tnpDataFile="../config_files/sf_data_eta2.conf"
@@ -55,6 +56,7 @@ do_plotFSRCorrectionsSansAcc=0
 do_setupTheory=0
 do_crossSection=0
 do_crossSectionFsr=0
+do_plotXSec=0
 
 #          check EventScaleFactors/*sh script settings! 
 #          long calculation!
@@ -81,6 +83,7 @@ expectXSecFile="../root_files/xSec_results_${anTag}_${triggerSet}.root"
 expectXSecThFile="../root_files/xSecTh_results_${anTag}_${triggerSet}.root"
 expectEScaleSystFile="../root_files/systematics/${crossSectionTag}/escale_systematics${anTag}_tmp.root"
 finalEScaleSystFile="../root_files/systematics/${crossSectionTag}/escale_systematics${anTag}.root"
+expectXSecPlotFile=
 
 # export some variables
 
@@ -135,6 +138,7 @@ if [ ${do_post_selection_steps} -eq 1 ] ; then
     do_crossSection=0
     do_crossSectionFsr=1
 #   do_escaleSystematics=0   # very long calculation
+    do_plotXSec=1
 fi
 
 
@@ -552,6 +556,31 @@ else
     statusCrossSectionFsr=skipped
 fi
 
+#plotXSec
+if [ ${do_plotXSec} -eq 1 ] && [ ${noError} -eq 1 ] ; then
+statusPlotXSec=OK
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+echo "WILL DO: plotXsec(\"${filename_cs}\",\"default\",\"${fsrUnfSet}\")"
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+cd ../CrossSection
+rm -f plotXsec.so ${expectXSecPlotFile}
+echo
+checkFile plotXsec.C
+root -q -b -l ${LXPLUS_CORRECTION} plotXsec.C+\(\"$filename_cs\",\"default\",\"${fsrUnfSet}\"\)  \
+  \
+ | tee ${logDir}/out${timeStamp}-16-plotXsec${anTag}.out
+get_status ${expectXSecPlotFile}
+statusPlotXSec="\"cannot determine\""  #$RUN_STATUS
+cd ../FullChain
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+echo "DONE: plotXsec(\"${filename_cs}\",\"default\",\"${fsrUnfSet}\")"
+echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+else
+    statusPlotXSec=skipped
+fi
+
+
+
 # ------------------------------ final summary
 
 echo "Full chain summary:"
@@ -571,7 +600,7 @@ echo "      EventScaleFactors:    " $statusEventScaleFactors
 echo "      EScaleSystematics:    " $statusEScaleSyst
 echo "           CrossSection:    " $statusCrossSection
 echo "        CrossSectionFsr:    " $statusCrossSectionFsr
-
+echo "               PlotXSec:    " $statusPlotXSec
 
 if [ ${noError} -eq 0 ] ; then 
   echo
