@@ -258,6 +258,7 @@ DYTools::TDataKind_t DetermineDataKind(const TString &str) {
 }
 
 // ------------------------------------------------------------------
+// ------------------------------------------------------------------
 
 inline
 TString CrossSectionKindName(DYTools::TCrossSectionKind_t kind) {
@@ -275,6 +276,51 @@ TString CrossSectionKindName(DYTools::TCrossSectionKind_t kind) {
   case _cs_postFsrDetNorm: name="postFsrDetNorm"; break;
   default:
     std::cout << "CrossSectionKindName: cannot determine the name\n";
+    assert(0);
+  }
+  return name;
+}
+
+// ------------------------------------------------------------------
+
+inline
+DYTools::TCrossSectionKind_t DetermineCrossSectionKind(const TString &str) {
+  using namespace DYTools;
+  DYTools::TCrossSectionKind_t kind = _cs_None;
+  if (str.Contains("preFsrNorm")) kind=_cs_preFsrNorm;
+  else if (str.Contains("preFsrDetNorm")) kind=_cs_preFsrDetNorm;
+  else if (str.Contains("preFsrDet")) kind=_cs_preFsrDet;
+  else if (str.Contains("preFsr")) kind=_cs_preFsr;
+  else if (str.Contains("postFsrNorm")) kind=_cs_postFsrNorm;
+  else if (str.Contains("postFsrDetNorm")) kind=_cs_postFsrDetNorm;
+  else if (str.Contains("postFsrDet")) kind=_cs_postFsrDet;
+  else if (str.Contains("postFsr")) kind=_cs_postFsr;
+  else if (str.Contains("none") || str.Contains("None")) kind=_cs_None;
+  else {
+    std::cout << "DetermineCrossSectionKind: cannod identify <" << str << ">\n";
+    assert(0);
+  }
+  return kind;
+}
+
+// ------------------------------------------------------------------
+
+inline
+TString CrossSectionKindLongName(DYTools::TCrossSectionKind_t kind) {
+  using namespace DYTools;
+  TString name;
+  switch(kind) {
+  case _cs_None: name="none"; break;
+  case _cs_preFsr: name="counts in full space"; break;
+  case _cs_preFsrNorm: name="normalized cross section"; break;
+  case _cs_preFsrDet: name="counts in DET space"; break;
+  case _cs_preFsrDetNorm: name="normalized cross section (DET)"; break;
+  case _cs_postFsr: name="postFsr counts in full space"; break;
+  case _cs_postFsrNorm: name="normalized postFsr cross section"; break;
+  case _cs_postFsrDet: name="postFsr counts in DET space"; break;
+  case _cs_postFsrDetNorm: name="normalized postFsr cross section (DET)"; break;
+  default:
+    std::cout << "CrossSectionKindLongName: cannot determine the name\n";
     assert(0);
   }
   return name;
