@@ -264,6 +264,43 @@ public:
 // --------------------------------------------------------
 // --------------------------------------------------------
 
+class XSecInputFileMgr_t {
+protected:
+  double FTotLumi;
+  TString FName;
+  TString FYieldsTag, FConstTag, FEvtEffScaleTag;
+  TString FTrigSet;
+public:
+  XSecInputFileMgr_t() : FTotLumi(0.), FName(),
+			 FYieldsTag(), FConstTag(), 
+			 FEvtEffScaleTag(),
+			 FTrigSet() {}
+  void Clear();
+
+  double totLumi() const { return FTotLumi; }
+  const TString& name() const { return FName; }
+  const TString& yieldsTag() const { return FYieldsTag; }
+  const TString& constTag() const { return FConstTag; }
+  const TString& evtEffScaleTag() const { return FEvtEffScaleTag; }
+  const TString& triggerSetName() const { return FTrigSet; }
+  
+  int Load(const TString &fname);
+
+  friend std::ostream& operator<<(std::ostream& out, const XSecInputFileMgr_t &mgr) {
+    out << "XSecInputFileMgr:\n";
+    out << "  -- name=<" << mgr.name() << ">\n";
+    out << "  -- yieldsTag=<" << mgr.yieldsTag() << ">\n";
+    out << "  -- constTag=<" << mgr.constTag() << ">\n";
+    out << "  -- evtEffScaleTag=<" << mgr.evtEffScaleTag() << ">\n";
+    out << "  -- triggerSet=<" << mgr.triggerSetName() << ">";
+    out << std::endl;
+    return out;
+  }
+};
+
+// --------------------------------------------------------
+// --------------------------------------------------------
+
 class EScaleTagFileMgr_t {
 protected:
   std::vector<TString> FEScaleTags;

@@ -282,6 +282,65 @@ int MCInputFileMgr_t::Load(const TString& inputFileName) {
 // -----------------------------------------------------------
 // -----------------------------------------------------------
 
+void XSecInputFileMgr_t::Clear() {
+  FTotLumi=0;
+  FName.Clear();
+  FYieldsTag.Clear(); FConstTag.Clear(); FEvtEffScaleTag.Clear();
+  FTrigSet.Clear();
+  return;
+}
+
+// -----------------------------------------------------------
+
+int XSecInputFileMgr_t::Load(const TString& inputFileName) {
+  Clear();
+  std::ifstream ifs;
+  ifs.open(inputFileName.Data());
+  if (!ifs.is_open()) {
+    std::cout << "XSecInputFileMgr: failed to open file <" << inputFileName << ">\n";
+    return 0;
+  }
+  FName=inputFileName;
+  std::string line;
+  Int_t state=0;
+  while(getline(ifs,line)) {
+    if(line[0]=='#') continue;
+    if(state==0){
+      stringstream ss1(line); ss1 >> FTotLumi;
+      state++;
+    }else if(state==1){
+      FYieldsTag = TString(line);
+      state++;
+    }else if(state==2){
+      FConstTag = TString(line);
+      state++;
+    } 
+    else if (state==3) {
+      FEvtEffScaleTag = TString(line);
+      if (PosOk(line,"hltEff")) {
+	std::cout << "input file probably does not contain a line for tagDir_EventEfficiencyScaleFactorConstants\n";
+	assert(0);
+      }
+      state++;
+    }
+    else if (state==4) {
+      FTrigSet = TString(line);
+      break;
+    }
+  }
+  ifs.close();
+  if (!DYTools::checkTotalLumi(FTotLumi)) {
+    std::cout << "file <" << inputFileName << "> has mismatching total lumi value\n";
+    return 0;
+  }
+
+  std::cout << "Loaded:\n" << *this << "\n";
+  return FTrigSet.Length();
+}
+
+// -----------------------------------------------------------
+// -----------------------------------------------------------
+
 int EScaleTagFileMgr_t::Load(const TString& inputFileName) {
   std::ifstream ifs;
   ifs.open(inputFileName.Data());
