@@ -232,7 +232,7 @@ DYTools::TEtaBinSet_t DetermineEtaBinSet(const TString& str) {
   else if (str.Contains("ETABINS4alt") || str.Contains("EtaBins4alt")) kind=ETABINS4alt;
   else if (str.Contains("ETABINS4testNegs") || str.Contains("EtaBins4testNegs")) kind=ETABINS4testNegs;
   else if (str.Contains("ETABINS4test") || str.Contains("EtaBins4test")) kind=ETABINS4test;
-  else if (str.Contains("ETABINS8alt") || str.Contains("EtaBins8altNegs")) kind=ETABINS8altNegs;
+  else if (str.Contains("ETABINS8altNegs") || str.Contains("EtaBins8altNegs")) kind=ETABINS8altNegs;
   else if (str.Contains("ETABINS8alt") || str.Contains("EtaBins8alt")) kind=ETABINS8alt;
   else {
     std::cout << "DetermineEtaBinSet failed at <" << str  << ">\n";
