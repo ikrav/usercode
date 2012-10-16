@@ -415,7 +415,7 @@ void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString
   // Do not draw separately dibosons, but draw the merged histogram if needed
   if(mergeDibosons)
     plotMass.AddToStack(hMassDibosons, labelDibosons, colorDibosons);
-  for(UInt_t isam=1; isam<samplev.size(); isam++){
+  for(UInt_t isam=(hasData) ? 1:0; isam<samplev.size(); isam++){
     if( !(mergeDibosons && (snamev[isam]=="ww" || snamev[isam]=="wz" || snamev[isam]=="zz")))
       plotMass.AddToStack(hMassv[isam],samplev[isam]->label,samplev[isam]->color);
   }
@@ -479,7 +479,8 @@ void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vect
     }
   }
   // Merge dibosons
-  TH1F *hFlattenedDibosons = (TH1F*)hFlattened[1]->Clone("hFlattenedDibosons");
+  int clone_idx=(hasData) ? 1:0;
+  TH1F *hFlattenedDibosons = (TH1F*)hFlattened[clone_idx]->Clone("hFlattenedDibosons");
   hFlattenedDibosons->Reset();
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     if( snamev[isam] == "ww" || snamev[isam] == "wz" || snamev[isam] == "zz"){
@@ -494,7 +495,7 @@ void DrawFlattened(vector<TMatrixD*> yields, vector<TMatrixD*> yieldsSumw2, vect
   // Do not draw separately dibosons, but draw the merged histogram if needed
   if(mergeDibosons)
     plotFlattened.AddToStack(hFlattenedDibosons, labelDibosons, colorDibosons);
-  for(UInt_t isam=1; isam<samplev.size(); isam++){
+  for(UInt_t isam=clone_idx; isam<samplev.size(); isam++){
     if( !(mergeDibosons && (snamev[isam]=="ww" || snamev[isam]=="wz" || snamev[isam]=="zz")))
       plotFlattened.AddToStack(hFlattened[isam],samplev[isam]->label,samplev[isam]->color);
   }
