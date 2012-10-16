@@ -66,7 +66,8 @@ void SomeHistAttributes (TH1F* hist, TString samplename);
 
 void prepareYields(const TString conf  = "data_plot.conf",
 		   DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL,
-		   const TString plotsDirExtraTag="")
+		   const TString plotsDirExtraTag="",
+		   int performPUReweight=1)
 {  
   gBenchmark->Start("prepareYields");
 
@@ -93,6 +94,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
 
   vector<TString>  snamev;    // sample name (for output file)
   vector<CSample*> samplev;   // data/MC samples
+  Bool_t hasData=false;
     
   //
   // parse .conf file
@@ -142,6 +144,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
       samplev.back()->fnamev.push_back(fname);
       samplev.back()->xsecv.push_back(xsec);
       samplev.back()->jsonv.push_back(json);
+      hasData=true;
     
     } else if(state==2) {  // define MC samples
       string fname;
@@ -177,8 +180,6 @@ void prepareYields(const TString conf  = "data_plot.conf",
   else CPlot::sOutDir = TString("plots") + DYTools::analysisTag;
   CPlot::sOutDir += plotsDirExtraTag;
 
-  Bool_t hasData = (samplev[0]->fnamev.size()>0);
-    
   //
   // Canvas dimensions
   //
@@ -242,7 +243,9 @@ void prepareYields(const TString conf  = "data_plot.conf",
   TH1F *hPVData = 0;
   if (puReweight_new_code) {
     assert(puWeight.setFile(fnamePV));
-    assert(puWeight.setReference("hNGoodPV_data"));
+    if (hasData && performPUReweight) {
+      assert(puWeight.setReference("hNGoodPV_data"));
+    }
   }
   else {
     pvfile=new TFile(fnamePV);
@@ -274,7 +277,6 @@ void prepareYields(const TString conf  = "data_plot.conf",
   TTree *eventTree=0; 
   
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
-    if((isam==0) && !hasData) continue;
 
     TString fname = outputDir + TString("/ntuples/") + snamev[isam] + DYTools::analysisTag_USER + TString("_select.root");
     if ((isam==0) && 
@@ -290,9 +292,11 @@ void prepareYields(const TString conf  = "data_plot.conf",
     // Prepare weights for pile-up reweighting for MC
     TH1F *puWeights=NULL;
     if (puReweight_new_code) {
-      assert(puWeight.setActiveSample(TString("hNGoodPV_")+snamev[isam]));
-      //puWeight.printActiveDistr_and_Weights(std::cout);
-      //puWeight.printWeights(std::cout);
+      if (performPUReweight) {
+	assert(puWeight.setActiveSample(TString("hNGoodPV_")+snamev[isam]));
+	//puWeight.printActiveDistr_and_Weights(std::cout);
+	//puWeight.printWeights(std::cout);
+      }
     }
     else {
       TH1F *hPVThis = (TH1F*) pvfile->Get(TString("hNGoodPV_")+snamev[isam]); assert(hPVThis);
@@ -320,10 +324,12 @@ void prepareYields(const TString conf  = "data_plot.conf",
       Double_t weight = data->weight;
       
       // Any extra weight factors:
-      double weightPU = (puReweight_new_code) ?
-	puWeight.getWeight( data->nPV ) :
-	puWeights->GetBinContent( puWeights->FindBin( data->nPV ));
-      weight *= weightPU;
+      if (performPUReweight) {
+	double weightPU=(puReweight_new_code) ?
+	  puWeight.getWeight( data->nPV ) :
+	  puWeights->GetBinContent( puWeights->FindBin( data->nPV ));
+	weight *= weightPU;
+      }
       
       // If This is MC, add extra smearing to the mass
       // We apply extra smearing to all MC samples: it is may be
@@ -370,8 +376,9 @@ void prepareYields(const TString conf  = "data_plot.conf",
   }
 
   // Merge diboson histograms if needed
-  TH1F *hMassBinsDibosons = (TH1F*)hMassBinsv[1]->Clone("hMassBinsDibosons");
-  TH1F *hMassDibosons = (TH1F*)hMassv[1]->Clone("hMassDibosons");
+  int clone_idx=(hasData) ? 1:0;
+  TH1F *hMassBinsDibosons = (TH1F*)hMassBinsv[clone_idx]->Clone("hMassBinsDibosons");
+  TH1F *hMassDibosons = (TH1F*)hMassv[clone_idx]->Clone("hMassDibosons");
   hMassBinsDibosons->Reset();
   hMassDibosons->Reset();
   Int_t colorDibosons = 1;
@@ -399,7 +406,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
   // is data and the last is signal MC.  
   TH1F *totalMCMass = (TH1F*)hMassv[0]->Clone("totalMCMass");
   totalMCMass->Reset();
-  for(UInt_t isam=1; isam<samplev.size(); isam++) {
+  for(UInt_t isam=(hasData)?1:0; isam<samplev.size(); isam++) {
     totalMCMass->Add(hMassv[isam]);
   }
   double massNormMin = 60.0;
