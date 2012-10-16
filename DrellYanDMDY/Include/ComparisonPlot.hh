@@ -252,10 +252,14 @@ public:
     //padMain->Draw();
     //padRatio->Draw();
     
+    std::vector<TString> savedTitles;
+    savedTitles.reserve(fItems.size());
     for (unsigned int i=0; i<fItems.size(); ++i) {
       if (fItems[i].hist1D!=0) {
 	fHRatioIndices.push_back(i);
 	fItems[i].hist1D->GetXaxis()->SetLabelOffset(0.05);
+	savedTitles.push_back(fItems[i].hist1D->GetXaxis()->GetTitle());
+	fItems[i].hist1D->GetXaxis()->SetTitle("");
       }
     }
     if ( fHRatioIndices.size() ==0 ) return;
