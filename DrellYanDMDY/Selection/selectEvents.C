@@ -128,6 +128,7 @@ void selectEvents(const TString conf,
 
   vector<TString>  snamev;    // sample name (for output file)  
   vector<CSample*> samplev;   // data/MC samples
+  Bool_t hasData=false;
     
   //
   // parse .conf file
@@ -189,6 +190,7 @@ void selectEvents(const TString conf,
       samplev.back()->fnamev.push_back(fname);
       samplev.back()->xsecv.push_back(xsec);
       samplev.back()->jsonv.push_back(json);
+      hasData=true;
     
     } else if(state==2) {  // define MC samples
       string fname;
@@ -231,8 +233,6 @@ void selectEvents(const TString conf,
 
   const TString ntupDir = outputDir + TString("/ntuples"); gSystem->mkdir(ntupDir,kTRUE);
   
-  Bool_t hasData = (samplev[0]->fnamev.size()>0);
-
   //const Double_t kGAP_LOW  = 1.4442;
   //const Double_t kGAP_HIGH = 1.566;
     
@@ -357,7 +357,6 @@ void selectEvents(const TString conf,
   // loop over samples
   //
   for(UInt_t isam=0; isam<samplev.size(); isam++) {        
-    if(isam==0 && !hasData) continue;
 
     //
     // Prepare ntuple file name
@@ -434,10 +433,12 @@ void selectEvents(const TString conf,
       Bool_t hasJSON = kFALSE;
       // mithep::RunLumiRangeMap rlrm;
       JsonParser jsonParser;
-      if((samp->jsonv.size()>0) && (samp->jsonv[ifile].CompareTo("NONE")!=0)) { 
+      if((samp->jsonv.size()>0) && 
+	 samp->jsonv[ifile].Length() &&
+	 (samp->jsonv[ifile].CompareTo("NONE")!=0)) { 
         hasJSON = kTRUE;
 	// rlrm.AddJSONFile(samp->jsonv[ifile].Data());
-	std::cout << "JSON file " << samp->jsonv[ifile] << "\n";
+	std::cout << "JSON file <" << samp->jsonv[ifile] << ">\n";
         jsonParser.Initialize(samp->jsonv[ifile].Data()); 
       }
       
@@ -567,7 +568,7 @@ void selectEvents(const TString conf,
         if(hasJSON && !jsonParser.HasRunLumi(info->runNum, info->lumiSec)) continue;  // not certified run? Skip to next event...
 
 	// Configure the object for trigger matching	
-	bool isData = (isam == 0 && hasData);
+	bool isData = ((isam == 0) && hasData);
 	//TriggerConstantSet constantsSet = Full2011DatasetTriggers; // Enum from TriggerSelection.hh
 	//TriggerSelection requiredTriggers(constantsSet, isData, info->runNum);
 	requiredTriggers.actOnData(isData);
