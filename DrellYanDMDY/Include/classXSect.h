@@ -101,6 +101,7 @@ TH1F* readTh(TVectorD &v, TVectorD &vErr, const TriggerSelection &triggers, DYTo
 			       //triggers.triggerConditionsName() +
 			       TString(".root"));
   std::cout << "readTh: Load theory predictions for <" << CrossSectionKindName(theKind) << ">, extraFlag=" << extraFlag << "\n";
+  if (theKind==DYTools::_cs_None) { std::cout << ".. requested _cs_None\n"; return NULL; }
   TString extra;
   int fineGrid=0;
   switch(extraFlag) {
@@ -237,6 +238,7 @@ inline
 TH1F* readTheory2D(TVectorD &v, TVectorD &vErr, DYTools::TCrossSectionKind_t theKind, int iMassBin, TString xSecThResultFileName, const char *histName) {
   std::cout << "Load 2D theory predictions\n";
   std::cout << "xSecThResultFileName=" << xSecThResultFileName << std::endl;
+  if (theKind==DYTools::_cs_None) { std::cout << ".. requested _cs_None\n"; return NULL; }
 
   TFile fileXsecTh   (xSecThResultFileName);
   TMatrixD *xSecTh=NULL, *xSecThErr=NULL;
@@ -315,6 +317,7 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
 
   //printf("Load data yields\n"); fflush(stdout);
   std::cout << "Load data yields for iMassBin=" << iMassBin << ", extraFlag=" << extraFlag << std::endl;
+  if (theKind==DYTools::_cs_None) { std::cout << ".. requested _cs_None\n"; return NULL; }
   if ((iMassBin>=0) && (DYTools::study2D==0)) {
     std::cout << "readData. iMassBin should be -1, if study2D=0\n";
     assert(0);
@@ -334,6 +337,8 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
   switch(theKind) {
   case DYTools::_cs_preFsrDetNorm:
   case DYTools::_cs_preFsrNorm:
+  case DYTools::_cs_postFsrDetNorm:
+  case DYTools::_cs_postFsrNorm:
     xSecName="normXSec"; xSecErrName="normXSecErr"; xSecSystErrName="normXSecErrSyst";
     if (extraFlagData_oldStyle) {
       xSecName="normXSecByBin"; xSecErrName="normXSecErrByBin";
@@ -342,6 +347,8 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
     break;
   case DYTools::_cs_preFsrDet:
   case DYTools::_cs_preFsr:
+  case DYTools::_cs_postFsrDet:
+  case DYTools::_cs_postFsr:
     xSecName="XSec"; xSecErrName="XSecErr"; xSecSystErrName="XSecSystErr";
     break;
   default:
@@ -404,6 +411,9 @@ TH1F* readTh1D_MSTW2008(DYTools::TCrossSectionKind_t theKind, const char *histNa
   const char *fnameDefault="../root_files/theory/xSectTheory1D_MSTW2008.root";
   TString objName,objErrName;
   switch(theKind) {
+  case DYTools::_cs_None: 
+    if (theKind==DYTools::_cs_None) { std::cout << ".. requested _cs_None\n"; return NULL; }
+    break;
   case DYTools::_cs_preFsrNorm: 
     objName="xSecThNorm"; objErrName="xSecThNormErr";
     switch (rebin) {
