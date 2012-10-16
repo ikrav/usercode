@@ -29,7 +29,8 @@ const int wzzzSystError_is_100percent=1;
 
 TString subtractBackground(const TString conf,
 		   DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL,
-			   const TString plotsDirExtraTag=""){
+			   const TString plotsDirExtraTag="",
+			   int performPUReweight=1){
 
 
   std::cout << "\n\nRun mode: " << SystematicsStudyName(runMode) << "\n";
@@ -51,21 +52,40 @@ TString subtractBackground(const TString conf,
   TString inputDir;
   Double_t lumi;
   Bool_t doWeight;
+  Bool_t hasData=false;
+
   ifstream ifs;
   ifs.open(conf.Data());
   assert(ifs.is_open());
   string line;
+  int state=0;
   while(getline(ifs,line)) {
     if(line[0]=='#') continue;
-    stringstream ss1(line); ss1 >> lumi;
-    getline(ifs,line);
-    stringstream ss2(line); ss2 >> doWeight;
-    getline(ifs,line);
-    inputDir = TString(line);
-    break;
+    if(line[0]=='%') { 
+      state++; 
+      continue; 
+    }
+    if(state==0) {
+      stringstream ss1(line); ss1 >> lumi;
+      getline(ifs,line);
+      stringstream ss2(line); ss2 >> doWeight;
+      getline(ifs,line);
+      inputDir = TString(line);
+      TString escaleTag_loc,format_loc;
+      getline(ifs,line);
+      stringstream ss3(line); ss3 >> escaleTag_loc;
+      getline(ifs,line);
+      format_loc = TString(line);
+      state++;
+    }
+    else if (state==1) {
+      hasData=true;
+    }
+    else break;
   }
   ifs.close();
-  inputDir.ReplaceAll("selected_events","yields");
+  if (performPUReweight) inputDir.ReplaceAll("selected_events","yields");
+  else inputDir.ReplaceAll("selected_events","yields_noPU");
 
   // sOutDir is a static data member in the CPlot class.
   // There is a strange crash of the whole ROOT session well after
@@ -81,6 +101,7 @@ TString subtractBackground(const TString conf,
     CPlot::sOutDir = "plots_escale/";
   }
   else CPlot::sOutDir = TString("plots") + DYTools::analysisTag;
+  if (!performPUReweight) CPlot::sOutDir.Append("_noPU");
   CPlot::sOutDir += plotsDirExtraTag;
 
 
@@ -146,6 +167,7 @@ TString subtractBackground(const TString conf,
 
 
   TMatrixD observedYields(DYTools::nMassBins,nYBinsMax);
+  TMatrixD observedYieldsErr(DYTools::nMassBins,nYBinsMax);
   TMatrixD observedYieldsErrorSquared(DYTools::nMassBins,nYBinsMax);
   TMatrixD signalYields(DYTools::nMassBins,nYBinsMax);
   TMatrixD signalYieldsError(DYTools::nMassBins,nYBinsMax);
@@ -341,6 +363,7 @@ TString subtractBackground(const TString conf,
     if (sn[k]=="data") {
       observedYields=*yields[k];
       observedYieldsErrorSquared=*yieldsSumw2[k];
+      observedYieldsErr=0;
       for (int i=0; i<DYTools::nMassBins; i++)
 	for (int j=0; j<DYTools::nYBins[i]; j++) {
 	  signalYields(i,j) = observedYields(i,j) - totalBackground(i,j);
@@ -348,6 +371,7 @@ TString subtractBackground(const TString conf,
 	    sqrt( observedYieldsErrorSquared(i,j) + 
 		  totalBackgroundError(i,j) * totalBackgroundError(i,j) );
 	  signalYieldsErrorSyst(i,j) = totalBackgroundErrorSyst(i,j);
+	  observedYieldsErr(i,j) = sqrt(observedYieldsErrorSquared(i,j));
 	}
     }
   }
@@ -363,10 +387,17 @@ TString subtractBackground(const TString conf,
   // create weight factors to make MC prediction signal-like
   //
   TMatrixD zeePredictedYield(DYTools::nMassBins,nYBinsMax);
+  TMatrixD zeePredictedYieldErr(DYTools::nMassBins,nYBinsMax);
   int zeeFound=0;
   for (int i=0; i<NSamples; ++i) {
     if (sn[i] == "zee") {
       zeePredictedYield= *yields[i];
+      zeePredictedYieldErr=0;
+      for (int iM=0; iM<DYTools::nMassBins; ++iM) {
+	for (int iY=0; iY<DYTools::nYBins[iM]; ++iY) {
+	  zeePredictedYieldErr[iM][iY] = sqrt( (*yieldsSumw2[i])[iM][iY] );
+	}
+      }
       zeeFound=1;
       break;
     }
@@ -419,6 +450,10 @@ TString subtractBackground(const TString conf,
   signalYieldsError    .Write("YieldsSignalErr");   // not squared
   signalYieldsErrorSyst.Write("YieldsSignalSystErr"); // not squared
   zeeMCShapeReweight   .Write("ZeeMCShapeReweight");
+  //zeePredictedYield. Write("mcYieldsSignal");
+  //zeePredictedYieldErr.Write("mcYieldsSignalErr");  // not squared
+  //observedYields.Write("observedYields");
+  //observedYieldsErr.Write("observedYieldsErr"); // not squared
   unfolding::writeBinningArrays(fileOut);
   fileOut.Close();
 
@@ -494,11 +529,7 @@ TString subtractBackground(const TString conf,
   }
 
 //Latex printout
-   TMatrixD observedYieldsErr(DYTools::nMassBins,nYBinsMax);
-   for (int i=0; i<DYTools::nMassBins; i++)
-     for (int j=0; j<DYTools::nYBins[i]; j++)
-       observedYieldsErr(i,j)=sqrt(observedYieldsErrorSquared(i,j));
-   if (DYTools::study2D==1)
+  if (DYTools::study2D==1)
      latexPrintoutBackgroundRates2D(observedYields, observedYieldsErr, 
                                   totalBackground, totalBackgroundError, 
                                   totalBackgroundErrorSyst, bkgRatesUsual, 
