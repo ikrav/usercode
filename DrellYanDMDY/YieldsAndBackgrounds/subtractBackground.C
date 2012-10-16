@@ -304,7 +304,7 @@ TString subtractBackground(const TString conf,
 
     // Calculate the total background
     for (int i=0; i<DYTools::nMassBins; i++)
-      for (int j=0; j<DYTools::nYBins[i]; j++)
+      for (int j=0; j<DYTools::nYBins[i]; j++) 
         {
            totalBackground(i,j)=true2eBackground(i,j) + wzzz(i,j) + fakeEleBackground(i,j);
 	   if (correct_error_code) {
@@ -337,22 +337,20 @@ TString subtractBackground(const TString conf,
   // Loop over bins and perform background subtraction
   printf("Subtract background from observed yields\n");
 
-  for (int k=0; k<NSamples; k++)
-    {
-      if (sn[k]=="data")
-         {
-            observedYields=*yields[k];
-            observedYieldsErrorSquared=*yieldsSumw2[k];
-              for (int i=0; i<DYTools::nMassBins; i++)
-                for (int j=0; j<DYTools::nYBins[i]; j++)
-                  {
-                       signalYields(i,j) = observedYields(i,j) - totalBackground(i,j);
-                       signalYieldsError(i,j) = sqrt( observedYieldsErrorSquared(i,j) + 
-				 totalBackgroundError(i,j) * totalBackgroundError(i,j) );
-                       signalYieldsErrorSyst(i,j) = totalBackgroundErrorSyst(i,j);
-                  }
-          }
+  for (int k=0; k<NSamples; k++) {
+    if (sn[k]=="data") {
+      observedYields=*yields[k];
+      observedYieldsErrorSquared=*yieldsSumw2[k];
+      for (int i=0; i<DYTools::nMassBins; i++)
+	for (int j=0; j<DYTools::nYBins[i]; j++) {
+	  signalYields(i,j) = observedYields(i,j) - totalBackground(i,j);
+	  signalYieldsError(i,j) = 
+	    sqrt( observedYieldsErrorSquared(i,j) + 
+		  totalBackgroundError(i,j) * totalBackgroundError(i,j) );
+	  signalYieldsErrorSyst(i,j) = totalBackgroundErrorSyst(i,j);
+	}
     }
+  }
 
   TMatrixD bkgRatesUsual(DYTools::nMassBins,nYBinsMax);
   for (int i=0; i<DYTools::nMassBins; i++)
