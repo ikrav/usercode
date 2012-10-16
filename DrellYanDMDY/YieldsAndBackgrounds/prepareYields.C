@@ -178,6 +178,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
     CPlot::sOutDir = "plots_escale/";
   }
   else CPlot::sOutDir = TString("plots") + DYTools::analysisTag;
+  if (!performPUReweight) CPlot::sOutDir.Append("_noPU");
   CPlot::sOutDir += plotsDirExtraTag;
 
   //
@@ -443,7 +444,8 @@ void prepareYields(const TString conf  = "data_plot.conf",
   //
 
   TString outputDirYields(outputDir.Data());
-  outputDirYields.ReplaceAll("selected_events","yields");
+  if (performPUReweight) outputDirYields.ReplaceAll("selected_events","yields");
+  else outputDirYields.ReplaceAll("selected_events","yields_noPU");
   gSystem->mkdir(outputDirYields,kTRUE);
   TString fNameOutYieldPlots(outputDirYields+TString("/yield_plots") + DYTools::analysisTag);
   fNameOutYieldPlots += ".root";
