@@ -1,5 +1,6 @@
 #if !defined(__CINT__) || defined(__MAKECINT__)
 #include <TROOT.h>                  // access to gROOT, entry point to ROOT system
+#include <TSystem.h>
 #include <TMatrixD.h> 
 #include <TString.h> 
 
@@ -370,13 +371,15 @@ void latexPrintoutTwoColumns2D(const int nValues, int* valuesType, TMatrixD** va
    valueNameForSaving.ReplaceAll(":","");
    valueNameForSaving.ReplaceAll(";","");
    valueNameForSaving.ReplaceAll("%","");
-   TString txtFileName="tables2D"+valueNameForSaving+".txt";
+   TString path="tables2D/";
+   gSystem->mkdir(path,kTRUE);
+   TString txtFileName=path + "tables2D"+valueNameForSaving+".txt";
    FILE* file;
    if ((file = fopen(txtFileName, "r")))
      {
        for (int i=1; 1; i++)
          {
-           TString probeFileName="tables1D"+valueNameForSaving+"-";
+           TString probeFileName=path + "tables1D"+valueNameForSaving+"-";
            probeFileName+=i;
            probeFileName+=".txt";
            if ((file = fopen(probeFileName, "r")));
@@ -491,13 +494,15 @@ void latexPrintoutTwoColumns1D(const int nValues, int* valuesType, TMatrixD** va
    valueNameForSaving.ReplaceAll(":","");
    valueNameForSaving.ReplaceAll(";","");
    valueNameForSaving.ReplaceAll("%","");
-   TString txtFileName="tables1D"+valueNameForSaving+".txt";
+   TString path="tables1D/";
+   gSystem->mkdir(path,kTRUE);
+   TString txtFileName=path + "tables1D"+valueNameForSaving+".txt";
    FILE *file;
    if ((file = fopen(txtFileName, "r")))
      {
        for (int i=1; 1; i++)
          {
-           TString probeFileName="tables1D"+valueNameForSaving+"-";
+           TString probeFileName=path + "tables1D"+valueNameForSaving+"-";
            probeFileName+=i;
            probeFileName+=".txt";
            if ((file = fopen(probeFileName, "r")));
@@ -610,13 +615,15 @@ void latexPrintoutOneColumn2D(const int nValues, int* valuesType, TMatrixD** val
    valueNameForSaving.ReplaceAll(":","");
    valueNameForSaving.ReplaceAll(";","");
    valueNameForSaving.ReplaceAll("%","");
-   TString txtFileName="tables2D"+valueNameForSaving+".txt";
+   TString path="tables2D/";
+   gSystem->mkdir(path,kTRUE);
+   TString txtFileName=path + "tables2D"+valueNameForSaving+".txt";
    FILE *file;
    if ((file = fopen(txtFileName, "r")))
      {
        for (int i=1; 1; i++)
          {
-           TString probeFileName="tables2D"+valueNameForSaving+"-";
+           TString probeFileName=path + "tables2D"+valueNameForSaving+"-";
            probeFileName+=i;
            probeFileName+=".txt";
            if ((file = fopen(probeFileName, "r")));
@@ -700,13 +707,15 @@ void latexPrintoutOneColumn1D(const int nValues, int* valuesType, TMatrixD** val
    valueNameForSaving.ReplaceAll(":","");
    valueNameForSaving.ReplaceAll(";","");
    valueNameForSaving.ReplaceAll("%","");
-   TString txtFileName="tables1D"+valueNameForSaving+".txt";
+   TString path="tables1D/";
+   gSystem->mkdir(path,kTRUE);
+   TString txtFileName=path + "tables1D"+valueNameForSaving+".txt";
    FILE * file;
    if ((file = fopen(txtFileName, "r")))
      {
        for (int i=1; 1; i++)
          {
-           TString probeFileName="tables1D"+valueNameForSaving+"-";
+           TString probeFileName=path + "tables1D"+valueNameForSaving+"-";
            probeFileName+=i;
            probeFileName+=".txt";
            if ((file = fopen(probeFileName, "r")));
