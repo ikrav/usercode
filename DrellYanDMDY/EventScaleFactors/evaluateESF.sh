@@ -10,6 +10,14 @@ if [ ${#3} -gt 0 ] ; then debugMode=$3; fi
 if [ ${#4} -gt 0 ] ; then tnpDataFile=$4; fi
 if [ ${#5} -gt 0 ] ; then tnpMCFile=$5; fi
 
+if [ ${#6} -gt 0 ] ; then 
+    fullRun=$6; 
+    if [ ${fullRun} -eq -1 ] ; then
+	echo -e "\n\t fullRun=-1. Skipping evaluateESF.sh\n\n"
+	exit
+    fi
+fi
+
 #tnpDataFile="../config_files/sf_data_eta2.conf"
 #tnpMCFile="../config_files/sf_mc_eta2.conf"
 
@@ -36,15 +44,9 @@ if [ ${#tnpMCFile} -eq 0 ] ; then
   tnpMCFile="../config_files/sf_mc.conf"   # file for eff_*.C
 fi
 
-
-# check whether the full run was requested, overriding internal settings
-if [ -s ${fullRun} ] ; then
-  fullRun=0
-fi
-
 echo
 echo
-echo "calcEffScaleFactors.sh:"
+echo "evaluateESF.sh:"
 echo "    triggerSet=${triggerSet}"
 echo "    mcConfInputFile=${mcConfInputFile}"
 echo "    tnpMCFile=${tnpMCFile}"
@@ -74,8 +76,22 @@ if [ ${fullRun} -eq 1 ] ; then
   runMC_Reco=1; runMC_Id=1; runMC_Hlt=1
   runData_Reco=1; runData_Id=1; runData_Hlt=1
   runCalcEventEff=1   # it prepares the skim for event efficiencies
+else if [ ${#fullRun} -eq 7 ] ; then
+  if [ ${fullRun:0:1} -eq 1 ] ; then runMC_Reco=1; else runMC_Reco=0; fi
+  if [ ${fullRun:1:1} -eq 1 ] ; then runMC_Id=1; else runMC_Id=0; fi
+  if [ ${fullRun:2:1} -eq 1 ] ; then runMC_Hlt=1; else runMC_Hlt=0; fi
+  if [ ${fullRun:3:1} -eq 1 ] ; then runData_Reco=1; else runData_Reco=0; fi
+  if [ ${fullRun:4:1} -eq 1 ] ; then runData_Id=1; else runData_Id=0; fi
+  if [ ${fullRun:5:1} -eq 1 ] ; then runData_Hlt=1; else runData_Hlt=0; fi
+  if [ ${fullRun:6:1} -eq 1 ] ; then runCalcEventEff=1; else runCalcEventEff=0; fi
+  echo 
+  echo " evaluateESF.sh special fullRun string obtained (${fullRun}), decoded as:"
+  echo "  runMC_Reco=${runMC_Reco}, runMC_Id=${runMC_Id}, runMC_Hlt=${runMC_Hlt}"
+  echo "  runData_Reco=${runData_Reco}, runData_Id=${runData_Id}, runData_Hlt=${runData_Hlt}"
+  echo "  runCalcEventEff=${runCalcEventEff}"
+  echo
 fi
-
+fi
 
 #
 #  Flag of an error
