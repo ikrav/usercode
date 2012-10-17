@@ -636,7 +636,13 @@ TString subtractBackground(const TString conf,
 
 Bool_t checkMatrixSize(TMatrixD m)
 {  
-  if ((m.GetNrows()==DYTools::nMassBins) && (m.GetNcols()==DYTools::findMaxYBins()))
-  return 1;
-  else return 0;
+  if (m.GetNrows()==DYTools::nMassBins) {
+    if ((m.GetNcols()==DYTools::findMaxYBins()) ||
+	(m.GetNcols()==DYTools::nYBinsMax) ) {
+      return 1;
+    }
+  }
+
+  std::cout << "m.dims (" << m.GetNrows() << " x " << m.GetNcols() << ") instead of expected (" << DYTools::nMassBins << " x " << DYTools::findMaxYBins() << ") or (" << DYTools::nMassBins << " x " << DYTools::nYBinsMax << ")" << std::endl;
+  return 0;
 }
