@@ -204,7 +204,12 @@ TString subtractBackground(const TString conf,
   // WW, ttbar, and DY->tautau. By choice, we do not include WZ and ZZ.
   if(useTrue2eBgDataDriven)
     {
-      TFile fTrueDataDriven(inputDir+TString("/true2eBkgDataPoints.root"));
+      TString true2eFName=inputDir+TString("/true2eBkgDataPoints_");
+      if (DYTools::study2D) true2eFName.Append("2D");
+      else true2eFName.Append("1D");
+      true2eFName.Append(".root");
+      TFile fTrueDataDriven(true2eFName);
+      assert(unfolding::checkBinningArrays(fTrueDataDriven));
       TMatrixD true2eBackgroundFromData        = *(TMatrixD*)fTrueDataDriven.Get("true2eBackgroundFromData");
       TMatrixD true2eBackgroundFromDataError     = *(TMatrixD*)fTrueDataDriven.Get("true2eBackgroundFromDataError");
       TMatrixD true2eBackgroundFromDataErrorSyst = *(TMatrixD*)fTrueDataDriven.Get("true2eBackgroundFromDataErrorSyst");
@@ -283,10 +288,15 @@ TString subtractBackground(const TString conf,
     // Calculate qcd and wjets backgrounds
     if(useFakeBgDataDriven)
       {
-        TFile fFakeDataDriven(inputDir+TString("/fakeBkgDataPoints.root"));
-        TMatrixD fakeEleBackgroundFromData          = *(TMatrixD*)fFakeDataDriven.Get("fakeEleBackgroundFromData");
-        TMatrixD fakeEleBackgroundFromDataError     = *(TMatrixD*)fFakeDataDriven.Get("fakeEleBackgroundFromDataError");
-        TMatrixD fakeEleBackgroundFromDataErrorSyst = *(TMatrixD*)fFakeDataDriven.Get("fakeEleBackgroundFromDataErrorSyst");
+        TString fakeEEFName(inputDir+TString("/fakeBkgDataPoints_"));
+	if (DYTools::study2D) fakeEEFName.Append("2D");
+	else fakeEEFName.Append("1D");
+	fakeEEFName.Append(".root");
+        TFile fFakeDataDriven(fakeEEFName);
+	assert(unfolding::checkBinningArrays(fFakeDataDriven));
+        TMatrixD fakeEleBackgroundFromData          = *(TMatrixD*)fFakeDataDriven.Get("fakeBackgroundFromData");
+        TMatrixD fakeEleBackgroundFromDataError     = *(TMatrixD*)fFakeDataDriven.Get("fakeBackgroundFromDataError");
+        TMatrixD fakeEleBackgroundFromDataErrorSyst = *(TMatrixD*)fFakeDataDriven.Get("fakeBackgroundFromDataErrorSyst");
         if (!checkMatrixSize(fakeEleBackgroundFromData)) return "fakeEleBackgroundFromData: wrong size of matrix";
         if (!checkMatrixSize(fakeEleBackgroundFromDataError)) return "fakeEleBackgroundFromDataError: wrong size of matrix";
         if (!checkMatrixSize(fakeEleBackgroundFromDataErrorSyst)) return "fakeEleBackgroundFromDataErrorSyst: wrong size of matrix";
