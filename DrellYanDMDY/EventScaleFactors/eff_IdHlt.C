@@ -270,6 +270,22 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   TString tagAndProbeDir(TString("../root_files/tag_and_probe/")+dirTag);
   gSystem->mkdir(tagAndProbeDir,kTRUE);
 
+  TString ntuplesDir=tagAndProbeDir;
+  ntuplesDir.ReplaceAll("tag_and_probe","selected_events");
+  TString refFNamePV = ntuplesDir;
+  refFNamePV.Append( TString("/npv") + DYTools::analysisTag_USER + TString(".root")  );
+  
+  if (performPUReweight) {
+    TFile tmpFile(refFNamePV);
+    int npvOk=tmpFile.IsOpen();
+    tmpFile.Close();
+    if (!npvOk) {
+      std::cout << "the file needed of PV-reweighting, <" << refFNamePV << "> does not exist. Run selectEvents.C first\n";
+      assert(0);
+    }
+  }
+
+
   TFile *templatesFile = 0;
   vector<TH1F*> hPassTemplateV;
   vector<TH1F*> hFailTemplateV;
@@ -712,10 +728,6 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
     TString outFNamePV = tagAndProbeDir + 
       TString("/npv_tnp") + effTypeString + TString("_") + 
       sampleTypeString + DYTools::analysisTag + TString(".root");
-    TString refFNamePV = tagAndProbeDir; // from Selection/selectEvents.C
-    refFNamePV.Replace(refFNamePV.Index("tag_and_probe"),
-		       sizeof("tag_and_probe"),"selected_events/");
-    refFNamePV.Append( TString("/npv") + DYTools::analysisTag_USER + TString(".root") );
     TString refDistribution="hNGoodPV_data";
     TString sampleNameBase= effTypeString + TString("_") + 
       sampleTypeString + DYTools::analysisTag;
