@@ -610,7 +610,7 @@ int unfoldFSR(const TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingCon
     TVectorD rapidityCounts(nMassBins);
     for (int i=0; i<nMassBins+1; i++) mass[i]=massBinLimits[i];
     for (int i=0; i<nMassBins  ; i++) rapidityCounts[i]=nYBins[i];
-    mass.Write("massBinning");
+    mass.Write("massBinLimits"); // was 'massBinning'
     rapidityCounts.Write("rapidityCounts");
   }
 
@@ -620,7 +620,9 @@ int unfoldFSR(const TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingCon
     const char *fncname="unfolding::checkBinningArrays: ";
     TString fileInfo=TString("on file <") + fin.GetName() + ">";
     fin.cd();
-    TVectorD* mass= (TVectorD*)fin.FindObjectAny("massBinning");
+    TVectorD* mass= (TVectorD*)fin.FindObjectAny("massBinLimits");
+    if (!mass) mass=(TVectorD*)fin.FindObjectAny("massBinning"); // back-port
+    //if (!mass) mass=(TVectorD*)fin.FindObjectAny("mass"); // DDBkgr-port
     TVectorD* rapidityCounts= (TVectorD*)fin.FindObjectAny("rapidityCounts");
     if (!mass || !rapidityCounts) {
       std::cout << fncname << "file <" << fin.GetName() << "> does not contain keys massBinning and/or rapidityCounts\n";
@@ -641,7 +643,7 @@ int unfoldFSR(const TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingCon
 
     bool massOk=true, rapidityOk=true;
     if (mass.GetNoElements() != nMassBins+1) {
-      std::cout << fncname 
+      std::cout << "\n" << fncname 
 		<< " number of mass bins " << fileInfo
 		<< " is " << mass.GetNoElements() 
 		<< " while " << (nMassBins+1) << " is expected\n";
@@ -649,7 +651,7 @@ int unfoldFSR(const TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingCon
     }
     
     if (rapidityCounts.GetNoElements() != nMassBins ) {
-      std::cout << fncname
+      std::cout << "\n" << fncname
 		<< "number of mass bins in rapidityCounts " << fileInfo
 		<< " is " << rapidityCounts.GetNoElements() 
 		<< " while " << nMassBins << " is expected\n";
@@ -679,6 +681,19 @@ int unfoldFSR(const TMatrixD &vinM, TMatrixD &voutM, const TString &unfoldingCon
 	  rapidityOk=false;
 	}
       }
+    }
+    if (!massOk || !rapidityOk) {
+      std::cout << "file info: mass[" << mass.GetNoElements() << "]: ";
+      for (int i=0; i<mass.GetNoElements(); ++i) {
+	std::cout << " " << mass[i];
+      }
+      std::cout << "\n";
+      std::cout << "file info: rapidityCounts[" 
+		<< rapidityCounts.GetNoElements() << "]: ";
+      for (int i=0; i<rapidityCounts.GetNoElements(); ++i) {
+	std::cout << " " << rapidityCounts[i];
+      }
+      std::cout << "\n" << std::endl;
     }
     return (massOk && rapidityOk);
   }
