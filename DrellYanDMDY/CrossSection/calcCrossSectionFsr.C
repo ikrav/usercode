@@ -462,7 +462,8 @@ void readData(TMatrixD &v, TMatrixD &vErr1, TMatrixD &vErr2){
   TMatrixD *YieldsSignalPtr       = (TMatrixD *)fileYields.FindObjectAny("YieldsSignal");
   TMatrixD *YieldsSignalErrPtr    = (TMatrixD *)fileYields.FindObjectAny("YieldsSignalErr");
   TMatrixD *YieldsSignalSystErrPtr= (TMatrixD *)fileYields.FindObjectAny("YieldsSignalSystErr");
-  TVectorD *MassBinLimitsForYieldsPtr = (TVectorD *)fileYields.FindObjectAny("massBinning");
+  TVectorD *MassBinLimitsForYieldsPtr = (TVectorD *)fileYields.FindObjectAny("massBinLimits");
+  if (!MassBinLimitsForYieldsPtr) MassBinLimitsForYieldsPtr = (TVectorD *)fileYields.FindObjectAny("massBinning");
   TVectorD *YBinCountsForYieldsPtr = (TVectorD *)fileYields.FindObjectAny("rapidityCounts");
   fileYields.Close();
 
