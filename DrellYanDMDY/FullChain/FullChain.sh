@@ -22,6 +22,13 @@ fsrUnfSet="_fsrUnfGood"
 
 tnpTag="et6alt_eta4test_20120801"
 tnpTag="eta2"
+
+# Tag&probe script controller. Either 7 flags or 1 flag
+# 7 flags: MC_reco,id,hlt;data_reco,id,hlt;calcEventEff
+# 1 flag: fullRun=1 do all, fullRun=-1 do none
+tnpFullRun_eval="1111111"
+tnpFullRun_recalc="1111111"
+
 tnpMCFile="../config_files/sf_mc_${tnpTag}.conf"
 tnpDataFile="../config_files/sf_data_${tnpTag}.conf"
 debugMode=0
@@ -79,11 +86,22 @@ expectEventScaleFactorsFile="../root_files/constants/${crossSectionTag}/scale_fa
 expectAcceptanceSystematicsFile="../root_files/systematics/${crossSectionTag}/acceptance_FSR_systematics${anTag}.root"
 expectFsrSansAcc0File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}.root"
 expectFsrSansAcc1File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}_sans_acc.root"
-expectXSecFile="../root_files/xSec_results_${anTag}_${triggerSet}.root"
-expectXSecThFile="../root_files/xSecTh_results_${anTag}_${triggerSet}.root"
-expectEScaleSystFile="../root_files/systematics/${crossSectionTag}/escale_systematics${anTag}_tmp.root"
+expectXSecFile=  # defined later
+expectXSecThFile="../root_files/theory/xSectTheory1D_MSTW2008.root"
 finalEScaleSystFile="../root_files/systematics/${crossSectionTag}/escale_systematics${anTag}.root"
-expectXSecPlotFile=
+expectXSecPlotFile=  # defined later
+
+tmp=${anTag/2D/}
+if [ ${#tmp} -eq ${#anTag} ] ; then
+  fname=
+  expectXSecFile="../root_files/${crossSectionTag}${fsrUnfSet}/xSec_results_1D.root"
+  expectXSecPlotFile="../CrossSection/plots_1D_${crossSectionTag}/png/cXsec_preFsrNorm_1D.png"
+else
+  expectXSecFile="../root_files/${crossSectionTag}${fsrUnfSet}/xSecDET_results_2D.root"
+  expectXSecPlotFile="../CrossSection/plots_2D_${crossSectionTag}/png/cXsec_preFsrDetNorm_2D.png"
+fi
+
+
 
 # export some variables
 
@@ -472,8 +490,8 @@ cd ../EventScaleFactors
 rm -f *.so ${expectEventScaleFactorsFile}
 echo
 checkFile evaluateESF.sh recalcESF.sh
-source evaluateESF.sh ${filename_mc} ${triggerSet} ${debugMode} ${tnpDataFile} ${tnpMCFile} | tee ${logDir}/out${timeStamp}-12-evaluateESF-efficiencyScaleFactors${anTag}.log
-source recalcESF.sh ${filename_mc} ${triggerSet} ${debugMode} ${tnpDataFile} ${tnpMCFile} | tee ${logDir}/out${timeStamp}-12-recalcESF-efficiencyScaleFactors${anTag}.log
+source evaluateESF.sh ${filename_mc} ${triggerSet} ${debugMode} ${tnpDataFile} ${tnpMCFile} ${tnpFullRun_eval} | tee ${logDir}/out${timeStamp}-12-evaluateESF-efficiencyScaleFactors${anTag}.log
+source recalcESF.sh ${filename_mc} ${triggerSet} ${debugMode} ${tnpDataFile} ${tnpMCFile} ${tnpFullRun_recalc} | tee ${logDir}/out${timeStamp}-12-recalcESF-efficiencyScaleFactors${anTag}.log
 get_status ${expectEventScaleFactorsFile}
 statusEventScaleFactors=$RUN_STATUS
 cd ../FullChain
@@ -570,7 +588,7 @@ root -q -b -l ${LXPLUS_CORRECTION} plotXsec.C+\(\"$filename_cs\",\"default\",\"$
   \
  | tee ${logDir}/out${timeStamp}-16-plotXsec${anTag}.out
 get_status ${expectXSecPlotFile}
-statusPlotXSec="\"cannot determine\""  #$RUN_STATUS
+statusPlotXSec=$RUN_STATUS
 cd ../FullChain
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "DONE: plotXsec(\"${filename_cs}\",\"default\",\"${fsrUnfSet}\")"
