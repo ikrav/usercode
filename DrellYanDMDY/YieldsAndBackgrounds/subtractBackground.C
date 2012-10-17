@@ -287,9 +287,9 @@ TString subtractBackground(const TString conf,
         TMatrixD fakeEleBackgroundFromData          = *(TMatrixD*)fFakeDataDriven.Get("fakeEleBackgroundFromData");
         TMatrixD fakeEleBackgroundFromDataError     = *(TMatrixD*)fFakeDataDriven.Get("fakeEleBackgroundFromDataError");
         TMatrixD fakeEleBackgroundFromDataErrorSyst = *(TMatrixD*)fFakeDataDriven.Get("fakeEleBackgroundFromDataErrorSyst");
-        if (!checkMatrixSize(fakeEleBackground)) return "fakeEleBackground: wrong size of matrix";
-        if (!checkMatrixSize(fakeEleBackgroundError)) return "fakeEleBackgroundError: wrong size of matrix";
-        if (!checkMatrixSize(fakeEleBackgroundErrorSyst)) return "fakeEleBackgroundErrorSyst: wrong size of matrix";
+        if (!checkMatrixSize(fakeEleBackgroundFromData)) return "fakeEleBackgroundFromData: wrong size of matrix";
+        if (!checkMatrixSize(fakeEleBackgroundFromDataError)) return "fakeEleBackgroundFromDataError: wrong size of matrix";
+        if (!checkMatrixSize(fakeEleBackgroundFromDataErrorSyst)) return "fakeEleBackgroundFromDataErrorSyst: wrong size of matrix";
         fakeEleBackground          = fakeEleBackgroundFromData;
         fakeEleBackgroundError     = fakeEleBackgroundFromDataError;
         fakeEleBackgroundErrorSyst = fakeEleBackgroundFromDataErrorSyst;
