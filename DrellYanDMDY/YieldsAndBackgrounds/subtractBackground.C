@@ -205,7 +205,7 @@ TString subtractBackground(const TString conf,
 
 
   // Calculate true dielectron background, which includes
-  // WW, ttbar, and DY->tautau. By choice, we do not include WZ and ZZ.
+  // WW, ttbar, Wt, and DY->tautau. By choice, we do not include WZ and ZZ.
   if(useTrue2eBgDataDriven)
     {
       TString true2eFName=inputDir+TString("/true2eBkgDataPoints_");
@@ -227,73 +227,53 @@ TString subtractBackground(const TString conf,
   else
     {
 
-       for(int i=0; i<DYTools::nMassBins; i++)
-         for (int j=0; j<DYTools::nYBins[i]; j++)
-           {
-              true2eBackground(i,j)=0;
-              true2eBackgroundError(i,j)=0;
-              true2eBackgroundErrorSyst(i,j)=0;
-           } 
-         double mSyst=0;
-         for (int k=0; k<NSamples; k++)
-            {
-              TMatrixD aux1(DYTools::nMassBins,nYBinsMax);
-              TMatrixD aux2(DYTools::nMassBins,nYBinsMax);
-              aux1=yields[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
-              aux2=yieldsSumw2[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
-              for (int i=0; i<DYTools::nMassBins; i++)
-                for (int j=0; j<DYTools::nYBins[i]; j++)
-                  {
-                    if (sn[k]=="ttbar" || sn[k]=="ztt" || sn[k]=="ww")
-                      {
-  
-                        true2eBackground(i,j)+=aux1(i,j);
-                        true2eBackgroundError(i,j)+=aux2(i,j);
-                        // Use ballpark numbers: 0% systematics on DY->tautau, 50% on ttbar, 100% on WW
-                        if (sn[k]=="ztt") mSyst=0.0;
-                        if (sn[k]=="ttbar") mSyst=0.5;
-                        if (sn[k]=="ww") mSyst=1.0;
-                        true2eBackgroundErrorSyst(i,j)+=mSyst*mSyst*aux1(i,j)*aux1(i,j);
-			//std::cout << sn[k] << ", " << sample_names[k]->String() << ": true2eBackgroundErrorSys(" << i << "," << j << ")+=(" << mSyst << '*' << aux1(i,j) << ")^2=" << (mSyst*mSyst*aux1(i,j)*aux1(i,j)) << "\n";
-
-                      }
-                   }
-            }
-	 // extract root to have unsquared error
-	 unsquareMatrixElements(true2eBackgroundError);
-	 unsquareMatrixElements(true2eBackgroundErrorSyst);
-  
+      double mSyst=0;
+      for (int k=0; k<NSamples; k++) {
+	if (sn[k]=="ttbar" || sn[k]=="ztt" || sn[k]=="ww" || sn[k]=="wtop") {
+	  TMatrixD aux1= (* yields[k] );
+	  TMatrixD aux2= (* yieldsSumw2[k] );
+	  // Use ballpark numbers: 0% systematics on DY->tautau, 50% on ttbar, 100% on WW
+	  if (sn[k]=="ztt") mSyst=0.0;
+	  else if (sn[k]=="ttbar") mSyst=0.5;
+	  else if ((sn[k]=="ww") || (sn[k]=="wtop")) mSyst=1.0;
+	  for (int i=0; i<DYTools::nMassBins; i++)
+	    for (int j=0; j<DYTools::nYBins[i]; j++) {
+	      true2eBackground(i,j)+=aux1(i,j);
+	      true2eBackgroundError(i,j)+=aux2(i,j);
+	      true2eBackgroundErrorSyst(i,j)+= mSyst*mSyst*aux1(i,j)*aux1(i,j);
+	      //std::cout << sn[k] << ", " << sample_names[k]->String() << ": true2eBackgroundErrorSys(" << i << "," << j << ")+=(" << mSyst << '*' << aux1(i,j) << ")^2=" << (mSyst*mSyst*aux1(i,j)*aux1(i,j)) << "\n";
+	      
+	    }
+	}
+      }
+      // extract root to have unsquared error
+      unsquareMatrixElements(true2eBackgroundError);
+      unsquareMatrixElements(true2eBackgroundErrorSyst);
     }
 
   // Calculate WZ and ZZ backgrounds, if true2eBackground is not available
   if (!useTrue2eBgDataDriven) {
-    for (int k=0; k<NSamples; k++)
-      {
-         if (sn[k]=="zz" || sn[k]=="wz")
-           {
-             TMatrixD aux1(DYTools::nMassBins,nYBinsMax);
-             TMatrixD aux2(DYTools::nMassBins,nYBinsMax);
-             aux1=yields[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
-             aux2=yieldsSumw2[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
-             for (int i=0; i<DYTools::nMassBins; i++)
-               for (int j=0; j<DYTools::nYBins[i]; j++)
-                 {
-                     wzzz(i,j)+=aux1(i,j);
-                     wzzzError(i,j)+=aux2(i,j);
-		     wzzzErrorSyst(i,j)+=aux1(i,j);
-
-		     //std::cout << "wzzzErrorSyst(" << i << "," << j << ")+=" <<  aux1(i,j) << "^2=" << (aux1(i,j)*aux1(i,j)) << "\n";
-                 }
-           }
+    for (int k=0; k<NSamples; k++) {
+      if (sn[k]=="zz" || sn[k]=="wz") {
+	TMatrixD aux1= (* yields[k] );
+	TMatrixD aux2= (* yieldsSumw2[k] );
+	for (int i=0; i<DYTools::nMassBins; i++)
+	  for (int j=0; j<DYTools::nYBins[i]; j++) {
+	    wzzz(i,j)+=aux1(i,j);
+	    wzzzError(i,j)+=aux2(i,j);
+	    wzzzErrorSyst(i,j)+=aux1(i,j);
+	    //std::cout << "wzzzErrorSyst(" << i << "," << j << ")+=" <<  aux1(i,j) << "^2=" << (aux1(i,j)*aux1(i,j)) << "\n";
+	  }
       }
+    }
     // extract root to have unsquared error
     unsquareMatrixElements(wzzzError);
-    // make 100% error //unsquareMatrixElements(wzzzErrorSyst); 
+    // make 100% error //unsquareMatrixElements(wzzzErrorSyst);
   }
 
 
-    // Calculate qcd and wjets backgrounds
-    if(useFakeBgDataDriven)
+  // Calculate qcd and wjets backgrounds
+  if(useFakeBgDataDriven)
       {
         TString fakeEEFName(inputDir+TString("/fakeBkgDataPoints_"));
 	if (DYTools::study2D) fakeEEFName.Append("2D");
@@ -315,26 +295,21 @@ TString subtractBackground(const TString conf,
     else
       {
 
-         for (int k=0; k<NSamples; k++)
-           {
-              if (sn[k]=="qcd" || sn[k]=="wjets")
-                 {
-                    TMatrixD aux1(DYTools::nMassBins,nYBinsMax);
-                    TMatrixD aux2(DYTools::nMassBins,nYBinsMax);
-                    aux1=yields[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
-                    aux2=yieldsSumw2[k]->GetSub(0,DYTools::nMassBins-1,0,nYBinsMax-1);
-                    for (int i=0; i<DYTools::nMassBins; i++)
-                      for (int j=0; j<DYTools::nYBins[i]; j++)
-                        {
-                           fakeEleBackground(i,j)+=aux1(i,j);
-                           fakeEleBackgroundError(i,j)+=aux2(i,j);
-                           fakeEleBackgroundErrorSyst(i,j)+=0.5*0.5*aux1(i,j)*aux1(i,j);
-                        }
-                 }
-            }
-	 // extract root to have unsquared error
-	 unsquareMatrixElements(fakeEleBackgroundError);
-	 unsquareMatrixElements(fakeEleBackgroundErrorSyst);
+	for (int k=0; k<NSamples; k++) {
+	  if (sn[k]=="qcd" || sn[k]=="wjets") {
+	    TMatrixD aux1= (* yields[k]);
+	    TMatrixD aux2= (* yieldsSumw2[k]);
+	    for (int i=0; i<DYTools::nMassBins; i++)
+	      for (int j=0; j<DYTools::nYBins[i]; j++) {
+		fakeEleBackground(i,j)+=aux1(i,j);
+		fakeEleBackgroundError(i,j)+=aux2(i,j);
+		fakeEleBackgroundErrorSyst(i,j)+=0.5*0.5*aux1(i,j)*aux1(i,j);
+	      }
+	  }
+	}
+	// extract root to have unsquared error
+	unsquareMatrixElements(fakeEleBackgroundError);
+	unsquareMatrixElements(fakeEleBackgroundErrorSyst);
       }
 
     // Calculate the total background
