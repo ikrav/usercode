@@ -24,8 +24,6 @@ Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
 Bool_t checkMatrixSize(TMatrixD m);
 
-const int wzzzSystError_is_100percent=1;
-
 TString subtractBackground(const TString conf,
 		   DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL,
 			   const TString plotsDirExtraTag="",
@@ -177,8 +175,8 @@ TString subtractBackground(const TString conf,
   TMatrixD true2eBackgroundError(DYTools::nMassBins,nYBinsMax); // squared!
   TMatrixD true2eBackgroundErrorSyst(DYTools::nMassBins,nYBinsMax);
   TMatrixD wzzz(DYTools::nMassBins,nYBinsMax);
-  TMatrixD wzzzError(DYTools::nMassBins,nYBinsMax);
-  TMatrixD wzzzErrorSyst(DYTools::nMassBins,nYBinsMax);
+  TMatrixD wzzzError(DYTools::nMassBins,nYBinsMax); // squared!
+  TMatrixD wzzzErrorSyst(DYTools::nMassBins,nYBinsMax); // unsquared!
   TMatrixD fakeEleBackground(DYTools::nMassBins,nYBinsMax);
   TMatrixD fakeEleBackgroundError(DYTools::nMassBins,nYBinsMax);
   TMatrixD fakeEleBackgroundErrorSyst(DYTools::nMassBins,nYBinsMax);
@@ -272,10 +270,7 @@ TString subtractBackground(const TString conf,
                  {
                      wzzz(i,j)+=aux1(i,j);
                      wzzzError(i,j)+=aux2(i,j);
-		     if (wzzzSystError_is_100percent)
-		       wzzzErrorSyst(i,j)+=aux1(i,j);
-		     else 
-		       wzzzErrorSyst(i,j)+=aux1(i,j)*aux1(i,j);
+		     wzzzErrorSyst(i,j)+=aux1(i,j);
 
 		     //std::cout << "wzzzErrorSyst(" << i << "," << j << ")+=" <<  aux1(i,j) << "^2=" << (aux1(i,j)*aux1(i,j)) << "\n";
                  }
@@ -341,16 +336,9 @@ TString subtractBackground(const TString conf,
            totalBackgroundError(i,j)=sqrt( true2eBackgroundError(i,j) +
 					   wzzzError(i,j) +
 					   fakeEleBackgroundError(i,j) );
-	   if (wzzzSystError_is_100percent) {
            totalBackgroundErrorSyst(i,j)=sqrt( true2eBackgroundErrorSyst(i,j) +
 				       wzzzErrorSyst(i,j)*wzzzErrorSyst(i,j) +
 					       fakeEleBackgroundErrorSyst(i,j) );
-	   }
-	   else {
-           totalBackgroundErrorSyst(i,j)=sqrt( true2eBackgroundErrorSyst(i,j) +
-					       wzzzErrorSyst(i,j) +
-					       fakeEleBackgroundErrorSyst(i,j) );
-	   }
 	}
 
 
@@ -493,14 +481,8 @@ TString subtractBackground(const TString conf,
       double err=0, sys=0;
       err = sqrt(true2eBackgroundError[i][yi]
 		 + wzzzError[i][yi]);
-      if (wzzzSystError_is_100percent) {
       sys = sqrt(true2eBackgroundErrorSyst[i][yi]
 		 + wzzzErrorSyst[i][yi] * wzzzErrorSyst[i][yi]);
-      }
-      else {
-      sys = sqrt(true2eBackgroundErrorSyst[i][yi]
-		 + wzzzErrorSyst[i][yi]);
-      }
       printf(" %5.1f+-%4.1f+-%4.1f ", val,err, sys);
       printf("\n");
     }
