@@ -312,6 +312,24 @@ TString subtractBackground(const TString conf,
 	unsquareMatrixElements(fakeEleBackgroundErrorSyst);
       }
 
+  // total true2e background
+  TMatrixD totalTrue2eBackground=true2eBackground;
+  TMatrixD totalTrue2eBackgroundError=true2eBackgroundError;
+  TMatrixD totalTrue2eBackgroundErrorSyst=true2eBackgroundErrorSyst;
+  if (!useTrue2eBgDataDriven) {
+    // add wzzz contribution
+    for (int i=0; i<DYTools::nMassBins; ++i) {
+      for (int j=0; j<DYTools::nYBins[i]; ++j) {
+	totalTrue2eBackground(i,j)= true2eBackground(i,j) + wzzz(i,j);
+	totalTrue2eBackgroundError(i,j)= sqrt( SQR(true2eBackgroundError(i,j)) +
+					       SQR(wzzzError(i,j)) );
+	totalTrue2eBackgroundErrorSyst(i,j)=
+	  sqrt( SQR(true2eBackgroundErrorSyst(i,j)) +
+		SQR(wzzzErrorSyst(i,j)) );
+      }
+    }
+  }
+
     // Calculate the total background
     for (int i=0; i<DYTools::nMassBins; i++)
       for (int j=0; j<DYTools::nYBins[i]; j++) 
@@ -422,6 +440,12 @@ TString subtractBackground(const TString conf,
   //zeePredictedYieldErr.Write("mcYieldsSignalErr");  // not squared
   //observedYields.Write("observedYields");
   //observedYieldsErr.Write("observedYieldsErr"); // not squared
+  //totalTrue2eBackground.Write("true2eBkgr");
+  //totalTrue2eBackgroundError.Write("true2eBkgrErr");
+  //totalTrue2eBackgroundErrorSyst.Write("ture2eBkgrSystErr");
+  //fakeEleBackground.Write("fake2eBkgr");
+  //fakeEleBackgroundError.Write("fake2eBkgrErr");
+  //fakeEleBackgroundErrorSyst.Write("fake2eBkgrSystErr");
   unfolding::writeBinningArrays(fileOut);
   fileOut.Close();
 
