@@ -24,6 +24,13 @@ Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
 Bool_t checkMatrixSize(TMatrixD m);
 
+void unsquareMatrixElements(TMatrixD &m);
+
+template<class T>
+inline T SQR(const T &x) { return (x)*(x); }
+
+// -----------------------------------------------------------------------------
+
 TString subtractBackground(const TString conf,
 		   DYTools::TSystematicsStudy_t runMode=DYTools::NORMAL,
 			   const TString plotsDirExtraTag="",
@@ -172,11 +179,11 @@ TString subtractBackground(const TString conf,
 
   // Matrices to store backgrounds
   TMatrixD true2eBackground(DYTools::nMassBins,nYBinsMax);
-  TMatrixD true2eBackgroundError(DYTools::nMassBins,nYBinsMax); // squared!
+  TMatrixD true2eBackgroundError(DYTools::nMassBins,nYBinsMax);
   TMatrixD true2eBackgroundErrorSyst(DYTools::nMassBins,nYBinsMax);
   TMatrixD wzzz(DYTools::nMassBins,nYBinsMax);
-  TMatrixD wzzzError(DYTools::nMassBins,nYBinsMax); // squared!
-  TMatrixD wzzzErrorSyst(DYTools::nMassBins,nYBinsMax); // unsquared!
+  TMatrixD wzzzError(DYTools::nMassBins,nYBinsMax);
+  TMatrixD wzzzErrorSyst(DYTools::nMassBins,nYBinsMax); 
   TMatrixD fakeEleBackground(DYTools::nMassBins,nYBinsMax);
   TMatrixD fakeEleBackgroundError(DYTools::nMassBins,nYBinsMax);
   TMatrixD fakeEleBackgroundErrorSyst(DYTools::nMassBins,nYBinsMax);
@@ -252,6 +259,9 @@ TString subtractBackground(const TString conf,
                       }
                    }
             }
+	 // extract root to have unsquared error
+	 unsquareMatrixElements(true2eBackgroundError);
+	 unsquareMatrixElements(true2eBackgroundErrorSyst);
   
     }
 
@@ -275,7 +285,10 @@ TString subtractBackground(const TString conf,
 		     //std::cout << "wzzzErrorSyst(" << i << "," << j << ")+=" <<  aux1(i,j) << "^2=" << (aux1(i,j)*aux1(i,j)) << "\n";
                  }
            }
-       }
+      }
+    // extract root to have unsquared error
+    unsquareMatrixElements(wzzzError);
+    unsquareMatrixElements(wzzzErrorSyst);
   }
 
 
@@ -301,13 +314,6 @@ TString subtractBackground(const TString conf,
        }
     else
       {
-       for(int i=0; i<DYTools::nMassBins; i++)
-         for (int j=0; j<DYTools::nYBins[i]; j++)
-           {
-              fakeEleBackground(i,j)=0;
-              fakeEleBackgroundError(i,j)=0;
-              fakeEleBackgroundErrorSyst(i,j)=0;
-           } 
 
          for (int k=0; k<NSamples; k++)
            {
@@ -326,6 +332,9 @@ TString subtractBackground(const TString conf,
                         }
                  }
             }
+	 // extract root to have unsquared error
+	 unsquareMatrixElements(fakeEleBackgroundError);
+	 unsquareMatrixElements(fakeEleBackgroundErrorSyst);
       }
 
     // Calculate the total background
@@ -333,12 +342,12 @@ TString subtractBackground(const TString conf,
       for (int j=0; j<DYTools::nYBins[i]; j++) 
         {
            totalBackground(i,j)=true2eBackground(i,j) + wzzz(i,j) + fakeEleBackground(i,j);
-           totalBackgroundError(i,j)=sqrt( true2eBackgroundError(i,j) +
-					   wzzzError(i,j) +
-					   fakeEleBackgroundError(i,j) );
-           totalBackgroundErrorSyst(i,j)=sqrt( true2eBackgroundErrorSyst(i,j) +
-				       wzzzErrorSyst(i,j)*wzzzErrorSyst(i,j) +
-					       fakeEleBackgroundErrorSyst(i,j) );
+           totalBackgroundError(i,j)=sqrt( SQR(true2eBackgroundError(i,j)) +
+					   SQR(wzzzError(i,j)) +
+					   SQR(fakeEleBackgroundError(i,j)) );
+	   totalBackgroundErrorSyst(i,j)=sqrt( SQR(true2eBackgroundErrorSyst(i,j)) +
+					       SQR(wzzzErrorSyst(i,j)) +
+					       SQR(fakeEleBackgroundErrorSyst(i,j)) );
 	}
 
 
@@ -356,7 +365,7 @@ TString subtractBackground(const TString conf,
 	  signalYields(i,j) = observedYields(i,j) - totalBackground(i,j);
 	  signalYieldsError(i,j) = 
 	    sqrt( observedYieldsErrorSquared(i,j) + 
-		  totalBackgroundError(i,j) * totalBackgroundError(i,j) );
+		  SQR(totalBackgroundError(i,j)) );
 	  signalYieldsErrorSyst(i,j) = totalBackgroundErrorSyst(i,j);
 	  observedYieldsErr(i,j) = sqrt(observedYieldsErrorSquared(i,j));
 	}
@@ -380,11 +389,8 @@ TString subtractBackground(const TString conf,
     if (sn[i] == "zee") {
       zeePredictedYield= *yields[i];
       zeePredictedYieldErr=0;
-      for (int iM=0; iM<DYTools::nMassBins; ++iM) {
-	for (int iY=0; iY<DYTools::nYBins[iM]; ++iY) {
-	  zeePredictedYieldErr[iM][iY] = sqrt( (*yieldsSumw2[i])[iM][iY] );
-	}
-      }
+      zeePredictedYieldErr= *yieldsSumw2[i];
+      unsquareMatrixElements(zeePredictedYieldErr);
       zeeFound=1;
       break;
     }
@@ -463,10 +469,10 @@ TString subtractBackground(const TString conf,
     printf("mass range            observed       true2e-bg         wz-zz-bg               fake-bg                 total-bg            signal\n");
     for(int i=0; i<DYTools::nMassBins; i++){
       printf("%5.1f-%5.1f GeV: ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
-      printf(" %7.0f+-%3.0f ", observedYields[i][yi], sqrt(observedYieldsErrorSquared[i][yi]));
-      printf(" %5.1f+-%4.1f+-%4.1f ", true2eBackground[i][yi], sqrt(true2eBackgroundError[i][yi]), sqrt(true2eBackgroundErrorSyst[i][yi]));
-      printf(" %6.2f+-%4.2f+-%4.2f ", wzzz[i][yi], sqrt(wzzzError[i][yi]), sqrt(wzzzErrorSyst[i][yi]));
-      printf(" %5.1f+-%5.1f+-%5.1f ", fakeEleBackground[i][yi], sqrt(fakeEleBackgroundError[i][yi]), sqrt(fakeEleBackgroundErrorSyst[i][yi]));
+      printf(" %7.0f+-%3.0f ", observedYields[i][yi], observedYieldsErr[i][yi]);
+      printf(" %5.1f+-%4.1f+-%4.1f ", true2eBackground[i][yi], true2eBackgroundError[i][yi], true2eBackgroundErrorSyst[i][yi]);
+      printf(" %6.2f+-%4.2f+-%4.2f ", wzzz[i][yi], wzzzError[i][yi], wzzzErrorSyst[i][yi]);
+      printf(" %5.1f+-%5.1f+-%5.1f ", fakeEleBackground[i][yi], fakeEleBackgroundError[i][yi], fakeEleBackgroundErrorSyst[i][yi]);
       printf("    %5.1f+-%4.1f+-%4.1f ", totalBackground[i][yi], totalBackgroundError[i][yi], totalBackgroundErrorSyst[i][yi]);
       printf("    %8.1f+-%5.1f+-%5.1f ", signalYields[i][yi], signalYieldsError[i][yi], signalYieldsErrorSyst[i][yi]);
       printf("\n");
@@ -479,10 +485,10 @@ TString subtractBackground(const TString conf,
       printf("%5.1f-%5.1f GeV: ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
       double val = true2eBackground[i][yi] + wzzz[i][yi];
       double err=0, sys=0;
-      err = sqrt(true2eBackgroundError[i][yi]
-		 + wzzzError[i][yi]);
-      sys = sqrt(true2eBackgroundErrorSyst[i][yi]
-		 + wzzzErrorSyst[i][yi] * wzzzErrorSyst[i][yi]);
+      err = sqrt(SQR(true2eBackgroundError[i][yi])
+		 + SQR(wzzzError[i][yi]));
+      sys = sqrt(SQR(true2eBackgroundErrorSyst[i][yi])
+		 + SQR(wzzzErrorSyst[i][yi]) );
       printf(" %5.1f+-%4.1f+-%4.1f ", val,err, sys);
       printf("\n");
     }
@@ -565,11 +571,7 @@ TString subtractBackground(const TString conf,
       for (int i=0; i<NSamples; ++i) {
 	if (sample_names[i]->String() == TString("zee")) {
 	  TMatrixD err=*yieldsSumw2[i];
-	  for (int iM=0; iM<err.GetNrows(); ++iM) {
-	    for (int iY=0; iY<err.GetNcols(); ++iY) {
-	      err[iM][iY]= sqrt(err[iM][iY]);
-	    }
-	  }
+	  unsquareMatrixElements(err);
 	  hZee=extractMassDependence("hZee","",
 				     *yields[i],err,
 				     iYBin,
@@ -618,4 +620,13 @@ Bool_t checkMatrixSize(TMatrixD m)
 
   std::cout << "m.dims (" << m.GetNrows() << " x " << m.GetNcols() << ") instead of expected (" << DYTools::nMassBins << " x " << DYTools::findMaxYBins() << ") or (" << DYTools::nMassBins << " x " << DYTools::nYBinsMax << ")" << std::endl;
   return 0;
+}
+
+
+void unsquareMatrixElements(TMatrixD &m) {
+  for (int i=0; i<m.GetNrows(); ++i) {
+    for (int j=0; j<m.GetNcols(); ++j) {
+      m(i,j) = sqrt(m(i,j));
+    }
+  }
 }
