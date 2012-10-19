@@ -24,7 +24,6 @@ Int_t minMutualMultiple();
 Int_t minMutualMultipleTwo(Int_t n1, Int_t n2);
 Bool_t checkMatrixSize(TMatrixD m);
 
-const int correct_error_code=1;
 const int wzzzSystError_is_100percent=1;
 
 TString subtractBackground(const TString conf,
@@ -339,7 +338,6 @@ TString subtractBackground(const TString conf,
       for (int j=0; j<DYTools::nYBins[i]; j++) 
         {
            totalBackground(i,j)=true2eBackground(i,j) + wzzz(i,j) + fakeEleBackground(i,j);
-	   if (correct_error_code) {
            totalBackgroundError(i,j)=sqrt( true2eBackgroundError(i,j) +
 					   wzzzError(i,j) +
 					   fakeEleBackgroundError(i,j) );
@@ -353,16 +351,7 @@ TString subtractBackground(const TString conf,
 					       wzzzErrorSyst(i,j) +
 					       fakeEleBackgroundErrorSyst(i,j) );
 	   }
-	   }
-	   else {
-           totalBackgroundError(i,j)=sqrt( true2eBackgroundError(i,j) * true2eBackgroundError(i,j) +
-				    wzzzError(i,j) * wzzzError(i,j) +
-				    fakeEleBackgroundError(i,j) * fakeEleBackgroundError(i,j) );
-           totalBackgroundErrorSyst(i,j)=sqrt( true2eBackgroundErrorSyst(i,j) * true2eBackgroundErrorSyst(i,j) +
-				    wzzzErrorSyst(i,j) * wzzzErrorSyst(i,j) +
-				    fakeEleBackgroundErrorSyst(i,j) * fakeEleBackgroundErrorSyst(i,j) );
-	   }
-         }
+	}
 
 
 
@@ -502,7 +491,6 @@ TString subtractBackground(const TString conf,
       printf("%5.1f-%5.1f GeV: ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
       double val = true2eBackground[i][yi] + wzzz[i][yi];
       double err=0, sys=0;
-      if (correct_error_code){
       err = sqrt(true2eBackgroundError[i][yi]
 		 + wzzzError[i][yi]);
       if (wzzzSystError_is_100percent) {
@@ -512,13 +500,6 @@ TString subtractBackground(const TString conf,
       else {
       sys = sqrt(true2eBackgroundErrorSyst[i][yi]
 		 + wzzzErrorSyst[i][yi]);
-      }
-      }
-      else {
-      err = sqrt(true2eBackgroundError[i][yi]*true2eBackgroundError[i][yi]
-			+ wzzzError[i][yi]*wzzzError[i][yi]);
-      sys = sqrt(true2eBackgroundErrorSyst[i][yi]*true2eBackgroundErrorSyst[i][yi]
-			+ wzzzErrorSyst[i][yi]*wzzzErrorSyst[i][yi]);
       }
       printf(" %5.1f+-%4.1f+-%4.1f ", val,err, sys);
       printf("\n");
