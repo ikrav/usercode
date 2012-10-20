@@ -440,4 +440,117 @@ void removeError(TH1F* h) {
 
 //------------------------------------------------------------------------------------------------------------------------
 
+inline 
+void subdivideBinWeightByLinearApprox(
+   double m_1, double wsigma_1to0, 
+   double m0, double wsigma0to1, double wsigma0to1Err,
+   double m1, 
+   double wsigma1to2, // needed if m2>0
+   double m2,
+   double mStar,
+   double &wSigmaStar1, double &wSigmaStarErr1,
+   double &wSigmaStar2, double &wSigmaStarErr2
+   ) {
+  // linear approximation
+  // the cross section is per bin!
+  // (m_1,m0, wsigma_1to0); (m0,m1, wsigma0to1) ; (m1,m2, wsigma1to2)
+  // We want to divide (m0,m1) to (m0,mStar), (mStar,m2)
+  // The cross section at the center of a bin 
+  // ( mc_05, wsigma_1to0/w0 ); ( mc05, wsigma0to1/w1 ) ; ( mc15, wsigma1to2/w2 )
+  // or
+  // ( mc_05, sigma_1to0 ) ; ( mc05, sigma0to1 ); ( mc15, sigma1to2 )
+  // defines linear dependencies
+  //  sigma= (sigma0to1 - sigma_1to0)/(mc05-mc_05) * ( m - mc_05 ) + sigma_1to0
+  // and
+  //  sigma= (sigma1to2 - sigma0to1)/(mc15-mc05) * ( m - mc05 ) + sigma0to1
+
+  const int debug=0;
+  const int warn_on_branches=0;
+  const int pure_linear_branch=0; // recommended is 0 -- preserves total count in all cases
+  const double thr=-9e8;  // if m2<thr, ignore sigma1to2
+
+  if (debug) {
+    std::cout << "subdivideBinWeightByLinearApprox: \n";
+    std::cout << "  m_1=" << m_1 << ", m0=" << m0 << ", wsigma_1to0=" << wsigma_1to0 << "\n";
+    std::cout << "  m0=" << m0 << ", m1=" << m1 << ", wsigma0to1=( " << wsigma0to1 << " pm " << wsigma0to1Err << " )\n";
+    if (m2<thr) std::cout << " m2, wsigma1to2 are ignored\n";
+    else std::cout << "  m1=" << m1 << ", m2=" << m2 << ", wsigma1to2=" << wsigma1to2 << "\n";
+    std::cout << "  mStar=" << mStar << "\n";
+    std::cout << "\n";
+  }
+
+  double mc_05=0.5*(m_1 + m0);
+  double w0=m0-m_1;
+  double w1=m1-m0;
+  double sigma_1to0 = wsigma_1to0 / w0;
+  double sigma0to1 =  wsigma0to1 / w1;
+  double slope=(sigma0to1 - sigma_1to0)*2./(m1 - m_1);
+  if (debug) std::cout << "slope=" << slope << " (1)\n";
+  if ((m2>thr) && pure_linear_branch) {
+    // Try to improve using slope with respect to the next bin
+    double w2=m2-m1;
+    double sigma1to2 =  wsigma1to2 / w2;
+    double slopePlus= (sigma1to2 - sigma0to1) * 2./(m2 - m0);
+    slope = 0.5*( slope + slopePlus );
+    if (debug) std::cout << "slope=" << slope << " (2)\n";
+  }
+
+  if ((mStar>=m0) && (mStar<=m1)) {     // interpolation
+
+    // center of the bin to consider, and the width
+    double mcStar1=0.5*(m0 + mStar);
+    double wStar1= mStar-m0;
+    if (debug) std::cout << " mcStar1=" << mcStar1 << ", wStar1=" << wStar1 << "\n";
+    // the cross section there
+    double sigma1_div_width= slope*( mcStar1 - mc_05 ) + sigma_1to0;
+    if (debug) std::cout << " sigma1_div_width=" << sigma1_div_width << "\n";
+    // 1st answer
+    wSigmaStar1 = sigma1_div_width * wStar1;
+
+    double wStar2= m1-mStar;
+    if (pure_linear_branch) {  // Pure linear approximation - use formula
+      if (warn_on_branches) std::cout << " branch: pure linear approximation\n";
+      // center to the other part of the bin, and the width
+      double mcStar2=0.5*(mStar + m1);
+      double sigma2_div_width= slope*( mcStar2 - mc_05 ) + sigma_1to0;
+      // 2nd answer
+      wSigmaStar2 = sigma2_div_width* wStar2;
+    }
+    else {  // Take the remaining counts
+      if (warn_on_branches) std::cout << " branch: taking remaining area\n";
+      wSigmaStar2= wsigma0to1 - wSigmaStar1;
+    }
+    
+    // Error calculation
+    double err=wsigma0to1Err/w1;
+    double frac1=  wStar1 / sqrt( wStar1*wStar1 + wStar2*wStar2 );
+    double frac2=  wStar2 / sqrt( wStar1*wStar1 + wStar2*wStar2 );
+    wSigmaStarErr1= frac1*err *wStar1;
+    wSigmaStarErr2= frac2*err *wStar2;
+
+  }
+  else { // extrapolation
+    wSigmaStar1=0; wSigmaStarErr1=0;
+    wSigmaStar2=0; wSigmaStarErr2=0;
+    if (mStar>m1) {
+      if (warn_on_branches) std::cout << " branch:  Extrapolation to the right\n";
+      double mc01=0.5*(m0 + m1);
+      double sigmaAtM1= slope*( m1 - mc01 ) + sigma0to1;
+      double sigmaAtMStar= slope*( mStar - mc01 ) + sigma0to1;
+      double w= mStar-m1;
+      if (debug) std::cout << "sigmaAtM1=" << sigmaAtM1 << ", sigmaAtMStar=" << sigmaAtMStar << ", w=" << w << "\n";
+      wSigmaStar1 = 0.5*(sigmaAtM1 + sigmaAtMStar) * w;
+      wSigmaStarErr1= (wsigma0to1Err/w1) *w;
+    }
+    else {
+      // this is not a branch -- this is an important warning
+      std::cout << "\n\tExtrapolation to the left is not possible by construction\n";
+    }
+  }
+
+  return;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
 #endif
