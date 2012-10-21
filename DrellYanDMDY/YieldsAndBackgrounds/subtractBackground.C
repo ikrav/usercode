@@ -355,7 +355,8 @@ TString subtractBackground(const TString conf,
       observedYieldsErr=0;
       for (int i=0; i<DYTools::nMassBins; i++)
 	for (int j=0; j<DYTools::nYBins[i]; j++) {
-	  signalYields(i,j) = observedYields(i,j) - totalBackground(i,j);
+	  double sy=observedYields(i,j) - totalBackground(i,j);
+	  signalYields(i,j) = (sy>0) ? sy : 0.;
 	  signalYieldsError(i,j) = 
 	    sqrt( observedYieldsErrorSquared(i,j) + 
 		  SQR(totalBackgroundError(i,j)) );
@@ -442,7 +443,7 @@ TString subtractBackground(const TString conf,
   //observedYieldsErr.Write("observedYieldsErr"); // not squared
   //totalTrue2eBackground.Write("true2eBkgr");
   //totalTrue2eBackgroundError.Write("true2eBkgrErr");
-  //totalTrue2eBackgroundErrorSyst.Write("ture2eBkgrSystErr");
+  //totalTrue2eBackgroundErrorSyst.Write("true2eBkgrSystErr");
   //fakeEleBackground.Write("fake2eBkgr");
   //fakeEleBackgroundError.Write("fake2eBkgrErr");
   //fakeEleBackgroundErrorSyst.Write("fake2eBkgrSystErr");
@@ -458,25 +459,67 @@ TString subtractBackground(const TString conf,
   foutPlots->Close();
 
   if (0) {
-    int yi=0;
-    // Print tables of yields and background
-    printf("\n\n\t\tTables for yi=%d\n\n",yi);
-    
-    // Table 1: split background into true, wz/zz, and qcd
-    printf(" Note: stat error in signal yield contain stat error on background,\n");
-    printf("   and syst error on signal yield contains syst error on background\n");
-    printf("mass range            observed       true2e-bg         wz-zz-bg               fake-bg                 total-bg            signal\n");
     for(int i=0; i<DYTools::nMassBins; i++){
-      printf("%5.1f-%5.1f GeV: ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
-      printf(" %7.0f+-%3.0f ", observedYields[i][yi], observedYieldsErr[i][yi]);
-      printf(" %5.1f+-%4.1f+-%4.1f ", true2eBackground[i][yi], true2eBackgroundError[i][yi], true2eBackgroundErrorSyst[i][yi]);
-      printf(" %6.2f+-%4.2f+-%4.2f ", wzzz[i][yi], wzzzError[i][yi], wzzzErrorSyst[i][yi]);
-      printf(" %5.1f+-%5.1f+-%5.1f ", fakeEleBackground[i][yi], fakeEleBackgroundError[i][yi], fakeEleBackgroundErrorSyst[i][yi]);
-      printf("    %5.1f+-%4.1f+-%4.1f ", totalBackground[i][yi], totalBackgroundError[i][yi], totalBackgroundErrorSyst[i][yi]);
-      printf("    %8.1f+-%5.1f+-%5.1f ", signalYields[i][yi], signalYieldsError[i][yi], signalYieldsErrorSyst[i][yi]);
-      printf("\n");
+      // Print tables of yields and background
+      if ( (DYTools::study2D==1) ||
+	   (DYTools::study2D==0) && (i==0) ) {
+	   
+	printf("\n\n\t\tTables for iMass=%d\n\n",i);
+	
+	// Table 1: split background into true, wz/zz, and qcd
+	printf(" Note: stat error in signal yield contain stat error on background,\n");
+	printf("   and syst error on signal yield contains syst error on background\n");
+	printf("mass range   rapidity range   observed       true2e-bg         wz-zz-bg               fake-bg                 total-bg            signal\n");
+      }
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+	double absYmin=0, absYmax=0;
+	DYTools::findAbsYValueRange(i,yi, absYmin,absYmax);
+	printf("%5.1f-%5.1f GeV ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
+	printf("%4.2f-%4.2f ", absYmin,absYmax);
+	printf(" %7.0f+-%3.0f ", observedYields[i][yi], observedYieldsErr[i][yi]);
+	printf(" %5.1f+-%4.1f+-%4.1f ", true2eBackground[i][yi], true2eBackgroundError[i][yi], true2eBackgroundErrorSyst[i][yi]);
+	printf(" %6.2f+-%4.2f+-%4.2f ", wzzz[i][yi], wzzzError[i][yi], wzzzErrorSyst[i][yi]);
+	printf(" %5.1f+-%5.1f+-%5.1f ", fakeEleBackground[i][yi], fakeEleBackgroundError[i][yi], fakeEleBackgroundErrorSyst[i][yi]);
+	printf("    %5.1f+-%4.1f+-%4.1f ", totalBackground[i][yi], totalBackgroundError[i][yi], totalBackgroundErrorSyst[i][yi]);
+	printf("    %8.1f+-%5.1f+-%5.1f ", signalYields[i][yi], signalYieldsError[i][yi], signalYieldsErrorSyst[i][yi]);
+	printf("\n");
+      }
     }
+    std::cout << std::endl;
+  }
 
+  if (1) {
+    for(int i=0; i<DYTools::nMassBins; i++){
+      // Print tables of yields and background
+      if ( (DYTools::study2D==1) ||
+	   (DYTools::study2D==0) && (i==0) ) {
+	   
+	printf("\n\n\t\tTables for iMass=%d\n\n",i);
+	
+	// Table 1: split background into true, wz/zz, and qcd
+	printf(" Note: stat error in signal yield contain stat error on background,\n");
+	printf("   and syst error on signal yield contains syst error on background\n");
+	printf("mass range   rapidity range   observed       true2e-bg         fake-bg                 total-bg            signal\n");
+      }
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+	double absYmin=0, absYmax=0;
+	DYTools::findAbsYValueRange(i,yi, absYmin,absYmax);
+	printf("%5.1f-%5.1f GeV ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
+	printf("%4.2f-%4.2f ", absYmin,absYmax);
+	printf(" %7.0f+-%3.0f ", observedYields[i][yi], observedYieldsErr[i][yi]);
+	printf(" %5.1f+-%4.1f+-%4.1f ", true2eBackground[i][yi], true2eBackgroundError[i][yi], true2eBackgroundErrorSyst[i][yi]);
+	printf(" %5.1f+-%5.1f+-%5.1f ", fakeEleBackground[i][yi], fakeEleBackgroundError[i][yi], fakeEleBackgroundErrorSyst[i][yi]);
+	printf("    %5.1f+-%4.1f+-%4.1f ", totalBackground[i][yi], totalBackgroundError[i][yi], totalBackgroundErrorSyst[i][yi]);
+	printf("    %8.1f+-%5.1f+-%5.1f ", signalYields[i][yi], signalYieldsError[i][yi], signalYieldsErrorSyst[i][yi]);
+	printf("\n");
+      }
+    }
+    std::cout << std::endl;
+  }
+
+
+  if (0) {
+    int yi=0;
     // Table 2: combined true2e and WZ/ZZ backgrounds only
     printf("\n  only true2e-bg + ww-wz\n");
     printf("mass range      true2e, includingwz/zz\n");
@@ -566,17 +609,10 @@ TString subtractBackground(const TString conf,
 					     signalYields,signalYieldsError,
 					     iYBin,
 					     perMassBinWidth,perRapidityBinWidth);
-      TH1F* hZee=NULL;
-      for (int i=0; i<NSamples; ++i) {
-	if (sample_names[i]->String() == TString("zee")) {
-	  TMatrixD err=*yieldsSumw2[i];
-	  unsquareMatrixElements(err);
-	  hZee=extractMassDependence("hZee","",
-				     *yields[i],err,
-				     iYBin,
-				     perMassBinWidth,perRapidityBinWidth);
-	}
-      }
+      TH1F *hZee=extractMassDependence("hZee","",
+				       zeePredictedYield,zeePredictedYieldErr,
+				       iYBin,
+				       perMassBinWidth,perRapidityBinWidth);
       if (!hZee) {
 	std::cout << "\n\n\tError: failed to locate Zee sample\n\n";
       }
