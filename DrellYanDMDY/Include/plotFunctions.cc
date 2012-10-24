@@ -448,6 +448,77 @@ void DrawMassPeak(vector<TH1F*> hMassv, vector<CSample*> samplev, vector<TString
   plotMass.Draw(c1,kFALSE);
   SaveCanvas(c1, canvName);
   if (histoFile) c1->Write();
+
+  //THStack instead of plotMass
+
+  hMassv[0]->SetLineColor(samplev[0]->color);
+  SetSomeHistAttributes(hMassDibosons,"ewk");
+  if (actualBinning)
+    {
+      hMassDibosons->GetXaxis()->SetRangeUser((DYTools::study2D) ? 20. : 15.,1500);
+      hMassDibosons->GetYaxis()->SetRangeUser(1.0,2000000);
+    }
+  else
+    {
+      hMassDibosons->GetXaxis()->SetRangeUser((DYTools::study2D) ? 20. : 15.,1500);
+      hMassDibosons->GetYaxis()->SetRangeUser(1.0,300000);
+    }  
+  THStack* mcHists=new THStack("mcHists","MC hists");
+  if(mergeDibosons) mcHists->Add(hMassDibosons);
+  for(UInt_t isam=(hasData) ? 1:0; isam<samplev.size(); isam++){
+    SetSomeHistAttributes(hMassv[isam],snamev[isam]);
+    if (actualBinning)
+    {
+      hMassv[isam]->GetXaxis()->SetRangeUser((DYTools::study2D) ? 20. : 15.,1500);
+      hMassv[isam]->GetYaxis()->SetRangeUser(1.0,2000000);
+    }
+    else
+    {
+      hMassv[isam]->GetXaxis()->SetRangeUser((DYTools::study2D) ? 20. : 15.,1500);
+      hMassv[isam]->GetYaxis()->SetRangeUser(1.0,300000);
+    } 
+    if( !(mergeDibosons && (snamev[isam]=="ww" || snamev[isam]=="wz" || snamev[isam]=="zz")))
+      mcHists->Add(hMassv[isam]);
+  }
+
+  TH1F* ratioHist=(TH1F*)hMassv[0]->Clone("ratioHist");
+  for(UInt_t isam=(hasData) ? 1:0; isam<samplev.size(); isam++)
+    ratioHist->Add(hMassv[isam],-1);
+  ratioHist->Divide(ratioHist,hMassv[0],1.0,1.0);
+
+
+
+  if (actualBinning) canvName="massBinning-2";
+  else canvName="massPeak-2";
+  TCanvas *c2 = new TCanvas(canvName,canvName,800,800); 
+  c2->Divide(1,2,0,0);
+  TPad* pad1 = (TPad*)c2->GetPad(1);
+  TPad* pad2 = (TPad*)c2->GetPad(2);
+  pad1->SetPad(0,0.3,1.0,1.0);
+  pad2->SetPad(0,0,  1.0,0.28);
+  pad1->SetLeftMargin(0.18);
+  pad1->SetTopMargin(0.08);
+  pad1->SetRightMargin(0.07);
+  pad1->SetBottomMargin(0.01); // All X axis labels and titles are thus cut off
+  pad2->SetLeftMargin(0.18);
+  pad2->SetTopMargin(0.01);
+  pad2->SetRightMargin(0.07);
+  pad2->SetBottomMargin(0.45);
+
+  pad1->SetLogx();
+  pad1->SetLogy();
+  pad1->cd();
+
+  mcHists->Draw("hist");
+  hMassv[0]->Draw("pe,same");
+
+  pad2->SetLogx();
+  pad2->cd();
+  ratioHist->Draw();
+
+  SaveCanvas(c2, canvName);
+  if (histoFile) c2->Write();
+
 }
 
 // -----------------------------------------------------------
