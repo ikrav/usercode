@@ -44,6 +44,7 @@
 #include "../Include/plotFunctions.hh"
 #include "../Include/PUReweight.hh"
 #include "../Include/UnfoldingTools.hh"
+#include "../Include/ComparisonPlot.hh"
 
 #endif
 
@@ -201,6 +202,8 @@ void prepareYields(const TString conf  = "data_plot.conf",
   vector<Double_t> nSelv;
   vector<Double_t> nSelVarv;  
 
+  vector<TH1F*> hZpeakv;
+
   char hname[100];
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     TMatrixD *yieldsMatrix = new TMatrixD(DYTools::nMassBins, maxYBins);
@@ -221,6 +224,13 @@ void prepareYields(const TString conf  = "data_plot.conf",
 				  DYTools::nMassBins,
 				  DYTools::massBinLimits));
     hMassBinsv[isam]->Sumw2();
+    hMassBinsv[isam]->SetDirectory(0);
+
+    sprintf(hname,"hZpeak_%s",snamev[isam].Data());
+    hZpeakv.push_back(new TH1F(hname,"",
+			       60, 60., 120.));
+    hZpeakv[isam]->Sumw2();
+    hZpeakv[isam]->SetDirectory(0);
 			 
     nSelv.push_back(0);
     nSelVarv.push_back(0);  
@@ -354,6 +364,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
 
       hMassv[isam]->Fill(data->mass,weight);
       hMassBinsv[isam]->Fill(data->mass,weight);
+      hZpeakv[isam]->Fill(data->mass,weight);
 
       nSelv[isam] += weight;
       nSelVarv[isam] += weight*weight;
@@ -643,6 +654,46 @@ void prepareYields(const TString conf  = "data_plot.conf",
   }
   }
 
+  if (1 && hZpeakv.size()) {
+    std::cout << "Zpeak region average\n";
+    unsigned int idx=(hasData) ? 1 : 0;
+    TH1F *hTotMC=  (TH1F*)hZpeakv[idx]->Clone("hZpeak_all");
+    hTotMC->Reset();
+    hTotMC->SetDirectory(0);
+    TH1F *hZee=NULL;
+    for (unsigned int i=0; i<hZpeakv.size(); ++i) {
+      printf(" mean in <%s> is %6.4lf pm %6.4lf\n",hZpeakv[i]->GetName(),hZpeakv[i]->GetMean(),hZpeakv[i]->GetMeanError());
+      if (i>=idx) hTotMC->Add(hZpeakv[i]);
+      if (snamev[i] == "zee") {
+	hZee=(TH1F*)hZpeakv[i]->Clone("hZpeak_zee_clone");
+	hZee->SetDirectory(0);
+      }
+    }
+    printf(" mean in <%s> is %6.4lf pm %6.4lf\n",hTotMC->GetName(),hTotMC->GetMean(),hTotMC->GetMeanError());
+
+    if (!hZee) std::cout << "failed to identify Zee\n";
+    else if (!hasData) std::cout << "there no experimental data points available\n";
+    else {
+      TH1F* hData=(TH1F*) hZpeakv[0]->Clone("hZpeak_data_clone");
+      hData->SetDirectory(0);
+
+      TCanvas *cZp=MakeCanvas("cZpeak","", 600,700);
+      ComparisonPlot_t cp(ComparisonPlot_t::_ratioPlain,"compPlot","",
+			  "mass [GeV]","counts", "MC/data");
+      std::cout << "hZee normalization factor=" << (hData->Integral()/hZee->Integral()) << "\n";
+      std::cout << "hTotMC normalization factor=" << (hData->Integral()/hTotMC->Integral()) << "\n";
+      hZee->Scale( hData->Integral()/hZee->Integral() );
+      hTotMC->Scale( hData->Integral()/hTotMC->Integral() );
+      cp.Prepare2Pads(cZp);
+      //cp.SetLogy();
+      cp.SetRatioYRange(0.8,1.1);
+      cp.AddHist1D(hData,"data", "LPE", kBlack, 1,0,1);
+      cp.AddHist1D(hZee,"MC (norm)", "hist", kBlue, 1,0,1);
+      cp.AddHist1D(hTotMC,"tot MC (norm)","hist",kRed, 1,0,1);
+      cp.Draw(cZp,false,"png");
+      SaveCanvas(cZp,cZp->GetName());
+    }
+  }
 
 
   gBenchmark->Show("prepareYields");      
