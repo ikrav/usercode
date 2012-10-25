@@ -16,6 +16,7 @@ filename_mc="../config_files/fall11mc.input"
 filename_cs="../config_files/xsecCalc.conf"
 triggerSet="Full2011_hltEffOld"
 fsrUnfSet="_fsrUnfGood"
+fsrPUReweight=1   # makeUnfoldingMatrixFsr
 
 #tnpMCFile="../config_files/sf_mc_eta2.conf"
 #tnpDataFile="../config_files/sf_data_eta2.conf"
@@ -317,7 +318,7 @@ cd ../Unfolding
 rm -f *.so ${expectUnfoldingFileFsr}
 echo
 checkFile makeUnfoldingMatrixFsr.C
-root -b -q -l ${LXPLUS_CORRECTION} makeUnfoldingMatrixFsr.C+\(\"$filename_mc\",\"${triggerSet}\",DYTools::NORMAL,1,1.0,-1.0,${debugMode}\)    | tee ${logDir}/out${timeStamp}-04-makeUnfoldingMatrixFsr${anTag}.log
+root -b -q -l ${LXPLUS_CORRECTION} makeUnfoldingMatrixFsr.C+\(\"$filename_mc\",\"${triggerSet}\",DYTools::NORMAL,1,1.0,-1.0,${fsrPUReweight},${debugMode}\)    | tee ${logDir}/out${timeStamp}-04-makeUnfoldingMatrixFsr${anTag}.log
 get_status ${expectUnfoldingFileFsr}
 statusUnfoldingFsr=$RUN_STATUS
 cd ../FullChain
