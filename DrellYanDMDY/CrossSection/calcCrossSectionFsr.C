@@ -1710,8 +1710,8 @@ void printAllCorrections(){
   fileConstantsEff.Close();
 
   TFile fileScaleConstants(fnameScaleFactorConstants);
-  TVectorD *rhoDataMcPtr    = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorFlatIndexArray");
-  TVectorD *rhoDataMcErrPtr = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorErrFlatIndexArray");
+  TVectorD *rhoDataMcPtr    = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorFlatIdxArray");
+  TVectorD *rhoDataMcErrPtr = (TVectorD *)fileScaleConstants.FindObjectAny("scaleFactorErrFlatIdxArray");
   assert(rhoDataMcPtr);
   assert(rhoDataMcErrPtr);
   fileScaleConstants.Close();
