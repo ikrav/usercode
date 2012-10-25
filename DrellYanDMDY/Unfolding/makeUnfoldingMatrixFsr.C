@@ -55,6 +55,8 @@
 #include "../Include/EventSelector.hh"
 #include "../Include/FEWZ.hh"
 #include "../Include/InputFileMgr.hh"
+#include "../Include/PUReweight.hh"
+#include "../Include/eventCounter.h"
 
 //for getting matrix condition number
 #include <TDecompLU.h>
@@ -697,7 +699,8 @@ void makeUnfoldingMatrixFsr(const TString input,
 			 const TString triggerSetString="Full2011DatasetTriggers",
 			 int systematicsMode = DYTools::NORMAL, 
 			 int randomSeed = 1, double reweightFsr = 1.0, 
-			 double massLimit = -1.0, int debugMode=0)
+			 double massLimit = -1.0, int performPUReweight=0,
+			 int debugMode=0)
 //systematicsMode 0 (NORMAL) - no systematic calc
 //1 (RESOLUTION_STUDY) - systematic due to smearing, 2 (FSR_STUDY) - systematics due to FSR, reweighting
 //check mass spectra with reweightFsr = 0.95; 1.00; 1.05  
@@ -810,12 +813,19 @@ void makeUnfoldingMatrixFsr(const TString input,
   const bool isData=kFALSE;
   TriggerSelection requiredTriggers(constantsSet, isData, 0);
 
+  PUReweight_t puWeight;
+  if (performPUReweight) {
+    assert(puWeight.setDefaultFile(dirTag,DYTools::analysisTag_USER, 0));
+    assert(puWeight.setReference("hNGoodPV_data"));
+    assert(puWeight.setActiveSample("hNGoodPV_zee"));
+  }
+
   //--------------------------------------------------------------------------------------------------------------
   // Main analysis code 
   //==============================================================================================================
 
   //for the FSR case
-  const bool useFewzWeights = false;
+  const bool useFewzWeights = true;
   const bool cutZPT100 = true;
   FEWZ_t fewz(useFewzWeights,cutZPT100);
   if (useFewzWeights && !fewz.isInitialized()) {
@@ -861,6 +871,8 @@ void makeUnfoldingMatrixFsr(const TString input,
   vector<TH1F*> hZMassv;//, hZMass2v, hZPtv, hZPt2v, hZyv, hZPhiv;  
   
   char hname[100];
+  eventCounter_t totEC;
+
   for(UInt_t ifile = 0; ifile<fnamev.size(); ifile++) {
     sprintf(hname,"hZMass_%i",ifile); hZMassv.push_back(new TH1F(hname,"",500,0,1500)); hZMassv[ifile]->Sumw2();
   }
@@ -909,10 +921,12 @@ void makeUnfoldingMatrixFsr(const TString input,
   mithep::TEventInfo    *info = new mithep::TEventInfo();
   mithep::TGenInfo *gen  = new mithep::TGenInfo();
   TClonesArray *dielectronArr = new TClonesArray("mithep::TDielectron");
+  TClonesArray *pvArr         = new TClonesArray("mithep::TVertex");
   
   // loop over samples  
   if (debugMode!=-1) {
   for(UInt_t ifile=0; ifile<fnamev.size(); ifile++) {
+    eventCounter_t ec;
   
     // Read input file
     cout << "Processing " << fnamev[ifile] << "..." << endl;
@@ -928,19 +942,32 @@ void makeUnfoldingMatrixFsr(const TString input,
     double xsec=xsecv[ifile];
     AdjustXSectionForSkim(infile,xsec,eventTree->GetEntries(),1);
     lumiv[ifile] = eventTree->GetEntries()/xsec;
-    double scale = lumiv[0]/lumiv[ifile];
+    double extraScale=1.; // 4977*1666/27166257.; // MC Zee scale in selectEvents
+    double scale = extraScale*lumiv[0]/lumiv[ifile];
     cout << "       -> sample weight is " << scale << endl;
 
     // Set branch address to structures that will store the info  
     eventTree->SetBranchAddress("Info",&info);                TBranch *infoBr       = eventTree->GetBranch("Info");
     eventTree->SetBranchAddress("Gen",&gen);                  TBranch *genBr = eventTree->GetBranch("Gen");
     eventTree->SetBranchAddress("Dielectron",&dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
+    eventTree->SetBranchAddress("PV",         &pvArr);         TBranch *pvBranch    = eventTree->GetBranch("PV");
   
+
     // loop over events    
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
       if (debugMode && (ientry>1000000)) break;
       if (ientry%1000000==0) { printProgress("ientry=",ientry,eventTree->GetEntriesFast()); }
       if (ientry%100000==0) { printProgress("ientry=",ientry,eventTree->GetEntriesFast()); }
+      ec.numEvents++;
+
+      int nGoodVertices=1;
+      double wPU=1.0;
+      if (performPUReweight) {
+	pvArr->Clear();
+	pvBranch->GetEntry(ientry);
+	nGoodVertices=countGoodVertices(pvArr);
+	wPU= puWeight.getWeight( nGoodVertices );
+      }
 
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
@@ -952,7 +979,7 @@ void makeUnfoldingMatrixFsr(const TString input,
 
       double fewz_weight = 1.0;
       if (useFewzWeights) fewz_weight=fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
- 
+
       if (ientry<20) {
 	printf("reweight=%4.2lf, fewz_weight=%4.2lf,dE_fsr=%+6.4lf\n",reweight,fewz_weight,(gen->mass-gen->vmass));
       }
@@ -964,7 +991,13 @@ void makeUnfoldingMatrixFsr(const TString input,
       int idxGenPreFsr = DYTools::findIndexFlat(iMassBinGenPreFsr, iYBinGenPreFsr);
       int idxGenPostFsr = DYTools::findIndexFlat(iMassBinGenPostFsr, iYBinGenPostFsr);
 
-      double fullGenWeight = reweight * scale * gen->weight * fewz_weight;
+      // full fullGenWeight is not affected by reweighting
+      double fullGenWeight_tmp = reweight * scale * gen->weight * fewz_weight;
+      double fullGenWeightPU = fullGenWeight_tmp * wPU;
+      if (ientry<20) std::cout << "fullGenWeightPU= (rew=" << reweight << ")*(scale=" << scale << ")*(gen.w=" << gen->weight << ")*(fewz=" << fewz_weight << ")*(wPU=" << wPU << ") = " << fullGenWeightPU << "\n";
+
+      { // a block for debug purposes
+	double fullGenWeight=fullGenWeight_PU;
 
       fsrGood.fillIni(iMassBinGenPreFsr,iYBinGenPreFsr, fullGenWeight);
       fsrGood.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr, fullGenWeight);
@@ -1004,16 +1037,24 @@ void makeUnfoldingMatrixFsr(const TString input,
 	fsrDETexact.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr,fullGenWeight);
 	fsrDETexact.fillMigration(idxGenPreFsr,idxGenPostFsr, fullGenWeight);
       }
+      }
 
 	
       if( !(requiredTriggers.matchEventTriggerBit(info->triggerBits, 
 						  info->runNum))) 
 	continue;
+      ec.numEventsPassedEvtTrigger++;
+
+      // possible optimization
+      // do not consider the event, if reweighting factor is 0.
+      //if (wPU==double(0.0)) continue;
 
       // loop through dielectrons
       dielectronArr->Clear();
       dielectronBr->GetEntry(ientry);    
       for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
+	ec.numDielectronsUnweighted++;
+	ec.numDielectrons_inc();
 
         const mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
 	
@@ -1022,17 +1063,23 @@ void makeUnfoldingMatrixFsr(const TString input,
         if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
         if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
 	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
+
+	ec.numDielectronsGoodEta_inc();
 	
 	// Asymmetric SC Et cuts
 	if( ! ( ( dielectron->scEt_1 > DYTools::etMinLead  && dielectron->scEt_2 > DYTools::etMinTrail)
 		|| ( dielectron->scEt_1 > DYTools::etMinTrail  && dielectron->scEt_2 > DYTools::etMinLead) )) continue;
-    	
+
+	ec.numDielectronsGoodEt_inc();
+   	
 	// Both electrons must match trigger objects. At least one ordering
 	// must match
 	if( ! requiredTriggers.matchTwoTriggerObjectsAnyOrder( dielectron->hltMatchBits_1,
 							       dielectron->hltMatchBits_2,
 							       info->runNum) ) continue;
 	
+	ec.numDielectronsHLTmatched_inc();
+
 	// *** Smurf ID is superseeded by new selection ***
 // 	// The Smurf electron ID package is the same as used in HWW analysis
 // 	// and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
@@ -1042,6 +1089,7 @@ void makeUnfoldingMatrixFsr(const TString input,
 	// The selection below is for the EGM working points from spring 2012
 	// recommended for both 2011 and 2012 data
 	if(!passEGM2011(dielectron, WP_MEDIUM, info->rhoLowEta)) continue;  
+	ec.numDielectronsIDpassed_inc();
 
         // We have a Z candidate! HURRAY! 
 
@@ -1053,7 +1101,7 @@ void makeUnfoldingMatrixFsr(const TString input,
           escale.generateMCSmear(dielectron->scEta_1,dielectron->scEta_2);
 	double massResmeared = dielectron->mass + smearingCorrection;
 
-	hZMassv[ifile]->Fill(massResmeared,scale * gen->weight);
+	hZMassv[ifile]->Fill(massResmeared,scale * gen->weight * wPU);
 
 	//
 	// Fill structures for response matrix and bin by bin corrections
@@ -1062,17 +1110,17 @@ void makeUnfoldingMatrixFsr(const TString input,
 	// The only possible cases are: underflow in mass and overflow in Y.
 
 	// Fill the matrix of post-FSR generator level invariant mass and rapidity
-	detResponse.fillIni( iMassBinGenPostFsr, iYBinGenPostFsr, fullGenWeight );
+	detResponse.fillIni( iMassBinGenPostFsr, iYBinGenPostFsr, fullGenWeightPU );
 
 	// Fill the matrix of the reconstruction level mass and rapidity
 	int iMassReco = DYTools::findMassBin(massResmeared);
 	int iYReco = DYTools::findAbsYBin(iMassReco, dielectron->y);
-	detResponse.fillFin( iMassReco, iYReco, fullGenWeight );
+	detResponse.fillFin( iMassReco, iYReco, fullGenWeightPU );
 
 	double shape_weight = 1.0;
 	if( shapeWeights && iMassReco != -1 && iYReco != -1) {
 	    shape_weight = (*shapeWeights)[iMassReco][iYReco];
-	    //std::cout << "massResmeared=" << massResmeared << ", iMassReco=" << iMassReco << ", shapeWeight=" << shape_weight << "\n";
+	    std::cout << "massResmeared=" << massResmeared << ", iMassReco=" << iMassReco << ", shapeWeight=" << shape_weight << "\n";
 	}
 
 	
@@ -1082,12 +1130,13 @@ void makeUnfoldingMatrixFsr(const TString input,
 	int iIndexFlatGen  = DYTools::findIndexFlat(iMassBinGenPostFsr, iYBinGenPostFsr);
  	int iIndexFlatReco = DYTools::findIndexFlat(iMassReco, iYReco);
 	if ( validFlatIndices(iIndexFlatGen, iIndexFlatReco) ) {
-	  double fullWeight = reweight * scale * gen->weight * shape_weight;
-	  //std::cout << "adding DetMig(" << iIndexFlatGen << "," << iIndexFlatReco << ") = " << reweight << "*" << scale << "*" << gen->weight << "*" << shape_weight << " = "  << (reweight * scale * gen->weight * shape_weight) << "\n";
-	  detResponse.fillMigration(iIndexFlatGen, iIndexFlatReco, fullWeight );
-	  detResponseExact.fillIni( iMassBinGenPostFsr, iYBinGenPostFsr, fullGenWeight );
-	  detResponseExact.fillFin( iMassReco, iYReco, fullGenWeight );
-	  detResponseExact.fillMigration(iIndexFlatGen, iIndexFlatReco, fullWeight );
+	  ec.numDielectronsGoodMass_inc();
+	  double fullWeightPU = fullGenWeightPU * shape_weight;
+	  //std::cout << "adding DetMig(" << iIndexFlatGen << "," << iIndexFlatReco << ") = " << reweight << "*" << scale << "*" << gen->weight << "*" << shape_weight << "*" << wPU << " = "  << (reweight * scale * gen->weight * shape_weight) << "\n";
+	  detResponse.fillMigration(iIndexFlatGen, iIndexFlatReco, fullWeightPU );
+	  detResponseExact.fillIni( iMassBinGenPostFsr, iYBinGenPostFsr, fullGenWeightPU );
+	  detResponseExact.fillFin( iMassReco, iYReco, fullGenWeightPU );
+	  detResponseExact.fillMigration(iIndexFlatGen, iIndexFlatReco, fullGenWeightPU );
 	}
 
         Bool_t isB1 = DYTools::isBarrel(dielectron->scEta_1);
@@ -1112,12 +1161,16 @@ void makeUnfoldingMatrixFsr(const TString input,
     } // end loop over events 
     delete infile;
     infile=0, eventTree=0;
+    std::cout << ec << "\n";
+    totEC.add(ec);
   } // end loop over files
+  std::cout << "total counts : " << totEC << "\n";
   } 
   delete gen;
 
   //return;
 
+  if (debugMode==1) return;
 
   UnfoldingMatrix_t fsrDETcorrections(UnfoldingMatrix_t::_cFSR_DETcorrFactors,"fsrCorrFactors");
 
@@ -1207,6 +1260,7 @@ void makeUnfoldingMatrixFsr(const TString input,
       assert(0);
     }
   }
+  if (performPUReweight) fnameTag.Append("_PU");
   std::cout << "fnameTag=<" << fnameTag << ">\n";
   CPlot::sOutDir=TString("plots") + fnameTag;
 
