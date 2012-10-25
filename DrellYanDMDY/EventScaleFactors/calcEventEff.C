@@ -40,6 +40,9 @@
 
 #include "../Include/InputFileMgr.hh"
 #include "../Include/EventSelector.hh"
+#include "../Include/PUReweight.hh"
+#include "../Include/UnfoldingTools.hh"
+#include "../Include/FEWZ.hh"
 
 using namespace mithep;
 using namespace std;
@@ -148,6 +151,8 @@ void deriveScaleMeanAndErr(const int binCount, const int nexpCount,
 
 const bool savePlots = true;
 const bool correlationStudy = true;
+const bool useFewzWeights = true;
+
 
 // File names for efficiency measurements from tag and probe
 TString          dirTag;
@@ -215,6 +220,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   
 
   TString puStr = (puReweight) ? "_PU" : "";
+  //if (useFewzWeights) puStr.Append("_FEWZ");
   CPlot::sOutDir = TString("plots") + DYTools::analysisTag + puStr;
   gSystem->mkdir(CPlot::sOutDir,true);
 
@@ -399,16 +405,6 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     }
   }
 
-  /*
-  if (0) {
-    for (int kind=0; kind<NEffTypes; ++kind) {
-      TString cName=Form("canv_kind_%d",kind+1);
-      TCanvas *c= MakeCanvas(cName,cName,800,800);
-      c->Divide(DYTools::
-    for (unsigned int i=0; i<
-  }
-  */
-
 
   // Create container for data for error estimates based on pseudo-experiments
   //TH1F *systScale[DYTools::nMassBins][nexp];
@@ -464,6 +460,12 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     hSystEsfEvtWV.push_back(new TH1F(base,base,nUnfoldingBins,0.,double(nUnfoldingBins)));
   }
 
+  PUReweight_t PUReweight;
+  if (puReweight) {
+    assert(PUReweight.setDefaultFile(mcMgr.dirTag(),DYTools::analysisTag_USER,0));
+    assert(PUReweight.setReference("hNGoodPV_data"));
+    assert(PUReweight.setActiveSample("hNGoodPV_zee"));
+  }
 
   TFile *skimFile=new TFile(selectEventsFName);
   if (!skimFile || !skimFile->IsOpen()) {
@@ -498,6 +500,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     double scaleFactorId  = sqrt(findEventScaleFactor(1,selData));
     double scaleFactorHlt = sqrt(findEventScaleFactor(2,selData));
     double weight=selData.weight;
+    if (puReweight) weight *= PUReweight.getWeight(selData.nGoodPV);
     if ( ientry%20000 == 0 ) std::cout << "ientry=" << ientry << ", weight=" << weight << ", scaleFactor=" << scaleFactor << "\n";
 
     hScale->Fill(scaleFactor, weight);
@@ -734,11 +737,26 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 			  triggers.triggerConditionsName() + puStr +
 			  TString(".root"));
 
+  TMatrixD scaleMatrix(DYTools::nMassBins,DYTools::nYBinsMax);
+  TMatrixD scaleMatrixErr(DYTools::nMassBins,DYTools::nYBinsMax);
+  unfolding::deflattenMatrix(scaleFIV, scaleMatrix);
+  unfolding::deflattenMatrix(scaleMeanErrFIV, scaleMatrixErr);
+
+  TVectorD vecEtBins(etBinCount+1);
+  for (int i=0; i<etBinCount+1; ++i) vecEtBins[i]=etBinLimits[i];
+  TVectorD vecEtaBins(etaBinCount+1);
+  for (int i=0; i<etaBinCount+1; ++i) vecEtaBins[i]=etaBinLimits[i];
+
   TFile fa(sfConstFileName, "recreate");
   scaleV.Write("scaleFactorMassIdxArray");
   scaleMeanErrV.Write("scaleFactorErrMassIdxArray");
   scaleFIV.Write("scaleFactorFlatIdxArray");
   scaleMeanErrFIV.Write("scaleFactorErrFlatIdxArray");
+  scaleMatrix.Write("scaleFactor");
+  scaleMatrixErr.Write("scaleFactorErr");
+  vecEtBins.Write("etBinLimits");
+  vecEtaBins.Write("etaBinLimits");
+  unfolding::writeBinningArrays(fa);
   fa.Close();
 
   //
@@ -1082,6 +1100,13 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
   int totalCandMatchedToGen = 0;
   int totalCandFullSelection = 0;
 
+  const bool cutZPT100 = true;
+  FEWZ_t fewz(useFewzWeights,cutZPT100);
+  if (useFewzWeights && !fewz.isInitialized()) {
+    std::cout << "failed to prepare FEWZ correction\n";
+    throw 2;
+  }
+
 #ifdef esfSelectEventsIsObject
   esfSelectEvent_t::Class()->IgnoreTObjectStreamer();
 #endif
@@ -1130,8 +1155,9 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
     AdjustXSectionForSkim(infile,xsec,eventTree->GetEntries(),1);
     double lumi = eventTree->GetEntries()/xsec;
     if (ifile==0) lumi0=lumi;
-    double weight = lumi0/lumi;
-    cout << "       -> sample weight is " << weight << endl;
+    double extraScale=1.; // 4977*1666/27166257.; // MC Zee weight in selectEvents
+    double sample_weight = extraScale * lumi0/lumi;
+    cout << "       -> sample weight is " << sample_weight << endl;
 
     // Set branch address to structures that will store the info  
     eventTree->SetBranchAddress("Info",&info);
@@ -1145,7 +1171,7 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 
     // loop over events    
     eventsInNtuple         += eventTree->GetEntries();
-    weightedEventsInNtuple += weight * eventTree->GetEntries();
+    weightedEventsInNtuple += sample_weight * eventTree->GetEntries();
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
 //       for(UInt_t ientry=0; ientry<100000; ientry++) { // This is for faster turn-around in testing
       if (debugMode && (ientry>100000)) break;
@@ -1241,6 +1267,8 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	      (trailing->hltMatchBits & trailingTriggerObjectBit) ) ) continue;
 	totalCandFullSelection++;
 
+	double weight=sample_weight;
+	if (useFewzWeights) weight *= fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
 	selData.assign(gen->mass, gen->y,
 		       dielectron->mass, dielectron->y,
 		       leading->scEt, leading->scEta,
