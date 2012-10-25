@@ -22,6 +22,8 @@ public:
     Date20110901_EPS11_default,
     Date20120101_default,
     Date20120802_default,
+    Date20121003FEWZ_default, // FEWZ correction and MC backgroud were considered in derivation
+    Date20121025FEWZPU_default, // FEWZ correction and PU reweighting were considered in derivation
     CalSet_File_Gauss,
     CalSet_File_BreitWigner,
     CalSet_File_Voigt

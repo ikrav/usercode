@@ -395,6 +395,8 @@ bool ElectronEnergyScale::initializeAllConstants(int debug){
   case Date20110901_EPS11_default: nEtaBins1=12; break;
   case Date20120101_default: nEtaBins1=12; break;
   case Date20120802_default: nEtaBins1=12; break;
+  case Date20121003FEWZ_default: nEtaBins1=12; break;
+  case Date20121025FEWZPU_default: nEtaBins1=12; break;
   case CalSet_File_Gauss: 
   case CalSet_File_Voigt:
   case CalSet_File_BreitWigner:
@@ -594,6 +596,121 @@ bool ElectronEnergyScale::initializeAllConstants(int debug){
   }
     break;
 
+  case Date20121003FEWZ_default: {
+    //
+    // Data of full 2011. Eta bins like for
+    // for Summer 11 result. The
+    // constants are NOT symmetric about eta = 0.
+    // Values derived for the CMSSW44X files with correct isolation variables.
+    // FEWZ correction and MC backgrounds were considered in the derivation
+    //
+    const int nEtaBins = 12;
+    //const double etaBinLimits[nEtaBins+1] = 
+    //  {-2.50001, -2.0, -1.5, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.5, 2.0, 2.50001};
+    std::vector<string> lines;
+    lines.push_back("! Date 2012 Oct 03\n");
+    lines.push_back("! g_esfWorkCase=15 (6 bins on each eta side)\n");
+    lines.push_back("! g_esfWorkCaseShortName= 6binNegs\n");
+    lines.push_back("! g_esfFitModel=1 (fit model Gauss)\n");
+    lines.push_back("scaling sqrt\n");
+    lines.push_back("! bins  -2.50 -2.00 -1.50 -1.20 -0.80 -0.40 0.00 0.40 0.80 1.20 1.50 2.00 2.50\n");
+    lines.push_back("MCOverData=17137.515417\n");
+    lines.push_back("EtaDivisionCount=12\n");
+    lines.push_back("ScalingFactorsCount=12\n");
+    lines.push_back("SmearingFactorsCount=12\n");
+    lines.push_back("scale_0      1.01437 -0.000273902\n");
+    lines.push_back("scale_1     0.988787 -0.000241357\n");
+    lines.push_back("scale_2      1.02245 -0.000248856\n");
+    lines.push_back("scale_3      1.01171 -0.000198996\n");
+    lines.push_back("scale_4      1.00645 -0.000175147\n");
+    lines.push_back("scale_5      1.00594 -0.000116214\n");
+    lines.push_back("scale_6      1.00319 -0.000128479\n");
+    lines.push_back("scale_7      1.00406 -0.000128213\n");
+    lines.push_back("scale_8      1.01123  -0.00022103\n");
+    lines.push_back("scale_9       1.0212 -0.000330949\n");
+    lines.push_back("scale_10     0.988795 -0.000245423\n");
+    lines.push_back("scale_11      1.01451  -0.00025763\n");
+    lines.push_back("smear_0      1.86203   -0.0207486\n");
+    lines.push_back("smear_1       1.4822   -0.0253977\n");
+    lines.push_back("smear_2      1.09683    -0.028153\n");
+    lines.push_back("smear_3     0.702673   -0.0224599\n");
+    lines.push_back("smear_4     0.307007   -0.0341397\n");
+    lines.push_back("smear_5     0.460252   -0.0250094\n");
+    lines.push_back("smear_6     0.384336   -0.0276896\n");
+    lines.push_back("smear_7     0.406731   -0.0291567\n");
+    lines.push_back("smear_8     0.650285   -0.0240713\n");
+    lines.push_back("smear_9      1.10309   -0.0289236\n");
+    lines.push_back("smear_10      1.40315   -0.0266431\n");
+    lines.push_back("smear_11      1.95493    -0.020064\n");
+
+    if (nEtaBins1!=nEtaBins) assert(0);
+
+    assert(_etaBinLimits); 
+    assert(_dataConst); assert(_dataConstErr);
+    assert(_mcConst1); assert(_mcConst1Err);
+    //for(int i=0; i<nEtaBins+1; i++) _etaBinLimits[i] = etaBinLimits[i];
+    if (!AssignConstants(lines, nEtaBins,_etaBinLimits,_dataConst,_dataConstErr,_mcConst1,_mcConst1Err)) assert(0);
+  }
+    break;
+
+  case Date20121025FEWZPU_default: {
+    //
+    // Data of full 2011. Eta bins like for
+    // for Summer 11 result. The
+    // constants are NOT symmetric about eta = 0.
+    // Values derived for the CMSSW44X files with correct isolation variables.
+    // FEWZ correction and PU reweighting were considered in the derivation
+    // Only MC Zee was used
+    //
+    const int nEtaBins = 12;
+    //const double etaBinLimits[nEtaBins+1] = 
+    //  {-2.50001, -2.0, -1.5, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.5, 2.0, 2.50001};
+    std::vector<string> lines;
+    lines.push_back("! Date 2012 Oct 25\n");
+    lines.push_back("! g_esfWorkCase=15 (6 bins on each eta side)\n");
+    lines.push_back("! g_esfWorkCaseShortName= 6binNegs\n");
+    lines.push_back("! g_esfFitModel=1 (fit model Gauss)\n");
+    lines.push_back("scaling sqrt\n");
+    lines.push_back("! bins  -2.50 -2.00 -1.50 -1.20 -0.80 -0.40 0.00 0.40 0.80 1.20 1.50 2.00 2.50\n");
+    lines.push_back("MCOverData=17136.430715");
+    lines.push_back("EtaDivisionCount=12");
+    lines.push_back("ScalingFactorsCount=12");
+    lines.push_back("SmearingFactorsCount=12");
+    lines.push_back("scale_0      1.01234 -0.000222138");
+    lines.push_back("scale_1     0.987596 -0.000224354");
+    lines.push_back("scale_2      1.02165 -0.000250768");
+    lines.push_back("scale_3        1.011 -0.000161953");
+    lines.push_back("scale_4      1.00578 -0.000135726");
+    lines.push_back("scale_5      1.00535 -0.000107557");
+    lines.push_back("scale_6      1.00251 -0.000115369");
+    lines.push_back("scale_7      1.00341 -0.000133169");
+    lines.push_back("scale_8      1.01052 -0.000192806");
+    lines.push_back("scale_9      1.02047 -0.000320073");
+    lines.push_back("scale_10     0.987861 -0.000233312");
+    lines.push_back("scale_11      1.01263 -0.000264971");
+    lines.push_back("smear_0      1.95695   -0.0201862");
+    lines.push_back("smear_1      1.61288   -0.0242296");
+    lines.push_back("smear_2      1.21198   -0.0266632");
+    lines.push_back("smear_3     0.805396   -0.0205127");
+    lines.push_back("smear_4     0.453941   -0.0268033");
+    lines.push_back("smear_5      0.57275   -0.0215568");
+    lines.push_back("smear_6     0.485194    -0.023758");
+    lines.push_back("smear_7     0.520888   -0.0244349");
+    lines.push_back("smear_8     0.761379   -0.0216066");
+    lines.push_back("smear_9      1.21117   -0.0272647");
+    lines.push_back("smear_10      1.54301   -0.0251034");
+    lines.push_back("smear_11      2.04069   -0.0196909");
+
+    if (nEtaBins1!=nEtaBins) assert(0);
+
+    assert(_etaBinLimits); 
+    assert(_dataConst); assert(_dataConstErr);
+    assert(_mcConst1); assert(_mcConst1Err);
+    //for(int i=0; i<nEtaBins+1; i++) _etaBinLimits[i] = etaBinLimits[i];
+    if (!AssignConstants(lines, nEtaBins,_etaBinLimits,_dataConst,_dataConstErr,_mcConst1,_mcConst1Err)) assert(0);
+  }
+    break;
+
   case CalSet_File_Gauss: 
   case CalSet_File_Voigt:
   case CalSet_File_BreitWigner: {
@@ -637,6 +754,8 @@ bool ElectronEnergyScale::initializeExtraSmearingFunction(int normalize){
       case Date20110901_EPS11_default:
       case Date20120101_default:
       case Date20120802_default:
+      case Date20121003FEWZ_default:
+      case Date20121025FEWZPU_default:
       case CalSet_File_Gauss: {
 	if(_mcConst1 == 0) continue;
 	smearingFunctionGrid[i][j] = new TF1(fname, "gaus(0)", -10, 10);
@@ -894,6 +1013,8 @@ void ElectronEnergyScale::randomizeSmearingWidth(int seed){
   case Date20110901_EPS11_default:
   case Date20120101_default:
   case Date20120802_default:
+  case Date20121003FEWZ_default:
+  case Date20121025FEWZPU_default:
   case CalSet_File_Gauss: {
 
     for( int i=0; i<_nEtaBins; i++){
@@ -1124,6 +1245,12 @@ ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet
   if ( (pos==0) || escaleTagName.Contains("Date20120802_default") ) {
     calibrationSet = ElectronEnergyScale::Date20120802_default;
   }
+  else if ( (pos==0) || escaleTagName.Contains("Date20121025FEWZPU_default") ) {
+    calibrationSet = ElectronEnergyScale::Date20121003FEWZ_default;
+  }
+  else if ( (pos==0) || escaleTagName.Contains("Date20121003FEWZ_default") ) {
+    calibrationSet = ElectronEnergyScale::Date20121003FEWZ_default;
+  }
   else if ( (pos==0) || escaleTagName.Contains("Date20120101_default") ) {
     calibrationSet = ElectronEnergyScale::Date20120101_default;
   }
@@ -1181,6 +1308,8 @@ TString ElectronEnergyScale::CalibrationSetName(ElectronEnergyScale::Calibration
   case ElectronEnergyScale::Date20110901_EPS11_default: name="Date20110910_EPS11_default"; break;
   case ElectronEnergyScale::Date20120101_default: name="Date20120101_default"; break;
   case ElectronEnergyScale::Date20120802_default: name="Date20120802_default"; break;
+  case ElectronEnergyScale::Date20121003FEWZ_default: name="Date20121003FEWZ_default"; break;
+  case ElectronEnergyScale::Date20121025FEWZPU_default: name="Date20121025FEWZPU_default"; break;
   case ElectronEnergyScale::CalSet_File_Gauss: 
     name="FileGauss(";
     if (fileName) name+=(*fileName);
@@ -1212,6 +1341,8 @@ TString ElectronEnergyScale::CalibrationSetFunctionName(ElectronEnergyScale::Cal
   case ElectronEnergyScale::Date20110901_EPS11_default: break; // Gauss
   case ElectronEnergyScale::Date20120101_default: break; // Gauss
   case ElectronEnergyScale::Date20120802_default: break; // Gauss
+  case ElectronEnergyScale::Date20121003FEWZ_default: break; // Gauss
+  case ElectronEnergyScale::Date20121025FEWZPU_default: break; // Gauss
   case ElectronEnergyScale::CalSet_File_Gauss: break; // Gauss
   case ElectronEnergyScale::CalSet_File_Voigt: name="Voigt"; break;
   case ElectronEnergyScale::CalSet_File_BreitWigner: name="BreitWigner"; break;
@@ -1231,6 +1362,8 @@ TString ElectronEnergyScale::calibrationSetShortName() const {
   case ElectronEnergyScale::Date20110901_EPS11_default: name="default20110901"; break; 
   case ElectronEnergyScale::Date20120101_default: name="default20120101"; break;
   case ElectronEnergyScale::Date20120802_default: name="default20120802"; break;
+  case ElectronEnergyScale::Date20121003FEWZ_default: name="default20121003FEWZ"; break;
+  case ElectronEnergyScale::Date20121025FEWZPU_default: name="default20121025FEWZPU"; break;
   case ElectronEnergyScale::CalSet_File_Gauss: name="Gauss"; break;
   case ElectronEnergyScale::CalSet_File_Voigt: name="Voigt"; break;
   case ElectronEnergyScale::CalSet_File_BreitWigner: name="BreitWigner"; break;
