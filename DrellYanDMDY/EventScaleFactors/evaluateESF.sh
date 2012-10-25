@@ -72,11 +72,7 @@ runCalcEventEff=0
 #  Modify flags if fullRun=1
 #
 
-if [ ${fullRun} -eq 1 ] ; then
-  runMC_Reco=1; runMC_Id=1; runMC_Hlt=1
-  runData_Reco=1; runData_Id=1; runData_Hlt=1
-  runCalcEventEff=1   # it prepares the skim for event efficiencies
-else if [ ${#fullRun} -eq 7 ] ; then
+if [ ${#fullRun} -eq 7 ] ; then
   if [ ${fullRun:0:1} -eq 1 ] ; then runMC_Reco=1; else runMC_Reco=0; fi
   if [ ${fullRun:1:1} -eq 1 ] ; then runMC_Id=1; else runMC_Id=0; fi
   if [ ${fullRun:2:1} -eq 1 ] ; then runMC_Hlt=1; else runMC_Hlt=0; fi
@@ -90,7 +86,10 @@ else if [ ${#fullRun} -eq 7 ] ; then
   echo "  runData_Reco=${runData_Reco}, runData_Id=${runData_Id}, runData_Hlt=${runData_Hlt}"
   echo "  runCalcEventEff=${runCalcEventEff}"
   echo
-fi
+elif [ ${fullRun} -eq 1 ] ; then
+  runMC_Reco=1; runMC_Id=1; runMC_Hlt=1
+  runData_Reco=1; runData_Id=1; runData_Hlt=1
+  runCalcEventEff=1   # it prepares the skim for event efficiencies
 fi
 
 #
