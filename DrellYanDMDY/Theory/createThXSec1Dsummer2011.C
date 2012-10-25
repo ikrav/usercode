@@ -47,27 +47,50 @@ void rebinCrossSection(const TVectorD &massBins, const TVectorD &XSecTh, const T
     newMassBins[iM+1]=massHi;
     if (locDebug) std::cout << "target mass range=" << massLo << " ... " << massHi << "\n";
     for ( ; (iTh<nMassBinTh) && (massBins[iTh]<massHi); ++iTh) {
+      std::cout << "range for iTh=" << iTh << ", " << massBins[iTh] << "-" << massBins[iTh+1] << ", massLo=" << massLo << ", massHi=" << massHi << "\n";
       if ((massBins[iTh]>=massLo) && (massBins[iTh+1]<=massHi)) {
-	if (locDebug) std::cout << "adding entry for mass=" << massBins[iTh] << " (val=" << XSecTh[iTh] << ")\n";
+	if (locDebug) std::cout << "adding entry for mass=" << massBins[iTh] << "-" << massBins[iTh+1] << " (val=" << XSecTh[iTh] << ")\n";
 	newXSec[iM]+= XSecTh[iTh];
 	newXSecErr[iM]+= SQR(XSecThErr[iTh]);
       }
 
       // check the next mass bin
       if ((iTh<nMassBinTh) && (massBins[iTh+1]>massHi)) {
+	std::cout << "linear approximation\n";
 	// linear approximation
-	// this is a FAILING APPROXIMATION !!!
-	double x=(massHi-massBins[iTh])/(massBins[iTh+1]-massBins[iTh]);
-	std::cout << "original mass range=" << massBins[iTh] << " ... " << massBins[iTh+1] << ". Linear approximation for massHi=" << massHi << "\n";
-	if (locDebug) { 
-	  std::cout << "next mass bin ends at " << massBins[iTh+1] << "\n";
-	  std::cout << "adding only x=" << x << " fraction to this bin\n";
+	// the cross section is per bin!
+	// (m_1,m0, XSecTh[iTh-1]); (m0,m1, XSecTh[iTh]) ; (m1,m2, XSecTh[iTh+1])
+	// The cross section at the center of a bin 
+	// ( mc_05, XSecTh[iTh-1]/w0 ); ( mc05, XSecTh[iTh]/w1 ); ( mc15, XSecTh[iTh+1]/w2 )
+	double m_1=massBins[iTh-1];
+	double m0=massBins[iTh];
+	double m1=massBins[iTh+1];
+	double xsc_1to0=XSecTh[iTh-1];
+	double xsc0to1=XSecTh[iTh];
+	double xsc0to1Err=XSecThErr[iTh];
+	double m2=0, xsc1to2=0;
+	if (iTh+2 < massBins.GetNoElements()) {
+	  // Try to improve using slope with respect to the next bin
+	  m2= massBins[iTh+2];
+	  xsc1to2=XSecTh[iTh+1];
 	}
-	newXSec[iM] += x * XSecTh[iTh+1];
-	newXSecErr[iM] += SQR( x * XSecThErr[iTh+1] )/(x*x+(1-x)*(1-x));
+	else {
+	  m2=-1e9;
+	}
+	double wSigmaStar1=0, wSigmaStarErr1=0;
+	double wSigmaStar2=0, wSigmaStarErr2=0;
+	subdivideBinWeightByLinearApprox(m_1,xsc_1to0, m0,xsc0to1,xsc0to1Err,
+					 m1,
+					 xsc1to2,m2,
+					 massHi,
+					 wSigmaStar1,wSigmaStarErr1,
+					 wSigmaStar2,wSigmaStarErr2);
+	std::cout << "xsc0to1=" << xsc0to1 << ", wSigmaStar=" << wSigmaStar1 << " and " << wSigmaStar2 << "\n";
+	newXSec[iM] += wSigmaStar1;
+	newXSecErr[iM] += SQR( wSigmaStarErr1 );
 	if (iM!=newBinCount) {
-	  newXSec[iM+1] += (1-x) * XSecTh[iTh+1];
-	  newXSecErr[iM+1] += SQR( (1-x) * XSecThErr[iTh+1] )/(x*x + (1-x)*(1-x));
+	  newXSec[iM+1] += wSigmaStar2;
+	  newXSecErr[iM+1] += SQR( wSigmaStarErr2 );
 	}
 	iTh++;
       }
