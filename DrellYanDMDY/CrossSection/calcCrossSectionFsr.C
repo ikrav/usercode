@@ -1930,7 +1930,10 @@ void initGlobalFileNames(const TriggerSelection &triggers, const TString &tagDir
 
 // This file contains unfolding matrix 
   TString unfFileStart=pathConstants;
-  if (fsrBinByBin!=_fsrCorr_binByBin) unfFileStart.Append("detResponse_");
+  if (fsrBinByBin!=_fsrCorr_binByBin) {
+    if (useExactVectorsForMcClosureTest) unfTestStart.Append("detResponseExact_");
+    else unfFileStart.Append("detResponse_");
+  }
   fnameUnfoldingConstants=unfFileStart + TString("unfolding_constants") + fnameEnd;
 
 // Contains relative unfolding systematic errors
