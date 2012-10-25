@@ -603,6 +603,7 @@ void  applyUnfolding(const TMatrixD &vinM, const TMatrixD &vinStatErrM, const TM
 			   + systUnfoldingV[i]*systUnfoldingV[i]
 			   + systEscaleV[i]*systEscaleV[i]);
   }
+  unfolding::deflattenMatrix(voutSystErr, voutSystErrM);
 
   // After propagating through unfolding all errors that we had on yields before 
   // unfolding we can compute the relative errors of each kind. While unfolding
