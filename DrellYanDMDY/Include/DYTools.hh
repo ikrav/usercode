@@ -156,7 +156,7 @@ namespace DYTools {
 
     int result =-1;
     for(int ibin=0; ibin < nMassBinsLoc; ibin++){
-      if( mass >= massBinLimitsLoc[ibin] && mass < massBinLimitsLoc[ibin+1]) {
+      if( (mass >= massBinLimitsLoc[ibin]) && (mass < massBinLimitsLoc[ibin+1])) {
 	result = ibin;
 	break;
       }
@@ -661,6 +661,8 @@ namespace DYTools {
   //
   typedef enum { _cs_None=0, _cs_preFsr, _cs_preFsrNorm, 
 		 _cs_preFsrDet, _cs_preFsrDetNorm,
+		 _cs_preFsrDetErr, _cs_preFsrDetNormErr,
+		 _cs_preFsrDetSystErr, _cs_preFsrDetNormSystErr,
 		 _cs_postFsr, _cs_postFsrNorm, 
 		 _cs_postFsrDet, _cs_postFsrDetNorm } TCrossSectionKind_t;
 

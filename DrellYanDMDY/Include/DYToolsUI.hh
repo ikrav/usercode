@@ -270,6 +270,10 @@ TString CrossSectionKindName(DYTools::TCrossSectionKind_t kind) {
   case _cs_preFsrNorm: name="preFsrNorm"; break;
   case _cs_preFsrDet: name="preFsrDet"; break;
   case _cs_preFsrDetNorm: name="preFsrDetNorm"; break;
+  case _cs_preFsrDetErr: name="preFsrDetErr"; break;
+  case _cs_preFsrDetNormErr: name="preFsrDetNormErr"; break;
+  case _cs_preFsrDetSystErr: name="preFsrDetSystErr"; break;
+  case _cs_preFsrDetNormSystErr: name="preFsrDetNormSystErr"; break;
   case _cs_postFsr: name="postFsr"; break;
   case _cs_postFsrNorm: name="postFsrNorm"; break;
   case _cs_postFsrDet: name="postFsrDet"; break;
@@ -288,7 +292,11 @@ DYTools::TCrossSectionKind_t DetermineCrossSectionKind(const TString &str) {
   using namespace DYTools;
   DYTools::TCrossSectionKind_t kind = _cs_None;
   if (str.Contains("preFsrNorm")) kind=_cs_preFsrNorm;
+  else if (str.Contains("preFsrDetNormSystErr")) kind=_cs_preFsrDetNormSystErr;
+  else if (str.Contains("preFsrDetNormErr")) kind=_cs_preFsrDetNormErr;
   else if (str.Contains("preFsrDetNorm")) kind=_cs_preFsrDetNorm;
+  else if (str.Contains("preFsrDetSystErr")) kind=_cs_preFsrDetSystErr;
+  else if (str.Contains("preFsrDetErr")) kind=_cs_preFsrDetErr;
   else if (str.Contains("preFsrDet")) kind=_cs_preFsrDet;
   else if (str.Contains("preFsr")) kind=_cs_preFsr;
   else if (str.Contains("postFsrNorm")) kind=_cs_postFsrNorm;
@@ -315,6 +323,10 @@ TString CrossSectionKindLongName(DYTools::TCrossSectionKind_t kind) {
   case _cs_preFsrNorm: name="normalized cross section"; break;
   case _cs_preFsrDet: name="counts in DET space"; break;
   case _cs_preFsrDetNorm: name="normalized cross section (DET)"; break;
+  case _cs_preFsrDetErr: name="error in DET space"; break;
+  case _cs_preFsrDetNormErr: name="error of norm.cross section (DET)"; break;
+  case _cs_preFsrDetSystErr: name="syst.error in DET space"; break;
+  case _cs_preFsrDetNormSystErr: name="syst.error of norm.cross section (DET)"; break;
   case _cs_postFsr: name="postFsr counts in full space"; break;
   case _cs_postFsrNorm: name="normalized postFsr cross section"; break;
   case _cs_postFsrDet: name="postFsr counts in DET space"; break;
