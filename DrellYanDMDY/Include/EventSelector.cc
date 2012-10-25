@@ -17,7 +17,8 @@ DielectronSelector_t::DielectronSelector_t(TSelectionType_t set_selection, Elect
 bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, 
 						  ULong_t leadingTriggerObjectBit, 
 						  ULong_t trailingTriggerObjectBit,
-						  double rho) { // the last parameter: rho for PU correction for isolation
+						  double rho,
+						  eventCounter_t *ec) { // the last parameter: rho for PU correction for isolation
 
   fTotalCandidates++;
 
@@ -29,6 +30,7 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
     if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
     if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
   
+    if (ec) ec->numDielectronsGoodEta_inc();
     fCandidatesGoodEta++;
 
     //
@@ -80,7 +82,8 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
     // requirements on BOTH electrons
     // For DY ET cuts are asymmetric:
     if( ! ( (scEt1>20 && scEt2>10) || (scEt1>10 && scEt2>20) ) ) continue;
-    
+
+    if (ec) ec->numDielectronsGoodEt_inc();
     fCandidatesGoodEt++;
 
     // Both electrons must match trigger objects. At least one ordering
@@ -92,6 +95,7 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
 	   (dielectron->hltMatchBits_1 & trailingTriggerObjectBit && 
 	    dielectron->hltMatchBits_2 & leadingTriggerObjectBit ) ) ) continue;
     
+    if (ec) ec->numDielectronsHLTmatched_inc();
     fCandidatesHLTMatched++;
 
     // Other cuts to both electrons
@@ -105,12 +109,14 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
     // Present EGM recommended for 2011 and 2012: WP Medium
     if(!passEGM2011(dielectron,WP_MEDIUM,rho)) continue;
 
+    if (ec) ec->numDielectronsIDpassed_inc();
     fCandidatesIDPassed++;
 
     // loose mass window 
     double minMass= (applyEScale==_escaleUncorrected) ? 5 : 10;
-      if( dielectron->mass < minMass ) continue;
+    if( dielectron->mass < minMass ) continue;
 
+    if (ec) ec->numDielectronsGoodMass_inc();
     fCandidatesMassAboveMinLimit++;
 
     ok=kTRUE; // selection PASSED

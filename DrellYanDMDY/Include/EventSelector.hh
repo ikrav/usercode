@@ -13,6 +13,7 @@
 #include "TDielectron.hh"
 #include "TVertex.hh"
 #include "EleIDCuts.hh"
+#include "eventCounter.h"
 
 // -------------------------------------------------
 
@@ -29,16 +30,18 @@ public:
 
   bool testDielectron_default(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, 
 			      ULong_t leadingTriggerObjectBit, ULong_t trailingTriggerObjectBit, 
-			      double rho); // the last argument is rho for PU correction of the isolaiton
+			      double rho,
+			      eventCounter_t *ec=NULL); // the last argument is rho for PU correction of the isolaiton
 
   // dielectron may be modified by escale corrections
   bool testDielectron(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, 
 		      ULong_t leadingTriggerObjectBit, ULong_t trailingTriggerObjectBit,
-		      double rho) {// the last argument is rho for PU correction of the isolaiton
+		      double rho, 
+		      eventCounter_t *ec=NULL) {// the last argument is rho for PU correction of the isolaiton
     bool ok=kFALSE;
     switch(fSelection) {
     case _selectNone: break;
-    case _selectDefault: ok=testDielectron_default(dielectron,applyEScale,leadingTriggerObjectBit,trailingTriggerObjectBit,rho); break;
+    case _selectDefault: ok=testDielectron_default(dielectron,applyEScale,leadingTriggerObjectBit,trailingTriggerObjectBit,rho,ec); break;
     default:
       ok=kFALSE;
     }
@@ -57,10 +60,10 @@ public:
 
   bool operator()(mithep::TDielectron *dielectron, TEScaleCorrection_t applyEScale, 
 		  ULong_t leadingTriggerObjectBit, ULong_t trailingTriggerObjectBit,
-		  double rho) {
+		  double rho, eventCounter_t *ec=NULL) {
     return testDielectron(dielectron,applyEScale,
 			  leadingTriggerObjectBit,trailingTriggerObjectBit,
-			  rho);
+			  rho,ec);
   }
 
   std::ostream& printCounts(std::ostream&);
