@@ -37,6 +37,7 @@
 // Helper functions for Electron ID selection
 #include "../Include/EleIDCuts.hh"
 
+#include "../Include/FEWZ.hh"
 #include "../Include/EventSelector.hh"
 #include "../Include/PUReweight.hh"
 #include "../Include/InputFileMgr.hh"
@@ -123,6 +124,14 @@ void plotDYEfficiency(const TString input,
   //const Double_t kGAP_LOW  = 1.4442; in DYTools
   //const Double_t kGAP_HIGH = 1.566;  in DYTools
 
+  //for the FSR case
+  const bool useFewzWeights = true;
+  const bool cutZPT100 = true;
+  FEWZ_t fewz(useFewzWeights,cutZPT100);
+  if (useFewzWeights && !fewz.isInitialized()) {
+    std::cout << "failed to prepare FEWZ correction\n";
+    throw 2;
+  }
 
   //--------------------------------------------------------------------------------------------------------------
   // Main analysis code 
@@ -228,7 +237,8 @@ void plotDYEfficiency(const TString input,
     // all subsequent ones are normalized to xsection and luminosity
     AdjustXSectionForSkim(infile,xsecv[ifile],eventTree->GetEntries(),1);
     lumiv[ifile] = eventTree->GetEntries()/xsecv[ifile];
-    double scale = lumiv[0]/lumiv[ifile];
+    double extraScale=1; // 4977*1666/27166257.; MC Zee weight in selectEvents
+    double scale = extraScale * lumiv[0]/lumiv[ifile];
     cout << "       -> sample weight is " << scale << endl;
 
     // Set branch address to structures that will store the info  
@@ -339,9 +349,10 @@ void plotDYEfficiency(const TString input,
       int ibinGenM = DYTools::findMassBin(gen->mass);
       int ibinGenY = DYTools::findAbsYBin(ibinGenM,gen->y);
       double totalWeight= scale * gen->weight * puWeight;
+      if (useFewzWeights) totalWeight *= fewz.getWeight(gen->vmass,gen->vpt,gen->vy);
 
       // Accumulate denominator for efficiency calculations
-      if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= DYTools::nYBins[ibinGenM]){
+      if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM < DYTools::nMassBins && ibinGenY < DYTools::nYBins[ibinGenM]){
 	nEventsv(ibinGenM,ibinGenY) += totalWeight;
         sumWeightsTotaSq(ibinGenM,ibinGenY) += totalWeight*totalWeight;
 	// Split events barrel/endcap using matched supercluster or particle eta
@@ -427,7 +438,7 @@ void plotDYEfficiency(const TString input,
 	  //  std::cout << "error in PU bin indexing\n";
 	  //}
 	}
-	if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM <= DYTools::nMassBins && ibinGenY <= DYTools::nYBins[ibinGenM]){
+	if(ibinGenM != -1 && ibinGenY != -1 && ibinGenM < DYTools::nMassBins && ibinGenY < DYTools::nYBins[ibinGenM]){
 	  nPassv(ibinGenM,ibinGenY) += totalWeight;
           sumWeightsPassSq(ibinGenM,ibinGenY) += totalWeight*totalWeight;
 	  if(isB1 && isB2)                            { nPassBBv(ibinGenM,ibinGenY) += totalWeight; } 
@@ -441,6 +452,7 @@ void plotDYEfficiency(const TString input,
     infile=0, eventTree=0;
   } // end loop over files
   delete gen;
+
   cout << "ERROR: binning problem (" << binProblem <<" events in ECAL gap)"<<endl;
 
   effv      = 0;
@@ -493,10 +505,12 @@ void plotDYEfficiency(const TString input,
   //==============================================================================================================  
 
   // destination dir
-  CPlot::sOutDir="plots" + DYTools::analysisTag;
+  TString extraTag= DYTools::analysisTag;
+  if (!useFewzWeights) extraTag.Append("_noFEWZ");
+  CPlot::sOutDir="plots" + extraTag;
   TString outputDir(TString("../root_files/constants/")+dirTag);
   gSystem->mkdir(outputDir,kTRUE);
-  TString fnamePlots=outputDir + TString("/event_efficiency_plots") + DYTools::analysisTag + TString(".root");
+  TString fnamePlots=outputDir + TString("/event_efficiency_plots") + extraTag + TString(".root");
   TFile *filePlots=new TFile(fnamePlots,"recreate");
   if (!filePlots || !filePlots->IsOpen()) {
     std::cout << "failed to create a file <" << fnamePlots << ">\n";
@@ -526,17 +540,71 @@ void plotDYEfficiency(const TString input,
 
   // Store constants in the file
   //TString effConstFileName(outputDir+TString("/event_efficiency_constants.root"));
-  TString effConstFileName(outputDir+TString("/event_efficiency_constants") + DYTools::analysisTag + TString(".root"));
+  TString effConstFileName(outputDir+TString("/event_efficiency_constants") + extraTag + TString(".root"));
+
+  TMatrixD nEventsvErr=nEventsv;
+  TMatrixD nEventsBBvErr=nEventsBBv;
+  TMatrixD nEventsBEvErr=nEventsBEv;
+  TMatrixD nEventsEEvErr=nEventsEEv;
+  TMatrixD nPassBBvErr=nPassBBv;
+  TMatrixD nPassBEvErr=nPassBEv;
+  TMatrixD nPassEEvErr=nPassEEv;
+
+  TMatrixD nPassvErr=nPassv;
+  for (int i=0; i<DYTools::nMassBins; ++i) {
+    for (int j=0; j<DYTools::nYBins[i]; ++j) {
+      nEventsvErr(i,j)=sqrt(sumWeightsTotaSq(i,j));
+    }
+  }
+  for (int i=0; i<DYTools::nMassBins; ++i) {
+    for (int j=0; j<DYTools::nYBins[i]; ++j) {
+      nPassvErr(i,j)=sqrt(sumWeightsPassSq(i,j));
+    }
+  }
+  nEventsBBvErr=0;
+  nEventsBEvErr=0;
+  nEventsEEvErr=0;
+  nPassBBvErr=0;
+  nPassBEvErr=0;
+  nPassEEvErr=0;
 
    TFile fa(effConstFileName,"recreate");
    effv.Write("efficiencyArray");
    effErrv.Write("efficiencyErrArray");
-   effZPeakPU.Write("efficiencyZPeakPUArray");
-   effErrZPeakPU.Write("efficiencyErrZPeakPUArray");
-   nEventsZPeakPU.Write("nEventsZPeakPUArray");
-   nPassZPeakPU.Write("nPassZPeakPUArray");
-   nEventsZPeakPURaw.Write("nEventsZPeakPURawArray");
-   nPassZPeakPURaw.Write("nPassZPeakPURawArray");
+
+   /*
+   nPassv.Write("effEval_nPass");
+   nPassvErr.Write("effEval_nPassErr");
+   nEventsv.Write("effEval_nTotal");
+   nEventsvErr.Write("effEval_nTotalErr");
+
+   nEventsBBv.Write("effEval_nTotalBB");
+   nEventsBBvErr.Write("effEval_nTotalBBErr");
+   nEventsBEv.Write("effEval_nTotalBE");
+   nEventsBEvErr.Write("effEval_nTotalBEErr");
+   nEventsEEv.Write("effEval_nTotalEE");
+   nEventsEEvErr.Write("effEval_nTotalEEErr");
+   nPassBBv.Write("effEval_nPassBB");
+   nPassBBvErr.Write("effEval_nPassBBErr");
+   nPassBEv.Write("effEval_nPassBE");
+   nPassBEvErr.Write("effEval_nPassBEErr");
+   nPassEEv.Write("effEval_nPassEE");
+   nPassEEvErr.Write("effEval_nPassEEErr");
+
+   effBBv.Write("efficiencyBB");
+   effErrBBv.Write("efficiencyBBErr");
+   effBEv.Write("efficiencyBE");
+   effErrBEv.Write("efficiencyBEErr");
+   effEEv.Write("efficiencyEE");
+   effErrEEv.Write("efficiencyEEErr");
+   */
+   //effZPeakPU.Write("efficiencyZPeakPUArray");
+   //effErrZPeakPU.Write("efficiencyErrZPeakPUArray");
+   //nEventsZPeakPU.Write("nEventsZPeakPUArray");
+   //nPassZPeakPU.Write("nPassZPeakPUArray");
+   //nEventsZPeakPURaw.Write("nEventsZPeakPURawArray");
+   //nPassZPeakPURaw.Write("nPassZPeakPURawArray");
+   //unfolding::writeBinningArrays(fa);
    fa.Close();
      
   //--------------------------------------------------------------------------------------------------------------
