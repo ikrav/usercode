@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <TCanvas.h>
 #include "HelpingTools.hh"
-
+#include "../Include/PUReweight.hh"
 
 inline int PosOk(size_t n) { return (n!=std::string::npos) ? 1:0; }
 
@@ -2139,11 +2139,60 @@ int ElectronEnergyScaleAdv_t::ProcessEEMFile(const char *mc_file_name, const cha
 // ------------------------------------------------------------
 
 #ifdef EtaEtaMass_H
-int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_file_name, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &expData, double unitWeight) {
-  std::cout << "entered ProcessEEMFileApproximateMCWeight" << std::endl;
+int ElectronEnergyScaleAdv_t::ProcessEEMFiles(const std::vector<std::string> &mc_file_names, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &expData) {
+  mcData.clear(); expData.clear();
+  int res=1;
+  if (mc_file_names.size()) {
+    res=ProcessEEMFile(mc_file_names[0].c_str(),data_file_name,mcData,expData);
+  }
+  else {
+    res=ProcessEEMFile(NULL,data_file_name,mcData,expData);
+  }
+  if (res) {
+    std::vector<std::vector<double>*> expData_dummy, mcData_tmp;
+    for (unsigned int i=1; res && (i<mc_file_names.size()); ++i) {
+      res=ProcessEEMFile(mc_file_names[i].c_str(),NULL,mcData_tmp,expData_dummy);
+      if (res) {
+	for (unsigned int k=0; k<mcData_tmp.size(); k++) {
+	  std::vector<double> *dt=mcData_tmp[k];
+	  std::vector<double> *dest=mcData[k];
+	  if (dt->size()) {
+	    dest->reserve(dest->size() + dt->size());
+	    dest->insert(dest->end(),dt->begin(),dt->end());
+	  }
+	  delete dt;
+	}
+      }
+    }
+  }
+  if (!res) std::cout << "error in ProcessEEMFiles\n";
+  return res;
+}
+#endif
+
+// ------------------------------------------------------------
+
+#ifdef EtaEtaMass_H
+int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_file_name, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &expData, double unitWeight, int performPUReweight) {
+  std::cout << "entered ProcessEEMFileApproximateMCWeight(" 
+	    << ((mc_file_name) ? mc_file_name : "NULL")
+	    << "," 
+	    << ((data_file_name) ? data_file_name : "NULL")
+	    << ")"
+	    << "\t mcPUReweight=" << performPUReweight
+	    << std::endl;
+
+  PUReweight_t puWeight;
+  if (performPUReweight) {
+    assert(puWeight.setDefaultFile("DY_m10+pr+a05+o03+pr_4977pb","", 0));
+    assert(puWeight.setReference("hNGoodPV_data"));
+    assert(puWeight.setActiveSample("hNGoodPV_zee"));
+  }
+
   EtaEtaMassData_t *eem = new EtaEtaMassData_t();
   int res=1;
-  int debug=0;
+  int debug=0; // the distributions
+  int debug2=0; // adding up remaining weights
   TH1F *hraw=(debug==0) ? 0 : new TH1F("hraw","hraw",60,60.,120.);
   TH1F *h1=(debug==0) ? 0 : new TH1F("h1","h1",60,60.,120.);
   TH1F *h2=(debug==0) ? 0 : new TH1F("h2","h2",60,60.,120.);
@@ -2167,6 +2216,7 @@ int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_f
     //std::cout << "loop=" << loop << std::endl;
     std::vector<double> counts(etaEtaCount);
     const char *fname=(loop%2==0) ? mc_file_name : data_file_name;
+    if (!fname) continue;
     std::vector<std::vector<double>*> *data= (loop%2==0) ? &mcData : &expData;
     TFile *fin = new TFile(fname);
     assert(fin);
@@ -2181,9 +2231,11 @@ int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_f
       //std::cout << loop << " got " << (*eem) << ", idx=" << idx << "\n";
       if ((idx>=0) && (idx < etaEtaCount)) {
 	if (optimize && (loop/2==0)) {
-	  counts[idx]+=eem->weight();
+	  double weight=eem->weight();
+	  if (performPUReweight) weight *= puWeight.getWeight( eem->nGoodPV() );
+	  counts[idx]+= weight;
 	  if ((loop==0) && (fabs(eem->mass()-90)<=30)) {
-	    wsum+=eem->weight(); wcount+=1.;
+	    wsum+=weight; wcount+=1.;
 	    if (fabs(unitWeight)>1e-3) { wcount=1; wsum=unitWeight; }
 	  }
 	}
@@ -2197,6 +2249,7 @@ int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_f
 	  }
 	  else {
 	    double w=eem->weight()*(wcount/wsum);
+	    if (performPUReweight) w *= puWeight.getWeight( eem->nGoodPV() );
 	    if (debug && (ientry<100) && (eem->mass()>=60) && (eem->mass()<=120)) std::cout << "mass=" << eem->mass() << ", w_raw=" << eem->weight() << ", w=" << w << "\n";
 	    if (hraw) hraw->Fill(eem->mass(),w);
 	    while (w>1.0) { 
@@ -2248,7 +2301,7 @@ int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_f
 
   // Add up the remaining MC weights
   int idx=0;
-  std::cout << "adding up the remaining MC weights" << std::endl;
+  if (debug2) std::cout << "adding up the remaining MC weights" << std::endl;
   for (int i=0; i<this->EtaDivisionCount(); ++i) {
     for (int j=i; j<this->EtaDivisionCount(); ++j, ++idx) {
       if (remMCWeight[idx]->size()==0) continue;
@@ -2259,16 +2312,36 @@ int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_f
 	std::cout << "QuickSort failed\n";
 	return 0;
       }
-      int cx=1;
+      int cx=remMasses->size()-1;
       //int ccc=100;
+      if (0) {
+	for (unsigned int ii=0; ii<remMasses->size(); ++ii) {
+	  std::cout << "ii=" << ii << ", m=" << (*remMasses)[ii] << ", w=" << (*remWeight)[ii] << "\n";
+	}
+	return 0;
+      }
       while (remMasses->size()>2) {
-	unsigned int ci=0, cj=cx;
+	if (0) {
+	  int ii_min=int(remMasses->size())-10;
+	  if (ii_min<0) ii_min=0;
+	  std::cout << "needs fixing:\n";
+	  for (unsigned int ii=(unsigned int)(ii_min); ii<remMasses->size(); ++ii) {
+	    std::cout <<"ii=" << ii << ", (" << (*remMasses)[ii] << "," << (*remWeight)[ii] << ")\n";
+	  }
+	}
+	unsigned int ci=remMasses->size()-1, cj=ci-1;
 	double m1=(*remMasses)[ci], m2=(*remMasses)[cj];
-	for (unsigned int ii=cj+1; ii<remMasses->size(); ++ii) {
-	  std::cout << "ci=" << ci << ", m1=" << m1 << "; cj=" << cj << ", m2=" << m2 << "; ii=" << ii << "; mass=" << (*remMasses)[ii] << "\n";
+	for (unsigned int ii=cj; (ii<remMasses->size()); --ii) {
+	  if (debug2) std::cout << "ci=" << ci << ", m1=" << m1 << "; cj=" << cj << ", m2=" << m2 << "; ii=" << ii << "; mass=" << (*remMasses)[ii] << "\n";
 	  if (fabs(m1-m2)>fabs(m1-(*remMasses)[ii])) { cj=ii; m2=(*remMasses)[ii]; }
-	  if (fabs(m1-m2)<0.2) { std::cout << "break\n"; break; }
-	  if (do_sort && (fabs(m1-(*remMasses)[ii])>0.5)) { std::cout << "sorted. break\n"; break; }
+	  if (fabs(m1-m2)<0.2) { 
+	    if (debug2) std::cout << "break\n"; 
+	    break; 
+	  }
+	  if (do_sort && (fabs(m1-(*remMasses)[ii])>0.5)) { 
+	    if (debug2) std::cout << "sorted. break\n"; 
+	    break; 
+	  }
 	}
 	if (fabs(m1-m2)>0.2) {
 	  if ((*remWeight)[ci]>0.6) {
@@ -2276,10 +2349,10 @@ int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_f
 	    if (h2) h2->Fill(m1,1.);
 	  }
 	  cx=1;
-	  //std::cout << "erasing ci=" << ci << ", " << (*remMasses)[ci] << "\n";
+	  if (debug2) std::cout << "erasing ci=" << ci << ", " << (*remMasses)[ci] << "\n";
 	  remMasses->erase(remMasses->begin()+ci);
 	  remWeight->erase(remWeight->begin()+ci);
-	  std::cout << "modified ci=" << ci << ", " << (*remMasses)[ci] << "\n";
+	  //std::cout << "modified ci=" << ci << ", " << (*remMasses)[ci] << "\n";
 	  //return 0;
 	}
 	else {
@@ -2289,11 +2362,11 @@ int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_f
 	    w-=1.;
 	    if (h2) h2->Fill(m1,1.);
 	  }
-	  (*remWeight)[ci]=w;
-	  cx=cj;
-	  std::cout << "branch mi-m2<=0.2 : m1=" << m1 << ", m2=" << m2 << "\n";
-	  remMasses->erase(remMasses->begin()+cj);
-	  remWeight->erase(remWeight->begin()+cj);
+	  (*remWeight)[cj]=w;
+	  if (debug2) std::cout << "branch mi-m2<=0.2 : m1=" << m1 << ", m2=" << m2 << "\n";
+	  remMasses->erase(remMasses->begin()+ci);
+	  remWeight->erase(remWeight->begin()+ci);
+	  if (debug2) std::cout <<"  modified cj is (" << (*remMasses)[cj] << "," << (*remWeight)[cj] << ")\n";
 	  //ccc--; if (ccc<=0) return 0;
 	}
       }
@@ -2309,6 +2382,41 @@ int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_f
     char x; cin >> x;
   }
   return 1;
+}
+#endif
+
+// ------------------------------------------------------------
+
+#ifdef EtaEtaMass_H
+int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const std::vector<std::string> &mc_file_names, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &expData, double unitWeight, int puReweight) {
+  std::cout << "entered ProcessEEMFileApproximateMCWeight(V)" << std::endl;
+  mcData.clear(); expData.clear();
+  int res=1;
+  if (mc_file_names.size()) {
+    res=ProcessEEMFileApproximateMCWeight(mc_file_names[0].c_str(),data_file_name,mcData,expData,unitWeight,puReweight);
+  }
+  else {
+    res=ProcessEEMFileApproximateMCWeight(NULL,data_file_name,mcData,expData,unitWeight,puReweight);
+  }
+  if (res) {
+    std::vector<std::vector<double>*> expData_dummy, mcData_tmp;
+    for (unsigned int i=1; res && (i<mc_file_names.size()); ++i) {
+      res=ProcessEEMFileApproximateMCWeight(mc_file_names[i].c_str(),NULL,mcData_tmp,expData_dummy,unitWeight,puReweight);
+      if (res) {
+	for (unsigned int k=0; k<mcData_tmp.size(); k++) {
+	  std::vector<double> *dt=mcData_tmp[k];
+	  std::vector<double> *dest=mcData[k];
+	  if (dt->size()) {
+	    dest->reserve(dest->size() + dt->size());
+	    dest->insert(dest->end(),dt->begin(),dt->end());
+	  }
+	  delete dt;
+	}
+      }
+    }
+  }
+  if (!res) std::cout << "error in ProcessEEMFilesApproximateMCWeight(V)\n";
+  return res;
 }
 #endif
 

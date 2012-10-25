@@ -312,6 +312,9 @@ int CreateComparisonPlots(ElectronEnergyScaleAdv_t &sf, const std::vector<std::v
 
 #include "CPlotMdf.cc"
 
+#include "../Include/PUReweight.hh"
+#include "../Include/PUReweight.cc"
+
 // ---------------------------------------------------
 
 

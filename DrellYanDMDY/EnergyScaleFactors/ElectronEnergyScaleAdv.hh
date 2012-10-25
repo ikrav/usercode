@@ -459,7 +459,9 @@ struct ElectronEnergyScaleAdv_t {
 
 #ifdef EtaEtaMass_H
   int ProcessEEMFile(const char *mc_file_name, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &expData);
-  int ProcessEEMFileApproximateMCWeight(const char *mc_file_name, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &expData, double unitWeight=0.);
+  int ProcessEEMFiles(const std::vector<std::string> &mc_file_names, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &expData);
+  int ProcessEEMFileApproximateMCWeight(const char *mc_file_name, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &expData, double unitWeight=0., int puReweight=1);
+  int ProcessEEMFileApproximateMCWeight(const std::vector<std::string> &mc_file_names, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &expData, double unitWeight=0., int puReweight=1);
     //int ProcessEEMFileApproximateMCWeights(const char *mc_file_name, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &expData);
   //int ProcessEEMFile(const char *mc_file_name, const char *data_file_name, std::vector<std::vector<double>*> &mcData, std::vector<std::vector<double>*> &mcWeights, std::vector<std::vector<double>*> &expData);
 #endif
