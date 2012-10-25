@@ -9,9 +9,25 @@
 // -------------------------------------------------------------
 
 typedef enum { _th2011_default, _th2011_mb2011, _th2011_spec2011, _th2011_nnlo } TTheory2011Set_t;
+typedef enum { _yields_none=0, _yields_gen, _yields_reco, 
+	       _yields_data_observed, _yields_data_signal, 
+	       _yields_mc_signal, _yields_mc_signal_scaled,
+	       _yields_background_tot, _yields_background_true2e, _yields_background_fake2e, 
+	       _yields_efficiency, _yields_efficiencyBB, _yields_efficiencyBE, _yields_efficiencyEE,
+	       _yields_eff_NPass, _yields_eff_NTotal, 
+	       _yields_eff_NTotalBB, _yields_eff_NTotalBE, _yields_eff_NTotalEE,
+	       _yields_eff_NPassBB, _yields_eff_NPassBE, _yields_eff_NPassEE,
+	       _yields_eff_scaleFactors, _yields_eff_scaleFactorsFI,
+	       _yields_effScale, // eff*ScaleFactors
+	       _yields_XSec, _yields_XSecNorm,
+	       _yields_thXSec, _yields_thXSecDET,
+	       _yields_thXSecNorm, _yields_thXSecDETNorm,
+	       _yields_Last
+} TYieldsKind_t;
 
-const int nStandardColors=4;
-const int standardColors[nStandardColors] = { 814, 894, 906, 855 };
+const int nStandardColors=5;
+//const int standardColors[nStandardColors] = { 814, 894, 906, 855, kMagenta+2 };
+const int standardColors[nStandardColors] = { 814, kOrange+8, 855, kMagenta+2, kPink-2 };
 
 const int extraFlag_none=0;
 const int extraFlag_fineGrid=1;
@@ -20,7 +36,6 @@ const int extraFlag_gridSummer2011spec=3;
 const int extraFlag_2MCfiles=4;
 const int extraFlag_2MCfilesFineGrid=5;
 const int extraFlag_2MCfiles_debug=6;
-
 
 const int extraFlagData_oldStyle=0;
 
@@ -256,9 +271,21 @@ TH1F* readTheory2D(TVectorD &v, TVectorD &vErr, DYTools::TCrossSectionKind_t the
     xSecTh= (TMatrixD*)fileXsecTh.FindObjectAny("xSectThDET");
     xSecThErr= (TMatrixD*)fileXsecTh.FindObjectAny("xSectThDETErr");
     break;
+  case DYTools::_cs_preFsrDetErr:
+    xSecTh= (TMatrixD*)fileXsecTh.FindObjectAny("xSectThDETErr");
+    xSecThErr= (TMatrixD*)fileXsecTh.FindObjectAny("xSectThDETSystErrPos");
+    break;
+  case DYTools::_cs_preFsrDetSystErr:
+    xSecTh= (TMatrixD*)fileXsecTh.FindObjectAny("xSectThDETSystErrPos");
+    xSecThErr= (TMatrixD*)fileXsecTh.FindObjectAny("xSectThDETErr");
+    break;
   case DYTools::_cs_preFsrDetNorm:
     xSecTh= (TMatrixD*)fileXsecTh.FindObjectAny("xSectThDETNorm");
     xSecThErr= (TMatrixD*)fileXsecTh.FindObjectAny("xSectThDETNormErr");
+    break;
+  case DYTools::_cs_preFsrDetNormErr:
+    xSecTh= (TMatrixD*)fileXsecTh.FindObjectAny("xSectThDETNormErr");
+    xSecThErr= (TMatrixD*)fileXsecTh.FindObjectAny("xSectThDETNormSystErrPos");
     break;
   default:
     xSecTh=NULL; xSecThErr=NULL;
@@ -445,6 +472,7 @@ TH1F* readTh1D_MSTW2008(DYTools::TCrossSectionKind_t theKind, const char *histNa
 
   TString fileName=fname;
   if (fileName == "default") fileName=fnameDefault;
+  std::cout << "readTh1D_MSTW2008: fileName=<" << fileName << ">" << std::endl;
 
   TFile f(fileName);
   if (!f.IsOpen()) {
@@ -514,7 +542,28 @@ TH1F* readTh2D_MSTW2008(DYTools::TCrossSectionKind_t theKind, int iMassBin) {
 // -------------------------------------------------------------
 
 inline
+TH1F* readTh2D_HERAPDF15(DYTools::TCrossSectionKind_t theKind, int iMassBin) {
+  int nBins=(DYTools::study2D) ? DYTools::nYBins[iMassBin] : DYTools::nMassBins;
+  TVectorD v(nBins);
+  TVectorD vErr(nBins);
+  return readTheory2D(v,vErr,theKind,iMassBin,"../root_files/theory/xSectTheory2D_HERAPDF15.root","hHERAPDF15");
+}
+
+// -------------------------------------------------------------
+
+inline
+TH1F* readTh2D_ABKM09(DYTools::TCrossSectionKind_t theKind, int iMassBin) {
+  int nBins=(DYTools::study2D) ? DYTools::nYBins[iMassBin] : DYTools::nMassBins;
+  TVectorD v(nBins);
+  TVectorD vErr(nBins);
+  return readTheory2D(v,vErr,theKind,iMassBin,"../root_files/theory/xSectTheory2D_ABKM09.root","hABKM09");
+}
+
+// -------------------------------------------------------------
+
+inline
 TH1F* readData(const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, TString fname){
+  std::cout << "readData <" << fname << ">" << std::endl;
   int nBins=(DYTools::study2D) ? DYTools::nYBins[iMassBin] : DYTools::nMassBins;
   TVectorD v(nBins);
   TVectorD vErr1(nBins);
@@ -524,5 +573,110 @@ TH1F* readData(const TriggerSelection &triggers, DYTools::TCrossSectionKind_t th
 
 // -------------------------------------------------------------
 
+inline
+TH1F* readYields(const TYieldsKind_t kind, int iMassBin, TString fname, int hasError=0){
+  TString name, nameErr;
+  switch (kind) {
+  case _yields_gen: name="yieldsMcPostFsrGen"; break;
+  case _yields_reco: name="yieldsMcPostFsrRec"; break;
+  case _yields_data_observed: name="observedYields"; nameErr="observedYieldsErr"; break;
+  case _yields_data_signal: name="YieldsSignal"; nameErr="YieldsSignalErr"; break;
+  case _yields_mc_signal: name="mcYieldsSignal"; nameErr="mcYieldsSignalErr"; break;
+  case _yields_mc_signal_scaled: name="mcYieldsSignalScaled"; nameErr="mcYieldsSignalScaledErr"; break;
+  case _yields_background_tot: name="totalBackground"; nameErr="totalBackgroundErr"; break;
+  case _yields_background_true2e: name="true2eBkgr"; nameErr="true2eBkgrErr"; break;
+  case _yields_background_fake2e: name="fake2eBkgr"; nameErr="fake2eBkgrErr"; break;
+  case _yields_efficiency: name="efficiencyArray"; name="efficiencyErrArray"; break;
+  case _yields_efficiencyBB: name="efficiencyBB"; name="efficiencyBBErr"; break;
+  case _yields_efficiencyBE: name="efficiencyBE"; name="efficiencyBEErr"; break;
+  case _yields_efficiencyEE: name="efficiencyEE"; name="efficiencyEEErr"; break;
+  case _yields_eff_NPass: name="effEval_nPass"; nameErr="effEval_nPassErr"; break;
+  case _yields_eff_NPassBB: name="effEval_nPassBB"; nameErr="effEval_nPassBBErr"; break;
+  case _yields_eff_NPassBE: name="effEval_nPassBE"; nameErr="effEval_nPassBEErr"; break;
+  case _yields_eff_NPassEE: name="effEval_nPassEE"; nameErr="effEval_nPassEEErr"; break;
+  case _yields_eff_NTotal: name="effEval_nTotal"; nameErr="effEval_nTotalErr"; break;
+  case _yields_eff_NTotalBB: name="effEval_nTotalBB"; nameErr="effEval_nTotalBBErr"; break;
+  case _yields_eff_NTotalBE: name="effEval_nTotalBE"; nameErr="effEval_nTotalBEErr"; break;
+  case _yields_eff_NTotalEE: name="effEval_nTotalEE"; nameErr="effEval_nTotalEEErr"; break;
+  case _yields_eff_scaleFactors: name="scaleFactor"; nameErr="scaleFactorErr"; break;
+  case _yields_eff_scaleFactorsFI: name="scaleFactorFlatIdxArray"; nameErr="scaleFactorErrFlatIdxArray"; break;
+  case _yields_effScale: name="effScaleF"; nameErr="effScaleFErr"; break;
+  case _yields_XSec: name="XSec"; nameErr="XSecErr"; break;
+  case _yields_XSecNorm: name="normXSec"; nameErr="normXSecErr"; break;
+  case _yields_thXSec: name="nGenEvents"; nameErr="nGenEventsErr"; break;
+  case _yields_thXSecDET: name="nGenEventsDET"; nameErr="nGenEventsDETErr"; break;
+  case _yields_thXSecNorm: name="nGenEventsNorm"; nameErr="nGenEventsNormErr"; break;
+  case _yields_thXSecDETNorm: name="nGenEventsDETNorm"; nameErr="nGenEventsDETNormErr"; break;
+  default: 
+    std::cout << "readYields: is not ready for this kind=" << int(kind) << "\n";
+    assert(0);
+  }
+
+  TFile file  (fname);
+
+  TMatrixD *yieldsPtr = NULL;
+  TMatrixD *yieldsErrPtr= NULL;
+  if (kind==_yields_eff_scaleFactorsFI) {
+    TVectorD *yieldTmp= (TVectorD*)file.FindObjectAny(name);
+    TVectorD *yieldTmpErr= (!hasError && (nameErr.Length()==0)) ? NULL : (TVectorD*)file.FindObjectAny(nameErr);
+    if (yieldTmp) {
+      yieldsPtr=new TMatrixD(DYTools::nMassBins,DYTools::nYBinsMax);
+      unfolding::deflattenMatrix(*yieldTmp,*yieldsPtr);
+    }
+    if (yieldTmpErr) {
+      yieldsErrPtr=new TMatrixD(DYTools::nMassBins,DYTools::nYBinsMax);
+      unfolding::deflattenMatrix(*yieldTmpErr,*yieldsErrPtr);
+    }
+  }
+  else {
+    yieldsPtr = (TMatrixD *)file.FindObjectAny(name);
+    yieldsErrPtr= (!hasError && (nameErr.Length()==0)) ? NULL : (TMatrixD*)file.FindObjectAny(nameErr);
+  }
+  if (!yieldsPtr) { 
+    std::cout << "failed to get <" << name << "> from <" << fname << "\n";
+    assert(0);
+  }
+  if (hasError && !yieldsErrPtr) {
+    std::cout << "failed to get <" << nameErr << "> from <" << fname << "\n";
+    assert(0);
+  }
+
+  TMatrixD yields=*yieldsPtr;
+  TMatrixD yieldsErr=(hasError) ? *yieldsErrPtr : yields;
+  if (!hasError) yieldsErr=0;
+
+  TH1F* histo=NULL;
+  bool ok=true;
+  TString histoName=Form("yields_%s_%s_massBin%d",DYTools::analysisTag.Data(),fname.Data(),iMassBin);
+  histoName.ReplaceAll("/","_");
+  if (ok && (DYTools::study2D==0)) {
+    int perMassBinWidth=0;
+    int perRapidityBinWidth=0;
+    histo= extractMassDependence(histoName,histoName, yields, yieldsErr, 0, perMassBinWidth,perRapidityBinWidth);
+  }
+  else if (ok && (DYTools::study2D==1)) {
+    int perMassBinWidth=0;
+    //int perRapidityBinWidth=0;
+    histo= extractRapidityDependence(histoName,histoName, yields, yieldsErr, iMassBin, perMassBinWidth);
+  }
+
+  //printHisto(std::cout,histo, 1);
+  return histo;
+
+}
+
+// -------------------------------------------------------------
+
+inline
+TH1F* readYields(int kindId, int iMassBin, TString fname, int hasError=0){
+  TYieldsKind_t kind=TYieldsKind_t(kindId);
+  if (int(kind) != kindId) {
+    std::cout << "failed to identify yieldsKindId=" << kindId << "\n";
+    assert(0);
+  }
+  return readYields(kind,iMassBin,fname,hasError);
+}
+
+// -------------------------------------------------------------
 
 #endif
