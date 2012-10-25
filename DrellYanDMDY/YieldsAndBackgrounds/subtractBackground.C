@@ -437,16 +437,25 @@ TString subtractBackground(const TString conf,
   signalYieldsError    .Write("YieldsSignalErr");   // not squared
   signalYieldsErrorSyst.Write("YieldsSignalSystErr"); // not squared
   zeeMCShapeReweight   .Write("ZeeMCShapeReweight");
-  //zeePredictedYield. Write("mcYieldsSignal");
-  //zeePredictedYieldErr.Write("mcYieldsSignalErr");  // not squared
-  //observedYields.Write("observedYields");
-  //observedYieldsErr.Write("observedYieldsErr"); // not squared
-  //totalTrue2eBackground.Write("true2eBkgr");
-  //totalTrue2eBackgroundError.Write("true2eBkgrErr");
-  //totalTrue2eBackgroundErrorSyst.Write("true2eBkgrSystErr");
-  //fakeEleBackground.Write("fake2eBkgr");
-  //fakeEleBackgroundError.Write("fake2eBkgrErr");
-  //fakeEleBackgroundErrorSyst.Write("fake2eBkgrSystErr");
+  /*
+  zeePredictedYield. Write("mcYieldsSignal");
+  zeePredictedYieldErr.Write("mcYieldsSignalErr");  // not squared
+  zeePredictedYield *= (1/ZpeakFactor);
+  zeePredictedYieldErr *= (1/ZpeakFactor);
+  zeePredictedYield.Write("mcYieldsSignalScaled");
+  zeePredictedYieldErr.Write("mcYieldsSignalScaledErr");
+  observedYields.Write("observedYields");
+  observedYieldsErr.Write("observedYieldsErr"); // not squared
+  totalBackground.Write("totalBackground");
+  totalBackgroundError.Write("totalBackgroundErr");
+  totalBackgroundErrorSyst.Write("totalBackgroundErrSyst");
+  totalTrue2eBackground.Write("true2eBkgr");
+  totalTrue2eBackgroundError.Write("true2eBkgrErr");
+  totalTrue2eBackgroundErrorSyst.Write("true2eBkgrSystErr");
+  fakeEleBackground.Write("fake2eBkgr");
+  fakeEleBackgroundError.Write("fake2eBkgrErr");
+  fakeEleBackgroundErrorSyst.Write("fake2eBkgrSystErr");
+  */
   unfolding::writeBinningArrays(fileOut);
   fileOut.Close();
 
