@@ -58,8 +58,8 @@ TString fsrCorrectionName(TFsrCorrectionType_t kind) {
 }
 
 
-const int includeEScaleSystematics=0;
-const int includeUnfoldingSystematics=0;
+const int includeEScaleSystematics=1;
+const int includeUnfoldingSystematics=1;
 const int doClosureTest=1;
 const TFsrCorrectionType_t fsrCorrection_BinByBin=_fsrCorr_unfGood;
 const int useExactVectorsForMcClosureTest=0;
