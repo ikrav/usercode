@@ -113,6 +113,7 @@ public:
     }
   }
 
+  void Skip(TH1F* h) { SkipInRatioPlots(h); }
 
   TLatex* AddTextCMSPreliminary(double x=0.93, double y=0.94) {
     TLatex *cmsText = new TLatex();
@@ -196,6 +197,11 @@ public:
     pad2->Draw();
   }
 
+  void Prepare2Pads(TCanvas *c) {
+    c->Divide(2,1);
+    PreparePads(c); 
+  }
+
   void Prepare6Pads(TCanvas *c, int landscape, TString name="comp", double padYDivPoint=0.29) {
     TString sa="_a";
     TString sb="_b";
@@ -257,7 +263,7 @@ public:
     for (unsigned int i=0; i<fItems.size(); ++i) {
       if (fItems[i].hist1D!=0) {
 	fHRatioIndices.push_back(i);
-	fItems[i].hist1D->GetXaxis()->SetLabelOffset(0.05);
+	fItems[i].hist1D->GetXaxis()->SetLabelOffset(99.05);
 	savedTitles.push_back(fItems[i].hist1D->GetXaxis()->GetTitle());
 	fItems[i].hist1D->GetXaxis()->SetTitle("");
       }
@@ -332,11 +338,13 @@ public:
 
       if (fRatioYMin==fRatioYMax) {
 	std::cout << "yrMin=" << yrMin << ", yrMax=" << yrMax << "\n";
-	if (fabs(yrMin)<1) yrMin=trunc(yrMin*110)*0.01;
-	else yrMin=trunc(yrMin*11)*0.1;
-	if (fabs(yrMax)<1) yrMax=trunc(yrMax*110)*0.01;
-	else yrMax=trunc(yrMax*11)*0.1;
-	std::cout << "1st correction: yrMin=" << yrMin << ", yrMax=" << yrMax << "\n";
+	if (fRatioType==_ratioRel) {
+	  if (fabs(yrMin)<1) yrMin=trunc(yrMin*110)*0.01;
+	  else yrMin=trunc(yrMin*11)*0.1;
+	  if (fabs(yrMax)<1) yrMax=trunc(yrMax*110)*0.01;
+	  else yrMax=trunc(yrMax*11)*0.1;
+	  std::cout << "1st correction: yrMin=" << yrMin << ", yrMax=" << yrMax << "\n";
+	}
 	if (yrC<fabs(yrMin)) {
 	  yrC=fabs(yrMin);
 	  if (yrMax>-1e-7) yrMax=yrC; else yrMax=-yrC;
