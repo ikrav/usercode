@@ -587,7 +587,7 @@ void selectEvents(const TString conf,
 	  const int ee_selection_new_code=1;
 	  if (ee_selection_new_code) {
 	    // Keep the EEM values before any changes
-	    eem->Assign(dielectron->scEta_1,dielectron->scEta_2,dielectron->mass);
+	    eem->Assign(dielectron->scEta_1,dielectron->scEta_2,dielectron->mass,0.,1);
 	    
 	    // Determine correction type
 	    DielectronSelector_t::TEScaleCorrection_t escaleCorrType=
@@ -623,7 +623,7 @@ void selectEvents(const TString conf,
           if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
 
 	  // Keep the EEM values before any changes
-	  eem->Assign(dielectron->scEta_1,dielectron->scEta_2,dielectron->mass);
+	  eem->Assign(dielectron->scEta_1,dielectron->scEta_2,dielectron->mass,0.,1);
 
 	  //
 	  // Energy scale corrections for data
@@ -740,6 +740,7 @@ void selectEvents(const TString conf,
 	  // fill ntuple data
 	  double weightSave = weight;
 	  eem->weight(weight);
+	  eem->nGoodPV(nGoodPV);
 	  if( snamev[isam] == "zee" ) {
 	    weightSave *= fewz_weight;
 	    if (generateEEMFEWZFile) eem->weight(weightSave);
