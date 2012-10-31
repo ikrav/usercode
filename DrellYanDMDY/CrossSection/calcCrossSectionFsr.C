@@ -1893,6 +1893,7 @@ void getNormBinRange(int &firstNormBin, int &lastNormBin){
 
 void initGlobalFileNames(const TriggerSelection &triggers, const TString &tagDirYields, const TString &tagDirConstants, const TString &tagDirScaleFactorConstants, const TString &tagDirXSect, TFsrCorrectionType_t fsrBinByBin) {
   const TString fnameEnd(DYTools::analysisTag + TString(".root"));
+  const TString fnameEndWithPU(DYTools::analysisTag + TString("_PU") + TString(".root"));
   pathYields=TString("../root_files/yields/") + tagDirYields +
     TString("/");
   pathSystematics=TString("../root_files/systematics/") + tagDirConstants +
@@ -1915,26 +1916,26 @@ void initGlobalFileNames(const TriggerSelection &triggers, const TString &tagDir
     fnameMcReferenceYields= pathConstants + TString("yields_detResponse");
     if (useExactVectorsForMcClosureTest) fnameMcReferenceYields.Append("Exact");
   }
-  fnameMcReferenceYields.Append(fnameEnd);
+  fnameMcReferenceYields.Append( fnameEndWithPU );
   
   fnameMcReferenceYieldsFsr=pathConstants + TString("yields_fsr");
   if (useExactVectorsForMcClosureTest) fnameMcReferenceYieldsFsr.Append("Exact");
   else fnameMcReferenceYieldsFsr.Append("Good");
-  fnameMcReferenceYieldsFsr.Append(fnameEnd);
+  fnameMcReferenceYieldsFsr.Append(fnameEndWithPU);
 
   fnameMcReferenceYieldsFsrDET=pathConstants + TString("yields_fsrDET");
   if (useExactVectorsForMcClosureTest) fnameMcReferenceYieldsFsrDET.Append("exact");
   else fnameMcReferenceYieldsFsrDET.Append("_good");
-  fnameMcReferenceYieldsFsrDET.Append(fnameEnd);
+  fnameMcReferenceYieldsFsrDET.Append(fnameEndWithPU);
 
 
 // This file contains unfolding matrix 
   TString unfFileStart=pathConstants;
   if (fsrBinByBin!=_fsrCorr_binByBin) {
-    if (useExactVectorsForMcClosureTest) unfTestStart.Append("detResponseExact_");
+    if (useExactVectorsForMcClosureTest) unfFileStart.Append("detResponseExact_");
     else unfFileStart.Append("detResponse_");
   }
-  fnameUnfoldingConstants=unfFileStart + TString("unfolding_constants") + fnameEnd;
+  fnameUnfoldingConstants=unfFileStart + TString("unfolding_constants") + fnameEndWithPU;
 
 // Contains relative unfolding systematic errors
   fnameUnfoldingSystErrors=pathSystematics +
@@ -1984,9 +1985,9 @@ void initGlobalFileNames(const TriggerSelection &triggers, const TString &tagDir
     break;
   case _fsrCorr_unfGood:
     fnameFsrCorrectionConstantsUnf = pathConstants +
-      TString("fsrGood_unfolding_constants") + fnameEnd;
+      TString("fsrGood_unfolding_constants") + fnameEndWithPU;
     fnameFsrCorrectionDETConstantsUnf = pathConstants +
-      TString("fsrDET_good_unfolding_constants") + fnameEnd;
+      TString("fsrDET_good_unfolding_constants") + fnameEndWithPU;
     break;
   default:
     std::cout << "code not ready\n";
