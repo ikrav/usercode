@@ -22,7 +22,8 @@ fsrPUReweight=1   # makeUnfoldingMatrixFsr
 #tnpDataFile="../config_files/sf_data_eta2.conf"
 
 tnpTag="et6alt_eta4test_20120801"
-tnpTag="eta2"
+#   default would be: "eta2"
+tnpTag="et6_eta5"
 
 # Tag&probe script controller. Either 7 flags or 1 flag
 # 7 flags: MC_reco,id,hlt;data_reco,id,hlt;calcEventEff
@@ -539,7 +540,8 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "WILL DO: CrossSection(\"${filename_cs}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../CrossSection
-rm -f *.so ${expectXSecFile} ${expectXSecThFile}
+rm -f *.so ${expectXSecFile} 
+#  commented out removal of this file: ${expectXSecThFile}
 echo
 checkFile calcCrossSection.C
 root -q -b -l ${LXPLUS_CORRECTION} calcCrossSection.C+\(\"$filename_cs\"\)     | tee ${logDir}/out${timeStamp}-14-CrossSection${anTag}.out
@@ -560,7 +562,8 @@ echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 echo "WILL DO: CrossSectionFsr(\"${filename_cs}\")"
 echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
 cd ../CrossSection
-rm -f *.so ${expectXSecFile} ${expectXSecThFile}
+rm -f *.so ${expectXSecFile}
+#  commented out removal of this file: ${expectXSecThFile}
 echo
 checkFile calcCrossSectionFsr.C
 root -q -b -l ${LXPLUS_CORRECTION} calcCrossSectionFsr.C+\(\"$filename_cs\"\)    \
