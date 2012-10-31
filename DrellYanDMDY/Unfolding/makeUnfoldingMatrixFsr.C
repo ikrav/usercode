@@ -997,7 +997,7 @@ void makeUnfoldingMatrixFsr(const TString input,
       if (ientry<20) std::cout << "fullGenWeightPU= (rew=" << reweight << ")*(scale=" << scale << ")*(gen.w=" << gen->weight << ")*(fewz=" << fewz_weight << ")*(wPU=" << wPU << ") = " << fullGenWeightPU << "\n";
 
       { // a block for debug purposes
-	double fullGenWeight=fullGenWeight_PU;
+	double fullGenWeight=fullGenWeightPU;
 
       fsrGood.fillIni(iMassBinGenPreFsr,iYBinGenPreFsr, fullGenWeight);
       fsrGood.fillFin(iMassBinGenPostFsr,iYBinGenPostFsr, fullGenWeight);
