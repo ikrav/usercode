@@ -44,7 +44,7 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 			    int etBinning, int etaBinning, 
 			    TCanvas *canvas, ofstream &effOutput, 
 			    bool saveResultsToRootFile, TFile *resultsRootFile,
-			    TFile *plotsRootFile);
+				    TFile *plotsRootFile, bool isRECO);
 
 void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, 
 	      int method, int etBinning, int etaBinning, TCanvas *canvas, 

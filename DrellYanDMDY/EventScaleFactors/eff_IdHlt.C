@@ -506,10 +506,27 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	// Tag and probe is done around the Z peak
 	if((dielectron->mass < massLow) || (dielectron->mass > massHigh)) continue;
 	totalCandInMassWindow++;
-	//
+
+	// Check whether each electron is in the rapidity gap, but not cut yet
+	bool isGap1 = ! (DYTools::isBarrel(dielectron->scEta_1) 
+			 || DYTools::isEndcap(dielectron->scEta_1) );
+	bool isGap2 = ! (DYTools::isBarrel(dielectron->scEta_2) 
+			 || DYTools::isEndcap(dielectron->scEta_2) );
+	// The bollean for the cut on the probe. We remove the rapidity
+	// gap for probes only for a special eta binning
+	bool passGapCut1 = true;
+	bool passGapCut2 = true;
+	if(etaBinning == DYTools::ETABINS2){
+	  if(isGap1)
+	    passGapCut1 = false;
+	  if(isGap2)
+	    passGapCut2 = false;
+	}
+
+	// DO NOT CUT ANYMORE ON ETA HERE, INSTEAD CUT LATER AS APPROPRIATE
 	// Exclude ECAL gap region (should already be done for ntuple, but just to make sure...)
-	  if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
-	  if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
+// 	if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
+// 	if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
 
 	// ECAL acceptance cut on supercluster Et
 	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
@@ -546,21 +563,21 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	
 	// Any electron that made it here is eligible to be a probe
 	// for ID cuts.
-	bool isIDProbe1     = true;
-	bool isIDProbe2     = true;
-	bool isIDProbePass1 = passID(ele1, info->rhoLowEta);
-	bool isIDProbePass2 = passID(ele2, info->rhoLowEta);
+	bool isIDProbe1     = true && passGapCut1;
+	bool isIDProbe2     = true && passGapCut2;
+	bool isIDProbePass1 = passID(ele1, info->rhoLowEta) && passGapCut1;
+	bool isIDProbePass2 = passID(ele2, info->rhoLowEta) && passGapCut2;
 	
 	// Probes for HLT cuts:
 
-	bool isHLTProbe1     = passID(ele1, info->rhoLowEta);
-	bool isHLTProbe2     = passID(ele2, info->rhoLowEta);
-	bool isHLTProbePass1 = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit) );
-	bool isHLTProbePass2 = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit) );
-	bool isHLTProbePass1tight = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit_Tight) );
-	bool isHLTProbePass2tight = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit_Tight) );
-	bool isHLTProbePass1loose = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit_Loose) );
-	bool isHLTProbePass2loose = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit_Loose) );
+	bool isHLTProbe1     = passID(ele1, info->rhoLowEta) && passGapCut1;
+	bool isHLTProbe2     = passID(ele2, info->rhoLowEta) && passGapCut2;
+	bool isHLTProbePass1 = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit) && passGapCut1 ) ;
+	bool isHLTProbePass2 = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit) && passGapCut2);
+	bool isHLTProbePass1tight = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit_Tight) && passGapCut1);
+	bool isHLTProbePass2tight = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit_Tight) && passGapCut2);
+	bool isHLTProbePass1loose = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit_Loose) && passGapCut1);
+	bool isHLTProbePass2loose = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit_Loose) && passGapCut2);
 
 	// 
 	//  Apply tag and probe, and accumulate counters or histograms

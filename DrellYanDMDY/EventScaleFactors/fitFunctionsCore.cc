@@ -652,7 +652,7 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
       lims[4].av=0.7;   lims[4].lo=0.0;   lims[4].hi=1.0;
       lims[5].av=-0.1;  lims[5].lo=-0.5;  lims[5].hi=0.5;
       lims[6].av=0.0;   lims[6].lo=-5.0;  lims[6].hi=5.0;
-      lims[7].av=1.0;   lims[7].lo=0.1;   lims[7].hi=6.0;
+      lims[7].av=1.5;   lims[7].lo=1.0;   lims[7].hi=6.0; // Low limit at 1 GeV to ensure smoothness of binned templates
       lims[8].av=1.0;   lims[8].lo=0.0;   lims[8].hi=1.0e5;
       lims[9].av=-0.1;  lims[9].lo=-0.5;  lims[9].hi=0.5;
       //lims[10].av=0.0;  lims[10].lo=-3.0; lims[10].hi=3.0; 
@@ -911,7 +911,16 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   //     - resolution function
   // The limits for the "fail" come from stating at the fit results without
   // splitting into Et bins. In some cases, the peak is not there at all. (for reco)
-  RooRealVar resMeanFail("resMeanFail","cbMeanFail"   ,lims[10].av, lims[10].lo, lims[10].hi);
+
+  // The old resMeanFail is commented out below. The new one
+  // is constructed as resMeanPass+resMeanFailShift so that one can
+  // constrain resMeanFail = resMeanPass by fixing the "shift" to zero.
+  // This is useful when the failing probes distribution is not sensitive to
+  // Gaussian smearing parameters.
+  RooRealVar resMeanFailShift("resMeanFailShift","resMeanFailShift", 0.0, 2*lims[10].lo, 2*lims[10].hi);
+  RooFormulaVar resMeanFail("resMeanFail", "@0+@1", RooArgList(resMeanPass, resMeanFailShift));
+  //   RooRealVar resMeanFail("resMeanFail","cbMeanFail"   ,lims[10].av, lims[10].lo, lims[10].hi);
+
   RooGaussian resFailPdf("resFailPdf","resFailPdf", mass, resMeanFail, resSigma);
   //      - mc template
   RooDataHist rooTemplateFail("rooTemplateFail","rooTemplateFail",RooArgList(mass),templateFail);
@@ -931,6 +940,37 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   else {
     failPdf=new RooAddPdf("failPdf","failPdf",RooArgList(signalFailPdf,bgFailPdf), RooArgList(nsigFail,nbgFail));
   }
+
+  // Is this a low momentum case of the RECO efficiency? 
+  if(isRECO){
+    printf("\n Fitting RECO efficiency. Check if special handing for low Et is needed.\n");
+
+    // Establish whether the present Et/Eta bin contains
+    // any probes below 30 GeV
+    TString lowEtSubsetCut = cut;
+    lowEtSubsetCut += Form(" && (%s<30.0)", et.GetName());
+    RooDataSet *dataPassLowEt = new RooDataSet("dataPassLowEt", "dataPassLowEt", passTree, 
+					       dsetArgs, lowEtSubsetCut, "weight");
+    RooDataSet *dataFailLowEt = new RooDataSet("dataFailLowEt", "dataFailLowEt", failTree, 
+					       dsetArgs, lowEtSubsetCut, "weight");
+    double lowEtEntries = dataPassLowEt->sumEntries() + dataFailLowEt->sumEntries();
+
+    double allEntries = data->sumEntries();
+    printf("Found all entries           : %f\n", allEntries);
+    printf("Found entries with Et<30 GeV: %f\n", lowEtEntries);
+
+    // Modify the parameter constraints for low Et
+    if( lowEtEntries > 1 ) {
+      // For low Et data for the SC->GSF efficiency, constrain the mean
+      // of the Gaussian smearing for the failed probes to be equal to the
+      // mean for the passing probes.
+      printf("\n The mean of the smearing for the failing probes is set equal\n");
+      printf(" to the mean of the smearing for the passing probes.\n\n"); 
+      resMeanFailShift.setVal(0.0);
+      resMeanFailShift.setConstant(kTRUE);
+    }
+  }
+  
   
   // Combine pass and fail
   RooSimultaneous fullPdf("fullPdf","fullPdf",probeType);
@@ -947,6 +987,9 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   }
   nbgFail.setVal(0.01*total);
 
+  // Print the initial state of the PDF
+  printf("\nThe full PDF parameter printout:\n");
+  fullPdf.getVariables()->Print("v");
   /*
  [#0] WARNING:InputArguments -- RooAbsPdf::fitTo(fullPdf) WARNING: a likelihood 
  fit is request of what appears to be weighted data.
@@ -1008,7 +1051,9 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
        fitLog << "\n\n\tSECOND FIT FAILURE\n\n" << endl;
      }
   }
-  
+  // After the fit, print all info about parameters, constant and floating,
+  // initial and final.
+  result->Print("v");
   
   efficiency     = eff.getVal();
   efficiencyErrHi  = eff.getErrorHi();

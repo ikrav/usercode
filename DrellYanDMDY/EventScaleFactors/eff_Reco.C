@@ -360,6 +360,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   int eventsInNtuple = 0;
   int eventsAfterTrigger = 0;
   int eventsAfterJson = 0;
+  int eventsAfterMET  = 0;
   int tagCand = 0;
   int tagCandPassEt = 0;
   int tagCandPassEta = 0;
@@ -371,6 +372,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   int numTagProbePairsPassEta = 0;
   int numTagProbePairsGenMatched = 0;
   int numTagProbePairsInMassWindow = 0;
+  int numTagProbePairsPassSCIso = 0;
   
   // Loop over files
   for(UInt_t ifile=0; ifile<ntupleFileNames.size(); ifile++){
@@ -480,6 +482,10 @@ void eff_Reco(const TString configFile, const TString effTypeString,
       if(!(info->triggerBits & eventTriggerBit)) continue;  // no trigger accept? Skip to next event... 
       eventsAfterTrigger++;
       
+      // Apply event-level pfMET
+      if( !(info->pfMET < 20 ) ) continue;
+      eventsAfterMET++;
+
       // Loop over the tag electrons
       for(int iele = 0; iele < eleArr->GetEntriesFast(); iele++){
 	
@@ -491,9 +497,12 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 	if(electron->scEt<20) continue;
 	tagCandPassEt++;
 
+	// For the tag, always exclude rapidity gap
 	bool isBele = DYTools::isBarrel(electron->scEta);
 	bool isEele = DYTools::isEndcap(electron->scEta);
 	if ( ! isBele && ! isEele ) continue;
+
+	if( fabs(electron->scEta) > 2.5) continue;
 	tagCandPassEta++;
 	
 	if( sample != DYTools::DATA)
@@ -527,14 +536,27 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 	  if(sc->scEt < 10) continue;
 	  numTagProbePairsPassEt++;
 
-	  bool isBsc = DYTools::isBarrel(sc->scEta);
-	  bool isEsc = DYTools::isEndcap(sc->scEta);
-	  if( ! isBsc && ! isEsc ) continue;
+	  // For the probe, exclude eta gap only for one specific eta 
+	  // binning, barrel/endcap split
+	  if(etaBinning == DYTools::ETABINS2){
+	    bool isBsc = DYTools::isBarrel(sc->scEta);
+	    bool isEsc = DYTools::isEndcap(sc->scEta);
+	    if( ! isBsc && ! isEsc ) continue;
+	  }
+
+	  if( fabs(sc->scEta) > 2.5) continue;
 	  numTagProbePairsPassEta++;
 
 	  if( sample != DYTools::DATA)
 	    if( ! scMatchedToGeneratorLevel(gen, sc) ) continue;
 	  numTagProbePairsGenMatched++;
+
+	  // Tracker isolation cut helps to clean up
+	  // the probes, but introduces a small bias
+	  // ~3% below 20 GeV, and <1% above 20 GeV
+ 	  if( ientry<1) printf("\n\n WARNING! Cut on probe isolation is applied! Beware of a small bias\n");
+ 	  if( fabs(sc->trkIso04)/sc->pt > 0.15 ) continue;
+	  numTagProbePairsPassSCIso++;
 	  
 	  // Find mass of the electron-supercluster pair
 	  TLorentzVector ele4V, sc4V, dycand4V;
@@ -654,6 +676,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   printf("Total events in ntuple                                       %15d\n",eventsInNtuple);
   printf("    events after JSON selection (data)                       %15d\n",eventsAfterJson);
   printf("    events after event level trigger cut                     %15d\n",eventsAfterTrigger);
+  printf("    events after event level MET cut                         %15d\n",eventsAfterMET);
   printf("\nTotal electron tag candidates (no cuts)                      %15d\n",tagCand);
   printf("                 tag candidates Et>20                        %15d\n",tagCandPassEt);
   printf("                 tag candidates, eta in acceptance           %15d\n",tagCandPassEta);
@@ -666,6 +689,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   printf("               probe eta in acceptance                       %15d\n",numTagProbePairsPassEta);
   printf("               probe matched to GEN (if MC)                  %15d\n",numTagProbePairsGenMatched);
   printf("               tag-probe mass in 60-120 GeV window           %15d\n",numTagProbePairsInMassWindow);
+  printf("               probe passes SC trk isolation                 %15d\n",numTagProbePairsPassSCIso);
 
   printf("\nNumber of probes, total                                      %15.0f\n", hMassTotal->GetSumOfWeights());
   printf("Number of probes, passed                                     %15.0f\n", hMassPass->GetSumOfWeights());

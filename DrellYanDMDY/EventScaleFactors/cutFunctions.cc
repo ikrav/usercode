@@ -74,8 +74,8 @@ Bool_t scMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TPho
   v2gen .SetPtEtaPhiM(gen->pt_2, gen->eta_2, gen->phi_2, 0.000511);
   dR1 = vreco.DeltaR(v1gen);
   dR2 = vreco.DeltaR(v2gen);
-  // Require that at least one is  within loose dR of 0.4, otherwise bail out
-  if( fabs(dR1) > 0.4 && fabs(dR2) > 0.4 ) result = kFALSE; 
+  // Require that at least one is  within dR of 0.2, otherwise bail out
+  if( fabs(dR1) > 0.2 && fabs(dR2) > 0.2 ) result = kFALSE; 
   
   return result;
 }
@@ -96,8 +96,10 @@ bool isTag(const mithep::TElectron *electron, ULong_t trigger, double rho){
 
   bool elePassID  = passIDTag(electron, rho);
   bool elePassHLT =  (electron ->hltMatchBits & trigger);
-
-  bool result = ( elePassID && elePassHLT && (electron->pt > 25) );
+  bool notInGap = DYTools::isBarrel(electron->scEta) 
+    || DYTools::isEndcap(electron->scEta);
+  
+  bool result = ( elePassID && elePassHLT && notInGap && (electron->pt > 25) );
 
   return result;
 }

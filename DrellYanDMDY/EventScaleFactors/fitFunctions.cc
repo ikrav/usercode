@@ -8,6 +8,18 @@ const int targetSpecificBin=0;
 const int targetEt=0;
 const int targetEta=1;
 
+// The following systematic error is derived in a series of studies
+// documented in this presentation:
+//    https://indico.cern.ch/getFile.py/access?contribId=4&resId=0&materialId=slides&confId=214643
+// additionally, the numbers are bumped up to 1%, which is order
+// of systematics for these fits coming from signal and background
+// parameterization, as indicated by several studies presented at EGM. 
+// There is no exact number on which EGM group signed off, so
+// a generic 1% is used.
+//    This set of systematics is applicable to 6 bins of Et.
+// For other Et binnings, the array would be 3% below 20 GeV and 1% above. 
+const double effRecoSystErr[6] = {0.030, 0.022, 0.01, 0.01, 0.01, 0.01};
+
 /*
 void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,TTree *passTree, TTree *failTree,TCanvas *passCanvas, TCanvas *failCanvas,const char* setBinsType){
 
@@ -170,7 +182,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
   measureEfficiencyCountAndCount(passTree, failTree, etBinning, etaBinning, 
 				 canvas, effOutput, 
 				 saveCountingToRootFile, resultsRootFile, 
-				 plotsRootFile);
+				 plotsRootFile, isRECO);
   
   if( method == DYTools::COUNTnFIT || method == DYTools::FITnFIT ) {
     measureEfficiencyWithFit(passTree, failTree, 
@@ -312,7 +324,7 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 			    int etBinning, int etaBinning, 
 			    TCanvas *canvas, ofstream &effOutput,
 			    bool saveResultsToRootFile, TFile *resultsRootFile,
-			    TFile *resultPlotsFile){
+				    TFile *resultPlotsFile, bool isRECO){
   
   int nEt                = DYTools::getNEtBins(etBinning);
   const double *limitsEt = DYTools::getEtBinLimits(etBinning);
@@ -344,9 +356,52 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 				      limitsEt[i], limitsEt[i+1]);
       TString etaCutFormat= DYTools::signedEtaBinning(etaBinning) ?
 	" ( eta >= %5.3f && eta < %5.3f ) " :
-	" ( fabs(eta) >= %5.3f && fabs(eta) < %5.3f ) ";
+	" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ";
+
+      double limitsEtaMin = limitsEta[j];
+      double limitsEtaMax = limitsEta[j+1];	  
+      // For RECO efficiency, to increase fit stability, MERGE barrel
+      // eta bins, and separately endcap eta bins, for the binning ETABINS5
+      // and Et < 20 GeV
+      //
+      // While this is count and count method with no fit involved, the change
+      // is made here as well to match the corresponding change in the
+      // measureEfficiencyWithFit(...) function, so that the averaging over
+      // the eta bins is the same.
+      //
+      // In the way it is implemented now, there is duplication of work.
+      // For example, when the eta bins 0.0-0.8 and 0.8-1.4442 are merged,
+      // we do the full fitting of the data in 0.0-1.4442 twice,
+      // once for j=0, and then again for j=1. The result of this will be identical
+      // and some CPU will be wasted. However, the bookkeeping this way is much
+      // easier, and the code is easier to read. This can be changed in the 
+      // future if needed.
+      //   Since the binning is not changed, the entries in the efficiency array
+      // will be exactly the same for the merged bins. 
+      //   The calculation of the error on the event-level scale factors as 
+      // a function of mass takes into account this 100% correlation in
+      // the efficiencies of the merged bins. This is done in calcEventEff.C
+      if( isRECO && etaBinning == DYTools::ETABINS5 && limitsEt[i+1] ){
+	if ( j == 0 || j == 1 ){
+	  // Barrel eta bins
+	  limitsEtaMin = limitsEta[0];
+	  limitsEtaMax = limitsEta[2];
+	  printf("MERGE two barrel eta bins j=0 j=1 into one. The efficiency measurement\n");
+	  printf("      is done twice with identical data, this is the instance j=%d\n", j);
+	} else if ( j ==3 || j ==4 ) {
+	  // Endcap eta bins
+	  limitsEtaMin = limitsEta[3];
+	  limitsEtaMax = limitsEta[5];
+	  printf("MERGE two endcap eta bins j=3 j=4 into one. The efficiency measurement\n");
+	  printf("      is done twice with identical data, this is the instance j=%d\n", j);
+	} else {
+	  // Anything else (really, the rapidity gap, j==2)
+	  // No need to set anything, set above in declaration/initialization
+	}
+      }
+
       TString etaCut = TString::Format( etaCutFormat,
-					limitsEta[j], limitsEta[j+1]);
+					limitsEtaMin, limitsEtaMax);
       TString cut = etCut + TString(" && ") + etaCut;
       //cout << cut << endl;
       double probesPass = passTree->GetEntries(cut);
@@ -511,9 +566,47 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
 				      limitsEt[i], limitsEt[i+1]);
       TString etaCutFormat= DYTools::signedEtaBinning(etaBinning) ?
 	" ( eta >= %5.3f && eta < %5.3f ) " :
-	" ( fabs(eta) >= %5.3f && fabs(eta) < %5.3f ) ";
+	" ( abs(eta) >= %5.3f && abs(eta) < %5.3f ) ";
+
+      double limitsEtaMin = limitsEta[j];
+      double limitsEtaMax = limitsEta[j+1];	  
+      // For RECO efficiency, to increase fit stability, MERGE barrel
+      // eta bins, and separately endcap eta bins, for the binning ETABINS5,
+      // and Et < 20. 
+      //
+      // In the way it is implemented now, there is duplication of work.
+      // For example, when the eta bins 0.0-0.8 and 0.8-1.4442 are merged,
+      // we do the full fitting of the data in 0.0-1.4442 twice,
+      // once for j=0, and then again for j=1. The result of this will be identical
+      // and some CPU will be wasted. However, the bookkeeping this way is much
+      // easier, and the code is easier to read. This can be changed in the 
+      // future if needed.
+      //   Since the binning is not changed, the entries in the efficiency array
+      // will be exactly the same for the merged bins. 
+      //   The calculation of the error on the event-level scale factors as 
+      // a function of mass takes into account this 100% correlation in
+      // the efficiencies of the merged bins. This is done in calcEventEff.C
+      if( isRECO && etaBinning == DYTools::ETABINS5 && limitsEt[i+1] <= 20.0){
+	if ( j == 0 || j == 1 ){
+	  // Barrel eta bins
+	  limitsEtaMin = limitsEta[0];
+	  limitsEtaMax = limitsEta[2];
+	  printf("MERGE two barrel eta bins j=0 j=1 into one. The efficiency measurement\n");
+	  printf("      is done twice with identical data, this is the instance j=%d for Et bin i=%d\n", j,i);
+	} else if ( j ==3 || j ==4 ) {
+	  // Endcap eta bins
+	  limitsEtaMin = limitsEta[3];
+	  limitsEtaMax = limitsEta[5];
+	  printf("MERGE two endcap eta bins j=3 j=4 into one. The efficiency measurement\n");
+	  printf("      is done twice with identical data, this is the instance j=%d for Et bin i=%d\n", j,i);
+	} else {
+	  // Anything else (really, the rapidity gap, j==2)
+	  // No need to set anything, set above in declaration/initialization
+	}
+      }
+
       TString etaCut = TString::Format( etaCutFormat,
-					limitsEta[j], limitsEta[j+1]);
+					limitsEtaMin, limitsEtaMax);
       TString cut = etCut + TString(" && ") + etaCut;
       //cout << cut.Data() << endl;
       double probesPass = passTree->GetEntries(cut);
@@ -547,6 +640,45 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
 	TH1F *templateFail = 
 	  getFailTemplate(i,j,etaBinning, templatesFile, puBin);
 
+	// In case if MERGE of the eta bins is needed for RECO efficiency (see above
+	// more detailed comments about this, we add the templates of the appropriate
+	// bins.
+	// Note: the original templates are cloned, so that we do not mess with 
+	// the original ones. This is important because each template is used twice
+	// in this implementation, once for each of the bins being merged.
+	if( isRECO && etaBinning == DYTools::ETABINS5 && limitsEt[i+1] <= 20.0 ){
+	  if ( j == 0 || j == 1 ){
+	    // Barrel eta bins
+	    TH1F *templatePassOne = (TH1F*)getPassTemplate(i,0,etaBinning, templatesFile, puBin)->Clone();
+	    TH1F *templatePassTwo = (TH1F*)getPassTemplate(i,1,etaBinning, templatesFile, puBin)->Clone();
+	    templatePassOne->Add(templatePassTwo);
+	    templatePass = templatePassOne;
+	    TH1F *templateFailOne = (TH1F*)getFailTemplate(i,0,etaBinning, templatesFile, puBin)->Clone();
+	    TH1F *templateFailTwo = (TH1F*)getFailTemplate(i,1,etaBinning, templatesFile, puBin)->Clone();
+	    templateFailOne->Add(templateFailTwo);
+	    templateFail = templateFailOne;
+	    printf("MERGE templates for two barrel eta bins j=0 j=1 into one. The efficiency measurement\n");
+	    printf("      is done twice with identical data and templates, this is the instance j=%d for Et bin i=%d\n", j,i);
+	  } else if ( j ==3 || j ==4 ) {
+	    // Endcap eta bins
+	    TH1F *templatePassOne = (TH1F*)getPassTemplate(i,3,etaBinning, templatesFile, puBin)->Clone();
+	    TH1F *templatePassTwo = (TH1F*)getPassTemplate(i,4,etaBinning, templatesFile, puBin)->Clone();
+	    templatePassOne->Add(templatePassTwo);
+	    templatePass = templatePassOne;
+	    TH1F *templateFailOne = (TH1F*)getFailTemplate(i,3,etaBinning, templatesFile, puBin)->Clone();
+	    TH1F *templateFailTwo = (TH1F*)getFailTemplate(i,4,etaBinning, templatesFile, puBin)->Clone();
+	    templateFailOne->Add(templateFailTwo);
+	    templateFail = templateFailOne;
+	    limitsEtaMin = limitsEta[3];
+	    limitsEtaMax = limitsEta[5];
+	    printf("MERGE templates for two endcap eta bins j=3 j=4 into one. The efficiency measurement\n");
+	    printf("      is done twice with identical data and templates, this is the instance j=%d for Et bin i=%d\n", j,i);
+	  } else {
+	    // Anything else (really, the rapidity gap, j==2)
+	    // No need to set anything, set above in declaration/initialization
+	  }
+	}
+
 	if (0) {
 	  TCanvas *cx=new TCanvas("cx","cx",600,600);
 	  templatePass->SetLineColor(kGreen);
@@ -577,6 +709,19 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
 	      probesPass, probesFail);
       effOutput << strOut;
       effArray2D(i,j) = efficiency;
+      // Add systematics for RECO efficiency found from a fit
+      if( isRECO ){
+	if( etBinning == DYTools::ETBINS6 ){
+	  efficiencyErrLo = sqrt(efficiencyErrLo*efficiencyErrLo
+				 + effRecoSystErr[i]*effRecoSystErr[i]);
+	  efficiencyErrHi = sqrt(efficiencyErrHi*efficiencyErrHi
+				 + effRecoSystErr[i]*effRecoSystErr[i]);
+	  printf("RECO efficiency for (Et,eta) index (%d,%d): %.0f%% of systematic error added\n", i,j, effRecoSystErr[i]*100);
+	}else{
+	  printf("RECO efficiency for (Et,eta) index (%d,%d): no systematic is added\n",i,j );
+	}
+      }
+      
       effArrayErrLow2D(i,j) = efficiencyErrLo;
       effArrayErrHigh2D(i,j) = efficiencyErrHi;
       

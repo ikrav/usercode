@@ -332,7 +332,11 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       isBsc = DYTools::isBarrel(storeData.eta);
       isEsc = DYTools::isEndcap(storeData.eta);
     }
-    if( ! isBsc && ! isEsc ) continue;
+    // For the probe, exclude eta gap only for one specific eta 
+    // binning, barrel/endcap split
+    if(etaBinning == DYTools::ETABINS2){
+      if( ! isBsc && ! isEsc ) continue;
+    }
     numTagProbePairsPassEta++;
 
     // Tag and probe is done around the Z peak
@@ -404,25 +408,29 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     if (new_store_data_code) {
       isBsc = DYTools::isBarrel(storeData.eta);
       isEsc = DYTools::isEndcap(storeData.eta);
-      if( ! isBsc && ! isEsc ) continue;
+      // For the probe, exclude eta gap only for one specific eta 
+      // binning, barrel/endcap split
+      if(etaBinning == DYTools::ETABINS2){
+	if( ! isBsc && ! isEsc ) continue;
+      }
       numTagProbePairsPassEta++;
-
+      
       // Tag and probe is done around the Z peak
       if (!storeData.insideMassWindow(massLow,massHigh)) continue;
       numTagProbePairsInMassWindow++;
-    
+      
       // The probes are fully selected at this point.
       
       // total probes
       hMassTotal->Fill(storeData.mass);
       // failing probes
       hMassFail->Fill(storeData.mass);
-    
+      
       templateBin = 
 	getTemplateBin( DYTools::findEtBin(storeData.et,etBinning),
 			DYTools::findEtaBin(storeData.eta,etaBinning),
 			etaBinning);
-
+      
       if(sample != DYTools::DATA && templateBin != -1) {
 	int puIdx= (puDependence) ? DYTools::findPUBin(storeData.nGoodPV) : 0;
 	if (puIdx>=0)
@@ -431,13 +439,17 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       }
     }
     else{
-      if( ! isBsc && ! isEsc) continue;
+      // For the probe, exclude eta gap only for one specific eta 
+      // binning, barrel/endcap split
+      if(etaBinning == DYTools::ETABINS2){
+	if( ! isBsc && ! isEsc) continue;
+      }
       numTagProbePairsPassEta++;
       
       // Tag and probe is done around the Z peak
       if((storeMass < massLow) || (storeMass > massHigh)) continue;
       numTagProbePairsInMassWindow++;
-    
+      
       // The probes are fully selected at this point.
       
       // total probes

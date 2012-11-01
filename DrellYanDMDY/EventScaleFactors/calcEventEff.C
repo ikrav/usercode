@@ -387,9 +387,24 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     for (int kind=0; kind<NEffTypes; ++kind) {
       for (int iEt=0; iEt<DYTools::nEtBinsMax; ++iEt) {
 	for (int iEta=0; iEta<DYTools::nEtaBinsMax; ++iEta) {
-	  (*arr)[kind][iEt][iEta]=
-	    (debug_pseudo_exps) ? ((kind+1)*100 + (iEt+1)*10 + iEta+1) :
-	    gRandom->Gaus(0.0,1.0);
+	  // In the special case of the RECO efficiency for low Et
+	  // electrons, some eta bins are MERGED in tag and probe.
+	  // However the binning is kept standard, so the values
+	  // for the efficiencies in the merged bins are the same,
+	  // and the errors are 100% correlated. Take this into
+	  // account and make the smearing 100% correlated as well.
+	  if( kind == 0 && etaBinning == DYTools::ETABINS5 
+	      && (getEtBinLimits(etBinning))[iEt+1] <= 20.0 ) {
+	    // We are dealing with merged bins
+	    if( iEta == 0 || iEta == 2 || iEta == 3 ) {	      
+	      (*arr)[kind][iEt][iEta]=
+		(debug_pseudo_exps) ? ((kind+1)*100 + (iEt+1)*10 + iEta+1) :
+		gRandom->Gaus(0.0,1.0);
+	    }else{
+	      // For iEta == 1 or 4, fall back to the values for iEta == 0 or 3.
+	      (*arr)[kind][iEt][iEta]= (*arr)[kind][iEt][iEta-1];
+	    }
+	  }
 	}
       }
     }
@@ -397,9 +412,21 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     for (int kind=0; kind<NEffTypes; ++kind) {
       for (int iEt=0; iEt<DYTools::nEtBinsMax; ++iEt) {
 	for (int iEta=0; iEta<DYTools::nEtaBinsMax; ++iEta) {
-	  (*arr)[kind][iEt][iEta]=
-	    (debug_pseudo_exps) ? -((kind+1)*100 + (iEt+1)*10 + iEta+1) :
-	    gRandom->Gaus(0.0,1.0);
+	  // In the case of RECO efficiency with MERGED bins for tag and
+	  // probe and ETABINS5, the randomization is different. See 
+	  // comments above. 
+	  if( kind == 0 && etaBinning == DYTools::ETABINS5 
+	      && (getEtBinLimits(etBinning))[iEt+1] <= 20.0 ) {
+	    // We are dealing with merged bins
+	    if( iEta == 0 || iEta == 2 || iEta == 3 ) {	      
+	      (*arr)[kind][iEt][iEta]=
+		(debug_pseudo_exps) ? -((kind+1)*100 + (iEt+1)*10 + iEta+1) :
+		gRandom->Gaus(0.0,1.0);
+	    }else{
+	      // For iEta == 1 or 4, fall back to the values for iEta == 0 or 3.
+	      (*arr)[kind][iEt][iEta]= (*arr)[kind][iEt][iEta-1];
+	    }
+	  }
 	}
       }
     }
