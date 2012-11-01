@@ -90,6 +90,7 @@ expectFsrSansAcc0File="../root_files/constants/${crossSectionTag}/fsr_constants_
 expectFsrSansAcc1File="../root_files/constants/${crossSectionTag}/fsr_constants_${anTag}_sans_acc.root"
 expectXSecFile=  # defined later
 expectXSecThFile="../root_files/theory/xSectTheory1D_MSTW2008.root"
+expectEScaleSystFile="../root_files/systematics/${crossSectionTag}/escale_systematics${anTag}_tmp.root"
 finalEScaleSystFile="../root_files/systematics/${crossSectionTag}/escale_systematics${anTag}.root"
 expectXSecPlotFile=  # defined later
 
