@@ -522,7 +522,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     useTemplates = true;
 
   int NsetBins=30;
-  bool isRECO=(effType == DYTools::RECO) ? true : false;
+  //   bool isRECO=(effType == DYTools::RECO) ? true : false;
   const char* setBinsType="cache";
 
   int nDivisions = DYTools::getNEtBins(etBinning)*DYTools::getNEtaBins(etaBinning);
@@ -540,7 +540,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
   measureEfficiencyPU(passTree, failTree,
 		    calcMethod, etBinning, etaBinning, c1, effOutput, fitLog,
 		    useTemplates, templatesFile, resRootFileBase,
-		    NsetBins, isRECO, setBinsType,
+		    NsetBins, effType, setBinsType,
 		    dirTag, triggers.triggerSetName(),
 		    puDependence);
 

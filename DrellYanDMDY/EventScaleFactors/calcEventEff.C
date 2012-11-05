@@ -394,16 +394,16 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 	  // and the errors are 100% correlated. Take this into
 	  // account and make the smearing 100% correlated as well.
 	  if( kind == 0 && etaBinning == DYTools::ETABINS5 
-	      && (getEtBinLimits(etBinning))[iEt+1] <= 20.0 ) {
-	    // We are dealing with merged bins
-	    if( iEta == 0 || iEta == 2 || iEta == 3 ) {	      
-	      (*arr)[kind][iEt][iEta]=
-		(debug_pseudo_exps) ? ((kind+1)*100 + (iEt+1)*10 + iEta+1) :
-		gRandom->Gaus(0.0,1.0);
-	    }else{
-	      // For iEta == 1 or 4, fall back to the values for iEta == 0 or 3.
-	      (*arr)[kind][iEt][iEta]= (*arr)[kind][iEt][iEta-1];
-	    }
+	      && (getEtBinLimits(etBinning))[iEt+1] <= 20.0 
+	      && (iEta == 1 || iEta == 4)    ) {
+	    // We are dealing with merged bins of the RECO efficiency with the right binning
+	    // For iEta == 1 or 4, fall back to the values for iEta == 0 or 3.
+	    (*arr)[kind][iEt][iEta]= (*arr)[kind][iEt][iEta-1];
+	  }else{
+	    // The default case, all other efficiencies and bins
+	    (*arr)[kind][iEt][iEta]=
+	      (debug_pseudo_exps) ? ((kind+1)*100 + (iEt+1)*10 + iEta+1) :
+	      gRandom->Gaus(0.0,1.0);
 	  }
 	}
       }
@@ -416,23 +416,22 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
 	  // probe and ETABINS5, the randomization is different. See 
 	  // comments above. 
 	  if( kind == 0 && etaBinning == DYTools::ETABINS5 
-	      && (getEtBinLimits(etBinning))[iEt+1] <= 20.0 ) {
-	    // We are dealing with merged bins
-	    if( iEta == 0 || iEta == 2 || iEta == 3 ) {	      
-	      (*arr)[kind][iEt][iEta]=
-		(debug_pseudo_exps) ? -((kind+1)*100 + (iEt+1)*10 + iEta+1) :
-		gRandom->Gaus(0.0,1.0);
-	    }else{
-	      // For iEta == 1 or 4, fall back to the values for iEta == 0 or 3.
-	      (*arr)[kind][iEt][iEta]= (*arr)[kind][iEt][iEta-1];
-	    }
+	      && (getEtBinLimits(etBinning))[iEt+1] <= 20.0 
+	      && (iEta == 1 || iEta == 4)    ) {
+	    // We are dealing with merged bins of the RECO efficiency with the right binning
+	    // For iEta == 1 or 4, fall back to the values for iEta == 0 or 3.
+	    (*arr)[kind][iEt][iEta]= (*arr)[kind][iEt][iEta-1];
+	  }else{
+	    // The default case, all other efficiencies and bins
+	    (*arr)[kind][iEt][iEta]=
+	      (debug_pseudo_exps) ? -((kind+1)*100 + (iEt+1)*10 + iEta+1) :
+	      gRandom->Gaus(0.0,1.0);
 	  }
 	}
       }
     }
   }
-
-
+  
   // Create container for data for error estimates based on pseudo-experiments
   //TH1F *systScale[DYTools::nMassBins][nexp];
   SystTH1FArray_t systScale;

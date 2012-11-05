@@ -394,22 +394,34 @@ class TriggerSelection{
   }
 
   ULong_t getProbeTriggerObjBit_Tight(UInt_t run, bool idEffTrigger) const { // no check whether the run is ok!
-    ULong_t bits=
+
+    // The probe trigger object bit must match the kind for which
+    // we are going to measure the trigger efficiency, i.e. the signal
+    // trigger.
+    ULong_t bits= Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj |
       Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
-    if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
-      // Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 is DoubleEG in Fall11 MC
-      bits |= Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
-    }
+
+    // THE CODE BELOW IS COMMENTED OUT. The code below appears a mistake.
+    // We want to get the bit of the signal trigger in this function, not
+    // of the tag and probe trigger.
+//     if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
+//       // Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 is DoubleEG in Fall11 MC
+//       bits |= Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
+//     }
     return bits;
   }
 
   ULong_t getProbeTriggerObjBit_Loose(UInt_t run, bool idEffTrigger) const { // no check whether the run is ok!
-   ULong_t bits=
+   ULong_t bits= Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj |
      Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
-   if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
-      // Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 is DoubleEG in Fall11 MC
-     bits |= Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele2Obj;
-    }
+
+    // THE CODE BELOW IS COMMENTED OUT. The code below appears a mistake.
+    // We want to get the bit of the signal trigger in this function, not
+    // of the tag and probe trigger.
+//    if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
+//       // Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 is DoubleEG in Fall11 MC
+//      bits |= Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele2Obj;
+//     }
     return bits;
   }
 

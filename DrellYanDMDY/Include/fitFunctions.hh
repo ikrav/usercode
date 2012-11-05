@@ -27,7 +27,8 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
 		       ofstream &effOutput, ofstream &fitLog, 
 		       bool useTemplates, TFile *templatesFile, 
 		       TFile *resultsRootFile, TFile *plotsRootFile,
-		       int NsetBins, bool isRECO, const char* setBinsType, 
+		       int NsetBins, DYTools::TEfficiencyKind_t effType, 
+		       const char* setBinsType, 
 		       TString dirTag, const TString &picFileExtraTag, 
 		       int puBin=-1); // puBin is important for the fit
 
@@ -36,7 +37,8 @@ void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull,
 			 ofstream &effOutput, ofstream &fitLog, 
 			 bool useTemplates, TFile *templatesFile, 
 			 const TString &resultRootFileBase,
-			 int NsetBins, bool isRECO, const char* setBinsType, 
+			 int NsetBins, DYTools::TEfficiencyKind_t effType,
+			 const char* setBinsType, 
 			 TString dirTag, const TString &picFileExtraTag, 
 			 int puDependence=0);
 
@@ -44,15 +46,17 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 			    int etBinning, int etaBinning, 
 			    TCanvas *canvas, ofstream &effOutput, 
 			    bool saveResultsToRootFile, TFile *resultsRootFile,
-				    TFile *plotsRootFile, bool isRECO);
+				    TFile *plotsRootFile, 
+				    DYTools::TEfficiencyKind_t effType);
 
 void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, 
-	      int method, int etBinning, int etaBinning, TCanvas *canvas, 
-	      ofstream &effOutput, ofstream &fitLog, 
-	      bool useTemplates, TFile *templatesFile, 
-	      TFile *resultsRootFile, TFile *plotsRootFile,
-	      int NsetBins, bool isRECO, const char* setBinsType,
-	      TString dirTag, const TString &picFileExtraTag, int puBin=-1);
+			      int method, int etBinning, int etaBinning, TCanvas *canvas, 
+			      ofstream &effOutput, ofstream &fitLog, 
+			      bool useTemplates, TFile *templatesFile, 
+			      TFile *resultsRootFile, TFile *plotsRootFile,
+			      int NsetBins, DYTools::TEfficiencyKind_t effType,
+			      const char* setBinsType,
+			      TString dirTag, const TString &picFileExtraTag, int puBin=-1);
 
 int getTemplateBin(int etBin, int etaBin, int etaBinning);
 

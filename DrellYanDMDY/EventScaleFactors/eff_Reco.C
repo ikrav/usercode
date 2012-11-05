@@ -729,7 +729,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
     useTemplates = true;
 
   int NsetBins=30;
-  bool isRECO=1;
+//   bool isRECO=1;
   const char* setBinsType="cache";
   
   int nDivisions = 
@@ -748,7 +748,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 		      useTemplates, templatesFile, 
 		      resrootBase,
 		      //resultsRootFile, //resultsRootFilePlots,
-		      NsetBins, isRECO, setBinsType,
+		      NsetBins, effType, setBinsType,
 		      dirTag, triggers.triggerSetName(),0);
   
 

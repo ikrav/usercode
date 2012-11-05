@@ -97,7 +97,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   if (!effTypeString.Contains("ID") &&
       !effTypeString.Contains("HLT")) {
     std::cout << "eff_IdHlt: effTypeString should be either \"ID\" or \"HLT\"\n";
-    return;
+//     return;
   }
 
   // fast check
@@ -493,7 +493,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
       ULong_t tagTriggerObjectBit= triggers.getTagTriggerObjBit(info->runNum,idEffTrigger);
       ULong_t probeTriggerObjectBit_Tight= triggers.getProbeTriggerObjBit_Tight(info->runNum,idEffTrigger);
       ULong_t probeTriggerObjectBit_Loose= triggers.getProbeTriggerObjBit_Loose(info->runNum,idEffTrigger);
-      ULong_t probeTriggerObjectBit= probeTriggerObjectBit_Tight | probeTriggerObjectBit_Loose;
+//       ULong_t probeTriggerObjectBit= probeTriggerObjectBit_Tight | probeTriggerObjectBit_Loose;
 
       // loop through dielectrons
       dielectronArr->Clear();
@@ -569,11 +569,24 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	bool isIDProbePass2 = passID(ele2, info->rhoLowEta) && passGapCut2;
 	
 	// Probes for HLT cuts:
-
+	// For a univeral pass/fail of either leading or trailing electron, 
+	// take into account the trigger thresholds with respect to the Et of the
+	// probe.
+	//    The "Tight", or the leading trigger leg, is presently Ele17,
+	// so match to it only electrons above 20 GeV to avoid turn-on.
+	//    WARNING: this is a bit dangerous because some day we will
+	// switch to higher-Et triggers. To be improved.
+	ULong_t probeTriggerObjectBit_probe1 = probeTriggerObjectBit_Loose;
+	if( ele1->scEt > 20 ) 
+	  probeTriggerObjectBit_probe1 |= probeTriggerObjectBit_Tight;
+	ULong_t probeTriggerObjectBit_probe2 = probeTriggerObjectBit_Loose;
+	if( ele2->scEt > 20 ) 
+	  probeTriggerObjectBit_probe2 |= probeTriggerObjectBit_Tight;
+	
 	bool isHLTProbe1     = passID(ele1, info->rhoLowEta) && passGapCut1;
 	bool isHLTProbe2     = passID(ele2, info->rhoLowEta) && passGapCut2;
-	bool isHLTProbePass1 = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit) && passGapCut1 ) ;
-	bool isHLTProbePass2 = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit) && passGapCut2);
+	bool isHLTProbePass1 = ( isHLTProbe1 && (ele1->hltMatchBits & probeTriggerObjectBit_probe1) && passGapCut1 ) ;
+	bool isHLTProbePass2 = ( isHLTProbe2 && (ele2->hltMatchBits & probeTriggerObjectBit_probe1) && passGapCut2);
 	bool isHLTProbePass1tight = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit_Tight) && passGapCut1);
 	bool isHLTProbePass2tight = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit_Tight) && passGapCut2);
 	bool isHLTProbePass1loose = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit_Loose) && passGapCut1);
@@ -817,7 +830,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
     useTemplates = true;
 
   int NsetBins=120;
-  bool isRECO=0;
+//   bool isRECO=0;
   const char* setBinsType="fft";
 
   measureEfficiencyPU(passTree, failTree,
@@ -825,7 +838,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 		      useTemplates, templatesFile, 
 		      resrootBase,
 		      //resultsRootFile,
-		      NsetBins, isRECO, setBinsType, 
+		      NsetBins, effType, setBinsType, 
 		      dirTag, triggers.triggerSetName(),0);
 
   effOutput.close();

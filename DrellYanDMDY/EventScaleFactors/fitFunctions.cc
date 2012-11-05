@@ -20,6 +20,22 @@ const int targetEta=1;
 // For other Et binnings, the array would be 3% below 20 GeV and 1% above. 
 const double effRecoSystErr[6] = {0.030, 0.022, 0.01, 0.01, 0.01, 0.01};
 
+// The following systematic error is related to the fact that
+// we measure the average trigger efficiency of the leading and trailing
+// electrons. The leading electron is always a subset of the
+// trailing for present trigers, so the average of leading+trailing
+// has the same value as the efficiency for trailing. However, the 
+// HLT efficiency for leading, measured separately, is a bit different.
+// The assigned systematics is the difference between the dedicated
+// measurement of the trailing efficiency and the average, divided by two.
+// (The division by two is because really the error is relevant only
+// to the efficiency in data. However, the functions at present do not know
+// whether it is data or MC. Assining half ot the error to each data and MC
+// is an approimation, but will give nearly the desired result on the data/MC
+// ratio.
+const double effHltSystErrBarrel[6] = {0.0, 0.0, 0.006, 0.002, 0.002, 0.001};
+const double effHltSystErrEndcap[6] = {0.0, 0.0, 0.010, 0.002, 0.002, 0.001}; // For endcap, the error is larger
+
 /*
 void measurePassAndFail(double &signal, double &signalErr, double &efficiency, double &efficiencyErr,TTree *passTree, TTree *failTree,TCanvas *passCanvas, TCanvas *failCanvas,const char* setBinsType){
 
@@ -166,7 +182,8 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
 		       TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
 		       bool useTemplates, TFile *templatesFile, 
 		       TFile *resultsRootFile, TFile *plotsRootFile,
-		       int NsetBins, bool isRECO, const char* setBinsType, 
+		       int NsetBins, DYTools::TEfficiencyKind_t effType, 
+		       const char* setBinsType, 
 		       TString dirTag, const TString &picFileExtraTag, 
 		       int puBin) {
   // puBin is important for the fit
@@ -182,7 +199,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
   measureEfficiencyCountAndCount(passTree, failTree, etBinning, etaBinning, 
 				 canvas, effOutput, 
 				 saveCountingToRootFile, resultsRootFile, 
-				 plotsRootFile, isRECO);
+				 plotsRootFile, effType);
   
   if( method == DYTools::COUNTnFIT || method == DYTools::FITnFIT ) {
     measureEfficiencyWithFit(passTree, failTree, 
@@ -190,7 +207,7 @@ void measureEfficiency(TTree *passTree, TTree *failTree,
 			     canvas, effOutput, fitLog,
 			     useTemplates, templatesFile, 
 			     resultsRootFile, plotsRootFile,
-			     NsetBins, isRECO, setBinsType, dirTag, 
+			     NsetBins, effType, setBinsType, dirTag, 
 			     picFileExtraTag, puBin);
   }
   
@@ -205,7 +222,8 @@ void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull,
 			 TCanvas *canvas,ofstream &effOutput, ofstream &fitLog,
 			 bool useTemplates, TFile *templatesFile, 
 			 const TString &resultRootFileBase,
-			 int NsetBins, bool isRECO, const char* setBinsType, 
+			 int NsetBins, DYTools::TEfficiencyKind_t effType, 
+			 const char* setBinsType, 
 			 TString dirTag, const TString &picFileExtraTag,
 			 int puDependence
 			 ) {
@@ -219,7 +237,7 @@ void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull,
     measureEfficiency(passTreeFull,failTreeFull,method,etBinning,etaBinning,
 		      canvas,effOutput,fitLog,useTemplates,
 		      templatesFile,resultsRootFile,resultPlotsFile,
-		      NsetBins,isRECO,setBinsType,
+		      NsetBins,effType,setBinsType,
 		      dirTag,picFileExtraTag);
   }
   else {
@@ -309,7 +327,7 @@ void measureEfficiencyPU(TTree *passTreeFull, TTree *failTreeFull,
 			method,etBinning,etaBinning,
 			canvas,effOutput,fitLog,useTemplates,templatesFile,
 			resultsRootFile,resultPlotFile,
-			NsetBins,isRECO,setBinsType,
+			NsetBins,effType,setBinsType,
 			dirTag,picFileExtraTag, pu_i+1);
       std::cout << "done measure efficiency" << std::endl;
     }
@@ -324,7 +342,8 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 			    int etBinning, int etaBinning, 
 			    TCanvas *canvas, ofstream &effOutput,
 			    bool saveResultsToRootFile, TFile *resultsRootFile,
-				    TFile *resultPlotsFile, bool isRECO){
+				    TFile *resultPlotsFile, 
+				    DYTools::TEfficiencyKind_t effType){
   
   int nEt                = DYTools::getNEtBins(etBinning);
   const double *limitsEt = DYTools::getEtBinLimits(etBinning);
@@ -381,6 +400,7 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       //   The calculation of the error on the event-level scale factors as 
       // a function of mass takes into account this 100% correlation in
       // the efficiencies of the merged bins. This is done in calcEventEff.C
+      bool isRECO=(effType == DYTools::RECO) ? true : false;
       if( isRECO && etaBinning == DYTools::ETABINS5 && limitsEt[i+1] ){
 	if ( j == 0 || j == 1 ){
 	  // Barrel eta bins
@@ -477,6 +497,24 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 	ctemp.cd(2); failTree->Draw("mass",cut);
 	ctemp.Write();
       }
+
+      // Add systematics for HLT efficiency (see comments at the top
+      // when the arrays are introduced
+      bool isHLT = (effType == DYTools::HLT) ? true : false;
+      if( isHLT) {
+	if(etBinning == DYTools::ETBINS6 && etaBinning == DYTools::ETABINS5){
+	  double extraErr = effHltSystErrBarrel[i];
+	  if( j > 2 ) 
+	    extraErr = effHltSystErrEndcap[i];
+	  double extraErrSquared = extraErr*extraErr;
+	  // Update the errors
+	  effErrLowCount = sqrt(effErrLowCount*effErrLowCount + extraErrSquared);
+	  effErrHighCount = sqrt(effErrHighCount*effErrHighCount + extraErrSquared);
+	  effErrLowCountWeighted = sqrt(effErrLowCountWeighted*effErrLowCountWeighted + extraErrSquared);
+	  effErrHighCountWeighted = sqrt(effErrHighCountWeighted*effErrHighCountWeighted + extraErrSquared);
+	}
+      }
+
       effArray2D(i,j) = effCount;
       effArrayErrLow2D(i,j) = effErrLowCount;
       effArrayErrHigh2D(i,j) = effErrHighCount;
@@ -515,13 +553,14 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
 // --------------------------------------------------
 
 void measureEfficiencyWithFit(TTree *passTree, TTree *failTree, 
-		      int method, int etBinning, int etaBinning, 
-		      TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
-		      bool useTemplates, TFile *templatesFile, 
-		      TFile *resultsRootFile, TFile *resultPlotsFile,
-		      int NsetBins, bool isRECO, const char* setBinsType, 
-		      TString dirTag, const TString &picFileExtraTag,
-		      int puBin){
+			      int method, int etBinning, int etaBinning, 
+			      TCanvas *canvas, ofstream &effOutput, ofstream &fitLog,
+			      bool useTemplates, TFile *templatesFile, 
+			      TFile *resultsRootFile, TFile *resultPlotsFile,
+			      int NsetBins, DYTools::TEfficiencyKind_t effType,
+			      const char* setBinsType, 
+			      TString dirTag, const TString &picFileExtraTag,
+			      int puBin){
   
   int nEt                = DYTools::getNEtBins(etBinning);
   const double *limitsEt = DYTools::getEtBinLimits(etBinning);
@@ -530,6 +569,8 @@ void measureEfficiencyWithFit(TTree *passTree, TTree *failTree,
   const double *limitsEta = DYTools::getEtaBinLimits(etaBinning);
   printf("eta bins %d\n", nEta);
   
+  bool isRECO=(effType == DYTools::RECO) ? true : false;
+      
   TMatrixD effArray2D(nEt, nEta);
   TMatrixD effArrayErrLow2D(nEt, nEta);
   TMatrixD effArrayErrHigh2D(nEt, nEta);
