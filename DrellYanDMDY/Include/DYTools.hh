@@ -40,8 +40,8 @@ namespace DYTools {
   const double etMinTrail = 10;
 
   //const TString strLumiAtECMS="4.7 fb^{-1} at #sqrt{s} = 7 TeV";
-  const TString strLumiAtECMS="5.0 fb^{-1} at #sqrt{s} = 7 TeV";
-  const double lumiAtECMS=4977.;
+  const TString strLumiAtECMS="4.8 fb^{-1} at #sqrt{s} = 7 TeV";
+  const double lumiAtECMS=4839.;
   const double lumiAtECMS_accuracy=1.;
 
 

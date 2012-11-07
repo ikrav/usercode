@@ -942,7 +942,7 @@ void makeUnfoldingMatrixFsr(const TString input,
     double xsec=xsecv[ifile];
     AdjustXSectionForSkim(infile,xsec,eventTree->GetEntries(),1);
     lumiv[ifile] = eventTree->GetEntries()/xsec;
-    double extraScale=1.; // 4977*1666/27166257.; // MC Zee scale in selectEvents
+    double extraScale=1.; // 4839*1666/27166257.; // MC Zee scale in selectEvents
     double scale = extraScale*lumiv[0]/lumiv[ifile];
     cout << "       -> sample weight is " << scale << endl;
 

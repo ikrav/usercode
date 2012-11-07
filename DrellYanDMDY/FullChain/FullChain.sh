@@ -76,7 +76,7 @@ do_escaleSystematics=0  # very long calculation!
 
 
 # the variables below are more persistent
-crossSectionTag="DY_m10+pr+a05+o03+pr_4977pb"
+crossSectionTag="DY_m10+pr+a05+o03+pr_4839pb"
 expectSelectedEventsFile="../root_files/selected_events/${crossSectionTag}/ntuples/zee${anTagUser}_select.root"
 expectSelectedEventsFile2="../root_files/selected_events/${crossSectionTag}/npv${anTagUser}.root"
 expectYieldsFile="../root_files/yields/${crossSectionTag}/yields${anTag}.root"

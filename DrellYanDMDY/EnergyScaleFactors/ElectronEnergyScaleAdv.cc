@@ -2184,7 +2184,7 @@ int ElectronEnergyScaleAdv_t::ProcessEEMFileApproximateMCWeight(const char *mc_f
 
   PUReweight_t puWeight;
   if (performPUReweight) {
-    assert(puWeight.setDefaultFile("DY_m10+pr+a05+o03+pr_4977pb","", 0));
+    assert(puWeight.setDefaultFile("DY_m10+pr+a05+o03+pr_4839pb","", 0));
     assert(puWeight.setReference("hNGoodPV_data"));
     assert(puWeight.setActiveSample("hNGoodPV_zee"));
   }

@@ -1181,7 +1181,7 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
     AdjustXSectionForSkim(infile,xsec,eventTree->GetEntries(),1);
     double lumi = eventTree->GetEntries()/xsec;
     if (ifile==0) lumi0=lumi;
-    double extraScale=1.; // 4977*1666/27166257.; // MC Zee weight in selectEvents
+    double extraScale=1.; // 4839*1666/27166257.; // MC Zee weight in selectEvents
     double sample_weight = extraScale * lumi0/lumi;
     cout << "       -> sample weight is " << sample_weight << endl;
 

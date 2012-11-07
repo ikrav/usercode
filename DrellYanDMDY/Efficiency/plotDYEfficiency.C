@@ -237,7 +237,7 @@ void plotDYEfficiency(const TString input,
     // all subsequent ones are normalized to xsection and luminosity
     AdjustXSectionForSkim(infile,xsecv[ifile],eventTree->GetEntries(),1);
     lumiv[ifile] = eventTree->GetEntries()/xsecv[ifile];
-    double extraScale=1; // 4977*1666/27166257.; MC Zee weight in selectEvents
+    double extraScale=1; // 4839*1666/27166257.; MC Zee weight in selectEvents
     double scale = extraScale * lumiv[0]/lumiv[ifile];
     cout << "       -> sample weight is " << scale << endl;
 
