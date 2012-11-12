@@ -191,17 +191,18 @@ void plotDYEfficiency(const TString input,
 
 #ifdef usePUReweight
   PUReweight_t puReweight;
-  int res=puReweight.setDefaultFile(dirTag,DYTools::analysisTag_USER,0);
-  assert(res);
-  TString outNamePV=puReweight.fileName();
-  TString refPUDistribution="hNGoodPV_data";
-  TString currentPUDistribution="hNGoodPV_zee";
-  res= puReweight.setReference(refPUDistribution) && 
-    puReweight.setActiveSample(currentPUDistribution);
-  if (!res) {
-    std::cout << "failed to locate needed distributions in <" << outNamePV << ">\n";
-    assert(res);
-  }
+  // The commented out code below is not necessary for the Hildreth pile-up reweighting
+//   int res=puReweight.setDefaultFile(dirTag,DYTools::analysisTag_USER,0);
+//   assert(res);
+//   TString outNamePV=puReweight.fileName();
+//   TString refPUDistribution="hNGoodPV_data";
+//   TString currentPUDistribution="hNGoodPV_zee";
+//   res= puReweight.setReference(refPUDistribution) && 
+//     puReweight.setActiveSample(currentPUDistribution);
+//   if (!res) {
+//     std::cout << "failed to locate needed distributions in <" << outNamePV << ">\n";
+//     assert(res);
+//   }
 #endif
 
   //
@@ -340,7 +341,7 @@ void plotDYEfficiency(const TString input,
       }
 
 #ifdef usePUReweight
-      puWeight=puReweight.getWeight(nGoodPV);
+      puWeight = puReweight.getWeightHildreth(info->nPU);
       nZv_puUnweighted += scale * gen->weight;
       nZv_puWeighted += scale * gen->weight * puWeight;
 #endif
@@ -412,11 +413,11 @@ void plotDYEfficiency(const TString input,
 // 	// The Smurf electron ID package is the same as used in HWW analysis
 // 	// and contains cuts like VBTF WP80 for pt>20, VBTF WP70 for pt<10
 // 	// with some customization, plus impact parameter cuts dz and dxy
-// 	if(!passSmurf(dielectron)) continue;  
+//  	if(!passSmurf(dielectron)) continue;
 
 	// The selection below is for the EGM working points from spring 2012
 	// recommended for both 2011 and 2012 data
-	if(!passEGM2011(dielectron, WP_MEDIUM, info->rhoLowEta)) continue;  
+ 	if(!passEGM2011(dielectron, WP_MEDIUM, info->rhoLowEta)) continue;
 
         // ******** We have a Z candidate! HURRAY! ******** /
 
