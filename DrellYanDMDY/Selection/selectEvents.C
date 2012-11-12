@@ -581,9 +581,9 @@ void selectEvents(const TString conf,
 	dielectronArr->Clear(); 
 	dielectronBr->GetEntry(ientry);	
 	// loop through dielectrons
-        for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
+	for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
 	  mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
-
+	  
 	  const int ee_selection_new_code=1;
 	  if (ee_selection_new_code) {
 	    // Keep the EEM values before any changes
@@ -713,7 +713,7 @@ void selectEvents(const TString conf,
 	  // Fill histograms
 	  // 
 	  hMassv[isam]->Fill(dielectron->mass,weight);
-	  
+
 	  pvArr->Clear();
           pvBr->GetEntry(ientry);
           UInt_t nGoodPV=0;
@@ -748,7 +748,13 @@ void selectEvents(const TString conf,
 	  // Note: we do not need jet count at the moment. It can be found
 	  // by looping over PFJets list if needed. See early 2011 analysis.
 	  int njets = -1;
-	  fillData(data, info, dielectron, pvArr->GetEntriesFast(), nGoodPV, njets, weightSave);
+	  // For the total number of PVs for MC fill the generator-level number of
+	  // simulated PVs. The reason is that for PU reweighting following the
+	  // Hildreth scheme, we need the simulation level number of PU interactions.
+	  int totalPV = pvArr->GetEntriesFast();
+	  if( !isData )
+	    totalPV = info->nPU;
+	  fillData(data, info, dielectron, totalPV, nGoodPV, njets, weightSave);
 	  outTree->Fill();
 	  if (eemTree) {
 	    eemTree->Fill();
