@@ -264,8 +264,15 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 
   TString ntuplesDir=tagAndProbeDir;
   ntuplesDir.ReplaceAll("tag_and_probe","selected_events");
-  TString refFNamePV = ntuplesDir;
-  refFNamePV.Append( TString("/npv") + DYTools::analysisTag_USER + TString(".root")  );
+
+  // The reference histograms are prepared without any selection at all,
+  // apart from requiring the appropriate event trigger bit match. 
+  // Note: the file names are identical. The two needed histograms are
+  // both in the same file at the moment.
+  TString refFNamePV = "../root_files/pileup/referencePVHistogramByTrigger_full2011_20121110.root";
+  TString puFNameRecoLevel = "../root_files/pileup/referencePVHistogramByTrigger_full2011_20121110.root";
+  //   TString refFNamePV = ntuplesDir;
+  //   refFNamePV.Append( TString("/npv") + DYTools::analysisTag_USER + TString(".root")  );
   
   if (performPUReweight) {
     TFile tmpFile(refFNamePV);
@@ -585,18 +592,25 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 	  // get the number of goodPVs
 	  pvBr->GetEntry(ientry);
 	  storeNGoodPV=0;
-	  if (1) {
-	    storeNGoodPV = countGoodVertices(pvArr);
-	  }
-	  else {
-	    for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
-	      const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);
-	      if(pv->nTracksFit                        < 1)  continue;
-	      if(pv->ndof                              < 4)  continue;
-	      if(fabs(pv->z)                           > 24) continue;
-	      if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
-	      storeNGoodPV++;
-	    }
+	  // For data, we use the count of good reconstructed vertices
+	  // but for MC, since this will be used for PU reweighting,
+	  // we are using the gen-level number of simulated PU.
+	  if( (sample==DYTools::DATA) ) {
+		if (1) {
+		  storeNGoodPV = countGoodVertices(pvArr);
+		}
+		else {
+		  for(Int_t ipv=0; ipv<pvArr->GetEntriesFast(); ipv++) {
+		    const mithep::TVertex *pv = (mithep::TVertex*)((*pvArr)[ipv]);
+		    if(pv->nTracksFit                        < 1)  continue;
+		    if(pv->ndof                              < 4)  continue;
+		    if(fabs(pv->z)                           > 24) continue;
+		    if(sqrt((pv->x)*(pv->x)+(pv->y)*(pv->y)) > 2)  continue;
+		    storeNGoodPV++;
+		  }
+		}
+	  }else{
+	    storeNGoodPV = info->nPU;
 	  }
 
 	  // total probes
@@ -654,12 +668,18 @@ void eff_Reco(const TString configFile, const TString effTypeString,
     TString outFNamePV = tagAndProbeDir + 
       TString("/npv_tnp") + effTypeString + TString("_") + sampleTypeString +
       DYTools::analysisTag + TString(".root");
-    TString refDistribution="hNGoodPV_data";
+    //
+    TString refDistribution="hNGoodPV_signal_trigger_v_data";
+    TString puDistrRecoLevel="hNGoodPV_tnp_ele17_sc8_v_data";
+//     TString refDistribution="hNGoodPV_data";
+    
     TString sampleNameBase= effTypeString + TString("_") + 
       sampleTypeString + DYTools::analysisTag;
+    bool isMC = (sample==DYTools::MC);
     int res=CreatePUWeightedBranch(selectEventsFName,
 				   refFNamePV, refDistribution,
-				   outFNamePV, sampleNameBase);
+				   puFNameRecoLevel, puDistrRecoLevel,
+				   outFNamePV, sampleNameBase, isMC);
     assert(res);
     selectedEventsFile=new TFile(selectEventsFName);
     assert(selectedEventsFile);
