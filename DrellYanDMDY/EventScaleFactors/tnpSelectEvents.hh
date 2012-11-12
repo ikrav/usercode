@@ -143,7 +143,9 @@ public:
 
 int CreatePUWeightedBranch(const TString &fName, 
 			   const TString &puReferenceFName, const TString &puRefDistrName,
-			   const TString &savePUFName, const TString &savePUHistoNameBase) {
+			   const TString &puFNameRecoLevel, const TString &puDistrNameRecoLevel,			   
+			   const TString &savePUFName, const TString &savePUHistoNameBase,
+			   bool isMC ) {
   std::cout << "entered CreatePUWeightedBranch (" << fName << ")" << std::endl;
   // Open PU reference distribution file
   PUReweight_t puRef;
@@ -178,18 +180,60 @@ int CreatePUWeightedBranch(const TString &fName,
     TBranch *pvCountBr= tree->GetBranch("nGoodPV");
     assert(evWeightBr && pvCountBr);
 
-    // determine the PU distribution
-    for (UInt_t i=0; i<tree->GetEntries(); ++i) {
-      pvCountBr->GetEntry(i);
-      evWeightBr->GetEntry(i);
-      puReweight.Fill(nGoodPV,evWeight);
-    }
+    // The code below is commented out. Instead, see
+    // the Fill call below.
+//     // determine the PU distribution
+//     for (UInt_t i=0; i<tree->GetEntries(); ++i) {
+//       pvCountBr->GetEntry(i);
+//       evWeightBr->GetEntry(i);
+//       puReweight.Fill(nGoodPV,evWeight);
+//     }
   }
 
+  // In the following, we simply fill the active histogram
+  // with the content of the desired histogram prepared in advance.
+  TFile fsource(puFNameRecoLevel);
+  if( !fsource.IsOpen()){
+    printf("tnpSelectEvents:: failed to open reference file %s\n",
+	   puFNameRecoLevel.Data());
+    assert(0);
+  }
+  TH1F *hsource = (TH1F*)fsource.Get(puDistrNameRecoLevel);
+  if( hsource == 0 ){
+    printf("tnpSelectEvents:: histogram %s is not found in file %s\n",
+	   puDistrNameRecoLevel.Data(), puFNameRecoLevel.Data());
+    assert(0);
+  }
+  for(int i=1; i <= hsource->GetNbinsX(); i++){
+    // In the standard binning the bin center is at the integer value of the PU
+    int iPU = (int)hsource->GetBinCenter(i);
+    puReweight.Fill(iPU, hsource->GetBinContent(i));
+  }
+  
   res=puReweight.setReference(puRef.getHRef()) &&  // set reference distribution
     puReweight.prepareWeights(1);  // prepare weights and save histo
   assert(res);
 
+  // Print everything
+  if( isMC ){
+    printf("PU reweight info: this is MC. The weights are assigned according to the\n");
+    printf("  Hildreth's method.\n");
+  }else{
+    printf("PU reweight info: this is data. The weights are prepared based on:\n");
+    printf("  target (reference) histo= %s   from file= %s\n", 
+	   puRefDistrName.Data(),puReferenceFName.Data());
+    printf("  source (active)    histo= %s   from file= %s\n", 
+	   puDistrNameRecoLevel.Data(),puFNameRecoLevel.Data());
+  }
+  for(int i=1; i<=45; i++){
+    double ww = 0;
+    if(isMC)
+      ww = puReweight.getWeightHildreth(i);
+    else
+      ww = puReweight.getWeightRecoLevel(i);
+    printf("   PU=%3d     weight= %f\n", i, ww);
+  }
+  
   // set weights
   for (int fail=0; res && (fail<2); ++fail) {
     TString pass_fail_str= (fail) ? "_fail" : "_pass";
@@ -211,7 +255,11 @@ int CreatePUWeightedBranch(const TString &fName,
     for (UInt_t i=0; i<tree->GetEntries(); ++i) {
       pvCountBr->GetEntry(i);
       evWeightBr->GetEntry(i);
-      pvWeight=evWeight * puReweight.getWeight(nGoodPV);
+      if( isMC ){
+	pvWeight=evWeight * puReweight.getWeightHildreth(nGoodPV);
+      }else{
+	pvWeight=evWeight * puReweight.getWeightRecoLevel(nGoodPV);
+      }
       weightBr->Fill();
     }
     selectedEventsFile->cd();
