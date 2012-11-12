@@ -487,11 +487,12 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
   }
 
   PUReweight_t PUReweight;
-  if (puReweight) {
-    assert(PUReweight.setDefaultFile(mcMgr.dirTag(),DYTools::analysisTag_USER,0));
-    assert(PUReweight.setReference("hNGoodPV_data"));
-    assert(PUReweight.setActiveSample("hNGoodPV_zee"));
-  }
+  // For Hildreth method of PU reweighting, the lines below are not needed
+//   if (puReweight) {
+//     assert(PUReweight.setDefaultFile(mcMgr.dirTag(),DYTools::analysisTag_USER,0));
+//     assert(PUReweight.setReference("hNGoodPV_data"));
+//     assert(PUReweight.setActiveSample("hNGoodPV_zee"));
+//   }
 
   TFile *skimFile=new TFile(selectEventsFName);
   if (!skimFile || !skimFile->IsOpen()) {
@@ -526,7 +527,7 @@ void calcEventEff(const TString mcInputFile, const TString tnpDataInputFile,
     double scaleFactorId  = sqrt(findEventScaleFactor(1,selData));
     double scaleFactorHlt = sqrt(findEventScaleFactor(2,selData));
     double weight=selData.weight;
-    if (puReweight) weight *= PUReweight.getWeight(selData.nGoodPV);
+    if (puReweight) weight *= PUReweight.getWeightHildreth(selData.nGoodPV);
     if ( ientry%20000 == 0 ) std::cout << "ientry=" << ientry << ", weight=" << weight << ", scaleFactor=" << scaleFactor << "\n";
 
     hScale->Fill(scaleFactor, weight);
