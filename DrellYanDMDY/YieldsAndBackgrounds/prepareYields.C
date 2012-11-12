@@ -253,10 +253,11 @@ void prepareYields(const TString conf  = "data_plot.conf",
   TFile *pvfile = NULL;
   TH1F *hPVData = 0;
   if (puReweight_new_code) {
-    assert(puWeight.setFile(fnamePV));
-    if (hasData && performPUReweight) {
-      assert(puWeight.setReference("hNGoodPV_data"));
-    }
+    // Do nothing: for the Hildreth method the code commented out below is not needed
+    //     assert(puWeight.setFile(fnamePV));
+    //     if (hasData && performPUReweight) {
+    //       assert(puWeight.setReference("hNGoodPV_data"));
+    //     }
   }
   else {
     pvfile=new TFile(fnamePV);
@@ -303,11 +304,12 @@ void prepareYields(const TString conf  = "data_plot.conf",
     // Prepare weights for pile-up reweighting for MC
     TH1F *puWeights=NULL;
     if (puReweight_new_code) {
-      if (performPUReweight) {
-	assert(puWeight.setActiveSample(TString("hNGoodPV_")+snamev[isam]));
+      // Do nothing: for the Hildreth method the code commented out below is not needed
+//       if (performPUReweight) {
+// 	assert(puWeight.setActiveSample(TString("hNGoodPV_")+snamev[isam]));
 	//puWeight.printActiveDistr_and_Weights(std::cout);
 	//puWeight.printWeights(std::cout);
-      }
+//       }
     }
     else {
       TH1F *hPVThis = (TH1F*) pvfile->Get(TString("hNGoodPV_")+snamev[isam]); assert(hPVThis);
@@ -333,15 +335,18 @@ void prepareYields(const TString conf  = "data_plot.conf",
     for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
       eventTree->GetEntry(ientry);
       Double_t weight = data->weight;
-      
+
       // Any extra weight factors:
       if (performPUReweight) {
 	double weightPU=(puReweight_new_code) ?
-	  puWeight.getWeight( data->nPV ) :
+	  puWeight.getWeightHildreth( data->nPV ) :
 	  puWeights->GetBinContent( puWeights->FindBin( data->nPV ));
-	weight *= weightPU;
+	// Make sure data are not reweighted.
+	bool isData = ((isam == 0) && hasData);
+	if( !isData )
+	  weight *= weightPU;
       }
-      
+
       // If This is MC, add extra smearing to the mass
       // We apply extra smearing to all MC samples: it is may be
       // not quite right for fake electron backgrounds, but these
