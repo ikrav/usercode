@@ -2,6 +2,111 @@
 #include "assert.h"
 
 // --------------------------------------------------------------
+PUReweight_t::PUReweight_t(): FName(), FFile(NULL), hRef(NULL), 
+			      hActive(NULL), hWeight(NULL), FCreate(0) 
+{ 
+
+  initializeHildrethWeights();
+
+}
+
+// --------------------------------------------------------------
+
+void PUReweight_t::initializeHildrethWeights(){
+
+  // The pile-up reweighting setup according to the Hildreth's method
+  // is done below.
+  //   For general information on this, see
+  // https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupMCReweightingUtilities
+  //
+  //   The "target" (data) PU distribution comes
+  // from luminosity and inelastic pp cross section convolution,
+  // and is obtained according to the prescription from 
+  //     https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJSONFileforData
+  // It is independent on analysis selection, but depends on the JSON file.
+  // This distribution comes from running an official tool (takes ~1 hour
+  // on full 2011 JSON), and it returns a ROOT file with a TH1D with a certain
+  // binning. One needs to repack it then to the standard DY binning and TH1F
+  // separately before using it in this class.
+  // 
+  //   The "source" (MC) PU distribution is the generator-level number 
+  // of simulated pile-up. It is independent on the physical process
+  // in the MC sample, or selection applied in the analysis. It depends
+  // on the MC production, i.e. on the pile-up scenario (such as "S6" or S7"),
+  // and on the vintage (Fall11, or Summer12).
+  //     To prepare it with Drell-Yan ntuples, one needs to simply take
+  // any MC sample and plot the "Info.nPU" variable which, for MC, contains
+  // the number of simulated pile-up at generator level. The binning *has* to be
+  // the same as that of the target distribution. Note: the comment
+  // in the TEventInfo.hh header says it is "reconstructed vertices", but
+  // it is a misinformation, according to the author Kevin Sung, it is really
+  // the gen-level quantity.
+
+  TString ftargetName = "../root_files/pileup/dataPileupHildreth_full2011_20121110_repacked.root";
+  TFile f1(ftargetName);
+  if( ! f1.IsOpen()){
+    printf("Failed to find the target for Hildreth's PU reweighting\n");
+    printf("  failed to open the file %s\n", ftargetName.Data());
+    printf("  See PUReweight.cc for more detail\n");
+    assert(0);
+  }
+  TH1F *target = (TH1F*)f1.Get("pileup_lumibased_data");
+  if( target == 0 ){
+    printf("Failed to find the histogram for pileup in the file %s\n", 
+	   ftargetName.Data());
+    printf("  See PUReweight.cc for more detail\n");
+    assert(0);
+  }
+
+  TString fsourceName = "../root_files/pileup/mcPileupHildreth_full2011_20121110_repacked.root";
+  TFile f2(fsourceName);
+  if( ! f2.IsOpen()){
+    printf("Failed to find the source for Hildreth's PU reweighting\n");
+    printf("  failed to open the file %s\n", fsourceName.Data());
+    printf("  See PUReweight.cc for more detail\n");
+    assert(0);
+  }
+  TH1F *source = (TH1F*)f2.Get("pileup_simulevel_mc");
+  if( source == 0 ){
+    printf("Failed to find the histogram for pileup in the file %s\n", 
+	   fsourceName.Data());
+    printf("  See PUReweight.cc for more detail\n");
+    assert(0);
+  }
+
+  // Make sure histograms have the same binning
+  bool nBinsMatch = (source->GetNbinsX() == target->GetNbinsX());
+  bool lowBoundaryMatch = 
+    ( source->GetXaxis()->GetBinLowEdge(1) == target->GetXaxis()->GetBinLowEdge(1));
+  bool upBoundaryMatch = 
+    ( source->GetXaxis()->GetBinUpEdge(source->GetNbinsX())
+      == target->GetXaxis()->GetBinUpEdge(target->GetNbinsX()));
+  if( !( nBinsMatch && lowBoundaryMatch && upBoundaryMatch ) ){
+    printf("Failed to find weights in PUReweight: the source and the target\n");
+    printf(" for the Hildreth's method reweighting have different binning\n");
+    assert(0);
+  }
+  
+  // Normalize the source and the target
+  target->Scale(1/target->GetSumOfWeights());
+  source->Scale(1/source->GetSumOfWeights());
+
+  // Find the weights distribution
+  hWeightHildreth = (TH1F*)target->Clone("hWeightHildreth");
+  hWeightHildreth->SetDirectory(0);
+  hWeightHildreth->Divide(source);
+  
+  f1.Close();
+  f2.Close();
+  
+//   printf("Pileup weights for the Hildreth method are constructed.\n");
+//   for(int i=1; i<= hWeightHildreth->GetNbinsX(); i++){
+//     printf("PU=%2d  weight=%f\n", i, hWeightHildreth->GetBinContent(i));
+//   }
+  return;
+}
+
+// --------------------------------------------------------------
 
 int printHisto_local(std::ostream& out, const TH1F* histo) {
   if (!histo) {

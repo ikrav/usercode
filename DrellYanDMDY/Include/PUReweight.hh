@@ -19,9 +19,10 @@ protected:
   TH1F *hRef;   // reference histogram
   TH1F *hActive; // active histogram
   TH1F *hWeight; // histogram of weights
+  TH1F *hWeightHildreth; // histogram of weights according to the Hildreth's method
   int FCreate; // whether a file is being created (1) or updated (2), otherwise - reading (0)
 public:
-  PUReweight_t() : FName(), FFile(NULL), hRef(NULL), hActive(NULL), hWeight(NULL), FCreate(0) { }
+  PUReweight_t();
   ~PUReweight_t() { this->clear(); }
 
   void clear() {
@@ -41,7 +42,7 @@ public:
   int getCreate() const { return FCreate; }
 
 
-  double getWeight(int nGoodPV) const {
+  double getWeightRecoLevel(int nGoodPV) const {
     double w=0;
     if (!hWeight) {
       std::cout << "PUReweight::getWeight: call setActiveSample first\n";
@@ -54,6 +55,22 @@ public:
     return w;
   }
 
+  double getWeightHildreth(int nPU) const {
+    double w=0;
+    if (!hWeightHildreth) {
+      std::cout << " The weights for Hildreth's method not available\n";
+      std::cout << " A problem during intialization of PUReweight?\n";
+    }
+    else {
+      if (nPU > hWeightHildreth->GetNbinsX() ) 
+	nPU = hWeightHildreth->GetNbinsX(); 
+
+      int idx = hWeightHildreth->FindBin( nPU );
+      w = hWeightHildreth->GetBinContent( idx );
+    }
+    return w;
+  }
+  
   int setDefaultFile(const TString &dirTag, const TString &analysisTag, 
 		     int create=0) {
     TString fname=TString("../root_files/selected_events/") + dirTag + 
@@ -109,6 +126,9 @@ protected:
   }
 
   int printHisto(std::ostream& out, const TH1F* histo, const TString &name) const;
+
+  void initializeHildrethWeights();
+
 };
 
 
