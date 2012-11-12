@@ -814,11 +814,12 @@ void makeUnfoldingMatrixFsr(const TString input,
   TriggerSelection requiredTriggers(constantsSet, isData, 0);
 
   PUReweight_t puWeight;
-  if (performPUReweight) {
-    assert(puWeight.setDefaultFile(dirTag,DYTools::analysisTag_USER, 0));
-    assert(puWeight.setReference("hNGoodPV_data"));
-    assert(puWeight.setActiveSample("hNGoodPV_zee"));
-  }
+  // For Hildreth method of PU reweighting, the lines below are not needed
+//   if (performPUReweight) {
+//     assert(puWeight.setDefaultFile(dirTag,DYTools::analysisTag_USER, 0));
+//     assert(puWeight.setReference("hNGoodPV_data"));
+//     assert(puWeight.setActiveSample("hNGoodPV_zee"));
+//   }
 
   //--------------------------------------------------------------------------------------------------------------
   // Main analysis code 
@@ -960,17 +961,20 @@ void makeUnfoldingMatrixFsr(const TString input,
       if (ientry%100000==0) { printProgress("ientry=",ientry,eventTree->GetEntriesFast()); }
       ec.numEvents++;
 
+      genBr->GetEntry(ientry);
+      infoBr->GetEntry(ientry);
+
       int nGoodVertices=1;
       double wPU=1.0;
       if (performPUReweight) {
-	pvArr->Clear();
-	pvBranch->GetEntry(ientry);
-	nGoodVertices=countGoodVertices(pvArr);
-	wPU= puWeight.getWeight( nGoodVertices );
+	wPU = puWeight.getWeightHildreth(info->nPU);
+	// For the Hildreth method, we use not the number of
+	// good reconstructed vertices, but the gen level number of PU events, above
+// 	pvArr->Clear();
+// 	pvBranch->GetEntry(ientry);
+// 	nGoodVertices=countGoodVertices(pvArr);
+// 	wPU= puWeight.getWeight( nGoodVertices );
       }
-
-      genBr->GetEntry(ientry);
-      infoBr->GetEntry(ientry);
 
       double reweight=1.;
       if (systematicsMode!=DYTools::FSR_STUDY) reweight=1.0;
