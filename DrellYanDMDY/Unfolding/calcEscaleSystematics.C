@@ -56,7 +56,7 @@ int saveTexTable=0){
   unfoldedYieldsSquaredMean = 0;
 
   TString matrixFileName = TString("../root_files/constants/") + lumiTag + 
-    TString("/unfolding_constants") + DYTools::analysisTag + TString(".root");
+    TString("/detResponse_unfolding_constants") + DYTools::analysisTag + TString("_PU.root");
   const int nFiles1 = 20;  // expected number of files
   if (1)
   for(int ifile=0; ifile<nFiles1; ifile++){
@@ -127,7 +127,7 @@ int saveTexTable=0){
     }
   //
     matrixFileName = TString("../root_files/constants/") + lumiTag + 
-      TString("/unfolding_constants") + DYTools::analysisTag + TString(".root");
+      TString("/detResponse_unfolding_constants") + DYTools::analysisTag + TString("_PU.root");
     res=applyUnfoldingLocal(observedYields, unfoldedYields, matrixFileName);
     if (res==1) usedFiles.push_back(matrixFileName);
 
