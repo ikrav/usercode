@@ -407,12 +407,12 @@ TString subtractBackground(const TString conf,
     }
   }
   if (fabs(countDataNoBkg)<1e-7) {
-    std::cout << "found no data events in Z-peak region\n";
-    throw 2;
+    std::cout << "found no data events in Z-peak region. Aborting\n";
+    assert(0);
   }
   if (fabs(countMCsignal)<1e-7) {
-    std::cout << "found no mc events in Z-peak region\n";
-    throw 2;
+    std::cout << "found no mc events in Z-peak region. Aborting\n";
+    assert(0);
   }
   // 2. create weight maps
   TMatrixD zeeMCShapeReweight(DYTools::nMassBins,nYBinsMax);
@@ -471,7 +471,7 @@ TString subtractBackground(const TString conf,
     for(int i=0; i<DYTools::nMassBins; i++){
       // Print tables of yields and background
       if ( (DYTools::study2D==1) ||
-	   (DYTools::study2D==0) && (i==0) ) {
+	   ((DYTools::study2D==0) && (i==0)) ) {
 	   
 	printf("\n\n\t\tTables for iMass=%d\n\n",i);
 	
@@ -501,7 +501,7 @@ TString subtractBackground(const TString conf,
     for(int i=0; i<DYTools::nMassBins; i++){
       // Print tables of yields and background
       if ( (DYTools::study2D==1) ||
-	   (DYTools::study2D==0) && (i==0) ) {
+	   ((DYTools::study2D==0) && (i==0)) ) {
 	   
 	printf("\n\n\t\tTables for iMass=%d\n\n",i);
 	
