@@ -367,9 +367,12 @@ TString subtractBackground(const TString conf,
   }
 
   TMatrixD bkgRatesUsual(DYTools::nMassBins,nYBinsMax);
-  for (int i=0; i<DYTools::nMassBins; i++)
-      for (int j=0; j<DYTools::nYBins[i]; j++)
-           bkgRatesUsual(i,j)=100.0*totalBackground(i,j)/signalYields(i,j);
+  for (int i=0; i<DYTools::nMassBins; i++) {
+    for (int j=0; j<DYTools::nYBins[i]; j++) {
+      bkgRatesUsual(i,j)= (signalYields(i,j)>0.) ?
+	100.0*totalBackground(i,j)/signalYields(i,j) : 0.;
+    }
+  }
 
 
   //
