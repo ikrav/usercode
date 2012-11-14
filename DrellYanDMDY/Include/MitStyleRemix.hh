@@ -1,3 +1,6 @@
+#ifndef MitStyleRemix_HH
+#define MitStyleRemix_HH
+
 #include <TCanvas.h>
 #include <TH1.h>
 #include <TPad.h>
@@ -18,3 +21,5 @@ void AdjustFor2DplotWithHeight(TCanvas *c) {
     if (pad) pad->SetRightMargin(1.5);
   }
 }
+
+#endif
