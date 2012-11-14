@@ -1201,6 +1201,67 @@ void ElectronEnergyScale::print() const {
 }
 
 //------------------------------------------------------
+
+void ElectronEnergyScale::printAsTexTable(const TString &fname) const {
+  std::cout << "printAsTexTable(" << fname << ") WARNING: assuming Gaussian distribution\n";
+  assert( !_mcConst2 && !_mcConst3 && !_mcConst4 );
+
+  std::ofstream fout(fname.Data());
+  assert(fout.is_open());
+  fout << "\\begin{table}[htbH]\n";
+  fout << "\\begin{center}\n";
+  fout << "\\caption{Energy scale correction factors for individual electrons\n";
+  fout << "in data as a function of $\\eta$, and extra smearing required for\n";
+  fout << "MC to match single electron energy resolution in data.}\n";
+  fout << "\\label{tab:energyScaleFactors}\n";
+  fout << "\\begin{tabular}{|ccc|c|c|}\n";
+  fout << "\\hline\n";
+  const char *data_Rnd=(_randomizedStudy) ? "randomized" : "          ";
+  const char *mc_Rnd=(_smearingWidthRandomizationDone) ? "randomized" : "";
+  fout << "\\multicolumn{3}{|c|}{} &  " << data_Rnd << "  & " << mc_Rnd << " resolution  \\\\\n";
+  fout << "\\multicolumn{3}{|c|}{region in $\\eta$} & scale $s_i$  & underestimate $\\sigma_i$, GeV \\\\\n";
+  fout << "\\multicolumn{3}{|c|}{} &  (data)     &  (MC)   \\\\\n";
+  fout << "\\hline\n";
+
+  printf("   Calibration set (%d): %s\n", _calibrationSet, ElectronEnergyScale::CalibrationSetName(this->_calibrationSet,&this->_inpFileName).Data());
+  printf("   Smearing function: %s\n",ElectronEnergyScale::CalibrationSetFunctionName(this->_calibrationSet).Data());
+  if (_randomizedStudy) printf("  Random data seed=%d\n",_dataSeed);
+  if (_smearingWidthRandomizationDone) printf("  Random MC seed=%d\n",_mcSeed);
+  if (_randomizedStudy) printf("          Random Escale-const");
+  printf("\n");
+
+  for(int i=0; i<_nEtaBins; i++){
+    double eta1=_etaBinLimits[i];
+    double eta2=_etaBinLimits[i+1];
+    char star1=' ';
+    char star2=' ';
+    if ((fabs(fabs(eta1)-DYTools::kECAL_GAP_LOW)<1e-4) ||
+	(fabs(fabs(eta1)-DYTools::kECAL_GAP_HIGH)<1e-4) ||
+	(fabs(fabs(eta1)-1.5)<1e-4)) star1='*';
+    if ((fabs(fabs(eta2)-DYTools::kECAL_GAP_LOW)<1e-4) ||
+	(fabs(fabs(eta2)-DYTools::kECAL_GAP_HIGH)<1e-4) ||
+	(fabs(fabs(eta2)-1.5)<1e-4)) star2='*';
+    std::cout << "eta1=" << eta1 << "star1=<" << star1 << ">\n";
+    
+    fout << Form(" $% 4.1lf$%c &-& $%4.1lf$%c",
+		 eta1,star1, eta2,star2);
+    fout << Form(" &  $%6.4lf\\pm%6.4lf$",
+		 _dataConst[i], _dataConstErr[i]);
+    fout << Form("  &  $%4.2lf\\pm%4.2lf$ ",
+		 _mcConst1[i], _mcConst1Err[i]);
+    fout << "\\\\\n";
+  }
+  fout << "\\hline\n";
+  fout << "\\multicolumn{5}{l}{ * The $|\\eta|$ gap (1.4442-1.566) is excluded}\n";
+  fout << "\\end{tabular}\n";
+  fout << "\\end{center}\n";
+  fout << "\\end{table}\n";
+  fout.close();
+  std::cout << "file <" << fname << "> created\n";
+  return;
+}
+
+//------------------------------------------------------
 //------------------------------------------------------
 
 TString ElectronEnergyScale::ExtractFileName(const TString &escaleTagName) {

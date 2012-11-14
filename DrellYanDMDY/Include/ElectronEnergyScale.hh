@@ -118,6 +118,7 @@ public:
   }
 
   void print() const;
+  void printAsTexTable(const TString &fname) const;
 
   // Useful functions
   static CalibrationSet DetermineCalibrationSet(const TString &escaleTagName, TString *inputFileName=NULL);  // TString -> CalibrationSet
