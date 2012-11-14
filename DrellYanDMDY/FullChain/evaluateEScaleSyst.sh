@@ -202,7 +202,6 @@ deriveUnfoldedSpectrum() {
   cd ${runPath}
 }
 
-
 # ----------------------- ntuple copier
 
 cloneNTuples() {
@@ -212,10 +211,10 @@ cloneNTuples() {
     exit
   fi
   srcDir=${selEventsDirT/TMPDIR/${dirTag}}
-  echo "copySelectedNTuples: srcDir=\"${srcDir}\"" 
-  echo "copySelectedNTuples: destDir=\"${selEventsDestDir}\"" 
+  echo "cloneNTuples: srcDir=\"${srcDir}\""
+  echo "cloneNTuples: destDir=\"${selEventsDestDir}\""
   if [ ! -e ${selEventsDestDir} ] ; then mkdir ${selEventsDestDir}; fi
-  if [ ! -e "${selEventsDestDir}/ntuples" ] ; 
+  if [ ! -e "${selEventsDestDir}/ntuples" ] ;
       then mkdir ${selEventsDestDir}/ntuples; fi
 
   sets="data qcd ttbar wjets wtop wtopbar ww wz ztt zz zee"
@@ -230,6 +229,27 @@ cloneNTuples() {
   cp ${selEventsDestDir}npv${anTagUser}.root \
       ${selEventsDestDir}npv${anTagUser}-copy.root
   set +x  # debug off
+}
+
+# ----------------------- DDBkg copier
+
+cloneDDBkgFiles() {
+  yieldsDestDir=$1
+  if [ ${#yieldsDestDir} -eq 0 ] ; then
+    echo "cloneDDBkgFiles: argument yieldsDestDir is empty"
+    exit
+  fi
+  srcDir=${yieldsDirT/TMPDIR/${dirTag}}
+  echo "cloneDDBkgFiles: srcDir=\"${srcDir}\"" 
+  echo "cloneDDBkgFiles: destDir=\"${yieldsDestDir}\"" 
+  if [ ! -e ${yieldsDestDir} ] ; then mkdir ${yieldsDestDir}; fi
+
+  _files="true2eBkgDataPoints_1D.root true2eBkgDataPoints_2D.root fakeBkgDataPoints_1D.root fakeBkgDataPoints_2D.root"
+  for fname in ${_files} ; do
+    set -x  # debug on
+    cp ${srcDir}/${fname} ${yieldsDestDir}/${fname}
+    set +x  # debug off
+  done
 }
 
 # --------------------  file renamer
@@ -367,6 +387,7 @@ if [ ${err} -eq 0 ] && [ ${doStatisticalStudy} -eq 1 ] ; then
   workMCConfInputFile=
   seed=${seedMin}
   cloneNTuples  ${selEventsDir}
+  cloneDDBkgFiles  ${yieldsDir}
   while [ ${seed} -le ${seedMax} ] && [ ${err} -eq 0 ] ; do
     model="seed${seed}"
     plotsDirExtraTag="seed${seed}"
@@ -389,6 +410,7 @@ if [ ${err} -eq 0 ] && [ ${doShapeSystematics} -eq 1 ] ; then
   workConfFile=${workConfFileT/MODEL/shape}
   workMCConfInputFile=${workMCConfInputFileT/MODEL/shape}
   cloneNTuples  ${selEventsDir}
+  cloneDDBkgFiles  ${yieldsDir}
   for shape in ${shapeDependenceStudy} ; do
     if [ ${err} -eq 0 ] ; then
       model=${defaultEtaDistribution}${shape}_20120802
@@ -414,6 +436,7 @@ fi
   workConfFile=${workConfFileT/MODEL/eta}
   workMCConfInputFile=${workMCConfInputFileT/MODEL/eta}
   cloneNTuples  ${selEventsDir}
+  cloneDDBkgFiles  ${yieldsDir}
   for aModel in ${etaDistrArr} ; do
     model=${aModel}_20120802
     prepareConfFile "FileGauss_..\/root_files\/constants\/EScale\/testESF_${model}.inp"
