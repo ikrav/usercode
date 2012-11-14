@@ -503,7 +503,7 @@ void selectEvents(const TString conf,
       Double_t nsel=0, nselvar=0;
       std::cout << "numEntries = " << eventTree->GetEntries() << std::endl;
       for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
-	if (debugMode && (ientry>10000)) break; // debug option
+	if (debugMode && (ientry>100000)) break; // debug option
 	if(ientry >= maxEvents) break;
 	
 	infoBr->GetEntry(ientry);
