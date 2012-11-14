@@ -394,6 +394,7 @@ class TriggerSelection{
   }
 
   ULong_t getProbeTriggerObjBit_Tight(UInt_t run, bool idEffTrigger) const { // no check whether the run is ok!
+    if (0) std::cout << "getProbeTriggerObjBit_Tight(" << run << "," <<  idEffTrigger << ")\n";
 
     // The probe trigger object bit must match the kind for which
     // we are going to measure the trigger efficiency, i.e. the signal
@@ -412,6 +413,7 @@ class TriggerSelection{
   }
 
   ULong_t getProbeTriggerObjBit_Loose(UInt_t run, bool idEffTrigger) const { // no check whether the run is ok!
+    if (0) std::cout << "getProbeTriggerObjBit_Loose(" << run << "," <<  idEffTrigger << ")\n";
    ULong_t bits= Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj |
      Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
 
