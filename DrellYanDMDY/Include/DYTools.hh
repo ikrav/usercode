@@ -220,6 +220,15 @@ namespace DYTools {
   inline int findMassBin(double mass) { return _findMassBin(mass,nMassBins,massBinLimits); }
 
 
+  template<class Idx_t>
+  inline double findMassBinCenter(Idx_t idx) { 
+    if ((idx<Idx_t(0)) || (idx>=Idx_t(nMassBins))) {
+      std::cout << "\n\tDYTools::findMassBinCenter(" << idx << ") - index error\n" << std::endl;
+      return 0;
+    }
+    return 0.5*(massBinLimits[idx] + massBinLimits[idx+1]);
+  }
+
   inline 
   int findYBin(int massBin, double y){
   
