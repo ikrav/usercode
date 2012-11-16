@@ -367,12 +367,13 @@ TString subtractBackground(const TString conf,
   }
 
   TMatrixD bkgRatesUsual(DYTools::nMassBins,nYBinsMax);
-  for (int i=0; i<DYTools::nMassBins; i++) {
-    for (int j=0; j<DYTools::nYBins[i]; j++) {
-      bkgRatesUsual(i,j)= (signalYields(i,j)>0.) ?
-	100.0*totalBackground(i,j)/signalYields(i,j) : 0.;
-    }
-  }
+  for (int i=0; i<DYTools::nMassBins; i++) { 
+    for (int j=0; j<DYTools::nYBins[i]; j++) { 
+      double denom=signalYields(i,j);
+      if ((denom==0.0) && (totalBackground(i,j)!=0.0)) denom=1e-14;
+      bkgRatesUsual(i,j)= 100.0*totalBackground(i,j)/denom;
+    } 
+  } 
 
 
   //
