@@ -668,7 +668,7 @@ void selectEvents(const TString conf,
        	  
 	  // requirements on BOTH electrons
 	  // For DY ET cuts are asymmetric:
-       	  if( ! ( (scEt1>20 && scEt2>10) || (scEt1>10 && scEt2>20) ) ) continue;
+	  if( ! DYTools::goodEtPair(scEt1, scEt2) ) continue;
 	  // Both electrons must match trigger objects. At least one ordering
 	  // must match
 	  if( ! ( 

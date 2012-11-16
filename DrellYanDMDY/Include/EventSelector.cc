@@ -80,8 +80,8 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
     }
        	  
     // requirements on BOTH electrons
-    // For DY ET cuts are asymmetric:
-    if( ! ( (scEt1>20 && scEt2>10) || (scEt1>10 && scEt2>20) ) ) continue;
+    // For DY ET cuts are asymmetric.
+    if( !DYTools::goodEtPair(scEt1, scEt2) ) continue;
 
     if (ec) ec->numDielectronsGoodEt_inc();
     fCandidatesGoodEt++;

@@ -1284,14 +1284,11 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	  trailing = ele1;
 	}
 
-	// The individual electron trigger match should be done
-	// exactly the same way as it is done in the signal selection.
-	// (At the moment of this writing it is a bit different, needs to
-	// be fixed).
-	if( !( leading->scEt  > 20 && 
-	       (leading ->hltMatchBits & leadingTriggerObjectBit) ) ) continue;
-	if( !( trailing->scEt > 10 && 
-	      (trailing->hltMatchBits & trailingTriggerObjectBit) ) ) continue;
+	// Check Et and trigger bits
+	if( ! DYTools::goodEtPair( leading->scEt, trailing->scEt) ) continue;
+	if( ! ( (leading ->hltMatchBits & leadingTriggerObjectBit)
+		&& (trailing->hltMatchBits & trailingTriggerObjectBit) ) ) continue;
+
 	totalCandFullSelection++;
 
 	double weight=sample_weight;
