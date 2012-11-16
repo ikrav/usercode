@@ -618,7 +618,7 @@ void selectEvents(const TString conf,
 	  else {
 
           // Exclude ECAL gap region and cut out of acceptance electrons
-	    if( ! goodEtaPair( dielectron->scEta_1, dielectron->scEta_2 ) ) continue;
+	    if( ! DYTools::goodEtaPair( dielectron->scEta_1, dielectron->scEta_2 ) ) continue;
 
 	  // Keep the EEM values before any changes
 	  eem->Assign(dielectron->scEta_1,dielectron->scEta_2,dielectron->mass,0.,1);
