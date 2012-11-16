@@ -740,7 +740,10 @@ void selectEvents(const TString conf,
 	  // fill ntuple data
 	  double weightSave = weight;
 	  eem->weight(weight);
-	  eem->nGoodPV(nGoodPV);
+	  /// adaptation to Hildreth's method: save info->nPU
+	  //eem->nGoodPV(nGoodPV);
+	  eem->nGoodPV(info->nPU);
+
 	  if( snamev[isam] == "zee" ) {
 	    weightSave *= fewz_weight;
 	    if (generateEEMFEWZFile) eem->weight(weightSave);
