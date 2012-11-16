@@ -873,6 +873,9 @@ namespace DYTools {
     return (goodEta(eta1) && goodEta(eta2));
   }
 
+  inline int goodEtEtaPair(double et1, double eta1, double et2, double eta2) {
+    return (goodEtPair(et1,et2) && goodEtaPair(eta1,eta2));
+  }
 
   //
   // Several functions to calculate efficiency or ratio

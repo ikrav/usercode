@@ -295,15 +295,11 @@ void plotDYEfficiency(const TString input,
       double eta2 = gen->eta_2;
 
       // Apply acceptance requirement
-      if( ! ( ( et1 > DYTools::etMinLead  && et2 > DYTools::etMinTrail)
-	      || ( et1 > DYTools::etMinTrail  && et2 > DYTools::etMinLead) )) continue;
-      if((fabs(eta1) >= 2.5)      || (fabs(eta2) >= 2.5))       continue;
-      if((fabs(eta1) >= DYTools::kECAL_GAP_LOW) && (fabs(eta1) <= DYTools::kECAL_GAP_HIGH)) continue;
-      if((fabs(eta2) >= DYTools::kECAL_GAP_LOW) && (fabs(eta2) <= DYTools::kECAL_GAP_HIGH)) continue;
+      if( ! DYTools::goodEtEtaPair( et1, eta1, et2, eta2 ) ) continue;
 
       // These events are in acceptance, use them for efficiency denominator
-      Bool_t isBGen1 = (fabs(eta1)<DYTools::kECAL_GAP_LOW);
-      Bool_t isBGen2 = (fabs(eta2)<DYTools::kECAL_GAP_LOW);
+      Bool_t isBGen1 = DYTools::isBarrel(eta1);
+      Bool_t isBGen2 = DYTools::isBarrel(eta2);
       // determine number of good vertices
       pvBr->GetEntry(ientry);
       int iPUBin=-1;
@@ -378,22 +374,15 @@ void plotDYEfficiency(const TString input,
         const mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
 	
 	// Apply selection
-
-	// Eta cuts
-        if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
-        if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
-	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
+	// Eta cuts and Et cuts
+	if( ! DYTools::goodEtEtaPair( dielectron->scEt_1, dielectron->scEta_1,
+				      dielectron->scEt_2, dielectron->scEta_2 ) ) continue;
+        Bool_t isB1 = DYTools::isBarrel(dielectron->scEta_1);
+        Bool_t isB2 = DYTools::isBarrel(dielectron->scEta_2);
 	
-        Bool_t isB1 = (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_LOW);
-        Bool_t isB2 = (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_LOW);         
-
 	if( !( (isB1 == isBGen1 && isB2 == isBGen2 ) 
 	       || (isB1 == isBGen2 && isB2 == isBGen1 ) ) )
 	  countMismatch++;
-
-	// Asymmetric SC Et cuts
-	if( ! ( ( dielectron->scEt_1 > DYTools::etMinLead  && dielectron->scEt_2 > DYTools::etMinTrail)
-		|| ( dielectron->scEt_1 > DYTools::etMinTrail  && dielectron->scEt_2 > DYTools::etMinLead) )) continue;
 
 	// Both electrons must match trigger objects. At least one ordering
 	// must match

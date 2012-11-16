@@ -352,15 +352,10 @@ void makeUnfoldingMatrix(const TString input,
         const mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
 	
 	// Apply selection
-	// Eta cuts
-        if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
-        if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
-	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
-	
-	// Asymmetric SC Et cuts
-	if( ! ( ( dielectron->scEt_1 > DYTools::etMinLead  && dielectron->scEt_2 > DYTools::etMinTrail)
-		|| ( dielectron->scEt_1 > DYTools::etMinTrail  && dielectron->scEt_2 > DYTools::etMinLead) )) continue;
-    	
+	// Et and eta cuts
+	if( ! DYTools::goodEtEtaPair( dielectron->scEt_1, dielectron->scEta_1,
+				      dielectron->scEt_2, dielectron->scEta_2 ) ) continue;
+
 	// Both electrons must match trigger objects. At least one ordering
 	// must match
 	if( ! requiredTriggers.matchTwoTriggerObjectsAnyOrder( dielectron->hltMatchBits_1,

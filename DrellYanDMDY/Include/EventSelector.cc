@@ -26,9 +26,7 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
   // assume 1 iteration loop
   for (int dummy_iter=0; dummy_iter<1; ++dummy_iter) {
     // Exclude ECAL gap region and cut out of acceptance electrons
-    if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
-    if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
-    if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
+    if( ! DYTools::goodEtaPair( dielectron->scEta_1, dielectron->scEta_2 ) ) continue;
   
     if (ec) ec->numDielectronsGoodEta_inc();
     fCandidatesGoodEta++;

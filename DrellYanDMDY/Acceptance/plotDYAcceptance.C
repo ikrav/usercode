@@ -334,17 +334,14 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
       }else if(ibinMass >= nEventsv.GetNrows())
 	cout << "ERROR: binning problem" << endl;
 
-      Bool_t isB1 = (fabs(gen->eta_1)<DYTools::kECAL_GAP_LOW);
-      Bool_t isB2 = (fabs(gen->eta_2)<DYTools::kECAL_GAP_LOW);
-      Bool_t isE1 = (fabs(gen->eta_1)>DYTools::kECAL_GAP_HIGH);
-      Bool_t isE2 = (fabs(gen->eta_2)>DYTools::kECAL_GAP_HIGH);
-      // Asymmetric Et cut scheme for DY analysis
-      if( ( (gen->pt_1 > DYTools::etMinLead && gen->pt_2 > DYTools::etMinTrail) 
-	    || (gen->pt_1 > DYTools::etMinTrail && gen->pt_2 > DYTools::etMinLead) )
-         && ((fabs(gen->eta_1)<DYTools::kECAL_GAP_LOW) || (fabs(gen->eta_1)>DYTools::kECAL_GAP_HIGH))
-         && ((fabs(gen->eta_2)<DYTools::kECAL_GAP_LOW) || (fabs(gen->eta_2)>DYTools::kECAL_GAP_HIGH))   
-	 && (fabs(gen->eta_1)<2.5) && (fabs(gen->eta_2)<2.5)) {
-        
+      Bool_t isB1 = DYTools::isBarrel(gen->eta_1);
+      Bool_t isB2 = DYTools::isBarrel(gen->eta_2);
+      Bool_t isE1 = DYTools::isEndcap(gen->eta_1);
+      Bool_t isE2 = DYTools::isEndcap(gen->eta_2);
+
+      // Kinematic acceptance
+      if( DYTools::goodEtEtaPair( gen->pt_1, gen->eta_1, gen->pt_2, gen->eta_2 ) ){
+	
 	if(ibinMass != -1 && ibinMass < nPassv.GetNrows()){
 	  double fullWeight = reweight * scale * gen->weight * fewz_weight;
 	  nPassv(ibinMass,ibinY) += fullWeight;

@@ -1122,8 +1122,7 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
   int eventsAfterTrigger = 0;
   int totalCand = 0;
   int totalCandInMassWindow = 0;
-  int totalCandInEtaAcceptance = 0;
-  int totalCandEtAbove10GeV = 0;
+  int totalCandInEtEtaAcceptance = 0;
   int totalCandMatchedToGen = 0;
   int totalCandFullSelection = 0;
 
@@ -1244,19 +1243,11 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	    gen->mass > DYTools::massBinLimits[DYTools::nMassBins]) continue;
 	totalCandInMassWindow++;
 
-	// Exclude ECAL gap region (should already be done for ntuple, but just to make sure...)
-	if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) &&
-	   (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
-	if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) &&
-	   (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
-	// ECAL acceptance cut on supercluster Et
-	if((fabs(dielectron->scEta_1) > 2.5)       || 
-	   (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
-	totalCandInEtaAcceptance++;
-	// None of the electrons should be below 10 GeV
-	if((dielectron->scEt_1 < 10)            || 
-	   (dielectron->scEt_2 < 10))	      continue;  // below supercluster ET cut? Skip to next event...
-	totalCandEtAbove10GeV++;
+	// Check Et and eta
+	if( ! DYTools::goodEtEtaPair(dielectron->scEt_1, dielectron->scEta_1,
+				     dielectron->scEt_2, dielectron->scEta_2) ) continue;
+
+	totalCandInEtEtaAcceptance++;
 
 	// For MC-only, do generator level matching
 	if( ! matchedToGeneratorLevel(gen, dielectron) ) continue;
@@ -1284,8 +1275,7 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	  trailing = ele1;
 	}
 
-	// Check Et and trigger bits
-	if( ! DYTools::goodEtPair( leading->scEt, trailing->scEt) ) continue;
+	// Check trigger bits
 	if( ! ( (leading ->hltMatchBits & leadingTriggerObjectBit)
 		&& (trailing->hltMatchBits & trailingTriggerObjectBit) ) ) continue;
 
@@ -1333,10 +1323,8 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	 totalCand);
   printf("        candidates in 15-600 mass window           %15d\n",
 	 totalCandInMassWindow);
-  printf("        candidates with eta 0-1.4442, 1.566-2.5    %15d\n",
-	 totalCandInEtaAcceptance);
-  printf("        candidates, both electrons above 10 GeV    %15d\n",
-	 totalCandEtAbove10GeV);
+  printf("        candidates passing Et and eta cuts         %15d\n",
+	 totalCandInEtEtaAcceptance);
   printf("        candidates matched to GEN level (if MC)    %15d\n",
 	 totalCandMatchedToGen);
   printf("        candidates, full selection                 %15d\n",

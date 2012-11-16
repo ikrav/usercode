@@ -922,7 +922,7 @@ void makeUnfoldingMatrixFsr(const TString input,
   mithep::TEventInfo    *info = new mithep::TEventInfo();
   mithep::TGenInfo *gen  = new mithep::TGenInfo();
   TClonesArray *dielectronArr = new TClonesArray("mithep::TDielectron");
-  TClonesArray *pvArr         = new TClonesArray("mithep::TVertex");
+//   TClonesArray *pvArr         = new TClonesArray("mithep::TVertex");
   
   // loop over samples  
   if (debugMode!=-1) {
@@ -951,7 +951,7 @@ void makeUnfoldingMatrixFsr(const TString input,
     eventTree->SetBranchAddress("Info",&info);                TBranch *infoBr       = eventTree->GetBranch("Info");
     eventTree->SetBranchAddress("Gen",&gen);                  TBranch *genBr = eventTree->GetBranch("Gen");
     eventTree->SetBranchAddress("Dielectron",&dielectronArr); TBranch *dielectronBr = eventTree->GetBranch("Dielectron");
-    eventTree->SetBranchAddress("PV",         &pvArr);         TBranch *pvBranch    = eventTree->GetBranch("PV");
+//     eventTree->SetBranchAddress("PV",         &pvArr);         TBranch *pvBranch    = eventTree->GetBranch("PV");
   
 
     // loop over events    
@@ -964,7 +964,7 @@ void makeUnfoldingMatrixFsr(const TString input,
       genBr->GetEntry(ientry);
       infoBr->GetEntry(ientry);
 
-      int nGoodVertices=1;
+//       int nGoodVertices=1;
       double wPU=1.0;
       if (performPUReweight) {
 	wPU = puWeight.getWeightHildreth(info->nPU);
@@ -1013,8 +1013,8 @@ void makeUnfoldingMatrixFsr(const TString input,
       }
  
       int preFsrOk=0, postFsrOk=0;
-      if ( DYTools::goodEtaPair(gen->veta_1, gen->veta_2) &&
-	   DYTools::goodEtPair(gen->vpt_1, gen->vpt_2) ) {
+      if( DYTools::goodEtEtaPair(gen->vpt_1, gen->veta_1,
+				 gen->vpt_2, gen->veta_2) ) {
 	if (validFlatIndex(idxGenPreFsr)) {
 	  preFsrOk=1;
 	  fsrDET    .fillIni(iMassBinGenPreFsr,iYBinGenPreFsr,fullGenWeight);
@@ -1023,8 +1023,8 @@ void makeUnfoldingMatrixFsr(const TString input,
 	}
       }
       
-      if ( DYTools::goodEtaPair(gen->eta_1, gen->eta_2) &&
-	   DYTools::goodEtPair(gen->pt_1, gen->pt_2) ) {
+      if( DYTools::goodEtEtaPair(gen->pt_1, gen->eta_1,
+				 gen->pt_2, gen->eta_2 ) ) {
 	if (validFlatIndex(idxGenPostFsr)) {
 	  postFsrOk=1;
 	  fsrDET    .fillFin(iMassBinGenPostFsr,iYBinGenPostFsr,fullGenWeight);
@@ -1064,15 +1064,12 @@ void makeUnfoldingMatrixFsr(const TString input,
 	
 	// Apply selection
 	// Eta cuts
-        if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
-        if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
-	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
+	if( ! DYTools::goodEtaPair(dielectron->scEta_1, dielectron->scEta_2 ) ) continue;
 
 	ec.numDielectronsGoodEta_inc();
 	
 	// Asymmetric SC Et cuts
-	if( ! ( ( dielectron->scEt_1 > DYTools::etMinLead  && dielectron->scEt_2 > DYTools::etMinTrail)
-		|| ( dielectron->scEt_1 > DYTools::etMinTrail  && dielectron->scEt_2 > DYTools::etMinLead) )) continue;
+	if( ! DYTools::goodEtPair(dielectron->scEt_1, dielectron->scEta_2 ) ) continue;
 
 	ec.numDielectronsGoodEt_inc();
    	

@@ -250,11 +250,8 @@ void getXsec(const TString mc_input, int debugMode=0, int plotOnly=0)
       w2Events(ibinMassPreFsr,ibinYPreFsr) += fullWeight*fullWeight;
 
       // Asymmetric Et cut scheme for DY analysis
-      if( ( (gen->pt_1 > DYTools::etMinLead && gen->pt_2 > DYTools::etMinTrail) 
-         || (gen->pt_1 > DYTools::etMinTrail && gen->pt_2 > DYTools::etMinLead) )
-	  && ((fabs(gen->eta_1)<DYTools::kECAL_GAP_LOW) || (fabs(gen->eta_1)>DYTools::kECAL_GAP_HIGH))
-         && ((fabs(gen->eta_2)<DYTools::kECAL_GAP_LOW) || (fabs(gen->eta_2)>DYTools::kECAL_GAP_HIGH))   
-	  && (fabs(gen->eta_1)<2.5) && (fabs(gen->eta_2)<2.5)) {
+      if( DYTools::goodEtEtaPair(gen->pt_1, gen->eta_1,
+				 gen->pt_2, gen->eta_2) ) {
         
 	nEventsDET(ibinMassPreFsr,ibinYPreFsr) += fullWeight;
 	w2EventsDET(ibinMassPreFsr,ibinYPreFsr) += fullWeight*fullWeight;

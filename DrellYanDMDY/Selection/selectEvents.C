@@ -618,9 +618,7 @@ void selectEvents(const TString conf,
 	  else {
 
           // Exclude ECAL gap region and cut out of acceptance electrons
-	    if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
-	    if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
-          if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5))       continue;  // outside eta range? Skip to next event...
+	    if( ! goodEtaPair( dielectron->scEta_1, dielectron->scEta_2 ) ) continue;
 
 	  // Keep the EEM values before any changes
 	  eem->Assign(dielectron->scEta_1,dielectron->scEta_2,dielectron->mass,0.,1);
