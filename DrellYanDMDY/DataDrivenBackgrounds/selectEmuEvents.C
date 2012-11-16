@@ -435,8 +435,7 @@ void selectEmuEvents(const TString conf,
 	  // Apply electron cuts
 	  //
 	  if(    electron->scEt < 20      )   continue;
-	  if((fabs(electron->scEta)>kGAP_LOW) && (fabs(electron->scEta)<kGAP_HIGH)) continue;
-	  if( fabs(electron->scEta) > 2.5 )   continue;  // outside eta range? Skip to next event...
+	  if( ! DYTools::goodEta( electron->scEta ) ) continue;
 	  // Is this cut still relevant about ECAL driven? We are using all PF electrons now...
 	  if( !(electron->typeBits & kEcalDriven)   )   continue;  // not ECAL seeded electrons? Skip to next event...
 // 	  if( ! passSmurf(electron)        )   continue;  
