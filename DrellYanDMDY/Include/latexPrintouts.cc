@@ -550,7 +550,7 @@ void latexPrintoutTwoColumns1D(const int nValues, int* valuesType, TMatrixD** va
 
    fprintf(txtFile,"\\hline\n");
    int halfBins=DYTools::nMassBins/2;
-   for (int mslice=1; mslice<halfBins; mslice++)
+   for (int mslice=0; mslice<halfBins; mslice++)
      {
        fprintf(txtFile,"%4.0f-%4.0f", DYTools::massBinLimits[mslice], DYTools::massBinLimits[mslice+1] );
        for (int i=0; i<nValues; i++)
