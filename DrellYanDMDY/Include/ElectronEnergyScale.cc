@@ -828,7 +828,7 @@ int   ElectronEnergyScale::randomizeEnergyScaleCorrections(int seed){
   }
 
   TRandom rand;
-  rand.SetSeed(seed);
+  rand.SetSeed(seed); std::cout << "\n\n\tSetSeed is called\n\n";
   _dataSeed=seed;
   _energyScaleCorrectionRandomizationDone = true;
   if (_calibrationSet==UNCORRECTED) return 1;
@@ -1004,7 +1004,7 @@ void ElectronEnergyScale::randomizeSmearingWidth(int seed){
   }
 
   TRandom rand;
-  rand.SetSeed(seed);
+  rand.SetSeed(seed); std::cout << "\n\n\tSetSeed is called\n\n";
   _mcSeed=seed;
   _smearingWidthRandomizationDone = true;
   switch( _calibrationSet ) {
@@ -1191,8 +1191,12 @@ void ElectronEnergyScale::print() const {
       printf("   %3.1e+- %3.1e", _mcConst3[i], _mcConst3Err[i]);
     if( _mcConst4 != 0 )
       printf("   %3.1e+- %3.1e", _mcConst4[i], _mcConst4Err[i]);
-    if (_randomizedStudy)
-      printf("     %6.4f",(_dataConstRandomized) ? _dataConstRandomized[i]  : 0.);
+    if (_randomizedStudy) {
+      double rndVal=(_dataConstRandomized) ? _dataConstRandomized[i]  : 0.;
+      double mainVal=_dataConst[i];
+      if (mainVal==0.0) mainVal=1e-14;
+      printf("     %6.4f (% 9.3e%%)", rndVal, (rndVal-mainVal)*100./mainVal);
+    }
     printf("\n");
   }
   printf("\n");
