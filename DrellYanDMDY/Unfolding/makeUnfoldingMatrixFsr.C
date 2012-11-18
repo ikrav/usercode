@@ -1069,7 +1069,7 @@ void makeUnfoldingMatrixFsr(const TString input,
 	ec.numDielectronsGoodEta_inc();
 	
 	// Asymmetric SC Et cuts
-	if( ! DYTools::goodEtPair(dielectron->scEt_1, dielectron->scEta_2 ) ) continue;
+	if( ! DYTools::goodEtPair(dielectron->scEt_1, dielectron->scEt_2 ) ) continue;
 
 	ec.numDielectronsGoodEt_inc();
    	
