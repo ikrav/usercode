@@ -152,6 +152,14 @@ public: // made public to be able to check whether the randomized value is diffe
   // updated smear (distribution) : smear collection
   void smearDistributionAny(TH1F *destination, int eta1Bin, int eta2Bin, const TH1F *source, bool randomize) const;
 
+  double* editDataConst() {
+    if (!_randomizedStudy) {
+      for (int i=0; i<_nEtaBins; i++) _dataConstRandomized[i]=_dataConst[i];
+      _randomizedStudy=true;
+    }
+    return _dataConstRandomized; 
+  }
+
 protected:
   TH1F* createParamHisto(const TString &namebase, const TString &nameTag, const double *params, const double *paramErrs) const;
 
