@@ -74,7 +74,7 @@ const int printPostFSRCrossSectionTable=0;
 const int printPostFSR_DET_ShapeTable=0;
 
 const int printAllCorrectionTable=0;
-const int printRelativeSystErrTable=0;
+const int printRelativeSystErrTable=1;
 const int callPrintTableForNotes=0;
 
 
@@ -160,6 +160,7 @@ void printTableForNotes(const TMatrixD &obs, const TMatrixD &obsErr,
 
 void printAllCorrections();
 void printRelativeSystErrors();
+void printRelativeSystErrorsPAS();
 
 const double lowZMass = 60.0;
 const double highZMass = 120.0;
@@ -390,7 +391,10 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
   // Output
   std::cout << "\nprint output\n" << std::endl;
   if (printAllCorrectionTable) printAllCorrections();
-  if (printRelativeSystErrTable) printRelativeSystErrors();
+  if (printRelativeSystErrTable){
+    printRelativeSystErrors();
+    printRelativeSystErrorsPAS();
+  }
 
   if (callPrintTableForNotes) {
   std::cout << "\nprintTablesForNotes\n" << std::endl;
@@ -1852,6 +1856,63 @@ void printRelativeSystErrors(){
 	      100*systAcceptanceExpRelative,
 	      100*sum,
 	      100*systAccTheoryRelative[i][yi]);
+      fout << buf << "\n";
+    }
+    delete rapidityBinLimits;
+    fout << "\\hline\n";
+  }
+  fout << "\\end{tabular}\\end{center}\n\\end{table}\n";
+  fout.close();
+  std::cout << "file <" << fileName << "> created\n";
+  return;
+}
+
+void printRelativeSystErrorsPAS(){
+
+  // The modeling error is just as for muons (as an approximation)
+  double systModelingRelative[40] = {
+    9.700000e-02 ,  3.100000e-02 ,  1.900000e-02 ,  7.000000e-03 ,  5.000000e-03 ,
+    3.000000e-03 ,  1.000000e-03 ,  1.000000e-03 ,  2.000000e-03 ,  2.000000e-03 ,
+    3.000000e-03 ,  2.000000e-03 ,  2.000000e-03 ,  2.000000e-03 ,  1.000000e-03 ,
+    2.000000e-03 ,  2.000000e-03 ,  3.000000e-03 ,  3.000000e-03 ,  5.000000e-03 ,
+    6.000000e-03 ,  6.000000e-03 ,  5.000000e-03 ,  6.000000e-03 ,  7.000000e-03 ,
+    1.000000e-02 ,  1.100000e-02 ,  1.100000e-02 ,  1.100000e-02 ,  1.100000e-02 ,
+    1.000000e-02 ,  1.500000e-02 ,  1.400000e-02 ,  1.300000e-02 ,  1.500000e-02 ,
+    1.200000e-02 ,  1.300000e-02 ,  2.100000e-02 ,  2.400000e-02 ,  3.100000e-02 
+  };
+  
+  std::string fileName="tbl_relativeSystErrorsPAS.tex";
+  std::ofstream fout;
+  fout.open(fileName.c_str());
+  fout << "\n\nLatex table of relative systematic errors  in percent for PAS/paper\n";
+  fout << "\\begin{table}[tbh]\n";
+  fout << "\\begin{center}\\begin{tabular}{ccccccccc}\n";
+  fout << "\\hline\n";
+  fout << " Mass range & rapidity range   &   Escale  &   Eff.   &   Bkg    &    Unfol &    sum   & Acc(PDF+stat)%%  & modeling\n";   
+  fout << "\\\\ \\hline\n";
+
+  char buf[200];
+  for(int i=0; i<DYTools::nMassBins; i++){
+    double *rapidityBinLimits=DYTools::getYBinLimits(i);
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+      // Factor out theory error from the total acceptance error
+      double systAcceptanceExpRelative = systAcceptanceRelative[i][yi];
+      // The "sum" contains only the experimental systematic errors
+      double sum = sqrt(systEscaleRelative[i][yi]*systEscaleRelative[i][yi]
+			+ systEfficiency[i][yi]*systEfficiency[i][yi]
+			+ systBackgrRelative[i][yi]*systBackgrRelative[i][yi]
+			+ systUnfoldRelative[i][yi]*systUnfoldRelative[i][yi]);
+      sprintf(buf,"$%4.0f-%4.0f $&$ %4.2f-%4.2f $&", DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],rapidityBinLimits[yi],rapidityBinLimits[yi+1]);
+      fout << buf;
+      sprintf(buf,"$  %5.1f  $&$ %5.1f $&$ %5.1f $&$ %5.1f $&$ %5.1f $&$ %5.1f $&$ %5.1f $ \\\\" ,
+	      100*systEscaleRelative[i][yi], 
+	      100*systEfficiency[i][yi], 
+	      100*systBackgrRelative[i][yi], 
+	      100*systUnfoldRelative[i][yi],
+	      100*sum,
+	      100*systAcceptanceExpRelative,
+	      100*systModelingRelative[i]
+	      );
       fout << buf << "\n";
     }
     delete rapidityBinLimits;
