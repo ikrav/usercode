@@ -2,17 +2,48 @@
 #include "assert.h"
 
 // --------------------------------------------------------------
-PUReweight_t::PUReweight_t(): FName(), FFile(NULL), hRef(NULL), 
-			      hActive(NULL), hWeight(NULL), FCreate(0) 
-{ 
+PUReweight_t::PUReweight_t(TReweightMethod_t method):
+  FName(), FFile(NULL), hRef(NULL), 
+  hActive(NULL), hWeight(NULL), FCreate(0),
+  FActiveMethod(method)
+{
 
-  initializeHildrethWeights();
+  switch(method) {
+  case _none: break;
+  case _Hildreth: assert(initializeHildrethWeights()); break;
+  case _TwoHistos:
+    std:: cout << "\nERROR: PUReweight constructor cannot be called with method _TwoHistos. Use method _none and setup the histograms by other methods\n";
+    assert(0);
+  default: ;
+  }
 
 }
 
 // --------------------------------------------------------------
+// --------------------------------------------------------------
 
-void PUReweight_t::initializeHildrethWeights(){
+int printHisto_local(std::ostream& out, const TH1F* histo) {
+  if (!histo) {
+    out << "printHisto: histo is null\n";
+    return 0;
+  }
+  char buf[100];
+  out << "values of " << histo->GetName() << "\n";
+  for(int i=1; i<=histo->GetNbinsX(); i++) {
+    double x=histo->GetBinLowEdge(i);
+    double w=histo->GetBinWidth(i);
+    sprintf(buf," %5.2f-%5.2f    %f    %f\n",
+	    x,x+w,histo->GetBinContent(i),histo->GetBinError(i));
+    out << buf;
+  }
+  return 1;
+}
+ 
+
+// --------------------------------------------------------------
+// --------------------------------------------------------------
+
+int PUReweight_t::initializeHildrethWeights(){
 
   // The pile-up reweighting setup according to the Hildreth's method
   // is done below.
@@ -98,34 +129,52 @@ void PUReweight_t::initializeHildrethWeights(){
   
   f1.Close();
   f2.Close();
-  
+
+  FActiveMethod=_Hildreth;
 //   printf("Pileup weights for the Hildreth method are constructed.\n");
 //   for(int i=1; i<= hWeightHildreth->GetNbinsX(); i++){
 //     printf("PU=%2d  weight=%f\n", i, hWeightHildreth->GetBinContent(i));
 //   }
-  return;
+  return 1;
 }
 
 // --------------------------------------------------------------
 
-int printHisto_local(std::ostream& out, const TH1F* histo) {
-  if (!histo) {
-    out << "printHisto: histo is null\n";
+// weights = target/source
+int PUReweight_t::initializeTwoHistoWeights(TH1F* hTarget, TH1F* hSource) {
+  assert(hTarget);
+  assert(hSource);
+  hRef=hTarget;
+  hActive=hSource;
+
+  // check that the PU division is the same
+  int ok=(hActive->GetNbinsX() == hRef->GetNbinsX()) ? 1:0;
+  for (int ibin=1; ok && (ibin<=hActive->GetNbinsX()); ++ibin) {
+    if ( (hActive->GetBinLowEdge(ibin) != hRef->GetBinLowEdge(ibin)) ||
+	 (hActive->GetBinWidth(ibin) != hRef->GetBinWidth(ibin)) ) {
+      ok=0;
+    }
+  }
+  if (!ok) {
+    std::cout << "initializeTwoHistoWeights: hTarget and hSource have different binnings\n";
+    std::cout << "hTarget: "; printHisto_local(std::cout, hTarget);
+    std::cout << "hSource: "; printHisto_local(std::cout, hSource);
     return 0;
   }
-  char buf[100];
-  out << "values of " << histo->GetName() << "\n";
-  for(int i=1; i<=histo->GetNbinsX(); i++) {
-    double x=histo->GetBinLowEdge(i);
-    double w=histo->GetBinWidth(i);
-    sprintf(buf," %5.2f-%5.2f    %f    %f\n",
-	    x,x+w,histo->GetBinContent(i),histo->GetBinError(i));
-    out << buf;
+  
+  if (hWeight) delete hWeight; // may be unsafe!! But we also may end-up without memory
+  hWeight= (TH1F*)hTarget->Clone( hSource->GetName() + TString("_puWeights") );
+  assert(hWeight);
+  hWeight->SetDirectory(0);
+  hWeight->Scale( hSource->GetSumOfWeights() / hTarget->GetSumOfWeights() );
+  hWeight->Divide(hSource);
+  // correction for pu=0
+  if ((hWeight->GetBinLowEdge(1)==-0.5) && (hWeight->GetBinWidth(1)==1.)) {
+    hWeight->SetBinContent(1,0.); hWeight->SetBinError(1,0.);
   }
   return 1;
 }
 
- 
 // --------------------------------------------------------------
 // --------------------------------------------------------------
 
@@ -154,6 +203,45 @@ int PUReweight_t::setFile(const TString &fname, int create) {
   return 1;
 }
 
+// --------------------------------------------------------------
+// --------------------------------------------------------------
+
+// setup weights from two histograms: weights=targetHisto/sourceHisto
+int PUReweight_t::setSimpleWeights(const TString &targetFile, 
+				   const TString &targetHistoName,
+				   const TString &sourceFile, 
+				   const TString &sourceHistoName) {
+  TFile f1(targetFile);
+  TFile f2(sourceFile);
+
+  if (!f1.IsOpen() || !f2.IsOpen()) {
+    std::cout << "Error in setSimpleWeights:\n";
+    if (!f1.IsOpen()) std::cout << " failed to open a file <" << targetFile << ">\n";
+    if (!f2.IsOpen()) std::cout << " failed to open a file <" << sourceFile << ">\n";
+    assert(0);
+    return 0;
+  }
+
+  TH1F* hTarget=(TH1F*) f1.Get(targetHistoName);
+  TH1F* hSource=(TH1F*) f2.Get(sourceHistoName);
+  if (!hTarget || !hSource) {
+    std::cout << "Error in setSimpleWeights:\n";
+    if (!hTarget) std::cout << "failed to get <" << targetHistoName << ">\n";
+    if (!hSource) std::cout << "failed to get <" << sourceHistoName << ">\n";
+    assert(0);
+    return 0;
+  }
+  hTarget->SetDirectory(0);
+  hSource->SetDirectory(0);
+  
+  f1.Close(); 
+  f2.Close();
+
+  assert(initializeTwoHistoWeights(hTarget,hSource));
+  return 1;
+}
+
+// --------------------------------------------------------------
 // --------------------------------------------------------------
 
 int PUReweight_t::setReference(const TString &name) {
@@ -228,32 +316,9 @@ int PUReweight_t::prepareWeights(int save_weight) {
     return 0;
   }
   
-  if (hWeight) delete hWeight;
-  
-  // check that the PU division is the same
-  int ok=(hActive->GetNbinsX() == hRef->GetNbinsX()) ? 1:0;
-  for (int ibin=1; ok && (ibin<=hActive->GetNbinsX()); ++ibin) {
-    if ( (hActive->GetBinLowEdge(ibin) != hRef->GetBinLowEdge(ibin)) ||
-	 (hActive->GetBinWidth(ibin) != hRef->GetBinWidth(ibin)) ) {
-      ok=0;
-    }
-  }
-  if (!ok) {
-    std::cout << "prepareWeights: hRef and hActive have different binnings\n";
-    std::cout << "hRef: "; printHisto_local(std::cout, hRef);
-    std::cout << "hActive: "; printHisto_local(std::cout, hActive);
-    return 0;
-  }
-  
+  FActiveMethod=_TwoHistos;
+  assert(initializeTwoHistoWeights(hRef,hActive));
 
-  hWeight= (TH1F*)hRef->Clone( hActive->GetName() + TString("_puWeights") );
-  assert(hWeight);
-  hWeight->SetDirectory(0);
-  hWeight->Scale( hActive->GetSumOfWeights() / hRef->GetSumOfWeights() );
-  hWeight->Divide(hActive);
-  if ((hWeight->GetBinLowEdge(1)==-0.5) && (hWeight->GetBinWidth(1)==1.)) {
-    hWeight->SetBinContent(1,0.); hWeight->SetBinError(1,0.);
-  }
   if (save_weight) {
     if (FCreate!=0) { FFile->cd(); hWeight->Write(); }
     else std::cout << "PUReweight::prepareWeights: save is requested but the file is in reading mode\n";
@@ -275,6 +340,26 @@ int PUReweight_t::printActiveDistr_and_Weights(std::ostream& out) const {
     out << buf;
   }
   return 1;
+}
+
+// --------------------------------------------------------------
+
+void PUReweight_t::print(std::ostream& out) const {
+  if (FActiveMethod==_TwoHistos) {
+    if (!printActiveDistr_and_Weights(out)) {
+      std::cout << "... called from PUReweight::print\n";
+    }
+  }
+  else if (FActiveMethod==_Hildreth) {
+    if (!printHisto(out,hWeightHildreth,hWeightHildreth->GetName())) {
+      std::cout << "... called from PUReweight::print\n";
+    }
+  }
+  else {
+    std::cout << "PUReweight::print -- not ready for the FActiveMethod="
+	      << FActiveMethod
+	      << "\n";
+  }
 }
 
 // --------------------------------------------------------------

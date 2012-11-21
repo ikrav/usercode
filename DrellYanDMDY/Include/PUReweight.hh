@@ -13,16 +13,18 @@
 class PUReweight_t {
 public:
   typedef enum { maxPVs=45 } TConst_t;
+  typedef enum { _none, _Hildreth, _TwoHistos } TReweightMethod_t;
 protected:
   TString FName; // file name
   TFile *FFile; // pointer to a file
-  TH1F *hRef;   // reference histogram
-  TH1F *hActive; // active histogram
+  TH1F *hRef;   // reference histogram -- what we want to have
+  TH1F *hActive; // active histogram (source distribution that needs reshaping)
   TH1F *hWeight; // histogram of weights
   TH1F *hWeightHildreth; // histogram of weights according to the Hildreth's method
   int FCreate; // whether a file is being created (1) or updated (2), otherwise - reading (0)
+  TReweightMethod_t FActiveMethod;
 public:
-  PUReweight_t();
+  PUReweight_t(TReweightMethod_t method=_Hildreth);
   ~PUReweight_t() { this->clear(); }
 
   void clear() {
@@ -41,6 +43,34 @@ public:
   const TH1F* getHWeigth() const { return hWeight; }
   int getCreate() const { return FCreate; }
 
+  void setActiveMethod(TReweightMethod_t method) {
+    switch(method) {
+    case _none: ; break;
+    case _Hildreth: 
+      if (!hWeightHildreth) assert(initializeHildrethWeights());
+      break;
+    case _TwoHistos: ; break; // RecoLevel initialization cannot be done here
+    default:
+      std::cout << "PUReweight::setActiveMethod is not ready for method=<"
+		<< method
+		<< ">\n";
+    }
+    FActiveMethod=method;
+  }
+
+  double getWeight(int nPV) const {
+    double weight=0.;
+    switch(FActiveMethod) {
+    case _none: assert(0); break;
+    case _Hildreth: weight=getWeightHildreth(nPV); break;
+    case _TwoHistos: weight=getWeightRecoLevel(nPV); break;
+    default:
+      std::cout << "PUReweight::getWeight is not ready for method=<"
+		<< FActiveMethod
+		<< ">\n";
+    }
+    return weight;
+  }
 
   double getWeightRecoLevel(int nGoodPV) const {
     double w=0;
@@ -70,6 +100,14 @@ public:
     }
     return w;
   }
+
+  int setHildrethWeights() { return initializeHildrethWeights(); }
+
+  // setup weights from two histograms: weights=targetHisto/sourceHisto
+  int setSimpleWeights(const TString &targetFile, 
+		       const TString &targetHistoName,
+		       const TString &sourceFile, 
+		       const TString &sourceHistoName);
   
   int setDefaultFile(const TString &dirTag, const TString &analysisTag, 
 		     int create=0) {
@@ -89,7 +127,7 @@ public:
   }
   int setActiveSample(const TString &setName); // set active sample and calculate weights
   int prepareWeights(int save_weights); // needs to be called if setReference(TH1F) was called
-  
+
   int Fill(UInt_t nGoodPV, double weight) {
     if ((FCreate==0) || !hActive) {
       std::cout << "cannot fill the histogram:\n";
@@ -102,7 +140,8 @@ public:
     return 1;
   }
 
-  int printActiveDistr_and_Weights(std::ostream& out) const;
+  int printActiveDistr_and_Weights(std::ostream& out=std::cout) const;
+  void print(std::ostream& out=std::cout) const;
 
   int printWeights(std::ostream &out) const { 
     int res=this->printHisto(out,hWeight,"hWeight");
@@ -127,8 +166,10 @@ protected:
 
   int printHisto(std::ostream& out, const TH1F* histo, const TString &name) const;
 
-  void initializeHildrethWeights();
+  int initializeHildrethWeights();
 
+  // weights=target/source
+  int initializeTwoHistoWeights(TH1F* hTarget, TH1F* hSource);
 };
 
 
