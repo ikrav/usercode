@@ -58,24 +58,27 @@ public:
     FActiveMethod=method;
   }
 
-  double getWeight(int nPV) const {
-    double weight=0.;
-    switch(FActiveMethod) {
-    case _none: assert(0); break;
-    case _Hildreth: weight=getWeightHildreth(nPV); break;
-    case _TwoHistos: weight=getWeightRecoLevel(nPV); break;
-    default:
-      std::cout << "PUReweight::getWeight is not ready for method=<"
-		<< FActiveMethod
-		<< ">\n";
-    }
-    return weight;
-  }
+  // The generic getWeight is commented out to force the users
+  // make explicit choice of which exactly method is called.
+  //
+//   double getWeight(int nPV) const {
+//     double weight=0.;
+//     switch(FActiveMethod) {
+//     case _none: assert(0); break;
+//     case _Hildreth: weight=getWeightHildreth(nPV); break;
+//     case _TwoHistos: weight=getWeightTwoHistos(nPV); break;
+//     default:
+//       std::cout << "PUReweight::getWeight is not ready for method=<"
+// 		<< FActiveMethod
+// 		<< ">\n";
+//     }
+//     return weight;
+//   }
 
-  double getWeightRecoLevel(int nGoodPV) const {
+  double getWeightTwoHistos(int nGoodPV) const {
     double w=0;
     if (!hWeight) {
-      std::cout << "PUReweight::getWeight: call setActiveSample first\n";
+      std::cout << "PUReweight::getWeightTwoHistos: call setActiveSample first\n";
     }
     else {
       if (nGoodPV> PUReweight_t::maxPVs+1) nGoodPV=PUReweight_t::maxPVs+1;

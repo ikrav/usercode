@@ -183,7 +183,10 @@ int CreatePUWeightedBranch(const TString &fName,
   }
   for(int i=1; i<=45; i++){
     double ww = 0;
-    ww = puReweight.getWeight(i);
+    if(isMC)
+      ww = puReweight.getWeightHildreth(i);
+    else
+      ww = puReweight.getWeightTwoHistos(i);
     printf("   PU=%3d     weight= %f\n", i, ww);
   }
 
@@ -282,7 +285,10 @@ int CreatePUWeightedBranch(const TString &fName,
       // Based on the method set for the puReweight above,
       // either the Hildreth or TwoHistos method is used
       // inside the getWeight routine.
-      pvWeight=evWeight * puReweight.getWeight(nGoodPV);
+      if(isMC)
+	pvWeight=evWeight * puReweight.getWeightHildreth(nGoodPV);
+      else
+	pvWeight=evWeight * puReweight.getWeightTwoHistos(nGoodPV);
       weightBr->Fill();
     }
     selectedEventsFile->cd();
