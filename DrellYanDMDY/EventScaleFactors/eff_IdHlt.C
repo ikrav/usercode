@@ -274,19 +274,25 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   ntuplesDir.ReplaceAll("tag_and_probe","selected_events");
   // The reference histograms are prepared without any selection at all,
   // apart from requiring the appropriate event trigger bit match. 
-  // Note: the file names are identical. The two needed histograms are
-  // both in the same file at the moment.
-  TString refFNamePV = "../root_files/pileup/referencePVHistogramByTrigger_full2011_20121110.root";
-  TString puFNameRecoLevel = "../root_files/pileup/referencePVHistogramByTrigger_full2011_20121110.root";
+  TString puTargetFName = "../root_files/pileup/dataPileupHildreth_full2011_20121110_repacked.root";
+  // Note that the "source" file is for RECO triggers in this script
+  TString puSourceFName = "";
+  if (effType==DYTools::HLT) {
+    // HLT efficiency source file
+    puSourceFName = "../root_files/pileup/dataPileupHildreth_full2011_TnP_HLT_20121118_repacked.root";
+  } else {
+    // ID efficiency source file
+    puSourceFName = "../root_files/pileup/dataPileupHildreth_full2011_TnP_ID_20121118_repacked.root";
+  }
 //   TString refFNamePV = ntuplesDir;
 //   refFNamePV.Append( TString("/npv") + DYTools::analysisTag_USER + TString(".root")  );
   
   if (performPUReweight) {
-    TFile tmpFile(refFNamePV);
+    TFile tmpFile(puTargetFName);
     int npvOk=tmpFile.IsOpen();
     tmpFile.Close();
     if (!npvOk) {
-      std::cout << "the file needed of PV-reweighting, <" << refFNamePV << "> does not exist. Run selectEvents.C first\n";
+      std::cout << "the file needed of PV-reweighting, <" << puTargetFName << "> does not exist. Run selectEvents.C first\n";
       assert(0);
     }
   }
@@ -771,17 +777,19 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
     TString outFNamePV = tagAndProbeDir + 
       TString("/npv_tnp") + effTypeString + TString("_") + 
       sampleTypeString + DYTools::analysisTag + TString(".root");
-    TString refDistribution="hNGoodPV_signal_trigger_v_data";
-    TString puDistrRecoLevel="hNGoodPV_tnp_all_triggers_v_data";
+    //
+    TString puTargetDistrName="pileup_lumibased_data";
+    TString puSourceDistrName="pileup_lumibased_data";
 //     TString refDistribution="hNGoodPV_data";
 
     TString sampleNameBase= effTypeString + TString("_") + 
       sampleTypeString + DYTools::analysisTag;
     bool isMC = (sample==DYTools::MC);
     int res=CreatePUWeightedBranch(selectEventsFName,
-				   refFNamePV, refDistribution,
-				   puFNameRecoLevel, puDistrRecoLevel,
-				   outFNamePV, sampleNameBase, isMC);
+				   puTargetFName, puTargetDistrName,
+				   puSourceFName, puSourceDistrName,
+// 				   outFNamePV, sampleNameBase, 
+				   isMC);
     assert(res);
     selectedEventsFile=new TFile(selectEventsFName);
     assert(selectedEventsFile);
