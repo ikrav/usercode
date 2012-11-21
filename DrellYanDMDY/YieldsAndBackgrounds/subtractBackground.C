@@ -29,6 +29,12 @@ void unsquareMatrixElements(TMatrixD &m);
 template<class T>
 inline T SQR(const T &x) { return (x)*(x); }
 
+void bkgTablesToLatex(TMatrixD true2eBackground, TMatrixD true2eBackgroundError, TMatrixD true2eBackgroundErrorSyst, 
+                      TMatrixD fakeEleBackground, TMatrixD  fakeEleBackgroundError, TMatrixD fakeEleBackgroundErrorSyst, 
+                      TMatrixD true2eBackgroundFromData, TMatrixD true2eBackgroundFromDataError, TMatrixD true2eBackgroundFromDataErrorSyst, 
+                      TMatrixD fakeEleBackgroundFromData, TMatrixD  fakeEleBackgroundFromDataError, TMatrixD fakeEleBackgroundFromDataErrorSyst, 
+                      TMatrixD totalBackground, TMatrixD totalBackgroundError, TMatrixD totalBackgroundErrorSyst);
+
 // -----------------------------------------------------------------------------
 
 TString subtractBackground(const TString conf,
@@ -154,6 +160,7 @@ TString subtractBackground(const TString conf,
   file.Close();
 
 
+  bool doDDvsMCcomparisonTable = true;
 
 
   bool useTrue2eBgDataDriven = true;
@@ -204,9 +211,16 @@ TString subtractBackground(const TString conf,
   TMatrixD totalBackgroundErrorSyst(DYTools::nMassBins,nYBinsMax);
 
 
+  TMatrixD true2eBackgroundFromData(DYTools::nMassBins,nYBinsMax);       
+  TMatrixD true2eBackgroundFromDataError(DYTools::nMassBins,nYBinsMax);    
+  TMatrixD true2eBackgroundFromDataErrorSyst(DYTools::nMassBins,nYBinsMax);
+  TMatrixD fakeEleBackgroundFromData(DYTools::nMassBins,nYBinsMax);
+  TMatrixD fakeEleBackgroundFromDataError(DYTools::nMassBins,nYBinsMax);
+  TMatrixD fakeEleBackgroundFromDataErrorSyst(DYTools::nMassBins,nYBinsMax);
+
   // Calculate true dielectron background, which includes
   // WW, ttbar, Wt, and DY->tautau. By choice, we do not include WZ and ZZ.
-  if(useTrue2eBgDataDriven)
+  if(useTrue2eBgDataDriven || doDDvsMCcomparisonTable)
     {
       TString true2eFName=inputDir+TString("/true2eBkgDataPoints_");
       if (DYTools::study2D) true2eFName.Append("2D");
@@ -214,17 +228,21 @@ TString subtractBackground(const TString conf,
       true2eFName.Append(".root");
       TFile fTrueDataDriven(true2eFName);
       assert(unfolding::checkBinningArrays(fTrueDataDriven));
-      TMatrixD true2eBackgroundFromData        = *(TMatrixD*)fTrueDataDriven.Get("true2eBackgroundFromData");
-      TMatrixD true2eBackgroundFromDataError     = *(TMatrixD*)fTrueDataDriven.Get("true2eBackgroundFromDataError");
-      TMatrixD true2eBackgroundFromDataErrorSyst = *(TMatrixD*)fTrueDataDriven.Get("true2eBackgroundFromDataErrorSyst");
+      true2eBackgroundFromData        = *(TMatrixD*)fTrueDataDriven.Get("true2eBackgroundFromData");
+      true2eBackgroundFromDataError     = *(TMatrixD*)fTrueDataDriven.Get("true2eBackgroundFromDataError");
+      true2eBackgroundFromDataErrorSyst = *(TMatrixD*)fTrueDataDriven.Get("true2eBackgroundFromDataErrorSyst");
       if (!checkMatrixSize(true2eBackgroundFromData)) return "true2eBackground: wrong size of matrix";
       if (!checkMatrixSize(true2eBackgroundFromDataError)) return "true2eBackgroundError: wrong size of matrix";
       if (!checkMatrixSize(true2eBackgroundFromDataErrorSyst)) return "true2eBackgroundErrorSyst: wrong size of matrix";
-      true2eBackground          = true2eBackgroundFromData;
-      true2eBackgroundError     = true2eBackgroundFromDataError;
-      true2eBackgroundErrorSyst = true2eBackgroundFromDataErrorSyst;
+      if(useTrue2eBgDataDriven)
+        {
+           true2eBackground          = true2eBackgroundFromData;
+           true2eBackgroundError     = true2eBackgroundFromDataError;
+           true2eBackgroundErrorSyst = true2eBackgroundFromDataErrorSyst;
+        }
     }
-  else
+
+  if(!useTrue2eBgDataDriven)
     {
 
       double mSyst=0;
@@ -273,7 +291,7 @@ TString subtractBackground(const TString conf,
 
 
   // Calculate qcd and wjets backgrounds
-  if(useFakeBgDataDriven)
+  if(useFakeBgDataDriven || doDDvsMCcomparisonTable)
       {
         TString fakeEEFName(inputDir+TString("/fakeBkgDataPoints_"));
 	if (DYTools::study2D) fakeEEFName.Append("2D");
@@ -281,18 +299,20 @@ TString subtractBackground(const TString conf,
 	fakeEEFName.Append(".root");
         TFile fFakeDataDriven(fakeEEFName);
 	assert(unfolding::checkBinningArrays(fFakeDataDriven));
-        TMatrixD fakeEleBackgroundFromData          = *(TMatrixD*)fFakeDataDriven.Get("fakeBackgroundFromData");
-        TMatrixD fakeEleBackgroundFromDataError     = *(TMatrixD*)fFakeDataDriven.Get("fakeBackgroundFromDataError");
-        TMatrixD fakeEleBackgroundFromDataErrorSyst = *(TMatrixD*)fFakeDataDriven.Get("fakeBackgroundFromDataErrorSyst");
+        fakeEleBackgroundFromData          = *(TMatrixD*)fFakeDataDriven.Get("fakeBackgroundFromData");
+        fakeEleBackgroundFromDataError     = *(TMatrixD*)fFakeDataDriven.Get("fakeBackgroundFromDataError");
+        fakeEleBackgroundFromDataErrorSyst = *(TMatrixD*)fFakeDataDriven.Get("fakeBackgroundFromDataErrorSyst");
         if (!checkMatrixSize(fakeEleBackgroundFromData)) return "fakeEleBackgroundFromData: wrong size of matrix";
         if (!checkMatrixSize(fakeEleBackgroundFromDataError)) return "fakeEleBackgroundFromDataError: wrong size of matrix";
         if (!checkMatrixSize(fakeEleBackgroundFromDataErrorSyst)) return "fakeEleBackgroundFromDataErrorSyst: wrong size of matrix";
-        fakeEleBackground          = fakeEleBackgroundFromData;
-        fakeEleBackgroundError     = fakeEleBackgroundFromDataError;
-        fakeEleBackgroundErrorSyst = fakeEleBackgroundFromDataErrorSyst;
-
+        if (useFakeBgDataDriven)
+          {
+            fakeEleBackground          = fakeEleBackgroundFromData;
+            fakeEleBackgroundError     = fakeEleBackgroundFromDataError;
+            fakeEleBackgroundErrorSyst = fakeEleBackgroundFromDataErrorSyst;
+          }
        }
-    else
+    if (!useFakeBgDataDriven)
       {
 
 	for (int k=0; k<NSamples; k++) {
@@ -369,8 +389,8 @@ TString subtractBackground(const TString conf,
   TMatrixD bkgRatesUsual(DYTools::nMassBins,nYBinsMax);
   for (int i=0; i<DYTools::nMassBins; i++) { 
     for (int j=0; j<DYTools::nYBins[i]; j++) { 
-      double denom=signalYields(i,j);
-      if ((denom==0.0) && (totalBackground(i,j)!=0.0)) denom=1e-14;
+      double denom=observedYields(i,j);
+      if (denom==0.0) bkgRatesUsual(i,j)=0;
       bkgRatesUsual(i,j)= 100.0*totalBackground(i,j)/denom;
     } 
   } 
@@ -569,12 +589,19 @@ TString subtractBackground(const TString conf,
                                   totalBackgroundErrorSyst, bkgRatesUsual, 
                                     "YieldsAndBackgrounds/subtractBackground.C");
    else if (DYTools::study2D==0)
-     latexPrintoutBackgroundRates1D(observedYields, observedYieldsErr, 
+     {
+       latexPrintoutBackgroundRates1D(observedYields, observedYieldsErr, 
                                   totalBackground, totalBackgroundError, 
                                   totalBackgroundErrorSyst, bkgRatesUsual, 
                                     "YieldsAndBackgrounds/subtractBackground.C");
+       if (doDDvsMCcomparisonTable) bkgTablesToLatex(true2eBackground,true2eBackgroundError,true2eBackgroundErrorSyst, 
+                        fakeEleBackground, fakeEleBackgroundError, fakeEleBackgroundErrorSyst, 
+                        true2eBackgroundFromData,true2eBackgroundFromDataError,true2eBackgroundFromDataErrorSyst, 
+                        fakeEleBackgroundFromData, fakeEleBackgroundFromDataError, fakeEleBackgroundFromDataErrorSyst, 
+                        totalBackground, totalBackgroundError, totalBackgroundErrorSyst);
+     }
 
- 
+
   //
   // debug plots
   //
@@ -678,3 +705,70 @@ void unsquareMatrixElements(TMatrixD &m) {
     }
   }
 }
+
+void bkgTablesToLatex(TMatrixD true2eBackground, TMatrixD true2eBackgroundError, TMatrixD true2eBackgroundErrorSyst, 
+                      TMatrixD fakeEleBackground, TMatrixD  fakeEleBackgroundError, TMatrixD fakeEleBackgroundErrorSyst, 
+                      TMatrixD true2eBackgroundFromData, TMatrixD true2eBackgroundFromDataError, TMatrixD true2eBackgroundFromDataErrorSyst, 
+                      TMatrixD fakeEleBackgroundFromData, TMatrixD  fakeEleBackgroundFromDataError, TMatrixD fakeEleBackgroundFromDataErrorSyst, 
+                      TMatrixD totalBackground, TMatrixD totalBackgroundError, TMatrixD totalBackgroundErrorSyst)
+  {
+    TString txtFileName;
+    if (DYTools::study2D==0) txtFileName="tables1D/trueFakeTotal.txt";
+    else if (DYTools::study2D==1) txtFileName="tables2D/trueFakeTotal.txt";
+    FILE* txtFile = fopen(txtFileName,"w");
+    for(int i=0; i<DYTools::nMassBins; i++){
+      // Print tables of yields and background
+      if ( (DYTools::study2D==1) ||
+	   ((DYTools::study2D==0) && (i==0)) ) {
+	   
+	fprintf(txtFile,"\n\n\t\tTables for iMass=%d\n\n",i);
+	
+	// Table 1: split background into true, wz/zz, and qcd
+	fprintf(txtFile,"mass range     true2e-bg         fake-bg             total-bg\n");
+      }
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+	double absYmin=0, absYmax=0;
+	DYTools::findAbsYValueRange(i,yi, absYmin,absYmax);
+	fprintf(txtFile,"%5.0f-%5.0f & ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
+	//printf("%4.2f-%4.2f ", absYmin,absYmax);
+	fprintf(txtFile," $%5.0f\\pm%4.0f\\pm%4.0f$& ", true2eBackground[i][yi], true2eBackgroundError[i][yi], true2eBackgroundErrorSyst[i][yi]);
+	fprintf(txtFile," $%5.0f\\pm%4.0f\\pm%4.0f$& ", fakeEleBackground[i][yi], fakeEleBackgroundError[i][yi], fakeEleBackgroundErrorSyst[i][yi]);
+	fprintf(txtFile," $%5.0f\\pm%4.0f\\pm%4.0f$", totalBackground[i][yi], totalBackgroundError[i][yi], totalBackgroundErrorSyst[i][yi]);
+	fprintf(txtFile,"\\\\\n");
+      }
+    }
+   fclose (txtFile);
+
+
+
+    if (DYTools::study2D==0) txtFileName="tables1D/trueFakeMCvsDD.txt";
+    else if (DYTools::study2D==1) txtFileName="tables2D/trueFakeMCvsDD.txt";
+    txtFile = fopen(txtFileName,"w");
+    for(int i=0; i<DYTools::nMassBins; i++){
+      // Print tables of yields and background
+      if ( (DYTools::study2D==1) ||
+	   ((DYTools::study2D==0) && (i==0)) ) {
+	   
+	printf("\n\n\t\tTables for iMass=%d\n\n",i);
+	
+	// Table 1: split background into true, wz/zz, and qcd
+	printf(" Note: stat error in signal yield contain stat error on background,\n");
+	printf("   and syst error on signal yield contains syst error on background\n");
+	printf("mass range         MM-true2e          DD-true2e          MC-fake            DD-fake\n");
+      }
+      for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+	double absYmin=0, absYmax=0;
+	DYTools::findAbsYValueRange(i,yi, absYmin,absYmax);
+	printf("%5.0f-%5.0f & ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
+	printf(" $%5.0f\\pm%4.0f\\pm%4.0f$& ", true2eBackground[i][yi], true2eBackgroundError[i][yi], true2eBackgroundErrorSyst[i][yi]);
+	printf(" $%5.0f\\pm%4.0f\\pm%4.0f$", true2eBackgroundFromData[i][yi], true2eBackgroundFromDataError[i][yi], true2eBackgroundFromDataErrorSyst[i][yi]);
+	printf(" $%5.0f\\pm%4.0f\\pm%4.0f$& ", fakeEleBackground[i][yi], fakeEleBackgroundError[i][yi], fakeEleBackgroundErrorSyst[i][yi]);
+	printf(" $%5.0f\\pm%4.0f\\pm%4.0f$", fakeEleBackgroundFromData[i][yi], fakeEleBackgroundFromDataError[i][yi], fakeEleBackgroundFromDataErrorSyst[i][yi]);
+	printf("\\\\\n");
+      }
+    }
+
+
+   fclose (txtFile);
+  }
+
