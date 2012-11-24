@@ -221,9 +221,9 @@ namespace DYTools {
 
 
   template<class Idx_t>
-  inline double findMassBinCenter(Idx_t idx) { 
+  inline double findMassBinCenter(Idx_t idx, int warn_on_error=1) { 
     if ((idx<Idx_t(0)) || (idx>=Idx_t(nMassBins))) {
-      std::cout << "\n\tDYTools::findMassBinCenter(" << idx << ") - index error\n" << std::endl;
+      if (warn_on_error) std::cout << "\n\tDYTools::findMassBinCenter(" << idx << ") - index error\n" << std::endl;
       return 0;
     }
     return 0.5*(massBinLimits[idx] + massBinLimits[idx+1]);
