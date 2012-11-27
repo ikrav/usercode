@@ -63,6 +63,9 @@ void SomeHistAttributes (TH1F* hist, TString samplename);
 */
 //void SaveCanvas(TCanvas* canv, TString canvName);
 
+
+void latexPrintoutBkgSources(  vector<TString>  snamev, vector<CSample*> samplev, vector<TH1F*>    hMassBinsv);
+
 //=== MAIN MACRO =================================================================================================
 
 void prepareYields(const TString conf  = "data_plot.conf",
@@ -659,6 +662,9 @@ void prepareYields(const TString conf  = "data_plot.conf",
   }
   }
 
+
+  latexPrintoutBkgSources(  snamev, samplev, hMassBinsv);
+
   if (1 && hZpeakv.size()) {
     std::cout << "Zpeak region average\n";
     unsigned int idx=(hasData) ? 1 : 0;
@@ -703,4 +709,44 @@ void prepareYields(const TString conf  = "data_plot.conf",
 
   gBenchmark->Show("prepareYields");      
 }
+
+
+void latexPrintoutBkgSources(  vector<TString>  snamev, vector<CSample*> samplev, vector<TH1F*>    hMassBinsv)
+{
+  TString txtFileName;
+  if (DYTools::study2D==0) txtFileName="tables1D/bkgSources.txt";
+  else if (DYTools::study2D==1) txtFileName="tables2D/bkgSources.txt";
+  FILE* txtFile = fopen(txtFileName,"w");
+
+  fprintf(txtFile,"\n\nPrintout of the backgrounds for all mass bins\n");
+
+  fprintf(txtFile,"            ");
+  for(UInt_t isam=0; isam<samplev.size(); isam++) {
+    if ( (isam!=0) && (snamev[isam]!=TString("zee"))) fprintf(txtFile," %14s ",snamev[isam].Data());
+  }
+  fprintf(txtFile,"   total  \n");
+  for(int ibin=0; ibin<DYTools::nMassBins; ibin++){
+    fprintf(txtFile,"%5.0f-%5.0f & ",
+           hMassBinsv[0]->GetXaxis()->GetBinLowEdge(ibin+1),
+           hMassBinsv[0]->GetXaxis()->GetBinUpEdge(ibin+1));
+     // Individual MC samples
+    double total=0., totalError=0.;
+    for(UInt_t isam=1; isam<samplev.size(); isam++) {
+      double thisContent = hMassBinsv[isam]->GetBinContent(ibin+1);
+      double thisError = hMassBinsv[isam]->GetBinError(ibin+1);
+      if ( (isam!=0) && (snamev[isam]!=TString("zee"))) {
+        fprintf(txtFile," $%7.0f\\pm%5.0f$ & ",thisContent, thisError);
+	total+= thisContent;
+	totalError+=thisError*thisError;
+      }
+    }
+    totalError = sqrt(totalError);
+    // Total
+    fprintf(txtFile,"  $%8.0f\\pm%6.0f$ & \\\\\n",total, totalError);
+  }
+
+ fclose (txtFile);
+
+}
+
 
