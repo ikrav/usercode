@@ -551,6 +551,16 @@ void subdivideBinWeightByLinearApprox(
   return;
 }
 
+TString DayAndTimeTag()
+{
+   time_t ltime;
+   ltime=time(NULL);
+   TString str = TString(asctime(localtime(&ltime)));
+   str.ReplaceAll(" ","_");
+   str.ReplaceAll(":","");
+   return str;
+}
+
 //------------------------------------------------------------------------------------------------------------------------
 
 #endif
