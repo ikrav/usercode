@@ -716,6 +716,8 @@ void bkgTablesToLatex(TMatrixD true2eBackground, TMatrixD true2eBackgroundError,
     if (DYTools::study2D==0) txtFileName="tables1D/trueFakeTotal.txt";
     else if (DYTools::study2D==1) txtFileName="tables2D/trueFakeTotal.txt";
     FILE* txtFile = fopen(txtFileName,"w");
+   TString str=DayAndTimeTag();
+   fprintf(txtFile,"%50s",str.Data());
     for(int i=0; i<DYTools::nMassBins; i++){
       // Print tables of yields and background
       if ( (DYTools::study2D==1) ||
@@ -744,27 +746,29 @@ void bkgTablesToLatex(TMatrixD true2eBackground, TMatrixD true2eBackgroundError,
     if (DYTools::study2D==0) txtFileName="tables1D/trueFakeMCvsDD.txt";
     else if (DYTools::study2D==1) txtFileName="tables2D/trueFakeMCvsDD.txt";
     txtFile = fopen(txtFileName,"w");
+   str=DayAndTimeTag();
+   fprintf(txtFile,"%50s",str.Data());
     for(int i=0; i<DYTools::nMassBins; i++){
       // Print tables of yields and background
       if ( (DYTools::study2D==1) ||
 	   ((DYTools::study2D==0) && (i==0)) ) {
 	   
-	printf("\n\n\t\tTables for iMass=%d\n\n",i);
+	fprintf(txtFile,"\n\n\t\tTables for iMass=%d\n\n",i);
 	
 	// Table 1: split background into true, wz/zz, and qcd
-	printf(" Note: stat error in signal yield contain stat error on background,\n");
-	printf("   and syst error on signal yield contains syst error on background\n");
-	printf("mass range         MM-true2e          DD-true2e          MC-fake            DD-fake\n");
+	fprintf(txtFile," Note: stat error in signal yield contain stat error on background,\n");
+	fprintf(txtFile,"   and syst error on signal yield contains syst error on background\n");
+	fprintf(txtFile,"mass range         MM-true2e          DD-true2e          MC-fake            DD-fake\n");
       }
       for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
 	double absYmin=0, absYmax=0;
 	DYTools::findAbsYValueRange(i,yi, absYmin,absYmax);
-	printf("%5.0f-%5.0f & ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
-	printf(" $%5.0f\\pm%4.0f\\pm%4.0f$& ", true2eBackground[i][yi], true2eBackgroundError[i][yi], true2eBackgroundErrorSyst[i][yi]);
-	printf(" $%5.0f\\pm%4.0f\\pm%4.0f$", true2eBackgroundFromData[i][yi], true2eBackgroundFromDataError[i][yi], true2eBackgroundFromDataErrorSyst[i][yi]);
-	printf(" $%5.0f\\pm%4.0f\\pm%4.0f$& ", fakeEleBackground[i][yi], fakeEleBackgroundError[i][yi], fakeEleBackgroundErrorSyst[i][yi]);
-	printf(" $%5.0f\\pm%4.0f\\pm%4.0f$", fakeEleBackgroundFromData[i][yi], fakeEleBackgroundFromDataError[i][yi], fakeEleBackgroundFromDataErrorSyst[i][yi]);
-	printf("\\\\\n");
+	fprintf(txtFile,"%5.0f-%5.0f & ", DYTools::massBinLimits[i], DYTools::massBinLimits[i+1]);
+	fprintf(txtFile," $%5.0f\\pm%4.0f\\pm%4.0f$& ", true2eBackground[i][yi], true2eBackgroundError[i][yi], true2eBackgroundErrorSyst[i][yi]);
+	fprintf(txtFile," $%5.0f\\pm%4.0f\\pm%4.0f$", true2eBackgroundFromData[i][yi], true2eBackgroundFromDataError[i][yi], true2eBackgroundFromDataErrorSyst[i][yi]);
+	fprintf(txtFile," $%5.0f\\pm%4.0f\\pm%4.0f$& ", fakeEleBackground[i][yi], fakeEleBackgroundError[i][yi], fakeEleBackgroundErrorSyst[i][yi]);
+	fprintf(txtFile," $%5.0f\\pm%4.0f\\pm%4.0f$", fakeEleBackgroundFromData[i][yi], fakeEleBackgroundFromDataError[i][yi], fakeEleBackgroundFromDataErrorSyst[i][yi]);
+	fprintf(txtFile,"\\\\\n");
       }
     }
 
