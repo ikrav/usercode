@@ -40,6 +40,7 @@
 #include "../Include/ElectronEnergyScale.hh"        // energy scale correction
 
 #include "../Include/DYTools.hh"
+#include "../Include/MyTools.hh"
 #include "../Include/DYToolsUI.hh"
 #include "../Include/plotFunctions.hh"
 #include "../Include/PUReweight.hh"
@@ -717,7 +718,8 @@ void latexPrintoutBkgSources(  vector<TString>  snamev, vector<CSample*> samplev
   if (DYTools::study2D==0) txtFileName="tables1D/bkgSources.txt";
   else if (DYTools::study2D==1) txtFileName="tables2D/bkgSources.txt";
   FILE* txtFile = fopen(txtFileName,"w");
-
+  TString str=DayAndTimeTag();
+  fprintf(txtFile,"%50s",str.Data());
   fprintf(txtFile,"\n\nPrintout of the backgrounds for all mass bins\n");
 
   fprintf(txtFile,"            ");
