@@ -13,6 +13,7 @@
 
 #include "../Include/DYTools.hh"        // helper class for organizing input ntuple files
 #include "../Include/latexPrintouts.hh"
+#include "../Include/MyTools.hh"
      
 #endif
 
@@ -391,6 +392,8 @@ void latexPrintoutTwoColumns2D(const int nValues, int* valuesType, TMatrixD** va
          }
      }
    txtFile = fopen(txtFileName,"w");
+   TString str=DayAndTimeTag();
+   fprintf(txtFile,"%50s",str.Data());
    TString strComment="% Tables produced by "+ producedBy + " in 2D measurement\n";
    fprintf(txtFile,strComment);  
    fprintf(txtFile,"\n\n\n");
@@ -514,6 +517,8 @@ void latexPrintoutTwoColumns1D(const int nValues, int* valuesType, TMatrixD** va
          }
      }
    txtFile = fopen(txtFileName,"w");
+   TString str=DayAndTimeTag();
+   fprintf(txtFile,"%50s",str.Data());
    TString strComment="% Tables produced by "+ producedBy + " in 1D measurement\n";
    fprintf(txtFile,strComment); 
    fprintf(txtFile,"\n"); 
@@ -635,6 +640,8 @@ void latexPrintoutOneColumn2D(const int nValues, int* valuesType, TMatrixD** val
          }
      }
    txtFile = fopen(txtFileName,"w");
+   TString str=DayAndTimeTag();
+   fprintf(txtFile,"%50s",str.Data());
    TString strComment="% Tables produced by "+ producedBy + " in 2D measurement\n";
    fprintf(txtFile,strComment);  
    fprintf(txtFile,"\n\n\n");
@@ -728,6 +735,8 @@ void latexPrintoutOneColumn1D(const int nValues, int* valuesType, TMatrixD** val
      }
 
    txtFile = fopen(txtFileName,"w");
+   TString str=DayAndTimeTag();
+   fprintf(txtFile,"%50s",str.Data());
    TString strComment="% Tables produced by "+ producedBy + " in 1D measurement\n";
    fprintf(txtFile,strComment); 
    fprintf(txtFile,"\n"); 
