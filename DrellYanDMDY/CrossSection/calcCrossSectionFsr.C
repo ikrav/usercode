@@ -77,7 +77,6 @@ const int printAllCorrectionTable=0;
 const int printRelativeSystErrTable=1;
 const int callPrintTableForNotes=0;
 
-
 TString pathYields;
 TString pathConstants;
 TString pathSystematics;
@@ -162,6 +161,9 @@ void printAllCorrections();
 void printRelativeSystErrors();
 void printRelativeSystErrorsPAS();
 
+void plotAccEff(); // make a plot: A, MCeff, A*MCeff
+
+
 const double lowZMass = 60.0;
 const double highZMass = 120.0;
 void getNormBinRange(int &firstNormBin, int &lastNormBin);
@@ -240,6 +242,8 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
 
   // Prepare global file names
   initGlobalFileNames(triggers,gTagDirYields,gTagDirConstants,gTagDirScaleFactorConstants,gTagDirXSect, fsrCorrection_BinByBin);
+
+  if (DYTools::study2D==0) plotAccEff();
 
   // Do a closure test on MC
   if (doClosureTest) {
@@ -437,7 +441,6 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
   PlotMatrixVariousBinning(relCrossSectionDET, "relative_CS_DET", "LEGO2", 0, "Pre FSR Detector Phase space", 1);
   PlotMatrixVariousBinning(relPostFsrCrossSection, "relative_postFSR_CS", "LEGO2", 0, "Post FSR All Phase Space", 1);
   PlotMatrixVariousBinning(relPostFsrCrossSectionDET, "relative_postFSR_CS_DET", "LEGO2", 0, "Post FSR Detector Phase space", 1);
-
 
   //Four plots of R-shape at the same picture
 
@@ -1947,6 +1950,63 @@ void getNormBinRange(int &firstNormBin, int &lastNormBin){
 	 DYTools::massBinLimits[firstNormBin], DYTools::massBinLimits[lastNormBin+1]);
 
   return;
+}
+
+// --------------------------------------------------------------
+
+void plotAccEff() {
+  TFile fileConstants(fnameAcceptanceConstants);
+  if (!fileConstants.IsOpen()) {
+    std::cout << "failed to open acceptance systematics file <" << fnameAcceptanceConstants << ">\n";
+    assert(0);
+  }
+  TMatrixD *acceptanceMatrixPtr    = (TMatrixD *)fileConstants.FindObjectAny("acceptanceMatrix");
+  TMatrixD *acceptanceErrMatrixPtr = (TMatrixD *)fileConstants.FindObjectAny("acceptanceErrMatrix");
+  if (!acceptanceMatrixPtr || !acceptanceErrMatrixPtr) {
+    std::cout << "at least one object from file <" << fnameAcceptanceConstants << "> is null\n";
+    assert(0);
+  }
+
+  TMatrixD acceptanceMatrix = *acceptanceMatrixPtr;
+  TMatrixD acceptanceErrMatrix = *acceptanceErrMatrixPtr;
+
+  TFile fileConstants(fnameEfficiencyConstants);
+  TMatrixD* efficiencyMatrixPtr    = (TMatrixD *)fileConstants.FindObjectAny("efficiencyArray");
+  TMatrixD* efficiencyErrMatrixPtr = (TMatrixD *)fileConstants.FindObjectAny("efficiencyErrArray");
+
+  if (!efficiencyMatrixPtr || !efficiencyErrMatrixPtr) {
+    std::cout << "at least one needed object is not present in <" << fnameEfficiencyConstants << ">\n";
+    assert(0);
+  }
+  TMatrixD efficiencyMatrix= *efficiencyMatrixPtr;
+  TMatrixD efficiencyErrMatrix= *efficiencyErrMatrixPtr;
+
+  const int iYBin=0;
+  const int perMassBinWidth=0;
+  const int perRapidityBinWidth=0;
+ 
+  TCanvas *canv=MakeCanvas("canvAccEff","",800,800);
+
+  TH1F* hAcc=extractMassDependence("hAcc","",
+				   acceptanceMatrix, acceptanceErrMatrix,
+				   iYBin,
+				   perMassBinWidth,perRapidityBinWidth);
+				   
+  TH1F* hEff=extractMassDependence("hEff","",
+				   efficiencyMatrix,efficiencyErrMatrix,
+				   iYBin,
+				   perMassBinWidth,perRapidityBinWidth);
+				   
+  TH1F *hAccEff=(TH1F*) hAcc->Clone("hAccEff");
+  CPlot cp("cpAccEff","","M_{ee} [GeV]",""); 
+  hAcc->SetMarkerStyle(20);
+  hEff->SetMarkerStyle(26);
+  hAccEff->SetMarkerStyle(25);
+  cp.AddHist1D(hAcc,"A","LP",kBlue,1,1,1);
+  cp.AddHist1D(hEff,"#varepsilon","LP",kRed,1,0,1);
+  cp.AddHist1D(hAccEff,"A#times#varepsilon","LP",kBlack,1,0,1);
+  cp.Draw(canv);
+  //canv->Update();
 }
 
 // --------------------------------------------------------------
