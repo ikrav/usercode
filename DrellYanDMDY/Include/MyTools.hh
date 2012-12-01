@@ -551,6 +551,46 @@ void subdivideBinWeightByLinearApprox(
   return;
 }
 
+// --------------------------------
+// --------------------------------
+
+inline
+TH1F* createZpeakHisto(const char *hname="hZpeak_mass", const char *htitle="Z-peak region") {
+  const int mbCount=13;
+  const double mbins[mbCount+1]={  60,  64,  68,  72, 76, 
+				   81,  86,  91,  96,101,
+				  106, 110, 115, 120 };
+  TH1F *h= new TH1F(hname,htitle,mbCount,mbins);
+  h->Sumw2();
+  h->SetDirectory(0);
+  std::cout << "mcCount=13\n";
+  return h;
+}
+
+// --------------------------------
+
+inline
+TH1F* createZpeakHisto1(const char *hname="hZpeak_mass", const char *htitle="Z-peak region", double mass_min=60., double mass_max=120., int binCount=60) {
+  TH1F *h= new TH1F(hname,htitle,binCount,mass_min,mass_max);
+  h->Sumw2();
+  h->SetDirectory(0);
+  return h;
+}
+
+// --------------------------------
+
+template<class TH1F_t>
+inline
+int printZpeakInfo(TH1F_t *h) {
+  if (!h) return 0;
+  std::cout << Form("(mean,mean_err)=(%6.4lf,%6.4lf)", h->GetMean(),h->GetMeanError())
+            << " in " << h->GetName() << "\n";
+  return 1;
+}
+
+// --------------------------------
+
+inline
 TString DayAndTimeTag()
 {
    time_t ltime;
