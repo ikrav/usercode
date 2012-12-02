@@ -75,7 +75,9 @@ const int printPostFSR_DET_ShapeTable=0;
 
 const int printAllCorrectionTable=0;
 const int printRelativeSystErrTable=1;
+const int printRelativeSystErrTableForCovarianceMatrix=1;
 const int callPrintTableForNotes=0;
+
 
 TString pathYields;
 TString pathConstants;
@@ -160,9 +162,9 @@ void printTableForNotes(const TMatrixD &obs, const TMatrixD &obsErr,
 void printAllCorrections();
 void printRelativeSystErrors();
 void printRelativeSystErrorsPAS();
+void printRelativeSystErrorsForCovarianceMatrix();
 
 void plotAccEff(); // make a plot: A, MCeff, A*MCeff
-
 
 const double lowZMass = 60.0;
 const double highZMass = 120.0;
@@ -186,6 +188,11 @@ TMatrixD systAcceptanceRelative(DYTools::nMassBins,nMaxYBins);
 
 TMatrixD systEfficiency(DYTools::nMassBins,nMaxYBins);
 TMatrixD systOthers(DYTools::nMassBins,nMaxYBins);
+
+TMatrixD unfoldedYields(DYTools::nMassBins,nMaxYBins);
+TMatrixD unfoldedYieldsStatErr(DYTools::nMassBins,nMaxYBins);
+TMatrixD unfoldedYieldsSystErr(DYTools::nMassBins,nMaxYBins);
+  
 
 
 // ---------------------------------------------------------------
@@ -265,9 +272,9 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
   TMatrixD signalYieldsStatErr(DYTools::nMassBins,nMaxYBins);
   TMatrixD signalYieldsSystErr(DYTools::nMassBins,nMaxYBins);
   
-  TMatrixD unfoldedYields(DYTools::nMassBins,nMaxYBins);
-  TMatrixD unfoldedYieldsStatErr(DYTools::nMassBins,nMaxYBins);
-  TMatrixD unfoldedYieldsSystErr(DYTools::nMassBins,nMaxYBins);
+  //TMatrixD unfoldedYields(DYTools::nMassBins,nMaxYBins);
+  //TMatrixD unfoldedYieldsStatErr(DYTools::nMassBins,nMaxYBins);
+  //TMatrixD unfoldedYieldsSystErr(DYTools::nMassBins,nMaxYBins);
   
   TMatrixD effCorrectedYields(DYTools::nMassBins,nMaxYBins);
   TMatrixD effCorrectedYieldsStatErr(DYTools::nMassBins,nMaxYBins);
@@ -399,6 +406,7 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
     printRelativeSystErrors();
     printRelativeSystErrorsPAS();
   }
+  if (printRelativeSystErrTableForCovarianceMatrix) printRelativeSystErrorsForCovarianceMatrix();
 
   if (callPrintTableForNotes) {
   std::cout << "\nprintTablesForNotes\n" << std::endl;
@@ -441,6 +449,7 @@ void calcCrossSectionFsr(const TString conf) { //="../config_files/xsecCalc.conf
   PlotMatrixVariousBinning(relCrossSectionDET, "relative_CS_DET", "LEGO2", 0, "Pre FSR Detector Phase space", 1);
   PlotMatrixVariousBinning(relPostFsrCrossSection, "relative_postFSR_CS", "LEGO2", 0, "Post FSR All Phase Space", 1);
   PlotMatrixVariousBinning(relPostFsrCrossSectionDET, "relative_postFSR_CS_DET", "LEGO2", 0, "Post FSR Detector Phase space", 1);
+
 
   //Four plots of R-shape at the same picture
 
@@ -1306,7 +1315,8 @@ void  crossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatr
 
   if (printPreFSRCrossSectionTable) {
     printf("\nPre FSR cross sections: :\n");
-    printf("                    absolute                       normalized +- stat +- sys (total)           (1/sigma)(1/dM)norm +-stat +-syst (total) \n");
+    //printf("                    absolute                       normalized +- stat +- sys (total)           (1/sigma)(1/dM)norm +-stat +-syst (total) \n");
+    printf("#                   (1/sigma)(1/dM)norm +-stat +-syst  +-total \n");
   }
   for(int i=0; i<DYTools::nMassBins; i++){
     double *rapidityBinLimits=DYTools::getYBinLimits(i);
@@ -1322,8 +1332,18 @@ void  crossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatr
       normXSecErrByBinSyst[i][yi]=voutNormSystErr[i][yi]/binw;
       normXSecErrByBin[i][yi]=sqrt( SQR(voutNormStatErr[i][yi]) + SQR(voutNormSystErr[i][yi]) )/binw;
 
+      if (printPreFSRCrossSectionTable && (DYTools::study2D==0)) {
+	if (specTag.Length() && (i==0) && (yi==0)) std::cout << "special tag=<" << specTag << ">\n";
+	printf("%4.0f %4.0f      %1.8e %1.8e %1.8e   %1.8e     \n",
+	       DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
+	       voutNorm[i][yi]/binw, voutNormStatErr[i][yi]/binw, voutNormSystErr[i][yi]/binw,
+	       normXSecErrByBin[i][yi]
+	       );
+      }
+
+      if (0)
       if (printPreFSRCrossSectionTable) {
-	if (specTag.Length()) std::cout << "special tag=<" << specTag << ">\n";
+	if (specTag.Length() && (i==0) && (yi==0)) std::cout << "special tag=<" << specTag << ">\n";
 	printf("%4.0f-%4.0f  %4.2f-%4.2f    %6.1f +- %4.1f +- %4.1f      %1.6f +- %1.6f +- %1.6f  ( %1.6f )     %1.8f +- %1.8f +- %1.8f  ( %1.8f )    \n",
 	       DYTools::massBinLimits[i],DYTools::massBinLimits[i+1],
 	       rapidityBinLimits[yi],rapidityBinLimits[yi+1],
@@ -1927,6 +1947,100 @@ void printRelativeSystErrorsPAS(){
   return;
 }
 
+// -------------------------------------------------------------
+
+void printRelativeSystErrorsForCovarianceMatrix(){
+  if (DYTools::study2D==1) {
+    std::cout << "\n\n\tprintRelativeSystErrorsForCovarianceMatrix is not for 2D\n";
+    return;
+  }
+
+  TFile fileConstants(fnameFsrCorrectionConstantsBbB);
+  assert(fileConstants.IsOpen());
+  TMatrixD *fsrCorrectionMatrixPtr  = (TMatrixD *)fileConstants.FindObjectAny("fsrCorrectionMatrix");
+  TMatrixD *fsrCorrectionErrMatrixPtr = (TMatrixD *)fileConstants.FindObjectAny("fsrCorrectionErrMatrix");
+  assert(fsrCorrectionMatrixPtr && fsrCorrectionErrMatrixPtr);
+  TMatrixD fsrCorrectionMatrix= *fsrCorrectionMatrixPtr;
+  TMatrixD fsrCorrectionErrMatrix= *fsrCorrectionErrMatrixPtr;
+  fileConstants.Close();
+
+
+  if (1) {
+  std::string fileName=Form("tbl_relativeSystErrorsForCovariance%s.dat",DYTools::analysisTag.Data());
+  std::ofstream fout;
+  fout.open(fileName.c_str());
+  fout << "#preFSR-full acceptance\n";
+  fout << "#\n#Table of relative statistical and systematic errors  in percent for covariance matrix\n#\n";
+  fout << "# Statistical errors is on yields. No systematics included\n";
+  fout << "# Sum = sqrt(Stat^2 + Escale^2 + Eff^2 + Bkgr^2 + Unfol^2 + fsr^2 )\n";
+  fout << "# Mass idx    stat.err     Escale           Eff.            Unfol             Bkg            FSR             sum\n"; 
+  fout << "#\n";
+
+  char buf[200];
+  for(int i=0; i<DYTools::nMassBins; i++){
+    //double *rapidityBinLimits=DYTools::getYBinLimits(i);
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+      double fsrErrRelative=fsrCorrectionErrMatrix[i][yi]/fsrCorrectionMatrix[i][yi];
+      // The "sum" contains only the experimental systematic errors
+      double sum = sqrt(systEscaleRelative[i][yi]*systEscaleRelative[i][yi]
+			+ systEfficiency[i][yi]*systEfficiency[i][yi]
+			+ systBackgrRelative[i][yi]*systBackgrRelative[i][yi]
+			+ systUnfoldRelative[i][yi]*systUnfoldRelative[i][yi]
+			+ fsrErrRelative*fsrErrRelative
+			);
+      sprintf(buf,"%d   %14.11f   %14.11f   %14.11f   %14.11f   %14.11f   %14.11f   %14.11f",
+	      i,
+	      100*unfoldedYieldsStatErr[i][yi]/unfoldedYields[i][yi],
+	      100*systEscaleRelative[i][yi],
+	      100*systEfficiency[i][yi],
+	      100*systUnfoldRelative[i][yi],
+	      100*systBackgrRelative[i][yi],
+	      100*fsrErrRelative,
+	      100*sum
+	      );
+      fout << buf << "\n";
+    }
+    //delete rapidityBinLimits;
+  }
+  fout.close();
+  std::cout << "file <" << fileName << "> created\n";
+  }
+
+  if (1) {
+  std::string fileName=Form("tbl_relativeSystErrorsForCovariance%s_accOnly.dat",DYTools::analysisTag.Data());
+  std::ofstream fout;
+  fout.open(fileName.c_str());
+  fout << "#preFSR-full acceptance\n";
+  fout << "#\n#Table of systematic errors on acceptance.\n";
+  fout << "#\n";
+  fout << " Mass idx    accExperiment   accTheory   sum\n";
+
+  char buf[200];
+  for(int i=0; i<DYTools::nMassBins; i++){
+    //double *rapidityBinLimits=DYTools::getYBinLimits(i);
+    for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
+      // Factor out theory error from the total acceptance error
+      double systAcceptanceExpRelative 
+	= sqrt( systAcceptanceRelative[i][yi]*systAcceptanceRelative[i][yi]
+		- systAccTheoryRelative[i][yi]*systAccTheoryRelative[i][yi]);
+      sprintf(buf,"%d   %14.11f   %14.11f   %14.11f",
+	      i,
+	      100*systAcceptanceExpRelative,
+	      100*systAccTheoryRelative[i][yi],
+	      100*systAcceptanceRelative[i][yi]
+	      );
+      fout << buf << "\n";
+    }
+    //delete rapidityBinLimits;
+  }
+  fout.close();
+  std::cout << "file <" << fileName << "> created\n";
+  }
+
+  std::cout << "HERE" << std::endl;
+  return;
+}
+
 // --------------------------------------------------------------
   ////////////////////////////////////////////////////////////
 void getNormBinRange(int &firstNormBin, int &lastNormBin){
@@ -1991,12 +2105,12 @@ void plotAccEff() {
 				   acceptanceMatrix, acceptanceErrMatrix,
 				   iYBin,
 				   perMassBinWidth,perRapidityBinWidth);
-				   
+     
   TH1F* hEff=extractMassDependence("hEff","",
 				   efficiencyMatrix,efficiencyErrMatrix,
 				   iYBin,
 				   perMassBinWidth,perRapidityBinWidth);
-				   
+     
   TH1F *hAccEff=(TH1F*) hAcc->Clone("hAccEff");
   CPlot cp("cpAccEff","","M_{ee} [GeV]",""); 
   hAcc->SetMarkerStyle(20);
@@ -2008,6 +2122,7 @@ void plotAccEff() {
   cp.Draw(canv);
   //canv->Update();
 }
+
 
 // --------------------------------------------------------------
 
