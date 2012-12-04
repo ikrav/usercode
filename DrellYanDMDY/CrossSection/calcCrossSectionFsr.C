@@ -23,6 +23,7 @@
 #include "../Include/CPlot.hh"
 #include "../Include/plotFunctions.hh"
 #include "../Include/latexPrintouts.hh"
+#include "../Include/MitStyleRemix.hh"
 
 using std::string;
 using std::stringstream;
@@ -2069,17 +2070,18 @@ void getNormBinRange(int &firstNormBin, int &lastNormBin){
 // --------------------------------------------------------------
 
 void plotAccEff() {
-  TFile fileConstants(fnameAcceptanceConstants);
-  if (!fileConstants.IsOpen()) {
+  TFile fileConstantsAcc(fnameAcceptanceConstants);
+  if (!fileConstantsAcc.IsOpen()) {
     std::cout << "failed to open acceptance systematics file <" << fnameAcceptanceConstants << ">\n";
     assert(0);
   }
-  TMatrixD *acceptanceMatrixPtr    = (TMatrixD *)fileConstants.FindObjectAny("acceptanceMatrix");
-  TMatrixD *acceptanceErrMatrixPtr = (TMatrixD *)fileConstants.FindObjectAny("acceptanceErrMatrix");
+  TMatrixD *acceptanceMatrixPtr    = (TMatrixD *)fileConstantsAcc.FindObjectAny("acceptanceMatrix");
+  TMatrixD *acceptanceErrMatrixPtr = (TMatrixD *)fileConstantsAcc.FindObjectAny("acceptanceErrMatrix");
   if (!acceptanceMatrixPtr || !acceptanceErrMatrixPtr) {
     std::cout << "at least one object from file <" << fnameAcceptanceConstants << "> is null\n";
     assert(0);
   }
+  fileConstantsAcc.Close();
 
   TMatrixD acceptanceMatrix = *acceptanceMatrixPtr;
   TMatrixD acceptanceErrMatrix = *acceptanceErrMatrixPtr;
@@ -2087,6 +2089,7 @@ void plotAccEff() {
   TFile fileConstants(fnameEfficiencyConstants);
   TMatrixD* efficiencyMatrixPtr    = (TMatrixD *)fileConstants.FindObjectAny("efficiencyArray");
   TMatrixD* efficiencyErrMatrixPtr = (TMatrixD *)fileConstants.FindObjectAny("efficiencyErrArray");
+  fileConstants.Close();
 
   if (!efficiencyMatrixPtr || !efficiencyErrMatrixPtr) {
     std::cout << "at least one needed object is not present in <" << fnameEfficiencyConstants << ">\n";
@@ -2099,7 +2102,7 @@ void plotAccEff() {
   const int perMassBinWidth=0;
   const int perRapidityBinWidth=0;
  
-  TCanvas *canv=MakeCanvas("canvAccEff","",800,800);
+  TCanvas *canv=MakeCanvas("canvAccEff","canvAccEff",800,800);
 
   TH1F* hAcc=extractMassDependence("hAcc","",
 				   acceptanceMatrix, acceptanceErrMatrix,
@@ -2111,16 +2114,30 @@ void plotAccEff() {
 				   iYBin,
 				   perMassBinWidth,perRapidityBinWidth);
      
+  InitHist(hAcc,"M_{ee} [GeV]","",kBlack);
   TH1F *hAccEff=(TH1F*) hAcc->Clone("hAccEff");
+  hAccEff->Multiply(hEff);
   CPlot cp("cpAccEff","","M_{ee} [GeV]",""); 
+  cp.SetLogx();
+  cp.SetYRange(0.,1.2);
+  cp.AddTextBox("#gamma*/Z#rightarrow ee",0.25,0.75,0.5,0.91, 0,kBlack,kWhite);
+  cp.AddTextBox("at #sqrt{s}=7 TeV, CMS Simulation", 0.55,0.75,0.92,0.91, 0,kBlack,kWhite);
+  hAcc->GetXaxis()->SetMoreLogLabels();
+  hAcc->GetXaxis()->SetNoExponent();
   hAcc->SetMarkerStyle(20);
   hEff->SetMarkerStyle(26);
   hAccEff->SetMarkerStyle(25);
+  //printHisto(hAcc);
+  hAcc->SetDirectory(0);
+  hEff->SetDirectory(0);
+  hAccEff->SetDirectory(0);
   cp.AddHist1D(hAcc,"A","LP",kBlue,1,1,1);
   cp.AddHist1D(hEff,"#varepsilon","LP",kRed,1,0,1);
   cp.AddHist1D(hAccEff,"A#times#varepsilon","LP",kBlack,1,0,1);
-  cp.Draw(canv);
-  //canv->Update();
+  cp.Draw(canv,false,"png",0);
+  cp.TransLegend(0.1,-0.5);
+  canv->Update();
+  SaveCanvas(canv,canv->GetName());
 }
 
 
