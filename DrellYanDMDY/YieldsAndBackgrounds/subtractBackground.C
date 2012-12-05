@@ -712,9 +712,12 @@ void bkgTablesToLatex(TMatrixD true2eBackground, TMatrixD true2eBackgroundError,
                       TMatrixD fakeEleBackgroundFromData, TMatrixD  fakeEleBackgroundFromDataError, TMatrixD fakeEleBackgroundFromDataErrorSyst, 
                       TMatrixD totalBackground, TMatrixD totalBackgroundError, TMatrixD totalBackgroundErrorSyst)
   {
-    TString txtFileName;
-    if (DYTools::study2D==0) txtFileName="tables1D/trueFakeTotal.txt";
-    else if (DYTools::study2D==1) txtFileName="tables2D/trueFakeTotal.txt";
+   TString path;
+   if (DYTools::study2D==0) path="tables1D/";
+   else path="tables2D/";
+   gSystem->mkdir(path,kTRUE);
+
+    TString txtFileName=path+"trueFakeTotal.txt";
     FILE* txtFile = fopen(txtFileName,"w");
    TString str=DayAndTimeTag();
    fprintf(txtFile,"%50s",str.Data());
@@ -743,8 +746,7 @@ void bkgTablesToLatex(TMatrixD true2eBackground, TMatrixD true2eBackgroundError,
 
 
 
-    if (DYTools::study2D==0) txtFileName="tables1D/trueFakeMCvsDD.txt";
-    else if (DYTools::study2D==1) txtFileName="tables2D/trueFakeMCvsDD.txt";
+    txtFileName=path+"trueFakeMCvsDD.txt";
     txtFile = fopen(txtFileName,"w");
    str=DayAndTimeTag();
    fprintf(txtFile,"%50s",str.Data());

@@ -556,6 +556,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
   */
 
 
+
   //--------------------------------------------------------------------------------------------------------------
   // Summary print out
   //==============================================================================================================
@@ -665,7 +666,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
 
 
   latexPrintoutBkgSources(  snamev, samplev, hMassBinsv);
-
+/*
   if (1 && hZpeakv.size()) {
     std::cout << "Zpeak region average\n";
     unsigned int idx=(hasData) ? 1 : 0;
@@ -682,6 +683,8 @@ void prepareYields(const TString conf  = "data_plot.conf",
       }
     }
     printf(" mean in <%s> is %6.4lf pm %6.4lf\n",hTotMC->GetName(),hTotMC->GetMean(),hTotMC->GetMeanError());
+
+
 
     if (!hZee) std::cout << "failed to identify Zee\n";
     else if (!hasData) std::cout << "there no experimental data points available\n";
@@ -707,6 +710,7 @@ void prepareYields(const TString conf  = "data_plot.conf",
     }
   }
 
+*/
 
   gBenchmark->Show("prepareYields");      
 }
@@ -714,14 +718,15 @@ void prepareYields(const TString conf  = "data_plot.conf",
 
 void latexPrintoutBkgSources(  vector<TString>  snamev, vector<CSample*> samplev, vector<TH1F*>    hMassBinsv)
 {
-  TString txtFileName;
-  if (DYTools::study2D==0) txtFileName="tables1D/bkgSources.txt";
-  else if (DYTools::study2D==1) txtFileName="tables2D/bkgSources.txt";
+   TString path;
+   if (DYTools::study2D==0) path="tables1D/";
+   else path="tables2D/";
+   gSystem->mkdir(path,kTRUE);
+   TString txtFileName=path + "bkgSources.txt";
   FILE* txtFile = fopen(txtFileName,"w");
   TString str=DayAndTimeTag();
   fprintf(txtFile,"%50s",str.Data());
   fprintf(txtFile,"\n\nPrintout of the backgrounds for all mass bins\n");
-
   fprintf(txtFile,"            ");
   for(UInt_t isam=0; isam<samplev.size(); isam++) {
     if ( (isam!=0) && (snamev[isam]!=TString("zee"))) fprintf(txtFile," %14s ",snamev[isam].Data());
