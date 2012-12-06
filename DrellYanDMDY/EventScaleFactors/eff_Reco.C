@@ -265,14 +265,12 @@ void eff_Reco(const TString configFile, const TString effTypeString,
   TString ntuplesDir=tagAndProbeDir;
   ntuplesDir.ReplaceAll("tag_and_probe","selected_events");
 
-  // The reference histograms are prepared without any selection at all,
-  // apart from requiring the appropriate event trigger bit match. 
-  TString puTargetFName = "../root_files/pileup/dataPileupHildreth_full2011_20121110_repacked.root";
-  // Note that the "source" file is for RECO triggers in this script
-  TString puSourceFName = "../root_files/pileup/dataPileupHildreth_full2011_TnP_RECO_20121118_repacked.root";
-  //   TString refFNamePV = ntuplesDir;
-  //   refFNamePV.Append( TString("/npv") + DYTools::analysisTag_USER + TString(".root")  );
-  
+  // The source/target histograms are unbiased pile-up distributions
+  // for data and MC prepared according to Hildreth's instructions.
+  // The data histogram for TnP takes into account TnP trigger prescales.
+  TString puTargetFName = "../root_files/pileup/dataPileupHildreth_full2011_TnP_RECO_20121118_repacked.root";
+  TString puSourceFName = "../root_files/pileup/mcPileupHildreth_full2011_20121110_repacked.root";
+
   if (performPUReweight) {
     TFile tmpFile(puTargetFName);
     int npvOk=tmpFile.IsOpen();
@@ -669,7 +667,7 @@ void eff_Reco(const TString configFile, const TString effTypeString,
       DYTools::analysisTag + TString(".root");
     //
     TString puTargetDistrName="pileup_lumibased_data";
-    TString puSourceDistrName="pileup_lumibased_data";
+    TString puSourceDistrName="pileup_simulevel_mc";
 //     TString refDistribution="hNGoodPV_data";
     
     TString sampleNameBase= effTypeString + TString("_") + 

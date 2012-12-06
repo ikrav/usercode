@@ -153,57 +153,52 @@ int CreatePUWeightedBranch(const TString &fName,
 
   // Set up pile-up reweighting
   PUReweight_t puReweight;
-  // We will reweight both TnP data and MC to the signal data
-  // using the Hildreth method. 
-  // For MC, the Hildreth's weights are set up already in the 
-  // constructor. For the data, we set up the source and the target
-  // histogram manually.
+  // Only MC will be reweighted. It is reweighted to the 
+  // tag and probe data sample. The method is not the plain
+  // Hildreth method for 2011 because in 2011 tag and probe
+  // triggers are prescaled, so a specially prepared 
+  // "target" histogram is used.
   if( isMC ){
-    // Really, this is already done in the constructor, but just to 
-    // make it clear to a code reader
-    puReweight.setActiveMethod(PUReweight_t::_Hildreth);    
-    // There is no need to set anything else because
-    // the set method above also sets the weight values
-  } else {
     puReweight.setActiveMethod(PUReweight_t::_TwoHistos);
     puReweight.setSimpleWeights( puTargetFName, puTargetDistrName,
 				 puSourceFName, puSourceDistrName);
   }
 
+  // COMMENTED OUT BELOW: THE PREVIOIS VERSION WHERE BOTH T&P
+  // MC AND DATA ARE REWEIGHTED WITH RESPECT TO THE SIGNAL SAMPLE
+  //
+//   // We will reweight both TnP data and MC to the signal data
+//   // using the Hildreth method. 
+//   // For MC, the Hildreth's weights are set up already in the 
+//   // constructor. For the data, we set up the source and the target
+//   // histogram manually.
+//   if( isMC ){
+//     // Really, this is already done in the constructor, but just to 
+//     // make it clear to a code reader
+//     puReweight.setActiveMethod(PUReweight_t::_Hildreth);    
+//     // There is no need to set anything else because
+//     // the set method above also sets the weight values
+//   } else {
+//     puReweight.setActiveMethod(PUReweight_t::_TwoHistos);
+//     puReweight.setSimpleWeights( puTargetFName, puTargetDistrName,
+// 				 puSourceFName, puSourceDistrName);
+//   }
+
   // Print everything
   if( isMC ){
-    printf("PU reweight info: this is MC. The weights are assigned according to the\n");
-    printf("  Hildreth's method.\n");
-  }else{
-    printf("PU reweight info: this is data. The weights are prepared based on:\n");
+    printf("PU reweight info: this is MC. The weights are prepared based on:\n");
     printf("  target (reference) histo= %s   from file= %s\n", 
 	   puTargetDistrName.Data(),puTargetFName.Data());
     printf("  source (active)    histo= %s   from file= %s\n", 
 	   puSourceDistrName.Data(),puSourceFName.Data());
-  }
-  for(int i=1; i<=45; i++){
-    double ww = 0;
-    if(isMC)
-      ww = puReweight.getWeightHildreth(i);
-    else
+    for(int i=1; i<=45; i++){
+      double ww = 0;
       ww = puReweight.getWeightTwoHistos(i);
-    printf("   PU=%3d     weight= %f\n", i, ww);
+      printf("   PU=%3d     weight= %f\n", i, ww);
+    }
+  }else{
+    printf("PU reweight info: this is data. The PU weights are 1.0\n");
   }
-
-
-  // Older style PU code, commented out.
-//   // Open PU reference distribution file
-//   PUReweight_t puRef;
-//   int res=puRef.setFile(puReferenceFName) &&
-//     puRef.setReference(puRefDistrName);
-//   assert(res && puRef.getHRef());
-
-//   PUReweight_t puReweight;
-//   res=puReweight.setFile(savePUFName,1); // create a new file
-//   assert(res);
-//   TString puDistrName=savePUHistoNameBase;
-//   res= puReweight.setActiveSample(puDistrName);  // create a histo container
-//   assert(res);
 
   TFile *selectedEventsFile= new TFile(fName,"UPDATE");
   assert(selectedEventsFile && selectedEventsFile->IsOpen());
@@ -225,41 +220,7 @@ int CreatePUWeightedBranch(const TString &fName,
     TBranch *pvCountBr= tree->GetBranch("nGoodPV");
     assert(evWeightBr && pvCountBr);
 
-    // The code below is commented out. Instead, see
-    // the Fill call below.
-//     // determine the PU distribution
-//     for (UInt_t i=0; i<tree->GetEntries(); ++i) {
-//       pvCountBr->GetEntry(i);
-//       evWeightBr->GetEntry(i);
-//       puReweight.Fill(nGoodPV,evWeight);
-//     }
   }
-
-  // Again, older code for dealing with PU reweighting
-
-//   // In the following, we simply fill the active histogram
-//   // with the content of the desired histogram prepared in advance.
-//   TFile fsource(puFNameRecoLevel);
-//   if( !fsource.IsOpen()){
-//     printf("tnpSelectEvents:: failed to open reference file %s\n",
-// 	   puFNameRecoLevel.Data());
-//     assert(0);
-//   }
-//   TH1F *hsource = (TH1F*)fsource.Get(puDistrNameRecoLevel);
-//   if( hsource == 0 ){
-//     printf("tnpSelectEvents:: histogram %s is not found in file %s\n",
-// 	   puDistrNameRecoLevel.Data(), puFNameRecoLevel.Data());
-//     assert(0);
-//   }
-//   for(int i=1; i <= hsource->GetNbinsX(); i++){
-//     // In the standard binning the bin center is at the integer value of the PU
-//     int iPU = (int)hsource->GetBinCenter(i);
-//     puReweight.Fill(iPU, hsource->GetBinContent(i));
-//   }
-  
-//   res=puReweight.setReference(puRef.getHRef()) &&  // set reference distribution
-//     puReweight.prepareWeights(1);  // prepare weights and save histo
-//   assert(res);
 
   // set weights
   for (int fail=0; (fail<2); ++fail) {
@@ -282,13 +243,12 @@ int CreatePUWeightedBranch(const TString &fName,
     for (UInt_t i=0; i<tree->GetEntries(); ++i) {
       pvCountBr->GetEntry(i);
       evWeightBr->GetEntry(i);
-      // Based on the method set for the puReweight above,
-      // either the Hildreth or TwoHistos method is used
-      // inside the getWeight routine.
-      if(isMC)
-	pvWeight=evWeight * puReweight.getWeightHildreth(nGoodPV);
-      else
+      // For MC, apply PU weights
+      if(isMC){
 	pvWeight=evWeight * puReweight.getWeightTwoHistos(nGoodPV);
+      }else{
+	pvWeight=evWeight;
+      }
       weightBr->Fill();
     }
     selectedEventsFile->cd();
