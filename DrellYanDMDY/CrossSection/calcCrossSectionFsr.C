@@ -64,6 +64,8 @@ const int includeUnfoldingSystematics=1;
 const int doClosureTest=1;
 const TFsrCorrectionType_t fsrCorrection_BinByBin=_fsrCorr_unfGood;
 const int useExactVectorsForMcClosureTest=0;
+// Use externally provided errors on norm x-sec, or internally calcylated 13-bin sum from 60 to 120 GeV
+const int use1binErrorsForNorm=1;   
 
 
 const int printFSRcorrectionTable=0;
@@ -194,7 +196,20 @@ TMatrixD unfoldedYields(DYTools::nMassBins,nMaxYBins);
 TMatrixD unfoldedYieldsStatErr(DYTools::nMassBins,nMaxYBins);
 TMatrixD unfoldedYieldsSystErr(DYTools::nMassBins,nMaxYBins);
   
-
+// The constants below are obtained by running the full chain
+// in 1-bin mode for 60-120 GeV range. They need to be updated
+// whenever there are non-trivial chagnes to any part of the
+// full chain. For more notes, see below the locations where
+// these constants are used.
+double normAbsStatErrPreFsrFullAcc  = 0.9;
+double normAbsStatErrPostFsrFullAcc = 0.9;
+double normAbsStatErrPreFsrDET      = 0.4;
+double normAbsStatErrPostFsrDET     = 0.4;
+//
+double normAbsSystErrPreFsrFullAcc  = 7.3;
+double normAbsSystErrPostFsrFullAcc = 7.0;
+double normAbsSystErrPreFsrDET      = 3.5;
+double normAbsSystErrPostFsrDET     = 3.4;
 
 // ---------------------------------------------------------------
 // Main function
@@ -1291,6 +1306,13 @@ void  crossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatr
     xsecRefSystErrV[yi]= sqrt(xsecRefSystErrV[yi]);
   }
 
+  bool use1binErrors = false;
+  if( use1binErrorsForNorm == 1 && DYTools::study2D==0 && specTag == "" ) {
+    use1binErrors = true;
+    xsecReferenceStatErr = normAbsStatErrPreFsrFullAcc;
+    xsecReferenceSystErr = normAbsSystErrPreFsrFullAcc;
+  }
+
   // Find normalized cross-section
   for(int i=0; i<DYTools::nMassBins; i++) {
     for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
@@ -1385,6 +1407,12 @@ void  crossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, const TMatr
 	 DYTools::massBinLimits[low], DYTools::massBinLimits[high+1]);
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
+  if( use1binErrors ){
+    printf("   INFO: the stat and syst errors come from 1-bin 60-120 GeV measurement\n");
+    printf("         hardwired in the code. Make sure the numbers are up to date.\n");
+  }else{
+    printf("   INFO: the stat and syst errors come from the sum of 13 bins in the range 60-120 GeV\n");
+  }
 //     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
 
   return;
@@ -1427,6 +1455,13 @@ void  crossSectionsDET(const TMatrixD &vin, const TMatrixD &vinStatErr, const TM
   xsecReferenceStatErr = sqrt(xsecReferenceStatErr);
   xsecReferenceSystErr = sqrt(xsecReferenceSystErr);
 
+  bool use1binErrors = false;
+  if( use1binErrorsForNorm == 1 && DYTools::study2D==0 && specTag == "" ) {
+    use1binErrors = true;
+    xsecReferenceStatErr = normAbsStatErrPreFsrDET;
+    xsecReferenceSystErr = normAbsSystErrPreFsrDET;
+  }
+
   // Find normalized cross-section
   for(int i=0; i<DYTools::nMassBins; i++) {
     for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
@@ -1463,6 +1498,12 @@ void  crossSectionsDET(const TMatrixD &vin, const TMatrixD &vinStatErr, const TM
   if (specTag.Length()) std::cout << "special tag=<" << specTag << ">\n";
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
+  if( use1binErrors ){
+    printf("   INFO: the stat and syst errors come from 1-bin 60-120 GeV measurement\n");
+    printf("         hardwired in the code. Make sure the numbers are up to date.\n");
+  }else{
+    printf("   INFO: the stat and syst errors come from the sum of 13 bins in the range 60-120 GeV\n");
+  }
 
 
   gSystem->mkdir(pathXSect,kTRUE);
@@ -1535,6 +1576,13 @@ void  postFsrCrossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, cons
   xsecReferenceStatErr = sqrt(xsecReferenceStatErr);
   xsecReferenceSystErr = sqrt(xsecReferenceSystErr);
 
+  bool use1binErrors = false;
+  if( use1binErrorsForNorm == 1 && DYTools::study2D==0 && specTag == "" ) {
+    use1binErrors = true;
+    xsecReferenceStatErr = normAbsStatErrPostFsrFullAcc;
+    xsecReferenceSystErr = normAbsSystErrPostFsrFullAcc;
+  }
+
   // Find normalized cross-section
   for(int i=0; i<DYTools::nMassBins; i++) {
     for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
@@ -1570,6 +1618,12 @@ void  postFsrCrossSections(const TMatrixD &vin, const TMatrixD &vinStatErr, cons
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
 //     printf("check %f %f\n", xsecReferenceStatErr, xsecReferenceSystErr);
+  if( use1binErrors ){
+    printf("   INFO: the stat and syst errors come from 1-bin 60-120 GeV measurement\n");
+    printf("         hardwired in the code. Make sure the numbers are up to date.\n");
+  }else{
+    printf("   INFO: the stat and syst errors come from the sum of 13 bins in the range 60-120 GeV\n");
+  }
 
 
   gSystem->mkdir(pathXSect,kTRUE);
@@ -1635,6 +1689,13 @@ void  postFsrCrossSectionsDET(const TMatrixD &vin, const TMatrixD &vinStatErr, c
   xsecReferenceStatErr = sqrt(xsecReferenceStatErr);
   xsecReferenceSystErr = sqrt(xsecReferenceSystErr);
 
+  bool use1binErrors = false;
+  if( use1binErrorsForNorm == 1 && DYTools::study2D==0 && specTag == "" ) {
+    use1binErrors = true;
+    xsecReferenceStatErr = normAbsStatErrPostFsrDET;
+    xsecReferenceSystErr = normAbsSystErrPostFsrDET;
+  }
+
   // Find normalized cross-section
   for(int i=0; i<DYTools::nMassBins; i++) {
     for (int yi=0; yi<DYTools::nYBins[i]; ++yi) {
@@ -1669,6 +1730,12 @@ void  postFsrCrossSectionsDET(const TMatrixD &vin, const TMatrixD &vinStatErr, c
 	 DYTools::massBinLimits[low], DYTools::massBinLimits[high+1]);
   printf("           %9.1f +- %8.1f +- %6.1f \n",
 	 xsecReference, xsecReferenceStatErr, xsecReferenceSystErr);
+  if( use1binErrors ){
+    printf("   INFO: the stat and syst errors come from 1-bin 60-120 GeV measurement\n");
+    printf("         hardwired in the code. Make sure the numbers are up to date.\n");
+  }else{
+    printf("   INFO: the stat and syst errors come from the sum of 13 bins in the range 60-120 GeV\n");
+  }
 
   gSystem->mkdir(pathXSect,kTRUE);
   TString extraTag=DYTools::analysisTag;
