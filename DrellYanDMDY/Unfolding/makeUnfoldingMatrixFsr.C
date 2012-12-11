@@ -826,7 +826,7 @@ void makeUnfoldingMatrixFsr(const TString input,
   //==============================================================================================================
 
   //for the FSR case
-  const bool useFewzWeights = true;
+  const bool useFewzWeights = false;
   const bool cutZPT100 = true;
   FEWZ_t fewz(useFewzWeights,cutZPT100);
   if (useFewzWeights && !fewz.isInitialized()) {
