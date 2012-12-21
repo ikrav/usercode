@@ -19,9 +19,12 @@ typedef enum { _yields_none=0, _yields_gen, _yields_reco,
 	       _yields_eff_NPassBB, _yields_eff_NPassBE, _yields_eff_NPassEE,
 	       _yields_eff_scaleFactors, _yields_eff_scaleFactorsFI,
 	       _yields_effScale, // eff*ScaleFactors
+	       _yields_acc_NTotal, _yields_acc_NPass,
 	       _yields_XSec, _yields_XSecNorm,
 	       _yields_thXSec, _yields_thXSecDET,
 	       _yields_thXSecNorm, _yields_thXSecDETNorm,
+	       _yields_fsrCorrFactorsDET_Gen, _yields_fsrCorrFactorsDET_Reco,
+	       _yields_fsrCorrFactors_Gen, _yields_fsrCorrFactors_Reco,
 	       _yields_Last
 } TYieldsKind_t;
 
@@ -37,7 +40,7 @@ const int extraFlag_2MCfiles=4;
 const int extraFlag_2MCfilesFineGrid=5;
 const int extraFlag_2MCfiles_debug=6;
 
-const int extraFlagData_oldStyle=0;
+const int extraFlagData_oldStyle=7;
 
 
 // -------------------------------------------------------------
@@ -367,7 +370,7 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
   case DYTools::_cs_postFsrDetNorm:
   case DYTools::_cs_postFsrNorm:
     xSecName="normXSec"; xSecErrName="normXSecErr"; xSecSystErrName="normXSecErrSyst";
-    if (extraFlagData_oldStyle) {
+    if (extraFlag==extraFlagData_oldStyle) {
       xSecName="normXSecByBin"; xSecErrName="normXSecErrByBin";
       xSecSystErrName="normXSecErrByBinSyst";
     }
@@ -406,9 +409,10 @@ TH1F* readData(TVectorD &v, TVectorD &vErr1, TVectorD &vErr2, const TriggerSelec
   bool ok=true;
   TString name=Form("xsec_%s_%s_massBin%d",DYTools::analysisTag.Data(),CrossSectionKindName(theKind).Data(),iMassBin);
   if (ok && (DYTools::study2D==0)) {
-    int perMassBinWidth=(extraFlagData_oldStyle) ? 0:1;
+    int perMassBinWidth=(extraFlag == extraFlagData_oldStyle) ? 0:1;
     if (DYTools::study2D) perMassBinWidth=0;
     int perRapidityBinWidth=0;
+    std::cout << "calling extracMassDependence with perMassBinWidth=" << perMassBinWidth << "\n";
     histo= extractMassDependence(name,name, xSecM, xSecErr1M, 0, perMassBinWidth,perRapidityBinWidth);
     for(int i=0; i<DYTools::nMassBins; i++){
       v[i] = xSecM[i][0];
@@ -449,7 +453,7 @@ TH1F* readTh1D_MSTW2008(DYTools::TCrossSectionKind_t theKind, const char *histNa
     case _th2011_spec2011: objName="xSecThNorm_spec2011"; objErrName="xSecThNormErr_spec2011"; break;
     case _th2011_nnlo: objName="xSecThNorm_NNLO"; objErrName="xSecThNormErr_NNLO"; break;
     default:
-      std::cout << "not ready\n";
+      std::cout << "not ready (cs_preFsrNorm)\n";
       assert(0);
     }
     break;
@@ -461,7 +465,7 @@ TH1F* readTh1D_MSTW2008(DYTools::TCrossSectionKind_t theKind, const char *histNa
     case _th2011_spec2011: objName="xSecTh_spec2011"; objErrName="xSecThErr_spec2011"; break;
     case _th2011_nnlo: // not available
     default:
-      std::cout << "not ready\n";
+      std::cout << "not ready (cs_preFsr)\n";
       assert(0);
     }
     break;
@@ -562,13 +566,13 @@ TH1F* readTh2D_ABKM09(DYTools::TCrossSectionKind_t theKind, int iMassBin) {
 // -------------------------------------------------------------
 
 inline
-TH1F* readData(const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, TString fname){
+TH1F* readData(const TriggerSelection &triggers, DYTools::TCrossSectionKind_t theKind, int iMassBin, TString fname, int extraFlag=0){
   std::cout << "readData <" << fname << ">" << std::endl;
   int nBins=(DYTools::study2D) ? DYTools::nYBins[iMassBin] : DYTools::nMassBins;
   TVectorD v(nBins);
   TVectorD vErr1(nBins);
   TVectorD vErr2(nBins);
-  return readData(v,vErr1,vErr2,triggers,theKind,iMassBin,fname);
+  return readData(v,vErr1,vErr2,triggers,theKind,iMassBin,fname,extraFlag);
 }
 
 // -------------------------------------------------------------
@@ -577,8 +581,8 @@ inline
 TH1F* readYields(const TYieldsKind_t kind, int iMassBin, TString fname, int hasError=0){
   TString name, nameErr;
   switch (kind) {
-  case _yields_gen: name="yieldsMcPostFsrGen"; break;
-  case _yields_reco: name="yieldsMcPostFsrRec"; break;
+  case _yields_gen: name="yieldsMcPostFsrGen"; hasError=0; break;
+  case _yields_reco: name="yieldsMcPostFsrRec"; hasError=0; break;
   case _yields_data_observed: name="observedYields"; nameErr="observedYieldsErr"; break;
   case _yields_data_signal: name="YieldsSignal"; nameErr="YieldsSignalErr"; break;
   case _yields_mc_signal: name="mcYieldsSignal"; nameErr="mcYieldsSignalErr"; break;
@@ -601,16 +605,24 @@ TH1F* readYields(const TYieldsKind_t kind, int iMassBin, TString fname, int hasE
   case _yields_eff_scaleFactors: name="scaleFactor"; nameErr="scaleFactorErr"; break;
   case _yields_eff_scaleFactorsFI: name="scaleFactorFlatIdxArray"; nameErr="scaleFactorErrFlatIdxArray"; break;
   case _yields_effScale: name="effScaleF"; nameErr="effScaleFErr"; break;
+  case _yields_acc_NTotal: name="accEval_nTotal"; nameErr="accEval_nTotalErr"; break;
+  case _yields_acc_NPass: name="accEval_nPass"; nameErr="accEval_nPassErr"; break;
   case _yields_XSec: name="XSec"; nameErr="XSecErr"; break;
   case _yields_XSecNorm: name="normXSec"; nameErr="normXSecErr"; break;
   case _yields_thXSec: name="nGenEvents"; nameErr="nGenEventsErr"; break;
   case _yields_thXSecDET: name="nGenEventsDET"; nameErr="nGenEventsDETErr"; break;
   case _yields_thXSecNorm: name="nGenEventsNorm"; nameErr="nGenEventsNormErr"; break;
   case _yields_thXSecDETNorm: name="nGenEventsDETNorm"; nameErr="nGenEventsDETNormErr"; break;
+  case _yields_fsrCorrFactorsDET_Gen: name="fsrDETcorrFactorsGen"; hasError=0; break;
+  case _yields_fsrCorrFactorsDET_Reco: name="fsrDETcorrFactorsReco"; hasError=0; break;
+  case _yields_fsrCorrFactors_Gen: name="fsrCorrFactorsGen"; hasError=0; break;
+  case _yields_fsrCorrFactors_Reco: name="fsrCorrFactorsReco"; hasError=0; break;
   default: 
     std::cout << "readYields: is not ready for this kind=" << int(kind) << "\n";
     assert(0);
   }
+
+  std::cout << "from file <" << fname << "> get <" << name << "> and <" << nameErr << ">\n";
 
   TFile file  (fname);
 
