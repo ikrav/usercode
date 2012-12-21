@@ -488,14 +488,14 @@ void CPlot::Draw(TCanvas *c, bool doSave, TString format, int subpad)
   c->GetPad(subpad)->SetLogx(fLogx);
   
 #ifndef __noRooFit
-  if(!fItems.size() && !fRooPlot)
-    return;   
+  //if(!fItems.size() && !fRooPlot)
+  //  return;   
   
   if(fRooPlot) {        
     fRooPlot->Draw();   
   }
-#else
-  if (!fItems.size()) return;
+  //#else
+  //if (!fItems.size()) return;
 #endif
       
   int nHist1D=0, nHist2D=0, nGraph=0, nProf=0;
