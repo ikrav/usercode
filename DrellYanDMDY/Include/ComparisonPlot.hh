@@ -28,6 +28,7 @@ public:
   int fRatioNdivisions, fPrintValues, fPrintRatios, fPrintRatioNames;
   double fRatioYTitleSize,fRatioYLabelSize;
   double fRatioYTitleOffset;
+  double fRatioXTitleSize;
 
   ComparisonPlot_t(TRatioType_t ratioType, const TString &name, const TString &title, const TString &xtitle, const TString &ytitle, const TString &ratioYLabel) :
     CPlot(name,title,xtitle,ytitle),
@@ -43,7 +44,8 @@ public:
     fPrintRatios(0), fPrintRatioNames(0),
     fRatioYTitleSize(0.15), 
     fRatioYLabelSize(0.13),
-    fRatioYTitleOffset(0.45)
+    fRatioYTitleOffset(0.45),
+    fRatioXTitleSize(0.15)
   {}
 
   ComparisonPlot_t(const ComparisonPlot_t &cp, 
@@ -62,14 +64,17 @@ public:
     fPrintRatioNames(cp.fPrintRatioNames),
     fRatioYTitleSize(cp.fRatioYTitleSize),
     fRatioYLabelSize(cp.fRatioYLabelSize),
-    fRatioYTitleOffset(cp.fRatioYTitleOffset)
+    fRatioYTitleOffset(cp.fRatioYTitleOffset),
+    fRatioXTitleSize(cp.fRatioXTitleSize)
   {}
 
 
   void ErrorsOnRatios(unsigned int on=1) { fErrorsOnRatios=on; }
   void SetRatioYRange(double ymin, double ymax) { fRatioYMin=ymin; fRatioYMax=ymax; }
   void SetRatioNdivisions(int cnt) { fRatioNdivisions=cnt; }
-  void SetRatioTitleSize(double size, double offset=-99) { fRatioYTitleSize=size; if (offset>=0) fRatioYTitleOffset=offset; }
+  void SetRatioLabelSize(double size) { fRatioYLabelSize=size; }
+  void SetRatioYTitleSize(double size, double offset=-99) { fRatioYTitleSize=size; if (offset>=0) fRatioYTitleOffset=offset; }
+  void SetRatioXTitleSize(double size) { fRatioXTitleSize=size; }
   void SetRatioTitleOffset(double size) { fRatioYTitleOffset=size; }
   void SetRefIdx(int refIdx) { fRefIdx=refIdx; }
   void SetPrintValues(int yes=1) { fPrintValues=yes; }
@@ -144,7 +149,7 @@ public:
   }
 
   void PreparePads(TCanvas *c, int subpad1=1, int subpad2=2, TString name="comp", double padYDivPoint=0.29) {
-    const double dy=0.01;
+    const double dy=0.005;
 
     TPad *pad1 = (TPad*)c->GetPad(subpad1);
     TPad *pad2 = (TPad*)c->GetPad(subpad2);
@@ -398,6 +403,8 @@ public:
 	  hratio->GetYaxis()->SetLabelSize( fRatioYLabelSize );
 	  hratio->GetYaxis()->SetTitleSize(fRatioYTitleSize);
 	  hratio->GetYaxis()->SetTitleOffset(fRatioYTitleOffset);
+	  hratio->GetXaxis()->SetLabelSize( fRatioYLabelSize );
+	  hratio->GetXaxis()->SetTitleSize(fRatioXTitleSize);
 
 	//hratio->SetMarkerColor(kOrange+8);
 
