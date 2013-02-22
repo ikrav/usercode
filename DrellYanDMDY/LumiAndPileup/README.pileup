@@ -1,0 +1,175 @@
+  Some information regarding the official CMS prescription for
+pile-up reweighting and associated systematics is found here:
+https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJSONFileforData
+RecoLuminosity/LumiDB is needed, mine is with CMSSW_5_0_1.
+
+The web page above contains also the more simple prescription
+for the case when no prescales are present.
+
+--------------------------------------------
+Dealing with PU inputs for primary analysis reweighting
+--------------------------------------------
+
+Two histograms need to be prepared: the unbiased
+distribution for data and the generator-level number
+of simulated PU for MC.
+
+For MC this is simple: take the primary signal MC 
+file and create a histogram of Info.nPU field without
+any cuts or filtering. The histogram has to be binned
+the desired way (see already existing mc PU histograms
+for an example).
+
+For data:
+
+  - get the pixel luminosity file from here on lxplus: 
+          /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions11/7TeV/PileUp/pileup_2011_JSON_pixelLumi.txt
+
+  - compute the pile-up distribution:
+        pileupCalc.py -i ALL_2011_del_JSON_exclJuly11Problem.txt \
+                      --inputLumiJSON pileup_2011_JSON_pixelLumi.txt \
+                      --calcMode observed --minBiasXsec 68000 \
+                      --maxPileupBin 50 --numPileupBins 50 \
+                      MyDataPileupHistogram.root   
+    Notice: the JSON file of the analysis is one of the inputs, 
+       the inelastic cross section 68 mb is appropriate for 7 TeV,
+       the output file is MyDataPileupHistogram.root
+
+  - Use the script from this directory called repackPileup.C to
+     adjust the number of bins and bin boundary to what Drell-Yan code
+     expects. The script takes no parameters, but it should be edited
+     to work with the desired input and output file names.
+
+The final weight histograms for data and MC go to root_files/pileup/
+area.
+
+--------------------------------------------
+Dealing with PU inputs for tag and probe
+--------------------------------------------
+
+[Note that for 8 TeV the procedure below simplifies
+considerably as there is no variable prescales
+and different run ranges for different triggers.
+What follows is for 7 TeV.]
+
+This following describes how to prepare pile-up distribution for 
+tag and probe where triggers with prescale are used and 
+sometimes are combined  with OR. Prescales are different, and 
+there are run range restrictions as well.
+
+ 0) Trigger combination for tag and probe:
+   RECO efficiency:
+      HLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30
+
+   ID efficiency:
+     HLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30   OR
+     kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30
+
+   HLT efficiency:
+     HLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30   OR
+     kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 for runs 165088-170759
+
+
+ 1) Compute luminosity for each lumi section for given trigger with given prescales.
+      EACH OF THESE MAY HAVE TO BE DONE IN SEVERAL PIECES BY SPLITTING JSON BECAUSE
+      MEMORY CONSUMPTION IS HIGH.
+      Execute for the first relevant trigger:
+             pixelLumiCalc.py lumibyls -i ALL_2011_del_JSON_exclJuly11Problem.txt 
+                 --hltpath "HLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30" 
+                 -o results_sc.csv
+
+      Execute for the second relevant trigger:
+             pixelLumiCalc.py lumibyls -i ALL_2011_del_JSON_exclJuly11Problem.txt 
+                 --hltpath "HLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30" 
+                 -o results_ele.csv
+
+      For HLT TnP we need only the run range 165088-170759. So:
+             cp results_ele.csv results_ele_forHLT.csv
+             emacs results_ele_forHLT.csv &
+        and delete all lines in the ele_forHLT except those for
+        the desired run range.
+
+2) Compute the total luminosity in results_sc, results_ele, and results_ele_forHLT
+   for later use when combining several triggers. Execute:
+        cat results_sc.csv | awk -F "," 'BEGIN{s=0;}{s+= $8;}END{res = s/1000000.0;print res " pb";}'
+        cat results_ele.csv | awk -F "," 'BEGIN{s=0;}{s+= $8;}END{res = s/1000000.0;print res " pb";}'
+        cat results_ele_forHLT.csv | awk -F "," 'BEGIN{s=0;}{s+= $8;}END{res = s/1000000.0;print res " pb";}'
+
+
+3)  Compute pile-up JSON file:
+    pileupReCalc_HLTpaths.py -i results_sc.csv \
+                --inputLumiJSON pileup_2011_JSON_pixelLumi.txt \
+                -o My_HLT_corrected_PileupJSON_sc.txt
+
+    pileupReCalc_HLTpaths.py -i results_ele.csv \
+                --inputLumiJSON pileup_2011_JSON_pixelLumi.txt \
+                -o My_HLT_corrected_PileupJSON_ele.txt
+
+    pileupReCalc_HLTpaths.py -i results_ele_forHLT.csv \
+                --inputLumiJSON pileup_2011_JSON_pixelLumi.txt \
+                -o My_HLT_corrected_PileupJSON_ele_forHLT.txt
+
+
+4)  Create pile-up histogram for pure SC, pure Ele, and 
+       Ele for restricted run range for future mixing.
+       NOTE: THIS IS FOR 7 TeV, the flag --minBiasXsec
+       value depends on energy.
+    Execute:
+    pileupCalc.py -i ALL_2011_del_JSON_exclJuly11Problem.txt \
+              --inputLumiJSON My_HLT_corrected_PileupJSON_sc.txt \ 
+              --calcMode observed --minBiasXsec 68000 --maxPileupBin 50 \
+              --numPileupBins 50 MyDataPileupHistogram_sc.root
+
+    pileupCalc.py -i ALL_2011_del_JSON_exclJuly11Problem.txt \
+              --inputLumiJSON My_HLT_corrected_PileupJSON_ele.txt \ 
+              --calcMode observed --minBiasXsec 68000 --maxPileupBin 50 \
+              --numPileupBins 50 MyDataPileupHistogram_ele.root
+
+    pileupCalc.py -i ALL_2011_del_JSON_exclJuly11Problem.txt \
+              --inputLumiJSON My_HLT_corrected_PileupJSON_ele_forHLT.txt \ 
+              --calcMode observed --minBiasXsec 68000 --maxPileupBin 50 \
+              --numPileupBins 50 MyDataPileupHistogram_ele_forHLT.root
+
+
+ 5) Run combineTwoPileups.C (see inside and comment/uncomment as needed).
+    For ID efficiency, mix "sc" and "ele" pileup histograms from above.
+    For HLT efficiency, mix "sc" and "ele_forHLT" histograms from above.
+    Use for weights the corresponding luminosities that take into account
+    prescales. These are determined as described above from results*csv files.
+    The idea is simple: we normalize the two pile-up histograms to area 1, and 
+    then add them with weights lumi1/(lumi1+lumi2) and lumi2/(lumi1+lumi2),
+    where lumi1 and lumi2 are the luminosities (accounting for prescales, etc)
+    of the two histograms. This method is a recommendation from Mike Hildreth.
+
+        Thus:
+     MyDataPileupHistogram_sc.root
+           --> dataPileupHildreth_full2011_TnP_RECO_<datestamp>.root
+           copied as is.
+
+     MyDataPileupHistogram_sc.root + MyDataPileupHistogram_ele.root
+           --> dataPileupHildreth_full2011_TnP_ID_<datastamp>.root
+           histograms are added with weights using combineTwoPileups.C
+
+     MyDataPileupHistogram_sc.root + MyDataPileupHistogram_ele_forHLT.root
+           --> dataPileupHildreth_full2011_TnP_HLT_<datastamp>.root
+           histograms are added with weights using combineTwoPileups.C
+
+6) Use the script from this directory called repackPileup.C to
+adjust the number of bins and bin boundary to what Drell-Yan code
+expects. The script takes no parameters, but it should be edited
+to work with the desired input and output file names.
+
+--------------------------------------------
+Pile-up related systematics
+--------------------------------------------
+
+
+For evaluating systematics related to pile-up, one has to prepare
+two more versions of the reference PU distributions for data from
+which the PU weights are later derived. For this, one has
+to rerun pileupCalc.py varying the value of the --minBiasXsec flag
+by factors 1.05 and 0.95. All subsequent steps after pileupCalc.py
+have to be repeated as well. With the two new sets of distributions
+for pile-up reweighting, the analysis needs to be repeated.
+
+

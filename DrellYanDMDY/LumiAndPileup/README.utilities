@@ -1,0 +1,29 @@
+A brief summary of which scripts do what in this directory:
+
+repackPileup.C, combineTwoPileups.C: these are used in preparing
+      reference histograms for pile-up reweighting. See README.pileup.
+
+drawHildreth.C: a script to draw the primary data and MC histograms
+      used to derive PU weights
+
+drawHildrethSyst.C: a script to draw the primary data histogram of unbiased PU
+      as well as the variations used for systematic evaluation (like +-5%)
+
+drawHildrethTNP.C: draws an overlay of several pile-up distributions
+      including those used for various stages of tag and probe
+
+The folowing scripts deal with pile-up systematics:
+
+estimatePileupSystematics.C: given FullChain output for several pile-up
+      scenarios, this script derives the variation of the efficiency,
+      scale factor, and the r-shape as a function of mass.
+
+pileupSystematicsBreakdown.C: given FullChain output for several pile-up
+      scenarios, this script finds relative PU variation effect on yields for
+      successive analysis steps. What goes in is the yields reported
+      in the text file of CrossSection/tables1D.
+
+pileupCompareZLineShape.C: a trivial script to draw an overlay of the
+      reconstructed mass spectrum in MC obtained with different pile-up
+      reweighting (again, it is assumed the FullChain has been run
+      already with different PU).
