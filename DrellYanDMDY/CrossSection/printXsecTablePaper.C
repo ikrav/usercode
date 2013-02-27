@@ -1,6 +1,12 @@
 // This script prints all r-shape cross sections in the exact format
 // required for the paper (as of now EWK-11-007).
 
+#include <TFile.h>
+#include <TMatrixD.h>
+#include <TVectorD.h>
+#include <TString.h>
+
+
 void printXsecTablePaper(){
 
   TFile f1("../root_files/DY_m10+pr+a05+o03+pr_4839pb_fsrUnfGood/xSec_results_1D.root");
@@ -37,8 +43,8 @@ void printXsecTablePaper(){
 
     double binw = (*massBinLimits)[i+1] - (*massBinLimits)[i];
 
-    double a1 = (*xsecErrStatMatrixPostFsrDET)(i,0);
-    double a2 = (*xsecErrSystMatrixPostFsrDET)(i,0);
+    double a1 = (*xsecErrStatMatrixPostFsr)(i,0);
+    double a2 = (*xsecErrSystMatrixPostFsr)(i,0);
     double errPostFsr = sqrt(a1*a1+a2*a2);
 
     double e1 = (*xsecErrStatMatrixPostFsrDET)(i,0);
