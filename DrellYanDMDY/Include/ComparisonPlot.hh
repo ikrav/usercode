@@ -20,6 +20,7 @@ public:
   TRatioType_t fRatioType;
   vector<int> fHRatioIndices;
   vector<unsigned int> fExcludeIndices; // indices of histograms to exclude from a comparison
+  TCanvas *canvas;
   TPad *padMain,*padRatio;
   TString fRatioLabel;
   vector<TH1F*> fHRatioItems;
@@ -36,6 +37,7 @@ public:
     fRatioType(ratioType),
     fHRatioIndices(),
     fExcludeIndices(),
+    canvas(NULL),
     padMain(NULL), padRatio(NULL),
     fRatioLabel(ratioYLabel), fHRatioItems(),
     fRatioYMin(0.), fRatioYMax(0.),
@@ -55,6 +57,7 @@ public:
     fRatioType(cp.fRatioType),
     fHRatioIndices(),
     fExcludeIndices(),
+    canvas(NULL),
     padMain(NULL), padRatio(NULL),
     fRatioLabel(cp.fRatioLabel), fHRatioItems(),
     fRatioYMin(cp.fRatioYMin), fRatioYMax(cp.fRatioYMax),
@@ -178,8 +181,8 @@ public:
     pad1->SetFillColor(0);
     pad2->SetFillColor(0);
 
-    const double leftM=0.18;
-    const double rightM=0.07;
+    const double leftM= c->GetLeftMargin();
+    const double rightM= c->GetRightMargin();
     pad1->SetTopMargin(0.08);
     pad1->SetBottomMargin(0.015); // All X axis labels and titles are thus cut off
     pad1->SetRightMargin(rightM);
@@ -257,6 +260,7 @@ public:
 
 
   void Draw(TCanvas *c, bool doSave=false, TString format="png", int subpad1=1, int subpad2=2) {
+    if (canvas!=c) canvas=c;
     padMain = (TPad*)c->GetPad(subpad1);
     padRatio = (TPad*)c->GetPad(subpad2);
 
