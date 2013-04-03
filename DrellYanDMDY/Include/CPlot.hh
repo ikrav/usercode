@@ -136,6 +136,12 @@ public:
     fLeg->SetX2(fLeg->GetX2()+dx); fLeg->SetY2(fLeg->GetY2()+dy);
   } 
   
+  void ChangeLegendPos(double dx1, double dy1, double dx2, double dy2) {
+    assert(fLeg);
+    fLeg->SetX1(fLeg->GetX1()+dx1); fLeg->SetY1(fLeg->GetY1()+dy1); 
+    fLeg->SetX2(fLeg->GetX2()+dx2); fLeg->SetY2(fLeg->GetY2()+dy2);
+  } 
+  
   // Set stats box position
   void SetStats(double x, double y) { fStatsX = x; fStatsY = y; }
   
