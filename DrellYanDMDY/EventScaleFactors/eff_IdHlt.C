@@ -456,6 +456,9 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
       genBr = eventTree->GetBranch("Gen");
     }
 
+    TElectron *ele1=NULL;
+    TElectron *ele2=NULL;
+
     // loop over events    
     eventsInNtuple += eventTree->GetEntries();
      for(UInt_t ientry=0; ientry<eventTree->GetEntries(); ientry++) {
@@ -510,6 +513,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
       dielectronArr->Clear();
       dielectronBr->GetEntry(ientry);
       for(Int_t i=0; i<dielectronArr->GetEntriesFast(); i++) {
+       if (ele1) { delete ele1; ele1=NULL; }
+       if (ele2) { delete ele2; ele2=NULL; }
 	
 	totalCand++;
 	const mithep::TDielectron *dielectron = (mithep::TDielectron*)((*dielectronArr)[i]);
@@ -567,8 +572,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 
 	// Preliminary selection is complete. Now work on tags and probes.
 	
-	TElectron *ele1 = DYTools::extractElectron(dielectron, 1);
-	TElectron *ele2 = DYTools::extractElectron(dielectron, 2);
+	ele1 = DYTools::extractElectron(dielectron, 1);
+	ele2 = DYTools::extractElectron(dielectron, 2);
 	bool isTag1 = isTag(ele1, tagTriggerObjectBit, info->rhoLowEta);
 	bool isTag2 = isTag(ele2, tagTriggerObjectBit, info->rhoLowEta);
 	
