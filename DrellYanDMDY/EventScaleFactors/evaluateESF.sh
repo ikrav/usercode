@@ -32,7 +32,7 @@ timeStamp="-`date +%Y%m%d-%H%M`"
 # Check if the environment variables are set. Assign values if they are empty
 #
 if [ ${#triggerSet} -eq 0 ] ; then  
-    triggerSet="Full2011_hltEffOld"
+    triggerSet="Full2012_hltEffOld"
 fi
 if [ ${#mcConfInputFile} -eq 0 ] ; then
     mcConfInputFile="../config_files/fall11mc.input" # used in CalcEventEff.C

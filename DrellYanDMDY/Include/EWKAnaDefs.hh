@@ -165,6 +165,7 @@ enum ETriggerBit
   // MuEG
   kHLT_Mu17_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL = 1UL<<0,
   kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL = 1UL<<1,
+  kHLT_Mu22_Photon22_CaloIdL                        = 1UL<<12,
   
   // DoubleMu
   kHLT_Mu17_Mu8   = 1UL<<2,
@@ -182,9 +183,15 @@ enum ETriggerBit
   kHLT_Ele20_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC4_Mass50                              = 1UL<<10,
   
   // SingleElectron
-  kHLT_Ele27_WP80 = 1UL<<11
+  kHLT_Ele27_WP80 = 1UL<<11,
   
   // Photon
+  kHLT_Photon30_CaloIdVL = 1UL<<13,
+  kHLT_Photon50_CaloIdVL = 1UL<<14,
+  kHLT_Photon75_CaloIdVL = 1UL<<15,
+  kHLT_Photon90_CaloIdVL = 1UL<<16,
+  kHLT_Photon135         = 1UL<<17,
+  kHLT_Photon150         = 1UL<<18
 };
 
 enum ETriggerObjBit
@@ -194,7 +201,9 @@ enum ETriggerObjBit
   kHLT_Mu17_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_EleObj = 1UL<<1,
   kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_MuObj  = 1UL<<2,
   kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_EleObj = 1UL<<3,
-  
+  kHLT_Mu22_Photon22_CaloIdL_MuObj                         = 1UL<<19,
+  kHLT_Mu22_Photon22_CaloIdL_EleObj                        = 1UL<<20,
+   
   // DoubleMu
   kHLT_Mu17_Mu8_Mu1Obj   = 1UL<<4,
   kHLT_Mu17_Mu8_Mu2Obj   = 1UL<<5,
@@ -216,9 +225,15 @@ enum ETriggerObjBit
   kHLT_Ele20_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC4_Mass50_SCObj                                = 1UL<<17,
   
   // SingleElectron
-  kHLT_Ele27_WP80_EleObj = 1UL<<18
+  kHLT_Ele27_WP80_EleObj = 1UL<<18,
 
   // Photon
+  kHLT_Photon30_CaloIdVL_PhoObj = 1UL<<21,
+  kHLT_Photon50_CaloIdVL_PhoObj = 1UL<<22,
+  kHLT_Photon75_CaloIdVL_PhoObj = 1UL<<23,
+  kHLT_Photon90_CaloIdVL_PhoObj = 1UL<<24,
+  kHLT_Photon135_PhoObj         = 1UL<<25,
+  kHLT_Photon150_PhoObj         = 1UL<<26
 };
 } //Triggers2012
 #endif

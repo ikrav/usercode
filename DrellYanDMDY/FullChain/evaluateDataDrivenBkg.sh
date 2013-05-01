@@ -18,7 +18,7 @@ dirTag="DY_m10+pr+a05+o03+pr_4839pb";
 workConfFile="../config_files/data_emu.conf"    # needed to select events
 
 anTagUser="" #"ymax9"
-#triggerSet="Full2011_hltEffOld"
+#triggerSet="Full2012_hltEffOld"
 
 # if you do not want to have the time stamp, comment the line away 
 # or set timeStamp=

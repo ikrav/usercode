@@ -26,7 +26,7 @@ tmpConfFilePath="../config_files/escale"
 
 anTagUser=""
 anTag="2D${anTagUser}"
-triggerSet="Full2011_hltEffOld"
+triggerSet="Full2012_hltEffOld" # for primary 7 TeV result change to Full2011_hltEffOld
 
 if [ ${#_sourceConfigFile} -gt 0 ] ; then
   echo -e " ... setting sourceConfigFile to <${_sourceConfigFile}>"

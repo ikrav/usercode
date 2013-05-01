@@ -14,7 +14,7 @@ anTag="2D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
 filename_data="../config_files/data.conf"
 filename_mc="../config_files/fall11mc.input"
 filename_cs="../config_files/xsecCalc.conf"
-triggerSet="Full2011_hltEffOld"
+triggerSet="Full2012_hltEffOld"        # for primary 7 TeV result change to Full2011_hltEffOld
 fsrUnfSet="_fsrUnfGood"
 fsrPUReweight=1   # makeUnfoldingMatrixFsr
 

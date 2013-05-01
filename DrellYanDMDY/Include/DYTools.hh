@@ -24,6 +24,7 @@ namespace DYTools {
   //             nMassBins, massBinLimits, nYBins
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
 
+  const int energy8TeV = 1; // Set this to 0 for 7 TeV settings
   const int study2D=1;
   const int extendYRangeFor1D=1; // whether |ymax|=9 for 1D study
   const TString analysisTag_USER=""; //(!study2D && extendYRangeFor1D) ? "ymax9" : "";  // extra name to differentiate the analysis files
@@ -33,6 +34,7 @@ namespace DYTools {
 
 
   // Global parameters
+  // const bool excludeEcalGap     = false; // For 8 TeV we are not excluding the transition region
   const Double_t kECAL_GAP_LOW  = 1.4442;
   const Double_t kECAL_GAP_HIGH = 1.566;
   const int maxTnPCanvasDivisions=10; // maximum number of canvas divisions in EventScaleFactors macros

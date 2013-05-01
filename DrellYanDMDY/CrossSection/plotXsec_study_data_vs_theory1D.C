@@ -168,7 +168,11 @@ void plotXsec_data_vs_theory1D_work(TString dataFName, TString dataLabel, std::v
 
   HERE("entered *_work");
 
-  TriggerSelection triggers("Full2011_hltEffOld",true,0);
+  TString triggerSetName = "Full2011_hltEffOld";
+  if( DYTools::energy8TeV )
+    triggerSetName = "Full2012_hltEffOld";
+
+  TriggerSelection triggers(triggerSetName,true,0);
 
 //-----------------------------------------------------------------
 // Read data

@@ -21,7 +21,7 @@ triggerSet=$3
 fullRun=$4
 
 if [ ${#triggerSet} -eq 0 ] ; then  
-    triggerSet="Full2011_hltEffOld"  # not used in this script yet
+    triggerSet="Full2012_hltEffOld"  # not used in this script yet
 fi
 if [ ${#mcConfInputFile} -eq 0 ] ; then
     mcConfInputFile="../config_files/fall11mcT3.input" 

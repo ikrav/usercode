@@ -2,6 +2,7 @@
 #define TRIGGERSELECTION_HH
 
 #include "../Include/EWKAnaDefs.hh"
+#include "../Include/DYTools.hh"
 #include <TString.h>
 #include <iostream>
 #include <sstream>
@@ -22,9 +23,15 @@ enum TriggerConstantSet
     Full2011DatasetTriggers =10,   //  includes all periods (1+2+4=7)
     TrigSet_2011A_SingleEG  =1, 
     TrigSet_2011A_DoubleEG  =2,
-    TrigSet_2011B_DoubleEG  =4
+    TrigSet_2011B_DoubleEG  =4,
+    Full2012DatasetTriggers =20   //  includes all 2012 periods
   };
 
+// Note: the HLT efficiency calc constants are used for deciding
+// whether random tag and probe should be used for the periods
+// of DoubleEG L1 seeds. However, there is no need to use the
+// random tag and probe according to EGM POG. Thus, no new
+// constants are defined for 2012.
 enum HLTEfficiencyCalcDef {
   HLTEffCalc_UNDEFINED =0,
   HLTEffCalc_2011Old =1,
@@ -54,6 +61,7 @@ TString TriggerSetName(TriggerConstantSet ts) {
   case TrigSet_2011A_SingleEG:  name="2011A_SingleEG"; break;
   case TrigSet_2011A_DoubleEG:  name="2011A_DoubleEG"; break;
   case TrigSet_2011B_DoubleEG:  name="2011B_DoubleEG"; break;
+  case Full2012DatasetTriggers: name="Full2012"; break;
   default: name="<TriggerConstantSet name is unknown>";
   }
   return name;
@@ -67,12 +75,15 @@ TriggerConstantSet DetermineTriggerSet(const TString &str) {
   else if (str.Contains("2011A_SingleEG")) ts=TrigSet_2011A_SingleEG;
   else if (str.Contains("2011A_DoubleEG")) ts=TrigSet_2011A_DoubleEG;
   else if (str.Contains("2011B_DoubleEG")) ts=TrigSet_2011B_DoubleEG;
+  else if (str.Contains("Full2012")) ts=Full2012DatasetTriggers;
   return ts;
 }
 
 // -----------------------------------------------
 // -----------------------------------------------
 
+// No new constants are defined for 2012 data. 
+// See comments for "enum HLTEfficiencyCalcDef" above.
 TString HLTEfficiencyCalcName(HLTEfficiencyCalcDef ecd) {
   TString name;
   switch(ecd) {
@@ -87,6 +98,8 @@ TString HLTEfficiencyCalcName(HLTEfficiencyCalcDef ecd) {
 
 // -----------------------------------------------
 
+// No code changes are needed here for 2012 data.
+// See comments for "enum HLTEfficiencyCalcDef" above.
 HLTEfficiencyCalcDef DetermineHLTEfficiencyCalc(const TString &str) {
   HLTEfficiencyCalcDef ec=HLTEffCalc_UNDEFINED;
   if (str.Contains("HWW")) ec=HLTEffCalc_2011HWW;
@@ -199,6 +212,7 @@ class TriggerSelection{
     case TrigSet_2011A_DoubleEG: if ((run>=cFirstEvent2011ADoubleEG) && (run<=cLastEvent2011ADoubleEG)) ok=true; break;
     case TrigSet_2011B_DoubleEG: if (run>=cFirstEvent2011B) ok=true; break;
     case TrigSet_UNDEFINED: 
+    case Full2012DatasetTriggers: ok=true; break;
     default:
       ok=false;
     }
@@ -217,6 +231,7 @@ class TriggerSelection{
     case TrigSet_2011A_SingleEG: chkMin=cFirstEvent2011ASingleEG; chkMax=cLastEvent2011ASingleEG; break;
     case TrigSet_2011A_DoubleEG: chkMin=cFirstEvent2011ADoubleEG; chkMax=cLastEvent2011ADoubleEG; break;
     case TrigSet_2011B_DoubleEG: chkMin=cFirstEvent2011B; chkMax=UInt_t(1e9); break;
+    case Full2012DatasetTriggers: chkMin=0; chkMax=UInt_t(1e9); break;
     case TrigSet_UNDEFINED:       
     default:
       std::cout << "error in TriggerSelection::validRunRange";
@@ -225,6 +240,9 @@ class TriggerSelection{
     return ((runNumMax<chkMin) || (runNumMin>chkMax)) ? false : true;
   }
 
+  // Note: Random tag and probe, according to EGM POG, is not
+  // needed and usually not used at present.
+  //
   bool useRandomTagTnPMethod(UInt_t run) const {
     // For "new" MC use only random tag and probe since Fall11 MC is DoubleEG 
     // for the signal trigger.
@@ -258,18 +276,28 @@ class TriggerSelection{
     bool keepIsData=_isData;
     ULong_t bits=0UL;
     _isData=false;
+    // Accumulate all MC triggers of interest
     bits |= this->getEventTriggerBit(0);
     bits |= this->getEventTriggerBit_SCtoGSF(0);
     bits |= this->getEventTriggerBit_TagProbe(0,true);
     bits |= this->getEventTriggerBit_TagProbe(0,false);
-     _isData=true;
-    bits |= this->getEventTriggerBit(150000+1);
-    bits |= this->getEventTriggerBit(170054+1);
-    bits |= this->getEventTriggerBit_SCtoGSF(0);
-    bits |= this->getEventTriggerBit_TagProbe(0,true);
-    bits |= this->getEventTriggerBit_TagProbe(165088+1,true);
-    bits |= this->getEventTriggerBit_TagProbe(0,false);
-    bits |= this->getEventTriggerBit_TagProbe(165088+1,false);
+    _isData=true;
+    // Accumulate all data triggers of interest
+    if( DYTools::energy8TeV == 1){
+      // Trigger bits are same for all runs for 8 TeV data
+      bits |= this->getEventTriggerBit(0);
+      bits |= this->getEventTriggerBit_SCtoGSF(0);
+      bits |= this->getEventTriggerBit_TagProbe(0,true);
+      bits |= this->getEventTriggerBit_TagProbe(0,false);
+    }else{
+      bits |= this->getEventTriggerBit(150000+1);
+      bits |= this->getEventTriggerBit(170054+1);
+      bits |= this->getEventTriggerBit_SCtoGSF(0);
+      bits |= this->getEventTriggerBit_TagProbe(0,true);
+      bits |= this->getEventTriggerBit_TagProbe(165088+1,true);
+      bits |= this->getEventTriggerBit_TagProbe(0,false);
+      bits |= this->getEventTriggerBit_TagProbe(165088+1,false);
+    }
     _isData=keepIsData;
     return bits;
   }
@@ -279,58 +307,83 @@ class TriggerSelection{
   ULong_t getEventTriggerBit(UInt_t run) const {
     if (run==0) run=_run;
     ULong_t result = 0;
-    // -- old remark:
+
+    // Triggers for 2011 (7 TeV) and 2012 (8 TeV) are different
+    if( DYTools::energy8TeV == 1){
+      // 8 TeV triggers
+      result = Triggers2012::kHLT_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL;
+    }else{
+      // 7 TeV triggers
+      //
+      // -- old remark:
       // Note: data and MC are the same
       // Note: the trigger
       //     Triggers2011::kHLT_Ele17_CaloIdT_Calo_IsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL;
       // is packed into the same bit as the trigger
       //     Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL
       // the difference between the two is only in the name rearrangement
-    // -- end of old remark
-    if ( !_isData ) {
-      result = (Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL |
-		Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL);
-    }
-    else {
-      if(validRun(run)) {
-	if( run >= 150000 && run <= 170053)
-	  result = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL;
-	else if (run >= 170054)
-	  result = Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL;
+      // -- end of old remark
+      if ( !_isData ) {
+	result = (Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL |
+		  Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL);
       }
-    }
+      else {
+	if(validRun(run)) {
+	  if( run >= 150000 && run <= 170053)
+	    result = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL;
+	  else if (run >= 170054)
+	    result = Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL;
+	}
+      }
+    } // end if 7 or 8 TeV
     return result;
   };
 
   ULong_t getLeadingTriggerObjectBit(UInt_t run) const { // no check whether the run is ok!
     if (run==0) run=_run;
     ULong_t result = 0;
-    if (!_isData) {
-      result = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj |
-	Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
-    }
-    else {
-      if( run >= 150000 && run <= 170053)
-	result = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj;
-      else if(run >= 170054)
-	result = Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
-    }
+
+    // Triggers for 2011 (7 TeV) and 2012 (8 TeV) are different
+    if( DYTools::energy8TeV == 1){
+      // 8 TeV triggers
+      result = Triggers2012::kHLT_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele1Obj;
+    }else{
+      // 7 TeV triggers
+      if (!_isData) {
+	result = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj |
+	  Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
+      }
+      else {
+	if( run >= 150000 && run <= 170053)
+	  result = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj;
+	else if(run >= 170054)
+	  result = Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
+      }
+    } // end if 7 or 8 TeV
     return result;
   };
 
   ULong_t getTrailingTriggerObjectBit(UInt_t run) const { // no check whether the run is ok!
     if (run==0) run=_run;
     ULong_t result = 0;
-    if (!_isData) {
-      result = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj |
-	Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
-    }
-    else {
-      if( run >= 150000 && run <= 170053)
-	result = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj;
-      else if(run >= 170054)
-	result = Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
-    }
+
+    // Triggers for 2011 (7 TeV) and 2012 (8 TeV) are different
+    if( DYTools::energy8TeV == 1){
+      // 8 TeV triggers
+      result = Triggers2012::kHLT_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele2Obj;
+    }else{
+      // 7 TeV triggers
+      if (!_isData) {
+	result = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj |
+	  Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+      }
+      else {
+	if( run >= 150000 && run <= 170053)
+	  result = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj;
+	else if(run >= 170054)
+	  result = Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+      }
+    } // end if 7 or 8 TeV
     return result;
   };
 
@@ -338,58 +391,95 @@ class TriggerSelection{
 
   ULong_t getEventTriggerBit_SCtoGSF(UInt_t run) const {
     if (_isData && !validRun(run)) return 0UL;
-    ULong_t bits=
-      Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30;
+    ULong_t bits=0UL;
+   
+    // Triggers for 2011 (7 TeV) and 2012 (8 TeV) are different
+    if( DYTools::energy8TeV == 1){
+      // 8 TeV triggers
+      bits = Triggers2012::kHLT_Ele20_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC4_Mass50;
+    }else{
+      // 7 TeV triggers
+      bits = Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30;
 // 	Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
 //         Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17  |                // <--- added from eff_Reco.C
 //         Triggers2011::kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17;
 //
       //Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
       //Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17                     // was defined in eff_Reco.C for 2011A(early)
+
+    } // end 7 or 8 TeV
     return bits;
   }
 
   ULong_t getLeadingTriggerObjectBit_SCtoGSF(int) const { // no check whether the run is ok!
-    ULong_t bits=
-      Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj;
+    ULong_t bits=0UL;
+
+    // Triggers for 2011 (7 TeV) and 2012 (8 TeV) are different
+    if( DYTools::energy8TeV == 1){
+      // 8 TeV triggers
+      bits = Triggers2012::kHLT_Ele20_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC4_Mass50_EleObj;
+    }else{
+      // 7 TeV triggers
+      
+      bits = Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj;
 // 	Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
 //         Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj   |             //   <--- added from eff_Reco.C
 //     	Triggers2011::kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17_EleObj;
 //
       //Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
       //Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj                     // was defined in eff_Reco.C for 2011A(early)
+
+    } // end 7 or 8 TeV
     return bits;
   }
 
   ULong_t getEventTriggerBit_TagProbe(UInt_t run, bool idEffTrigger) const {
     if (_isData && !validRun(run)) return 0UL;
-    ULong_t bits=
-      Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30;
+    ULong_t bits=0UL;
+
+    // Triggers for 2011 (7 TeV) and 2012 (8 TeV) are different
+    if( DYTools::energy8TeV == 1){
+      // 8 TeV triggers
+      bits = Triggers2012::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass50
+	| Triggers2012::kHLT_Ele20_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC4_Mass50;
+    }else{
+      // 7 TeV triggers
+      bits = Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30;
       //
 //       Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
 //       Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17 |             // <---- added from eff_IdHlt.C
 //       Triggers2011::kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17;
-    //
-    //	Triggers2011::kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_Ele17;      <---------- unknown (Jan 26, 2012)
-    //Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
-    //Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17                     // was defined in eff_IdHlt.C for 2011A(early)
-    if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
-      bits |= Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30;
-    }
+      //
+      //	Triggers2011::kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_Ele17;      <---------- unknown (Jan 26, 2012)
+      //Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30 | 
+      //Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17                     // was defined in eff_IdHlt.C for 2011A(early)
+      if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
+	bits |= Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30;
+      }
+    } // end if 7 or 8 TeV
     return bits;
   }
 
   ULong_t getTagTriggerObjBit(UInt_t run, bool idEffTrigger) const { // no check whether the run is ok!
-    ULong_t bits=
-      Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj;
+    ULong_t bits=0UL;
+
+    // Triggers for 2011 (7 TeV) and 2012 (8 TeV) are different
+    if( DYTools::energy8TeV == 1){
+      // 8 TeV triggers
+      bits = Triggers2012::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass50_Ele1Obj
+	| Triggers2012::kHLT_Ele20_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC4_Mass50_EleObj;
+    }else{
+      // 7 TeV triggers
+      bits = Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj;
       //Triggers2011::kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_SC17_EleObj;
       //Triggers2011::kHLT_Ele32_CaloIdT_CaloIsoT_TrkIdT_TrkIsoT_Ele17_EleObj;  <------------- unknown (Jan 26, 2012)
-    //Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
-    //Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj                 // was defined in eff_IdHlt.C for 2011A(early)
-    //bits |= Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj;   // was defined in ieff_idHlt.C
-    if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
-      bits |= Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
-    }
+      //Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_SC8_Mass30_EleObj | 
+      //Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj                 // was defined in eff_IdHlt.C for 2011A(early)
+      //bits |= Triggers2011::kHLT_Ele32_CaloIdL_CaloIsoVL_SC17_EleObj;   // was defined in ieff_idHlt.C
+      if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
+	bits |= Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
+      }
+    } // end if 7 or 8 TeV
     return bits;
   }
 
@@ -399,31 +489,54 @@ class TriggerSelection{
     // The probe trigger object bit must match the kind for which
     // we are going to measure the trigger efficiency, i.e. the signal
     // trigger.
-    ULong_t bits= Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj |
-      Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
+    ULong_t bits= 0UL;
 
-    // THE CODE BELOW IS COMMENTED OUT. The code below appears a mistake.
-    // We want to get the bit of the signal trigger in this function, not
-    // of the tag and probe trigger.
+    // Triggers for 2011 (7 TeV) and 2012 (8 TeV) are different
+    if( DYTools::energy8TeV == 1){
+      // 8 TeV triggers
+      bits = Triggers2012::kHLT_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele1Obj;
+    }else{
+      // 7 TeV triggers
+
+      bits = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele1Obj |
+	Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele1Obj;
+      
+      // THE CODE BELOW IS COMMENTED OUT. The code below appears a mistake.
+      // We want to get the bit of the signal trigger in this function, not
+      // of the tag and probe trigger.
 //     if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
 //       // Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 is DoubleEG in Fall11 MC
 //       bits |= Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele1Obj;
 //     }
+    } // end if 7 or 8 TeV
     return bits;
   }
 
   ULong_t getProbeTriggerObjBit_Loose(UInt_t run, bool idEffTrigger) const { // no check whether the run is ok!
     if (0) std::cout << "getProbeTriggerObjBit_Loose(" << run << "," <<  idEffTrigger << ")\n";
-   ULong_t bits= Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj |
-     Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
 
-    // THE CODE BELOW IS COMMENTED OUT. The code below appears a mistake.
-    // We want to get the bit of the signal trigger in this function, not
-    // of the tag and probe trigger.
+    // The probe trigger object bit must match the kind for which
+    // we are going to measure the trigger efficiency, i.e. the signal
+    // trigger.
+    ULong_t bits= 0UL;
+
+    // Triggers for 2011 (7 TeV) and 2012 (8 TeV) are different
+    if( DYTools::energy8TeV == 1){
+      // 8 TeV triggers
+      bits = Triggers2012::kHLT_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele2Obj;
+    }else{
+      // 7 TeV triggers
+      bits = Triggers2011::kHLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_Ele2Obj |
+	Triggers2011::kHLT_Ele17_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele8_CaloIdT_TrkIdVL_CaloIsoVL_TrkIsoVL_Ele2Obj;
+
+      // THE CODE BELOW IS COMMENTED OUT. The code below appears a mistake.
+      // We want to get the bit of the signal trigger in this function, not
+      // of the tag and probe trigger.
 //    if (_isData && (((run>=165088) && (run<=170759)) || idEffTrigger)) {
 //       // Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30 is DoubleEG in Fall11 MC
 //      bits |= Triggers2011::kHLT_Ele17_CaloIdVT_CaloIsoVT_TrkIdT_TrkIsoVT_Ele8_Mass30_Ele2Obj;
 //     }
+    } // end if 7 or 8 TeV
     return bits;
   }
 

@@ -760,12 +760,15 @@ void applyUnfoldingToMc(int fsr) { //TString fullUnfoldingConstFileName, TString
   }
 
   int saveTestRes=0;
+  TString triggerSetName = "Full2012_hltEffOld";
+  if( DYTools::energy8TeV != 1)
+    triggerSetName = "Full2011_hltEffOld";
   if (fsrCorrection_BinByBin!=_fsrCorr_binByBin) {
     switch(fsr) {
     case 0:
       {
 	saveTestRes=1;
-	TriggerSelection triggers("Full2011_hltEffOld",true,0);
+	TriggerSelection triggers(triggerSetName,true,0);
 	TMatrixD mIni(DYTools::nMassBins,nMaxYBins);
 	mIni=0;
 	TMatrixD mIniErr=mIni, mIniSystErr=mIni;
@@ -792,7 +795,7 @@ void applyUnfoldingToMc(int fsr) { //TString fullUnfoldingConstFileName, TString
     case 3:
     case 4: {
       saveTestRes=1;
-      TriggerSelection triggers("Full2011_hltEffOld",true,0);
+      TriggerSelection triggers(triggerSetName,true,0);
       TMatrixD mIni(DYTools::nMassBins,nMaxYBins);
       mIni=0;
       TMatrixD mIniErr=mIni, mIniSystErr=mIni;
