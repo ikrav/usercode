@@ -27,7 +27,7 @@ if [ ${#mcConfInputFile} -eq 0 ] ; then
     mcConfInputFile="../config_files/fall11mcT3.input" 
 fi
 if [ ${#xsecConfInputFile} -eq 0 ] ; then
-    xsecConfInputFile="../config_files/xsecCalc.conf"
+    xsecConfInputFile="../config_files/xsecCalc8TeV.conf"
 fi
 
 # check whether the full run was requested, overriding internal settings

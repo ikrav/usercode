@@ -35,7 +35,7 @@ if [ ${#triggerSet} -eq 0 ] ; then
     triggerSet="Full2012_hltEffOld"
 fi
 if [ ${#mcConfInputFile} -eq 0 ] ; then
-    mcConfInputFile="../config_files/fall11mc.input" # used in CalcEventEff.C
+    mcConfInputFile="../config_files/summer12mc.input" # used in CalcEventEff.C
 fi
 if [ ${#tnpDataFile} -eq 0 ] ; then
   tnpDataFile="../config_files/sf_data.conf"   # file for eff_*.C

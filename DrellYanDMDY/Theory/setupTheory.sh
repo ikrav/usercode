@@ -9,7 +9,7 @@ if [ "$2" == "-debug" ] ; then
 fi
 
 if [ ${#mcInput} -eq 0 ] ; then
-    mcInput="../config_files/fall11mc.input"
+    mcInput="../config_files/summer12mc.input"
 fi
 
 # acceptance correction theoretical uncertainty used in 2011 summer

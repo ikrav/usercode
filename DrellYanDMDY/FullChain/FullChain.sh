@@ -11,9 +11,9 @@
 
 anTagUser=
 anTag="2D${anTagUser}"      # 1D or 2D plus analysisTag_USER, see DYTools.hh
-filename_data="../config_files/data.conf"
-filename_mc="../config_files/fall11mc.input"
-filename_cs="../config_files/xsecCalc.conf"
+filename_data="../config_files/data8TeV.conf"
+filename_mc="../config_files/summer12mc.input"
+filename_cs="../config_files/xsecCalc8TeV.conf"
 triggerSet="Full2012_hltEffOld"        # for primary 7 TeV result change to Full2011_hltEffOld
 fsrUnfSet="_fsrUnfGood"
 fsrPUReweight=1   # makeUnfoldingMatrixFsr
@@ -21,7 +21,7 @@ fsrPUReweight=1   # makeUnfoldingMatrixFsr
 #tnpMCFile="../config_files/sf_mc_eta2.conf"
 #tnpDataFile="../config_files/sf_data_eta2.conf"
 
-tnpTag="et6alt_eta4test_20120801"
+#tnpTag="et6alt_eta4test_20120801"
 #   default would be: "eta2"
 tnpTag="et6_eta5"
 
@@ -31,8 +31,8 @@ tnpTag="et6_eta5"
 tnpFullRun_eval="1111111"
 tnpFullRun_recalc="1111111"
 
-tnpMCFile="../config_files/sf_mc_${tnpTag}.conf"
-tnpDataFile="../config_files/sf_data_${tnpTag}.conf"
+tnpMCFile="../config_files/sf_8TeV_mc_${tnpTag}.conf"
+tnpDataFile="../config_files/sf_8TeV_data_${tnpTag}.conf"
 debugMode=0
 
 ## controlling your work
@@ -51,32 +51,32 @@ force_rebuild_include_files=0
 # individual flags. 
 # Note: all the above flags have to be 0 for these individual flags 
 # to be effective
-do_selection=0
-do_prepareYields=0
-do_subtractBackground=0
+do_selection=1
+do_prepareYields=1
+do_subtractBackground=1
 do_unfolding=0
-do_unfoldingFsr=0
+do_unfoldingFsr=1
 do_unfoldingSyst=0    # long calculation!  (also, some steps are skipped)
-do_acceptance=0
-do_acceptanceSyst=0
-do_efficiency=0
-do_plotFSRCorrections=0
-do_plotFSRCorrectionsSansAcc=0
-do_setupTheory=0
+do_acceptance=1
+do_acceptanceSyst=1
+do_efficiency=1
+do_plotFSRCorrections=1
+do_plotFSRCorrectionsSansAcc=1
+do_setupTheory=1
 do_crossSection=0
-do_crossSectionFsr=0
-do_plotXSec=0
+do_crossSectionFsr=1
+do_plotXSec=1
 
 #          check EventScaleFactors/*sh script settings! 
 #          long calculation!
-do_efficiencyScaleFactors=0
+do_efficiencyScaleFactors=1
 
-do_escaleSystematics=0  # very long calculation!
+do_escaleSystematics=1  # very long calculation!
 
 
 
 # the variables below are more persistent
-crossSectionTag="DY_m10+pr+a05+o03+pr_4839pb"
+crossSectionTag="DY_j13+a06+j13+a24+pr+cec+pr_19610pb"
 expectSelectedEventsFile="../root_files/selected_events/${crossSectionTag}/ntuples/zee${anTagUser}_select.root"
 expectSelectedEventsFile2="../root_files/selected_events/${crossSectionTag}/npv${anTagUser}.root"
 expectYieldsFile="../root_files/yields/${crossSectionTag}/yields${anTag}.root"
@@ -146,7 +146,7 @@ fi
 if [ ${do_post_selection_steps} -eq 1 ] ; then
     do_prepareYields=1
     do_subtractBackground=1
-    do_unfolding=1
+    do_unfolding=0
     do_unfoldingFsr=1
     do_unfoldingSyst=1  # long calculation
     do_acceptance=1

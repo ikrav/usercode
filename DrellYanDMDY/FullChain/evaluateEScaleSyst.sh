@@ -19,9 +19,9 @@ _debugMode=$6
 
 extraPath="./"
 debugMode=0
-dirTag="DY_m10+pr+a05+o03+pr_4839pb";
-sourceConfigFile="../config_files/data.conf"       # needed to prepare yields
-mcConfInputFile="../config_files/fall11mc.input"   # needed for unfolding
+dirTag="DY_j13+a06+j13+a24+pr+cec+pr_19610pb";
+sourceConfigFile="../config_files/data8TeV.conf"       # needed to prepare yields
+mcConfInputFile="../config_files/summer12mc.input"   # needed for unfolding
 tmpConfFilePath="../config_files/escale"
 
 anTagUser=""

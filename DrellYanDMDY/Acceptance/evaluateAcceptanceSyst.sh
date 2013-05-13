@@ -1,7 +1,6 @@
 #!/bin/bash
 
-mcConfInputFile="../config_files/fall11mc.input" 
-#mcConfInputFile="../config_files/fall11mc_evtTrig.input" 
+mcConfInputFile="../config_files/summer12mc.input" 
 debugMode=1
 
 if [ ${#1} -gt 0 ] ; then mcConfInputFile=$1; fi
@@ -15,10 +14,10 @@ if [ ${#2} -gt 0 ] ; then debugMode=$2; fi
 #    triggerSet="Full2011_hltEffNew"  # not used in this script yet
 #fi
 if [ -s {mcConfInputFile} ] || [ ${#mcConfInputFile} -eq 0 ] ; then
-    mcConfInputFile="../config_files/fall11mc.input" 
+    mcConfInputFile="../config_files/summer12mc.input" 
 fi
 if [ -s ${xsecConfInputFile} ] || [ ${#xsecConfInputFile} -eq 0 ] ; then
-    xsecConfInputFile="../config_files/xsecCalc.conf"
+    xsecConfInputFile="../config_files/xsecCalc8TeV.conf"
 fi
 if [ -s ${debugMode} ] || [ ${#debugMode} -eq 0 ] ; then
     debugMode=0
