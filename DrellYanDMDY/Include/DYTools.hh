@@ -42,8 +42,11 @@ namespace DYTools {
   const double etMinTrail = 10;
 
   //const TString strLumiAtECMS="4.7 fb^{-1} at #sqrt{s} = 7 TeV";
-  const TString strLumiAtECMS="4.8 fb^{-1} at #sqrt{s} = 7 TeV";
-  const double lumiAtECMS=4839.;
+//   const TString strLumiAtECMS="4.8 fb^{-1} at #sqrt{s} = 7 TeV";
+//   const double lumiAtECMS=4839.;
+//   const double lumiAtECMS_accuracy=1.;
+  const TString strLumiAtECMS="19.6 fb^{-1} at #sqrt{s} = 7 TeV";
+  const double lumiAtECMS=19610.;
   const double lumiAtECMS_accuracy=1.;
 
 
