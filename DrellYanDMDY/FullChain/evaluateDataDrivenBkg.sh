@@ -14,7 +14,7 @@ reselectEvents=1   # change of study2D does not require reselection, in general
 
 #extraPath="../"
 extraPath="./"
-dirTag="DY_j13+a06+j13+a24+pr+cec+pr_19610pb";
+dirTag="DY_j22_19789pb";
 workConfFile="../config_files/data_emu.conf"    # needed to select events
 
 anTagUser="" #"ymax9"
