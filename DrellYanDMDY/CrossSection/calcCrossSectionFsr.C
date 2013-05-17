@@ -65,7 +65,7 @@ const int doClosureTest=1;
 const TFsrCorrectionType_t fsrCorrection_BinByBin=_fsrCorr_unfGood;
 const int useExactVectorsForMcClosureTest=0;
 // Use externally provided errors on norm x-sec, or internally calcylated 13-bin sum from 60 to 120 GeV
-const int use1binErrorsForNorm=1;   
+const int use1binErrorsForNorm=0;   
 
 
 const int printFSRcorrectionTable=0;
