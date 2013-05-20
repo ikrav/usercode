@@ -1,0 +1,54 @@
+
+This README explains the usage of the copy*EOS*.sh scripts.
+
+copyLocalToRemoteEOS.sh - copy a local file at home institution to remote CERN EOS using xrdcp
+
+copyRemoteEOSToLocal.sh - copy a remote CERN EOS file to local directory at home institution using xrdcp
+
+copyLocalToLocalEOS.sh - copy local file to EOS on lxplus at CERN. eos tools are used.
+
+All of these scripts first check that all source files exist, and 
+none of the targets exist. 
+ If at least one source does not exist, or at least one target exists, none of the
+files are copied.
+ After the copy is done, the copy success is verified by comparing the file sizes
+between the target and the source.
+
+
+--------------
+Inputs needed:
+--------------
+
+   A plain text file with the list of file names to be copied (no path, just file names)
+For example:
+-bash-3.2$ cat ~/file_list_test.txt
+test1.txt
+test2.txt
+-bash-3.2$ 
+
+--------------
+Preparation:
+--------------
+
+  Change several variables inside of the script you want to use:
+
+    flist - points to a file with the list of files to be copied, as above
+
+    variables targetDirEOS or sourceDirEOS, and targetDirLocal or sourceDirLocal,
+       as appropriate
+
+    As of this writing, the *DirEOS is
+       /eos/cms/store/group/phys_smp/DYToEE_diff_xsec/ntuples/53X/
+
+--------------
+Usage:
+--------------
+
+ No parameters, just execute the script.
+
+ Note that for copyLocalToRemoteEOS.sh and copyRemoteEOSToLocal.sh
+one needs to use grid certificate, and therefore execute something
+like 
+   grid-proxy-init
+ 
+ For the local-to-local script copyLocalToLocalEOS.sh this is not needed.
