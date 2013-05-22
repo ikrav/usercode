@@ -1,5 +1,6 @@
 #include "../Include/PUReweight.hh"
 #include "assert.h"
+#include "../Include/DYTools.hh"
 
 // --------------------------------------------------------------
 PUReweight_t::PUReweight_t(TReweightMethod_t method):
@@ -74,6 +75,9 @@ int PUReweight_t::initializeHildrethWeights(){
   // the gen-level quantity.
 
   TString ftargetName = "../root_files/pileup/dataPileupHildreth_full2011_20121110_repacked.root";
+  if( DYTools::energy8TeV == 1 ){
+    ftargetName = "../root_files/pileup/8TeV/dataPileupHildreth_full2012_20130521_repacked.root";
+  }
   TFile f1(ftargetName);
   if( ! f1.IsOpen()){
     printf("Failed to find the target for Hildreth's PU reweighting\n");
@@ -90,6 +94,9 @@ int PUReweight_t::initializeHildrethWeights(){
   }
 
   TString fsourceName = "../root_files/pileup/mcPileupHildreth_full2011_20121110_repacked.root";
+  if( DYTools::energy8TeV == 1 ){
+    fsourceName = "../root_files/pileup/8TeV/mcPileupHildreth_full2012_20130521_repacked.root";
+  }
   TFile f2(fsourceName);
   if( ! f2.IsOpen()){
     printf("Failed to find the source for Hildreth's PU reweighting\n");

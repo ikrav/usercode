@@ -13,6 +13,7 @@
 #include <TBranch.h>
 
 #include "../Include/PUReweight.hh"
+#include "../Include/DYTools.hh"
 
 // ------------------------------------------------------
 
@@ -153,15 +154,22 @@ int CreatePUWeightedBranch(const TString &fName,
 
   // Set up pile-up reweighting
   PUReweight_t puReweight;
-  // Only MC will be reweighted. It is reweighted to the 
-  // tag and probe data sample. The method is not the plain
-  // Hildreth method for 2011 because in 2011 tag and probe
-  // triggers are prescaled, so a specially prepared 
-  // "target" histogram is used.
+  // Only MC will be reweighted. 
   if( isMC ){
-    puReweight.setActiveMethod(PUReweight_t::_TwoHistos);
-    puReweight.setSimpleWeights( puTargetFName, puTargetDistrName,
-				 puSourceFName, puSourceDistrName);
+    if( DYTools::energy8TeV == 1){
+      // For 8 TeV, standard Hildreth weights are used.
+      // The method does not need to be set because above
+      // it is set in the constructor by default.
+    }else{
+      // For 7 TeV, tt is reweighted to the 
+      // tag and probe data sample. The method is not the plain
+      // Hildreth method for 2011 because in 2011 tag and probe
+      // triggers are prescaled, so a specially prepared 
+      // "target" histogram is used.
+      puReweight.setActiveMethod(PUReweight_t::_TwoHistos);
+      puReweight.setSimpleWeights( puTargetFName, puTargetDistrName,
+				   puSourceFName, puSourceDistrName);
+    }
   }
 
   // COMMENTED OUT BELOW: THE PREVIOIS VERSION WHERE BOTH T&P
@@ -186,14 +194,22 @@ int CreatePUWeightedBranch(const TString &fName,
 
   // Print everything
   if( isMC ){
-    printf("PU reweight info: this is MC. The weights are prepared based on:\n");
-    printf("  target (reference) histo= %s   from file= %s\n", 
-	   puTargetDistrName.Data(),puTargetFName.Data());
-    printf("  source (active)    histo= %s   from file= %s\n", 
-	   puSourceDistrName.Data(),puSourceFName.Data());
+    if( DYTools::energy8TeV == 1 ){
+      printf("PU reweight info: this is MC. The weights are standard Hildreth weights.\n");
+    }else{
+      printf("PU reweight info: this is MC. The weights are prepared based on:\n");
+      printf("  target (reference) histo= %s   from file= %s\n", 
+	     puTargetDistrName.Data(),puTargetFName.Data());
+      printf("  source (active)    histo= %s   from file= %s\n", 
+	     puSourceDistrName.Data(),puSourceFName.Data());
+    }
     for(int i=1; i<=45; i++){
       double ww = 0;
-      ww = puReweight.getWeightTwoHistos(i);
+      if( DYTools::energy8TeV ){
+	ww = puReweight.getWeightHildreth(i);
+      }else{
+	ww = puReweight.getWeightTwoHistos(i);
+      }
       printf("   PU=%3d     weight= %f\n", i, ww);
     }
   }else{
@@ -245,7 +261,11 @@ int CreatePUWeightedBranch(const TString &fName,
       evWeightBr->GetEntry(i);
       // For MC, apply PU weights
       if(isMC){
-	pvWeight=evWeight * puReweight.getWeightTwoHistos(nGoodPV);
+	if( DYTools::energy8TeV == 1 ){
+	  pvWeight=evWeight * puReweight.getWeightHildreth(nGoodPV);
+	}else{
+	  pvWeight=evWeight * puReweight.getWeightTwoHistos(nGoodPV);
+	}
       }else{
 	pvWeight=evWeight;
       }

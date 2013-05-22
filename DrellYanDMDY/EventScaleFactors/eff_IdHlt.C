@@ -275,24 +275,36 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 
   // The source/target histograms are unbiased pile-up distributions
   // for data(target) and MC(source) prepared according to Hildreth's instructions.
-  // The data histogram for TnP takes into account TnP trigger prescales.
+  // Note: for 7 TeV, the data histogram for TnP takes into account TnP trigger prescales
+  // and the corresponding file is non-standard, so the name is set below.
+  // For 8 TeV, these names are blank and the default Hildreth method is used.
   TString puTargetFName = "";
-  if (effType==DYTools::HLT) {
-    // HLT efficiency source file
-    puTargetFName = "../root_files/pileup/dataPileupHildreth_full2011_TnP_HLT_20121118_repacked.root";
-  } else {
-    // ID efficiency source file
-    puTargetFName = "../root_files/pileup/dataPileupHildreth_full2011_TnP_ID_20121118_repacked.root";
+  TString puSourceFName = "";
+  if( DYTools::energy8TeV==1 ){
+    puTargetFName = "undefined";
+  }else{
+    if (effType==DYTools::HLT) {
+      // HLT efficiency source file
+      puTargetFName = "../root_files/pileup/dataPileupHildreth_full2011_TnP_HLT_20121118_repacked.root";
+    } else {
+      // ID efficiency source file
+      puTargetFName = "../root_files/pileup/dataPileupHildreth_full2011_TnP_ID_20121118_repacked.root";
+    }
+    puSourceFName = "../root_files/pileup/mcPileupHildreth_full2011_20121110_repacked.root";
   }
-  TString puSourceFName = "../root_files/pileup/mcPileupHildreth_full2011_20121110_repacked.root";
   
   if (performPUReweight) {
-    TFile tmpFile(puTargetFName);
-    int npvOk=tmpFile.IsOpen();
-    tmpFile.Close();
-    if (!npvOk) {
-      std::cout << "the file needed of PV-reweighting, <" << puTargetFName << "> does not exist. Run selectEvents.C first\n";
-      assert(0);
+    if( DYTools::energy8TeV ){
+      // Do not do the check for 8 TeV where the custom files are not used
+    }else{
+      // Check file existance for 7 TeV
+      TFile tmpFile(puTargetFName);
+      int npvOk=tmpFile.IsOpen();
+      tmpFile.Close();
+      if (!npvOk) {
+	std::cout << "the file needed of PV-reweighting, <" << puTargetFName << "> does not exist. Run selectEvents.C first\n";
+	assert(0);
+      }
     }
   }
 
@@ -782,6 +794,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
       TString("/npv_tnp") + effTypeString + TString("_") + 
       sampleTypeString + DYTools::analysisTag + TString(".root");
     //
+    // The names below are actually used for 7 TeV data/MC.
+    // For 8 TeV, they are not used.
     TString puTargetDistrName="pileup_lumibased_data";
     TString puSourceDistrName="pileup_simulevel_mc";
 //     TString refDistribution="hNGoodPV_data";

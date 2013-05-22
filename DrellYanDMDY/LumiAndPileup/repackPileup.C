@@ -17,7 +17,9 @@ enum SAMPLE {
   GENERAL_MC   = 1,
   TNP_RECO     = 2,
   TNP_ID       = 3,
-  TNP_HLT      = 4
+  TNP_HLT      = 4,
+  GENERAL_DATA_8TEV = 5,
+  GENERAL_MC_8TEV = 6
 };
 
 enum SYSTEMATICS {
@@ -28,11 +30,33 @@ enum SYSTEMATICS {
 
 void repackPileup(int sample, int systematics_flag = DEFAULT){
 
+  bool is8TeV = false;
+  if( sample == GENERAL_DATA_8TEV || sample == GENERAL_MC_8TEV ){
+    is8TeV = true;
+  }
+
   int nbins;
   double lowEdge, upEdge;
+
+  int nbinsExpected = 50;
+  double lowEdgeExpected = 0;
+  double upEdgeExpected = 50;
+  if( is8TeV ){
+    nbinsExpected = 100;
+    lowEdgeExpected = 0;
+    upEdgeExpected = 100;
+  }
+
   int nbinsnew = 46;
   double lowEdgeNew = -0.5;
   double upEdgeNew = 45.5;
+  if( is8TeV ){
+    nbinsnew = 100;
+    lowEdgeNew = -0.5;
+    upEdgeNew = 99.5;
+  }
+
+  // 
 
   TString fname;
   TString fnameNew;
@@ -57,7 +81,16 @@ void repackPileup(int sample, int systematics_flag = DEFAULT){
     fname    = "../root_files/pileup/tmp/dataPileupHildreth_full2011_TnP_HLT_20130214";
     fnameNew = "../root_files/pileup/dataPileupHildreth_full2011_TnP_HLT_20130214_repacked";
     outputHistName = "pileup_lumibased_data";
+  }else if( sample == GENERAL_DATA_8TEV ){
+    fname    = "../root_files/pileup/8TeV/dataPileupHildreth_full2012_20130521";
+    fnameNew = "../root_files/pileup/8TeV/dataPileupHildreth_full2012_20130521_repacked";
+    outputHistName = "pileup_lumibased_data";
+  }else if( sample == GENERAL_MC_8TEV ){
+    fname    = "../root_files/pileup/8TeV/mcPileupHildreth_full2012_20130521";
+    fnameNew = "../root_files/pileup/8TeV/mcPileupHildreth_full2012_20130521_repacked";
+    outputHistName = "pileup_simulevel_mc";
   }
+  
   if( systematics_flag == PLUS_5_PERCENT ){
     fname += "_plus5percent";
     fnameNew += "_plus5percent";
@@ -83,7 +116,8 @@ void repackPileup(int sample, int systematics_flag = DEFAULT){
   nbins = hist1->GetNbinsX();
   lowEdge = hist1->GetXaxis()->GetBinLowEdge(1);
   upEdge  = hist1->GetXaxis()->GetBinUpEdge(nbins);
-  if( ! (nbins == 50 && lowEdge == 0.0 && upEdge == 50.0) )
+  if( ! (nbins == nbinsExpected && lowEdge == lowEdgeExpected 
+	 && upEdge == upEdgeExpected) )
     assert(0);
 
   // Create and fill a new histogram

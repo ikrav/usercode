@@ -1,3 +1,8 @@
+
+Note: this file is written for 7 TeV and later updated with
+information relevant for 8 TeV. See end of this file for 8 TeV
+specific notes.
+
   Some information regarding the official CMS prescription for
 pile-up reweighting and associated systematics is found here:
 https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJSONFileforData
@@ -172,4 +177,48 @@ by factors 1.05 and 0.95. All subsequent steps after pileupCalc.py
 have to be repeated as well. With the two new sets of distributions
 for pile-up reweighting, the analysis needs to be repeated.
 
+------------------------------------------
+  8 TeV pile-up
+------------------------------------------
 
+The procedure described above remains the same.
+The only difference is that no special arrangements for
+tag and probe are needed, since tag and probe triggers
+have constant prescales throughout 2012.
+
+Some 8 TeV specific inputs:
+
+pick up the following file from lxplus:
+
+   /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions12/8TeV/PileUp/pileup_JSON_DCSONLY_190389-208686_corr.txt
+
+Go to your release with CMSSW and RecoLuminosity/LumiDB
+of the right version, set up cmsenv.
+
+Command that prepares pile-up distribution for data
+(note that JSON here is the exact JSON for the data we are using)
+
+
+pileupCalc.py -i Cert_190456-208686_8TeV_22Jan2013ReReco_Collisions12_JSON.txt \
+                      --inputLumiJSON pileup_JSON_DCSONLY_190389-208686_corr.txt \
+                      --calcMode observed --minBiasXsec 69400 --maxPileupBin 50 \
+                      --numPileupBins 50  MyDataPileupHistogram.root
+
+Run it two more times with inelastic cross section +5% and -5% for later systematics
+studies.
+
+pileupCalc.py -i Cert_190456-208686_8TeV_22Jan2013ReReco_Collisions12_JSON.txt \
+                      --inputLumiJSON pileup_JSON_DCSONLY_190389-208686_corr.txt \
+                      --calcMode observed --minBiasXsec 72870 --maxPileupBin 50 \
+                      --numPileupBins 50  MyDataPileupHistogram_xsup.root
+
+pileupCalc.py -i Cert_190456-208686_8TeV_22Jan2013ReReco_Collisions12_JSON.txt \
+                      --inputLumiJSON pileup_JSON_DCSONLY_190389-208686_corr.txt \
+                      --calcMode observed --minBiasXsec 65930 --maxPileupBin 50 \
+                      --numPileupBins 50  MyDataPileupHistogram_xsdown.root
+
+
+As of this writing, we are using not the "mean"/"true" value of pile-up
+but the "observed"/"generated" number. (Notice, elgl, the "observed" calcMode
+above in pileupCalc.py command line, and nPU in the ntuples is the "generated" number). 
+The difference is explained in the  twiki with instructions about how to do it.

@@ -277,7 +277,15 @@ void selectEvents(const TString conf,
     sprintf(hname,"hMass3_%i",isam);  hMass3v.push_back(new TH1F(hname,"",50,0,500));   hMass3v[isam]->Sumw2();
     sprintf(hname,"hy_%i",isam);      hyv.push_back(new TH1F(hname,"",20,-3,3));        hyv[isam]->Sumw2();
 #ifndef usePUReweight
-    sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());       hNGoodPVv.push_back(new TH1F(hname,"",46,-0.5,45.5));        hNGoodPVv[isam]->Sumw2();
+    // Hardwired numbers here is a bad idea, since it may correlate
+    // with PU reweighting. It is not clear if we will ever use these histograms
+    // for PU reweighting, but it is good to keep this consistent with the
+    // binning found in the reference histograms used by PUReweight class, see Include/PUReweight.hh/cc
+    if( DYTools::energy8TeV == 1 ){
+      sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());       hNGoodPVv.push_back(new TH1F(hname,"",100,-0.5,99.5));       hNGoodPVv[isam]->Sumw2();
+    }else{
+      sprintf(hname,"hNGoodPV_%s",snamev[isam].Data());       hNGoodPVv.push_back(new TH1F(hname,"",46,-0.5,45.5));        hNGoodPVv[isam]->Sumw2();
+    }
 #endif
     
     nSelv.push_back(0);
