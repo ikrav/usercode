@@ -35,8 +35,11 @@ namespace mithep
       Float_t scEt_1, scEta_1;
       Float_t scEt_2, scEta_2;
       Float_t scMass;
+      
+      Float_t pxtot, pytot, pztot;       // Total event px, py, pz from all final state (status=1) particles; should be (near) zero
+      Float_t deltaE;                    // Difference between total final particle energy and pp collision energy; should be (near) zero
       	  
-    ClassDef(TGenInfo,2)
+    ClassDef(TGenInfo,3)
   };
 }
 #endif
