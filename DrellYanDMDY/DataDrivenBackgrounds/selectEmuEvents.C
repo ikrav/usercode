@@ -185,8 +185,10 @@ void selectEmuEvents(const TString conf,
   
   Bool_t hasData = (samplev[0]->fnamev.size()>0);
 
-  const Double_t kGAP_LOW  = 1.4442;
-  const Double_t kGAP_HIGH = 1.566;
+  // Commented out by ikrav: seems not used, and should not be used anyways,
+  // all eta cuts should be done through DYTools.hh functions
+//   const Double_t kGAP_LOW  = 1.4442;
+//   const Double_t kGAP_HIGH = 1.566;
     
   //
   // Canvas dimensions
@@ -401,9 +403,9 @@ void selectEmuEvents(const TString conf,
         /*ULong_t eventTriggerBit = kHLT_Mu17_Ele8_CaloIdL_MuObj | kHLT_Mu17_Ele8_CaloIdL_EGObj 
 	  | kHLT_Mu8_Ele17_CaloIdL_MuObj | kHLT_Mu8_Ele17_CaloIdL_EGObj;*/
 
-	const ULong_t eventTriggerBit = 0UL;
-	const ULong_t muonTriggerObjectBit =  0UL;
-	const ULong_t electronTriggerObjectBit = 0UL;
+	ULong_t eventTriggerBit = 0UL;
+	ULong_t muonTriggerObjectBit =  0UL;
+	ULong_t electronTriggerObjectBit = 0UL;
 
 	if( DYTools::energy8TeV ) {
 	  // 8 TeV triggers
@@ -416,8 +418,8 @@ void selectEmuEvents(const TString conf,
 				       | Triggers2012::kHLT_Mu22_Photon22_CaloIdL_EleObj );
 
 	  muonTriggerObjectBit = ( Triggers2012::kHLT_Mu17_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_MuObj
-				   | kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_MuObj
-				   | kHLT_Mu22_Photon22_CaloIdL_MuObj );
+				   | Triggers2012::kHLT_Mu8_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_MuObj
+				   | Triggers2012::kHLT_Mu22_Photon22_CaloIdL_MuObj );
 
 	} else {
 	  // 7 TeV triggers
