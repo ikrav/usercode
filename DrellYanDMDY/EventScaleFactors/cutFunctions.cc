@@ -96,9 +96,7 @@ bool isTag(const mithep::TElectron *electron, ULong_t trigger, double rho){
 
   bool elePassID  = passIDTag(electron, rho);
   bool elePassHLT =  (electron ->hltMatchBits & trigger);
-  bool notInGap = DYTools::isBarrel(electron->scEta) 
-    || DYTools::isEndcap(electron->scEta);
-  
+  bool notInGap = ! DYTools::isEcalGap( electron->scEta );
   bool result = ( elePassID && elePassHLT && notInGap && (electron->pt > 25) );
 
   return result;
