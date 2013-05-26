@@ -130,10 +130,6 @@ void plotDYAcceptance(const TString input, int systematicsMode = DYTools::NORMAL
   ifs.close();
   }
   
-  //const Double_t kGAP_LOW  = 1.4442; - shifted to DYTools.hh
-  //const Double_t kGAP_HIGH = 1.566;  - shifted to DYTools.hh
-
-
   //--------------------------------------------------------------------------------------------------------------
   // Main analysis code 
   //==============================================================================================================

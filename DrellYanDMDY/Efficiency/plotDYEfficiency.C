@@ -121,9 +121,6 @@ void plotDYEfficiency(const TString input,
   ifs.close();
   }
   
-  //const Double_t kGAP_LOW  = 1.4442; in DYTools
-  //const Double_t kGAP_HIGH = 1.566;  in DYTools
-
   //for the FSR case
   const bool useFewzWeights = true;
   const bool cutZPT100 = true;
