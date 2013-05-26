@@ -210,15 +210,17 @@ void plotDYFSRCorrections(const TString input, bool sansAcc=0, int debugMode=0)
       // if sansAcc mode, Discard events that are not in kinematics acceptance
       if (sansAcc)
         {
-           if( ! (DYTools::isBarrel(gen->eta_1) || 
-		  DYTools::isEndcap(gen->eta_1) ) ) continue;
-           if( ! (DYTools::isBarrel(gen->eta_2) || 
-		  DYTools::isEndcap(gen->eta_2) ) ) continue;
-           // both above 10 GeV and at least one above 20 GeV
-           if( ! (gen->pt_1 > 10 && gen->pt_2 > 10) ) continue;
-           if( ! (gen->pt_1 > 20 || gen->pt_2 > 20) ) continue;
+	  if( !DYTools::goodEtEtaPair( gen->pt_1, gen->eta_1,
+				       gen->pt_2, gen->eta_2 ) ) continue;
+// 	      if( ! (DYTools::isBarrel(gen->eta_1) || 
+// 		  DYTools::isEndcap(gen->eta_1) ) ) continue;
+//            if( ! (DYTools::isBarrel(gen->eta_2) || 
+// 		  DYTools::isEndcap(gen->eta_2) ) ) continue;
+//            // both above 10 GeV and at least one above 20 GeV
+//            if( ! (gen->pt_1 > 10 && gen->pt_2 > 10) ) continue;
+//            if( ! (gen->pt_1 > 20 || gen->pt_2 > 20) ) continue;
         }
-
+      
       double mass = gen->vmass;    // pre-FSR
       double massPostFsr = gen->mass;    // post-FSR
       if((mass < massLow) || (mass > massHigh)) continue;

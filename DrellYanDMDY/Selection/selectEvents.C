@@ -233,9 +233,6 @@ void selectEvents(const TString conf,
 
   const TString ntupDir = outputDir + TString("/ntuples"); gSystem->mkdir(ntupDir,kTRUE);
   
-  //const Double_t kGAP_LOW  = 1.4442;
-  //const Double_t kGAP_HIGH = 1.566;
-    
   //
   // Canvas dimensions
   //
