@@ -72,9 +72,6 @@ const int evaluate_efficiencies=0;
 //const int performPUReweight=0;
 const int performOppositeSignTest=1;
 
-//const Double_t kECAL_GAP_LOW  = 1.4442;
-//const Double_t kECAL_GAP_HIGH = 1.566;
-
 //=== FUNCTION DECLARATIONS ======================================================================================
 
 //=== MAIN MACRO =================================================================================================
@@ -536,10 +533,8 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	totalCandInMassWindow++;
 
 	// Check whether each electron is in the rapidity gap, but not cut yet
-	bool isGap1 = ! (DYTools::isBarrel(dielectron->scEta_1) 
-			 || DYTools::isEndcap(dielectron->scEta_1) );
-	bool isGap2 = ! (DYTools::isBarrel(dielectron->scEta_2) 
-			 || DYTools::isEndcap(dielectron->scEta_2) );
+	bool isGap1 = DYTools::isEcalGap( dielectron->scEta_1);
+	bool isGap2 = DYTools::isEcalGap( dielectron->scEta_2);
 	// The bollean for the cut on the probe. We remove the rapidity
 	// gap for probes only for a special eta binning
 	bool passGapCut1 = true;
@@ -551,13 +546,13 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	    passGapCut2 = false;
 	}
 
-	// DO NOT CUT ANYMORE ON ETA HERE, INSTEAD CUT LATER AS APPROPRIATE
-	// Exclude ECAL gap region (should already be done for ntuple, but just to make sure...)
-// 	if((fabs(dielectron->scEta_1)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_1)<DYTools::kECAL_GAP_HIGH)) continue;
-// 	if((fabs(dielectron->scEta_2)>DYTools::kECAL_GAP_LOW) && (fabs(dielectron->scEta_2)<DYTools::kECAL_GAP_HIGH)) continue;
-
 	// ECAL acceptance cut on supercluster Et
-	if((fabs(dielectron->scEta_1) > 2.5)       || (fabs(dielectron->scEta_2) > 2.5)) continue;  // outside eta range? Skip to next event...
+	// Note: the main analysis may or may not allow eta go to kECAL_MAX_ETA.
+	// Here, we simply require max possible for ecal.
+	// For the tag, this is always ok. For the probe, the tag and probe
+	// procedure is done in eta bins anyways.
+	if((fabs(dielectron->scEta_1) > DYTools::kECAL_MAX_ETA)       
+	   || (fabs(dielectron->scEta_2) > DYTools::kECAL_MAX_ETA)) continue;  // outside eta range? Skip to next event...
 	totalCandInEtaAcceptance++;
 	// None of the electrons should be below 10 GeV
 	if((dielectron->pt_1 < 10)               || (dielectron->pt_2 < 10))	      continue;  // below supercluster ET cut? Skip to next event...
@@ -826,7 +821,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
   printf("    events after event level trigger cut                     %15d\n",eventsAfterTrigger);
   printf("\nTotal candidates (no cuts)                                   %15d\n",totalCand);
   printf("        candidates in 60-120 mass window                     %15d\n",totalCandInMassWindow);
-  printf("        candidates witheta 0-1.4442, 1.566-2.5               %15d\n",totalCandInEtaAcceptance);
+  printf("        candidates in pseudorapidity acceptance              %15d\n",totalCandInEtaAcceptance);
   printf("        candidates, both electrons above 10 GeV              %15d\n",totalCandEtAbove10GeV);
   printf("        candidates matched to GEN level (if MC)              %15d\n",totalCandMatchedToGen);
   if (performOppositeSignTest) 

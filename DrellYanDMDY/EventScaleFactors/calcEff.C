@@ -326,16 +326,14 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     }
     numTagProbePairsPassEt++;
     
-    bool isBsc = DYTools::isBarrel(storeEta);
-    bool isEsc = DYTools::isEndcap(storeEta);
+    bool isGap = DYTools::isEcalGap(storeEta);
     if (new_store_data_code) {
-      isBsc = DYTools::isBarrel(storeData.eta);
-      isEsc = DYTools::isEndcap(storeData.eta);
+      isGap = DYTools::isEcalGap(storeData.eta);
     }
     // For the probe, exclude eta gap only for one specific eta 
     // binning, barrel/endcap split
     if(etaBinning == DYTools::ETABINS2){
-      if( ! isBsc && ! isEsc ) continue;
+      if( isGap ) continue;
     }
     numTagProbePairsPassEta++;
 
@@ -402,16 +400,14 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
     }
     numTagProbePairsPassEt++;
     
-    bool isBsc = DYTools::isBarrel(storeEta);
-    bool isEsc = DYTools::isEndcap(storeEta);
+    bool isGap = DYTools::isEcalGap(storeEta);
     int templateBin=-1;
     if (new_store_data_code) {
-      isBsc = DYTools::isBarrel(storeData.eta);
-      isEsc = DYTools::isEndcap(storeData.eta);
+      isGap = DYTools::isEcalGap(storeData.eta);
       // For the probe, exclude eta gap only for one specific eta 
       // binning, barrel/endcap split
       if(etaBinning == DYTools::ETABINS2){
-	if( ! isBsc && ! isEsc ) continue;
+	if( isGap ) continue;
       }
       numTagProbePairsPassEta++;
       
@@ -442,7 +438,7 @@ void calcEff(const TString configFile, const TString effTypeString, const TStrin
       // For the probe, exclude eta gap only for one specific eta 
       // binning, barrel/endcap split
       if(etaBinning == DYTools::ETABINS2){
-	if( ! isBsc && ! isEsc) continue;
+	if( isGap ) continue;
       }
       numTagProbePairsPassEta++;
       

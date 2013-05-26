@@ -514,11 +514,10 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 	tagCandPassEt++;
 
 	// For the tag, always exclude rapidity gap
-	bool isBele = DYTools::isBarrel(electron->scEta);
-	bool isEele = DYTools::isEndcap(electron->scEta);
-	if ( ! isBele && ! isEele ) continue;
+	bool isInGap = DYTools::isEcalGap(electron->scEta);
+	if ( isInGap ) continue;
 
-	if( fabs(electron->scEta) > 2.5) continue;
+	if( fabs(electron->scEta) > DYTools::kECAL_MAX_ETA) continue;
 	tagCandPassEta++;
 	
 	if( sample != DYTools::DATA)
@@ -555,12 +554,10 @@ void eff_Reco(const TString configFile, const TString effTypeString,
 	  // For the probe, exclude eta gap only for one specific eta 
 	  // binning, barrel/endcap split
 	  if(etaBinning == DYTools::ETABINS2){
-	    bool isBsc = DYTools::isBarrel(sc->scEta);
-	    bool isEsc = DYTools::isEndcap(sc->scEta);
-	    if( ! isBsc && ! isEsc ) continue;
+	    if( DYTools::isEcalGap( sc->scEta ) ) continue;
 	  }
 
-	  if( fabs(sc->scEta) > 2.5) continue;
+	  if( fabs(sc->scEta) > DYTools::kECAL_MAX_ETA) continue;
 	  numTagProbePairsPassEta++;
 
 	  if( sample != DYTools::DATA)

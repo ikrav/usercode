@@ -33,13 +33,22 @@ namespace DYTools {
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
 
 
-  // Global parameters
-  // const bool excludeEcalGap     = false; // For 8 TeV we are not excluding the transition region
+  // Global parameters, kinematics, etc
+  const bool excludeEcalGap     = false; // For 8 TeV we are not excluding the transition region
+  // ECAL constants, analysis-invariant
+  const Double_t kECAL_MAX_ETA  = 2.5;
   const Double_t kECAL_GAP_LOW  = 1.4442;
   const Double_t kECAL_GAP_HIGH = 1.566;
-  const int maxTnPCanvasDivisions=10; // maximum number of canvas divisions in EventScaleFactors macros
+  const Double_t kECAL_GAP_MIDDLE = 1.479; // This is where the split barrel/endcap happens
+  // Max electron eta
+  const double electronEtaMax8TeV = 2.4;
+  const double electronEtaMax7TeV = 2.5;
+  // For 8 TeV, we do unconventional 2.4 to match the muon channel
+  const double electronEtaMax = ( energy8TeV == 1) ? electronEtaMax8TeV : electronEtaMax7TeV;
   const double etMinLead  = 20;
   const double etMinTrail = 10;
+
+  const int maxTnPCanvasDivisions=10; // maximum number of canvas divisions in EventScaleFactors macros
 
   //const TString strLumiAtECMS="4.7 fb^{-1} at #sqrt{s} = 7 TeV";
 //   const TString strLumiAtECMS="4.8 fb^{-1} at #sqrt{s} = 7 TeV";
@@ -69,11 +78,17 @@ namespace DYTools {
   // Note: this implementation neglects underflow and overflow
   // in rapidity.
   const double yRangeMin =  0.0;
-  const double yRangeMax =  2.5 + ((!study2D && extendYRangeFor1D) ? 6.5 : 0);
+  // On 7 TeV data, we measured 2D cross section to Y=2.5 
+  // On 8 TeV, it is up to Y=2.4 to be consistent with muons
+  const double yRangeMax2D = ( energy8TeV == 1) ? 2.4 : 2.5;
+  // For 1D, extend max of Y to ~9, for 2D keep ~2.4-2.5:
+  const double yRangeMax =  yRangeMax2D + ((!study2D && extendYRangeFor1D) ? 6.5 : 0);
   const int _nYBinsMax2D=25; // the largest division into Y bins
+  // For 7 TeV last mass range has dY = 0.25 wide bins, for 8 TeV it is dY = 0.2
+  const int nBinsYHighMass = (energy8TeV == 1) ? 12 : 10;
   const int _nYBins2D[_nMassBins2D] = 
     { 25,// underflow, binned like first mass bin 
-      25, 25, 25, 25, 25, 10,
+      25, 25, 25, 25, 25, nBinsYHighMass,
     }; // overflow is neglected
 
   
@@ -849,7 +864,7 @@ namespace DYTools {
   inline 
   bool isBarrel(double eta){
     bool result = false;
-    if(fabs(eta) <= kECAL_GAP_LOW) 
+    if(fabs(eta) <= kECAL_GAP_MIDDLE) 
       result = true;
     return result;
   }
@@ -857,18 +872,27 @@ namespace DYTools {
   inline 
   bool isEndcap(double eta){
     bool result = false;
-    if(fabs(eta) >= kECAL_GAP_HIGH && fabs(eta)<2.5 ) 
+    if(fabs(eta) >= kECAL_GAP_MIDDLE && fabs(eta)<electronEtaMax ) 
       result = true;
     return result;
   }
 
+  inline
+  bool isEcalGap(double eta) {
+    return ( fabs(eta) > kECAL_GAP_LOW && fabs(eta) < kECAL_GAP_HIGH );
+  }
+
   inline 
   bool goodEta(double eta) {
-    bool result = false;
-    if ((fabs(eta) <= kECAL_GAP_LOW) || 
-	((fabs(eta) >= kECAL_GAP_HIGH) && (fabs(eta)<2.5))) {
-      result = true;
-    }
+    bool result = true;
+    // General requirement to be in range
+    if( fabs(eta) >= electronEtaMax ) 
+      result = false;
+
+    // Exclude ECAL gap if required
+    if( isEcalGap(eta) && excludeEcalGap )
+      result = false;
+
     return result;
   }
 
