@@ -165,9 +165,15 @@ void SkimNtuplesTightTight(const TString input = "skim.input")
 	    etCut = true;
 	  // Require BOTH dielectron to pass full ID
 	  bool idCut = false;
-	  if( passEGM2011( DYTools::extractElectron(dielectron,1), WP_MEDIUM, info->rhoLowEta)
-	      && passEGM2011(DYTools::extractElectron(dielectron,2), WP_MEDIUM, info->rhoLowEta) )
-	    idCut = true;
+	  if( DYTools::energy8TeV == 1 ){
+	    if( passEGMID2012( DYTools::extractElectron(dielectron,1), WP_MEDIUM, info->rhoLowEta)
+		&& passEGMID2012(DYTools::extractElectron(dielectron,2), WP_MEDIUM, info->rhoLowEta) )
+	      idCut = true;
+	  }else{
+	    if( passEGMID2011( DYTools::extractElectron(dielectron,1), WP_MEDIUM, info->rhoLowEta)
+		&& passEGMID2011(DYTools::extractElectron(dielectron,2), WP_MEDIUM, info->rhoLowEta) )
+	      idCut = true;
+	  }
 	  if( etCut && idCut )
 	    nDielectronsPass++;
 	}

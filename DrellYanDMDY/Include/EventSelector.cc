@@ -105,7 +105,11 @@ bool DielectronSelector_t::testDielectron_default(mithep::TDielectron *dielectro
 //     if(!passSmurf(dielectron)) continue;
 
     // Present EGM recommended for 2011 and 2012: WP Medium
-    if(!passEGM2011(dielectron,WP_MEDIUM,rho)) continue;
+    if( DYTools::energy8TeV == 1 ){
+      if(!passEGMID2012(dielectron,WP_MEDIUM,rho)) continue;
+    }else{
+      if(!passEGMID2011(dielectron,WP_MEDIUM,rho)) continue;
+    }
 
     if (ec) ec->numDielectronsIDpassed_inc();
     fCandidatesIDPassed++;

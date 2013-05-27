@@ -474,7 +474,11 @@ void selectEmuEvents(const TString conf,
 	  // Is this cut still relevant about ECAL driven? We are using all PF electrons now...
 	  if( !(electron->typeBits & kEcalDriven)   )   continue;  // not ECAL seeded electrons? Skip to next event...
 // 	  if( ! passSmurf(electron)        )   continue;  
-          if( !passEGM2011(electron, WP_MEDIUM, info->rhoLowEta)) continue;  
+	  if( DYTools::energy8TeV == 1 ){
+	    if( !passEGMID2012(electron, WP_MEDIUM, info->rhoLowEta)) continue;  
+	  }else{
+	    if( !passEGMID2011(electron, WP_MEDIUM, info->rhoLowEta)) continue;  
+	  }
 	  if( !(electron->hltMatchBits & electronTriggerObjectBit)) continue;  // electron matched to HLT object? 
           //cout << "electron hlt match: " <<  electron->hltMatchBits << "\n";
 	  if( fabs(electron->d0)>0.02 ) continue;

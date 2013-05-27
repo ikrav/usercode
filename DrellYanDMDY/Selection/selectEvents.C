@@ -690,7 +690,11 @@ void selectEvents(const TString conf,
 
 	  // The selection below is for the EGM working points from spring 2012
 	  // recommended for both 2011 and 2012 data
-	  if(!passEGM2011(dielectron, WP_MEDIUM, info->rhoLowEta)) continue;  
+	  if( DYTools::energy8TeV == 1){
+	    if(!passEGMID2012(dielectron, WP_MEDIUM, info->rhoLowEta)) continue;  
+	  }else{
+	    if(!passEGMID2011(dielectron, WP_MEDIUM, info->rhoLowEta)) continue;  
+	  }
 
 	  hMass2v[isam]->Fill(dielectron->mass,weight);
 	  hMass3v[isam]->Fill(dielectron->mass,weight);

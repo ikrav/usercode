@@ -82,13 +82,23 @@ Bool_t scMatchedToGeneratorLevel(const mithep::TGenInfo *gen, const mithep::TPho
 
 bool passID(const mithep::TElectron *electron, double rho){
 
-  bool result = passEGM2011(electron, WP_MEDIUM, rho);
+  bool result = false;
+  if(DYTools::energy8TeV == 1){
+    result = passEGMID2012(electron, WP_MEDIUM, rho);
+  }else{
+    result = passEGMID2011(electron, WP_MEDIUM, rho);
+  }
   return result;
 }
 
 bool passIDTag(const mithep::TElectron *electron, double rho){
 
-  bool result = passEGM2011(electron, WP_TIGHT, rho);
+  bool result = false;
+  if(DYTools::energy8TeV == 1){
+    result = passEGMID2012(electron, WP_TIGHT, rho);
+  }else{
+    result = passEGMID2011(electron, WP_TIGHT, rho);
+  }
   return result;
 }
 
@@ -96,7 +106,7 @@ bool isTag(const mithep::TElectron *electron, ULong_t trigger, double rho){
 
   bool elePassID  = passIDTag(electron, rho);
   bool elePassHLT =  (electron ->hltMatchBits & trigger);
-  bool notInGap = ! DYTools::isEcalGap( electron->scEta );
+  bool notInGap = ! DYTools::isEcalGap( electron->scEta );  
   bool result = ( elePassID && elePassHLT && notInGap && (electron->pt > 25) );
 
   return result;
