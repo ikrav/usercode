@@ -386,14 +386,44 @@ Double_t _EGM2011_PassConvVFitCut[4] = {    -1,     1,     1,     1}; // -1 mean
 // estimated on 2011 data for dR<0.3.
 const int _nEtaBinsForAeff = 7;
 Double_t _etaLimitsForAeff[_nEtaBinsForAeff+1] = {0.0, 1.0, 1.479, 2.0, 2.2, 2.3, 2.4, 100.0};
-Double_t _AeffDR03[_nEtaBinsForAeff] = {0.10, 0.12, 0.085, 0.11, 0.12, 0.12, 0.13};
+Double_t _AeffDR03_2011[_nEtaBinsForAeff] = {0.10, 0.12, 0.085, 0.11, 0.12, 0.12, 0.13};
+Double_t _AeffDR03_2012[_nEtaBinsForAeff] = {0.13, 0.14, 0.070, 0.090, 0.11, 0.11, 0.14};
 
+enum EGMID_t { EGM2011, EGM2012};
+// Forward declarations
+Bool_t passEGMID(const mithep::TDielectron *dielectron, WorkingPointType wp, double rho, EGMID_t egmIDType);
+Bool_t passEGMID(const mithep::TElectron   *electron, WorkingPointType wp, double rho, EGMID_t egmIDType);
 
-Bool_t passEGM2011(const mithep::TDielectron *dielectron, WorkingPointType wp, double rho);
-Bool_t passEGM2011(const mithep::TElectron   *electron, WorkingPointType wp, double rho);
+Bool_t passEGMID2011(const mithep::TDielectron *dielectron, WorkingPointType wp, double rho);
+Bool_t passEGMID2011(const mithep::TElectron   *electron, WorkingPointType wp, double rho);
 
-Bool_t passEGM2011(const mithep::TElectron *electron, WorkingPointType wp, double rho)
+Bool_t passEGMID2012(const mithep::TDielectron *dielectron, WorkingPointType wp, double rho);
+Bool_t passEGMID2012(const mithep::TElectron   *electron, WorkingPointType wp, double rho);
+
+// Invidividual variations of EGM ID just call the main function 
+Bool_t passEGMID2011(const mithep::TElectron *electron, WorkingPointType wp, double rho){
+  return passEGMID(electron, wp, rho, EGM2011);
+};
+
+Bool_t passEGMID2012(const mithep::TElectron *electron, WorkingPointType wp, double rho){
+  return passEGMID(electron, wp, rho, EGM2012);
+};
+
+// The primary implementatino of the ID follows
+Bool_t passEGMID(const mithep::TElectron *electron, WorkingPointType wp, double rho, EGMID_t egmIDType)
 {
+
+  // Only the cuts for effective area are different for 2011 and 2012 EGM ID
+  Double_t *_AeffDR03 = 0;
+  if( egmIDType == EGM2011 )
+    _AeffDR03 = _AeffDR03_2011;
+  else if( egmIDType == EGM2012 )
+    _AeffDR03 = _AeffDR03_2012;
+  else {
+    printf("Unknown electron ID type requeted\n");
+    assert(0);
+  }
+
   if(fabs(electron->d0) > _EGM2011_D0Vtx[wp] ) return kFALSE;
   if(fabs(electron->dz) > _EGM2011_DZVtx[wp] )  return kFALSE;
   
@@ -467,8 +497,30 @@ Bool_t passEGM2011(const mithep::TElectron *electron, WorkingPointType wp, doubl
 }
 
 
-Bool_t passEGM2011(const mithep::TDielectron *dielectron, WorkingPointType wp, double rho)
+// Invidividual variations of EGM ID just call the main function 
+Bool_t passEGMID2011(const mithep::TDielectron *dielectron, WorkingPointType wp, double rho){
+  return passEGMID(dielectron, wp, rho, EGM2011);
+};
+
+Bool_t passEGMID2012(const mithep::TDielectron *dielectron, WorkingPointType wp, double rho){
+  return passEGMID(dielectron, wp, rho, EGM2012);
+};
+
+// The primary implementation for dielectron object of the ID follows
+Bool_t passEGMID(const mithep::TDielectron *dielectron, WorkingPointType wp, double rho, EGMID_t egmIDType)
 {
+
+  // Only the cuts for effective area are different for 2011 and 2012 EGM ID
+  Double_t *_AeffDR03 = 0;
+  if( egmIDType == EGM2011 )
+    _AeffDR03 = _AeffDR03_2011;
+  else if( egmIDType == EGM2012 )
+    _AeffDR03 = _AeffDR03_2012;
+  else {
+    printf("Unknown electron ID type requeted\n");
+    assert(0);
+  }
+
   if(fabs(dielectron->d0_1) > _EGM2011_D0Vtx[wp] )  return kFALSE;
   if(fabs(dielectron->dz_1) > _EGM2011_DZVtx[wp] )  return kFALSE;
   if(fabs(dielectron->d0_2) > _EGM2011_D0Vtx[wp] )  return kFALSE;
@@ -605,11 +657,12 @@ Bool_t passEGM2011(const mithep::TDielectron *dielectron, WorkingPointType wp, d
 //
 
 typedef enum { _EleID_Smurf2011,
-	       _EleID_EGM2011_Medium } TEleID_t;
+	       _EleID_EGM2011_Medium,
+	       _EleID_EGM2012_Medium} TEleID_t;
 
 //const TEleID_t _electronID=_EleID_Smurf2011;
 // Started working on this but not finished.
-const TEleID_t _electronID=_EleID_EGM2011_Medium;
+const TEleID_t _electronID=_EleID_EGM2012_Medium;
 
 //
 // Generic passEleID function
@@ -622,7 +675,10 @@ Bool_t passEleID(const EleObj_t *electron, const mithep::TEventInfo *info=NULL) 
   case _EleID_Smurf2011: pass=passSmurf(electron); break;
   case _EleID_EGM2011_Medium: 
     assert(info);
-    pass=passEGM2011(electron,_EleID_EGM2011_Medium,info->rhoLowEta);
+    pass=passEGMID2011(electron,_EleID_EGM2011_Medium,info->rhoLowEta);
+  case _EleID_EGM2012_Medium: 
+    assert(info);
+    pass=passEGMID2012(electron,_EleID_EGM2011_Medium,info->rhoLowEta);
   default:
     std::cout << "passEleID: ElectronID is not prepared\n";
   }
