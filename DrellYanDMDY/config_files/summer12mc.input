@@ -1,5 +1,5 @@
 DY_j22_19789pb
-#UNCORRECTED  # Name of energy scale calibrations set. See ElectronEnergyScale.hh.
+#Date20130529_2012_j22_adhoc  # Name of energy scale calibrations set. See ElectronEnergyScale.hh.
 /home/hep/ikrav/work/ntuples/DrellYan_8TeV_53X_local/s12-zeem20to500-v7a_tight-loose_skim.root                 1915.1    600 1 @Powheg 20-500    
 /home/hep/ikrav/work/ntuples/DrellYan_8TeV_53X_local/s12-zeem500to800-v7a_ntuple.root                          0.039509	 632 1 @Powheg 500-800   
 /mnt/hadoop/user/uscms01/pnfs/unl.edu/data4/cms/store/user/ikrav/DrellYan_8TeV/53X/s12-zeem800-v7a_ntuple.root 0.0055620 432 1 @Powheg 800+	    

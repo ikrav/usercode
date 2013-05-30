@@ -1101,10 +1101,34 @@ void makeUnfoldingMatrixFsr(const TString input,
 // 	// Apply extra smearing to MC reconstructed dielectron mass
 // 	// to better resemble the data
 // 	// In systematics mode, use randomized MC smear factors
-	double smearingCorrection = (systematicsMode == DYTools::RESOLUTION_STUDY) ?
-          escale.generateMCSmearRandomized(dielectron->scEta_1,dielectron->scEta_2) :
-          escale.generateMCSmear(dielectron->scEta_1,dielectron->scEta_2);
-	double massResmeared = dielectron->mass + smearingCorrection;
+	double massResmeared = dielectron->mass;
+        if ( escale.getCalibrationSet() == ElectronEnergyScale::Date20130529_2012_j22_adhoc ){
+	  // These calibrtions are designed for multiplicative per-electron smearing correction.
+	  // ElectronEnergyScale class is not set up to work with those, so the code
+	  // below is a hack.
+	  double var1 = (systematicsMode == DYTools::RESOLUTION_STUDY) ?
+	    escale.generateMCSmearSingleEleRandomized(dielectron->scEta_1) :
+	    escale.generateMCSmearSingleEle(dielectron->scEta_1);
+	  double var2 = (systematicsMode == DYTools::RESOLUTION_STUDY) ?
+	    escale.generateMCSmearSingleEleRandomized(dielectron->scEta_2) :
+	    escale.generateMCSmearSingleEle(dielectron->scEta_2);
+	  double corr1 = 1.0 + var1;
+	  double corr2 = 1.0 + var2;
+	  // Scale 4-momenta
+	  TLorentzVector ele1; 
+	  ele1.SetPtEtaPhiM(dielectron->pt_1,dielectron->eta_1,dielectron->phi_1,0.000511);
+	  ele1 *= corr1;
+	  TLorentzVector ele2; 
+	  ele2.SetPtEtaPhiM(dielectron->pt_2,dielectron->eta_2,dielectron->phi_2,0.000511);
+	  ele2 *= corr2;
+	  // Compute new mass
+	  massResmeared = (ele1+ele2).M();
+	}else{
+	  double smearingCorrection = (systematicsMode == DYTools::RESOLUTION_STUDY) ?
+	    escale.generateMCSmearRandomized(dielectron->scEta_1,dielectron->scEta_2) :
+	    escale.generateMCSmear(dielectron->scEta_1,dielectron->scEta_2);
+	  massResmeared = dielectron->mass + smearingCorrection;
+	}
 
 	hZMassv[ifile]->Fill(massResmeared,scale * gen->weight * wPU);
 

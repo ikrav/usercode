@@ -358,7 +358,32 @@ void prepareYields(const TString conf  = "data_plot.conf",
       // for fake electrons.
       if(isam!=0) {            	    
 	double smearingCorrection = escale.generateMCSmear(data->scEta_1, data->scEta_2);
-	data->mass = data->mass + smearingCorrection;
+	if ( escale.getCalibrationSet() == ElectronEnergyScale::Date20130529_2012_j22_adhoc ){
+	  // These calibrtions are designed for multiplicative per-electron smearing correction.
+	  // ElectronEnergyScale class is not set up to work with those, so the code
+	  // below is a hack.
+	  double corr1 = 1.0 + escale.generateMCSmearSingleEle( data->scEta_1 );
+	  double corr2 = 1.0 + escale.generateMCSmearSingleEle( data->scEta_2 );
+	  // Scale 4-momenta
+	  TLorentzVector ele1; 
+	  ele1.SetPtEtaPhiM(data->pt_1,data->eta_1,data->phi_1,0.000511);
+	  ele1 *= corr1;
+	  data->pt_1  = ele1.Pt();
+	  data->eta_1 = ele1.Eta();
+	  data->phi_1 = ele1.Phi();
+	  //
+	  TLorentzVector ele2; 
+	  ele2.SetPtEtaPhiM(data->pt_2,data->eta_2,data->phi_2,0.000511);
+	  ele2 *= corr2;
+	  data->pt_2  = ele2.Pt();
+	  data->eta_2 = ele2.Eta();
+	  data->phi_2 = ele2.Phi();
+	  //
+	  data->mass = (ele1+ele2).M();
+	  data->y = (ele1+ele2).Rapidity();
+	}else{
+	  data->mass = data->mass + smearingCorrection;
+	}
       }
 
       // Find the 2D bin for this event:

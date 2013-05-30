@@ -24,6 +24,7 @@ public:
     Date20120802_default,
     Date20121003FEWZ_default, // FEWZ correction and MC backgroud were considered in derivation
     Date20121025FEWZPU_default, // FEWZ correction and PU reweighting were considered in derivation
+    Date20130529_2012_j22_adhoc,  // a guess to what the calib. should be for Jan22 8 TeV data
     CalSet_File_Gauss,
     CalSet_File_BreitWigner,
     CalSet_File_Voigt
@@ -116,6 +117,11 @@ public:
     assert(this->isInitialized()); assert(this->isSmearRandomized());
     smearDistributionAny(destination,eta1Bin,eta2Bin,source,kTRUE);
   }
+
+  // Several functions for working with smearing single MC electrons
+  double generateMCSmearSingleEle(double eta) const;
+  double generateMCSmearSingleEleRandomized(double eta) const;
+  double generateMCSmearAnySingleEle(double eta, bool randomize) const;
 
   void print() const;
   void printAsTexTable(const TString &fname) const;

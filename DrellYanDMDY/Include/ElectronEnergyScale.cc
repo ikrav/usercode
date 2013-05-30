@@ -397,6 +397,7 @@ bool ElectronEnergyScale::initializeAllConstants(int debug){
   case Date20120802_default: nEtaBins1=12; break;
   case Date20121003FEWZ_default: nEtaBins1=12; break;
   case Date20121025FEWZPU_default: nEtaBins1=12; break;
+  case Date20130529_2012_j22_adhoc: nEtaBins1=8; break;
   case CalSet_File_Gauss: 
   case CalSet_File_Voigt:
   case CalSet_File_BreitWigner:
@@ -711,6 +712,50 @@ bool ElectronEnergyScale::initializeAllConstants(int debug){
   }
     break;
 
+  case Date20130529_2012_j22_adhoc: {
+    //
+    // Data of full 2012 and Summer12 MC.
+    // The constants are taking from:
+    // MC:
+    //   http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/EgammaAnalysis/ElectronTools/src/ElectronEnergyCalibrator.cc?revision=1.5&view=markup
+    //   where the digMC is averaged between R9<0.94 and R9>=0.94 cases
+    //   with weights 85% and 15%.
+    //   Note: these are not in GeV, but unitless multiplicative constants
+    // Data:
+    //   Jan 22 rereco of 8 TeV
+    //   Constants re kept at 1.00
+    //
+    const int nEtaBins = 8;
+    const double etaBinLimits[nEtaBins+1] = 
+      {-2.50001, -2.0, -1.479, -1.0, 0.0, 1.0, 1.479, 2.0, 2.50001};
+    
+    const double corrValues[nEtaBins] = 
+      {1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00};
+    // The numbers below, although approximate, should have worked, but they didn't
+//       {0.9997, 0.9995, 1.0016, 0.9959, 0.9959, 1.0016, 0.9995, 0.9997};
+    const double corrErrors[nEtaBins] = 
+      {0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005};
+    
+    const double smearValues[nEtaBins] = 
+      {0.0282, 0.0221, 0.0176, 0.0094, 0.0094, 0.0176, 0.0221, 0.0282};
+    const double smearErrors[nEtaBins] =
+      {0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002};
+
+    if (nEtaBins1!=nEtaBins) assert(0);
+    assert(_etaBinLimits); 
+    assert(_dataConst); assert(_dataConstErr);
+    assert(_mcConst1); assert(_mcConst1Err);
+    for(int i=0; i<nEtaBins; i++){
+      _etaBinLimits[i] = etaBinLimits[i];
+      _dataConst   [i] = corrValues[i];
+      _dataConstErr[i] = corrErrors[i];
+      _mcConst1    [i] = smearValues[i];
+      _mcConst1Err [i] = smearErrors[i];
+    }
+    _etaBinLimits[nEtaBins] = etaBinLimits[nEtaBins];
+  }
+    break;
+
   case CalSet_File_Gauss: 
   case CalSet_File_Voigt:
   case CalSet_File_BreitWigner: {
@@ -765,6 +810,16 @@ bool ElectronEnergyScale::initializeExtraSmearingFunction(int normalize){
 	double sij=sqrt(si*si+sj*sj);
 	double amp=(normalize) ? 1.0/(sij*sqrt(8*atan(1))) : 1.0;
 	smearingFunctionGrid[i][j]->SetParameters(amp,0.0,sij);
+      }
+	break;
+      case Date20130529_2012_j22_adhoc: {
+	if(_mcConst1 == 0) continue;
+	// For this calibration set, only the first index out of the two is meaningful.
+	smearingFunctionGrid[i][j] = new TF1(fname, "gaus(0)", -10, 10);
+	smearingFunctionGrid[i][j]->SetNpx(500);
+	double si = _mcConst1[i];
+	double amp=(normalize) ? 1.0/(si*sqrt(8*atan(1))) : 1.0;
+	smearingFunctionGrid[i][j]->SetParameters(amp,0.0,si);
       }
 	break;
       case CalSet_File_BreitWigner: {
@@ -1031,6 +1086,20 @@ void ElectronEnergyScale::randomizeSmearingWidth(int seed){
     } // end outer loop over eta bins
   }
     break;
+  case Date20130529_2012_j22_adhoc: {
+    // For this calibration set, only the first index in the functions grid is meaningful
+    for( int i=0; i<_nEtaBins; i++){
+      for( int j=0; j<_nEtaBins; j++){
+	TString fname = TString::Format("smearing_function_randomized_%03d_%03d", i, j);
+	smearingFunctionGridRandomized[i][j] = new TF1(fname, "gaus(0)", -10, 10);
+	smearingFunctionGridRandomized[i][j]->SetNpx(500);
+	double si = _mcConst1[i] + rand.Gaus(0.0,_mcConst1Err[i]);
+	smearingFunctionGridRandomized[i][j]->SetParameters(1.0/(si*sqrt(8*atan(1))),0.0,si);
+	if (i>j) { smearingFunctionGridRandomized[i][j]->SetParameters(smearingFunctionGridRandomized[j][i]->GetParameters()); }
+      } // end inner loop over eta bins
+    } // end outer loop over eta bins
+  }
+    break;
   default:
     // This place should be never reached. This is just a sanity check.
     printf("ElectronEnergyScale ERROR: failed to created randomized smearing function\n");
@@ -1105,6 +1174,69 @@ double ElectronEnergyScale::generateMCSmearAny(double eta1, double eta2, bool ra
     result = smearingFunctionGrid[ibin][jbin]->GetRandom();
   else
     result = smearingFunctionGridRandomized[ibin][jbin]->GetRandom();
+
+  return result;
+}
+
+//------------------------------------------------------
+
+double ElectronEnergyScale::generateMCSmearSingleEle(double eta) const {
+  
+  bool randomize = false; // this is not foreseen to be flagged by _randomizedStudy!!
+  if (_calibrationSet == UNCORRECTED) return 0.0;
+
+  double result = generateMCSmearAnySingleEle(eta, randomize);
+
+  return result;
+}
+
+//------------------------------------------------------
+
+double ElectronEnergyScale::generateMCSmearSingleEleRandomized(double eta) const {
+
+  double result = 0.0;
+  if (_calibrationSet == UNCORRECTED) return 0.0;
+
+  if( !_smearingWidthRandomizationDone ){
+    printf("ElectronEnergyScale ERROR: can not get randomized smear, randomization is not done\n");
+    return result;
+  }
+  
+  bool randomize = true;
+  result = generateMCSmearAnySingleEle(eta, randomize);
+
+  return result;
+}
+
+//------------------------------------------------------
+
+double ElectronEnergyScale::generateMCSmearAnySingleEle(double eta, bool randomize) const {
+  
+  double result = 0;
+  if (_calibrationSet == UNCORRECTED) return result;
+
+  if( !_isInitialized ){
+    printf("ElectronEnergyScale ERROR: the object is not properly initialized\n");
+    return result;
+  }
+  
+  int ibin = -1;
+  for(int i=0; i<_nEtaBins; i++){
+    if(eta >= _etaBinLimits[i] && eta < _etaBinLimits[i+1] ){
+      ibin = i;
+    }
+  }
+  if(ibin == -1) {
+    printf("ElectronEnergyScale: Smear function ERROR\n");
+    printf("Failed to obtain index for eta=%4.2lf\n",eta);
+    throw 1;
+  }
+ 
+  // The second bin can be any, only the first bin is meaningful
+  if( !randomize)
+    result = smearingFunctionGrid[ibin][ibin]->GetRandom();
+  else
+    result = smearingFunctionGridRandomized[ibin][ibin]->GetRandom();
 
   return result;
 }
@@ -1319,6 +1451,9 @@ ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet
   else if ( (pos==0) || escaleTagName.Contains("Date20120101_default") ) {
     calibrationSet = ElectronEnergyScale::Date20120101_default;
   }
+  else if ( (pos==0) || escaleTagName.Contains("Date20130529_2012_j22_adhoc") ) {
+    calibrationSet = ElectronEnergyScale::Date20130529_2012_j22_adhoc;
+  }
   else if ( escaleTagName.Contains("UNCORRECTED")) {
     calibrationSet = ElectronEnergyScale::UNCORRECTED;
   }
@@ -1375,6 +1510,7 @@ TString ElectronEnergyScale::CalibrationSetName(ElectronEnergyScale::Calibration
   case ElectronEnergyScale::Date20120802_default: name="Date20120802_default"; break;
   case ElectronEnergyScale::Date20121003FEWZ_default: name="Date20121003FEWZ_default"; break;
   case ElectronEnergyScale::Date20121025FEWZPU_default: name="Date20121025FEWZPU_default"; break;
+  case ElectronEnergyScale::Date20130529_2012_j22_adhoc: name="Date20130529_2012_j22_adhoc"; break;
   case ElectronEnergyScale::CalSet_File_Gauss: 
     name="FileGauss(";
     if (fileName) name+=(*fileName);
@@ -1408,6 +1544,7 @@ TString ElectronEnergyScale::CalibrationSetFunctionName(ElectronEnergyScale::Cal
   case ElectronEnergyScale::Date20120802_default: break; // Gauss
   case ElectronEnergyScale::Date20121003FEWZ_default: break; // Gauss
   case ElectronEnergyScale::Date20121025FEWZPU_default: break; // Gauss
+  case ElectronEnergyScale::Date20130529_2012_j22_adhoc: break; // Gauss
   case ElectronEnergyScale::CalSet_File_Gauss: break; // Gauss
   case ElectronEnergyScale::CalSet_File_Voigt: name="Voigt"; break;
   case ElectronEnergyScale::CalSet_File_BreitWigner: name="BreitWigner"; break;
@@ -1429,6 +1566,7 @@ TString ElectronEnergyScale::calibrationSetShortName() const {
   case ElectronEnergyScale::Date20120802_default: name="default20120802"; break;
   case ElectronEnergyScale::Date20121003FEWZ_default: name="default20121003FEWZ"; break;
   case ElectronEnergyScale::Date20121025FEWZPU_default: name="default20121025FEWZPU"; break;
+  case ElectronEnergyScale::Date20130529_2012_j22_adhoc: name="adhoc20130529j22"; break;
   case ElectronEnergyScale::CalSet_File_Gauss: name="Gauss"; break;
   case ElectronEnergyScale::CalSet_File_Voigt: name="Voigt"; break;
   case ElectronEnergyScale::CalSet_File_BreitWigner: name="BreitWigner"; break;
