@@ -609,7 +609,7 @@ void eff_IdHlt(const TString configFile, const TString effTypeString,
 	bool isHLTProbe1     = passID(ele1, info->rhoLowEta) && passGapCut1;
 	bool isHLTProbe2     = passID(ele2, info->rhoLowEta) && passGapCut2;
 	bool isHLTProbePass1 = ( isHLTProbe1 && (ele1->hltMatchBits & probeTriggerObjectBit_probe1) && passGapCut1 ) ;
-	bool isHLTProbePass2 = ( isHLTProbe2 && (ele2->hltMatchBits & probeTriggerObjectBit_probe1) && passGapCut2);
+	bool isHLTProbePass2 = ( isHLTProbe2 && (ele2->hltMatchBits & probeTriggerObjectBit_probe2) && passGapCut2);
 	bool isHLTProbePass1tight = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit_Tight) && passGapCut1);
 	bool isHLTProbePass2tight = ( isHLTProbe2 && (ele2 ->hltMatchBits & probeTriggerObjectBit_Tight) && passGapCut2);
 	bool isHLTProbePass1loose = ( isHLTProbe1 && (ele1 ->hltMatchBits & probeTriggerObjectBit_Loose) && passGapCut1);
