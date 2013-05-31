@@ -84,11 +84,15 @@ namespace DYTools {
   // For 1D, extend max of Y to ~9, for 2D keep ~2.4-2.5:
   const double yRangeMax =  yRangeMax2D + ((!study2D && extendYRangeFor1D) ? 6.5 : 0);
   const int _nYBinsMax2D=25; // the largest division into Y bins
+  // For 7 TeV, for m<200 GeV, the range in Y is 0-2.5, and we have 25 bins,
+  //   while for 8 TeV, the range in Y is 0-24, and we have 24 bins.
   // For 7 TeV last mass range has dY = 0.25 wide bins, for 8 TeV it is dY = 0.2
+  const int nBinsYLowMass  = (energy8TeV == 1) ? 24 : 25;
   const int nBinsYHighMass = (energy8TeV == 1) ? 12 : 10;
   const int _nYBins2D[_nMassBins2D] = 
-    { 25,// underflow, binned like first mass bin 
-      25, 25, 25, 25, 25, nBinsYHighMass,
+    { nBinsYLowMass,// underflow, binned like first mass bin 
+      nBinsYLowMass, nBinsYLowMass, nBinsYLowMass, nBinsYLowMass, nBinsYLowMass, 
+      nBinsYHighMass
     }; // overflow is neglected
 
   
