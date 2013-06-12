@@ -401,7 +401,7 @@ void measureEfficiencyCountAndCount(TTree *passTree, TTree *failTree,
       // a function of mass takes into account this 100% correlation in
       // the efficiencies of the merged bins. This is done in calcEventEff.C
       bool isRECO=(effType == DYTools::RECO) ? true : false;
-      if( isRECO && etaBinning == DYTools::ETABINS5 && limitsEt[i+1] ){
+      if( isRECO && etaBinning == DYTools::ETABINS5 && limitsEt[i+1]  <= 20.0){
 	if ( j == 0 || j == 1 ){
 	  // Barrel eta bins
 	  limitsEtaMin = limitsEta[0];
