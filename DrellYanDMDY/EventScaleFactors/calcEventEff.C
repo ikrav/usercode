@@ -150,7 +150,7 @@ void deriveScaleMeanAndErr(const int binCount, const int nexpCount,
 //=== Constants ==========================
 
 const bool savePlots = true;
-const bool correlationStudy = true;
+const bool correlationStudy = false;
 const bool useFewzWeights = true;
 
 
