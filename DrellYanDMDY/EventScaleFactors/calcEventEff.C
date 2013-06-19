@@ -1295,6 +1295,9 @@ int createSelectionFile(const MCInputFileMgr_t &mcMgr,
 	// 	  printf("  leading:   %f    %f      trailing:   %f   %f     mass: %f\n",
 	// 		 leading->scEt, leading->scEta, trailing->scEt, trailing->scEta, dielectron->mass);
 
+	// memory clean-up
+	delete ele1;
+	delete ele2;
 	
       } // end loop over dielectrons
     } // end loop over events
