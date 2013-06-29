@@ -459,6 +459,11 @@ void selectEmuEvents(const TString conf,
 	muonArr->Clear(); 
 	muonBr->GetEntry(ientry);
         // loop through electrons
+        //Count e-mu cands
+        int ncands = 0;
+        //for each event I will pick the best muon and the best electron to form a candidate 
+        mithep::TElectron *electron_index;
+        mithep::TMuon *muon_index;
         for(Int_t i=0; i<electronArr->GetEntriesFast(); i++) {
 	  mithep::TElectron *electron = (mithep::TElectron*)((*electronArr)[i]);
 	  // energy scale correction is done only for the data
@@ -469,21 +474,28 @@ void selectEmuEvents(const TString conf,
 	  //
 	  // Apply electron cuts
 	  //
-	  if(    electron->scEt < 20      )   continue;
+          //Do not apply scEt cut on e-mu stage
+	  //if(    electron->scEt < 12      )   continue;
 	  if( ! DYTools::goodEta( electron->scEta ) ) continue;
 	  // Is this cut still relevant about ECAL driven? We are using all PF electrons now...
 	  if( !(electron->typeBits & kEcalDriven)   )   continue;  // not ECAL seeded electrons? Skip to next event...
 // 	  if( ! passSmurf(electron)        )   continue;  
 	  if( DYTools::energy8TeV == 1 ){
-	    if( !passEGMID2012(electron, WP_MEDIUM, info->rhoLowEta)) continue;  
+            if( !passEGMID2012(electron, WP_MEDIUM, info->rhoLowEta)) continue;  
 	  }else{
-	    if( !passEGMID2011(electron, WP_MEDIUM, info->rhoLowEta)) continue;  
+            if( !passEGMID2011(electron, WP_MEDIUM, info->rhoLowEta)) continue;  
 	  }
+
+
 	  if( !(electron->hltMatchBits & electronTriggerObjectBit)) continue;  // electron matched to HLT object? 
           //cout << "electron hlt match: " <<  electron->hltMatchBits << "\n";
-	  if( fabs(electron->d0)>0.02 ) continue;
-	  //if( fabs(electron->dz)>1.0 ) continue;//real cut is actually tighter <0.1
-	  
+          //Comment: these two are applied on the level of WP
+	  //if( fabs(electron->d0)>0.02 ) continue;
+	  //if( fabs(electron->dz)>0.1 ) continue;//real cut is actually tighter <0.1
+	 
+          //Keep this electron for future
+          electron_index = electron;
+ 
 	  // loop through muons
 	  for(Int_t j=0; j<muonArr->GetEntriesFast(); j++) {
 	    mithep::TMuon *muon = (mithep::TMuon*)((*muonArr)[j]);
@@ -493,12 +505,12 @@ void selectEmuEvents(const TString conf,
 	    // Apply muon cuts
 	    //
 	    // Pt and eta
-	    //if( muon->pt < 10 )              continue;
-            if( muon->pt < 16 )              continue;
+	    if( muon->pt < 25 )              continue;
 	    if( fabs(muon->eta > 2.4 ) )     continue;
 	    // ID, quality, etc
 	    if(!(muon->typeBits & kGlobal) ) continue;
 	    if((muon->nTkHits < 11) )        continue;
+            if (muon->muNchi2 > 9)           continue;
 	    if((fabs(muon->d0) > 0.2) )      continue;
 	    if((muon->nPixHits < 1) )        continue;
 	    if((muon->nSeg < 2) )            continue;
@@ -512,6 +524,9 @@ void selectEmuEvents(const TString conf,
 	    if( fabs(muon->d0)>0.02 ) continue;
 	    //if( fabs(muon->dz)>1.0 ) continue;
 
+            //Keep this muon for future
+            muon_index = muon;
+
 	    //
 	    // Apply muon cuts
 	    //
@@ -524,7 +539,16 @@ void selectEmuEvents(const TString conf,
 	    }
 
 	    // Keep only opposite sign e-mu pairs
+            // set !isOppositeSign for OS
 	    if( !isOppositeSign) continue;
+
+            //Count candidates
+            ncands++;
+             }//close muon loop
+          }//close electron loop
+
+          //If more than one candidate, skip the event. (from David S.)
+          if (ncands != 1) continue; 
 
 	    /******** We have an e-mu candidate! HURRAY! ********/
             nsel    += weight;
@@ -533,8 +557,8 @@ void selectEmuEvents(const TString conf,
 	    // Calculate e-mu invariant mass
 
             TLorentzVector electron4v, muon4v, emu4v; 
-            electron4v.SetPtEtaPhiM(electron->pt,electron->eta,electron->phi,0.000511);
-            muon4v      .SetPtEtaPhiM(muon->pt    ,muon->eta    ,muon->phi    ,0.105658);
+            electron4v.SetPtEtaPhiM(electron_index->pt,electron_index->eta,electron_index->phi,0.000511);
+            muon4v      .SetPtEtaPhiM(muon_index->pt    ,muon_index->eta    ,muon_index->phi    ,0.105658);
 	    emu4v = electron4v + muon4v;
 	    double mass = emu4v.M();
 	  
@@ -544,7 +568,7 @@ void selectEmuEvents(const TString conf,
 	    /*if((isam==0) && evtfile.is_open())
 	      eventDump(evtfile, dielectron, info->runNum, info->lumiSec, info->evtNum, 
 	      leadingTriggerObjectBit, trailingTriggerObjectBit);*/
-	  
+	 
 	    //
 	    // Fill histograms
 	    // 
@@ -574,7 +598,7 @@ void selectEmuEvents(const TString conf,
 	    // Note: we do not need jet count at the moment. It can be found
 	    // by looping over PFJets list if needed. See early 2011 analysis.
 	    int njets = -1;
-	    fillData(&data, info, electron, muon, emu4v, 
+	    fillData(&data, info, electron_index, muon_index, emu4v, 
 		     pvArr->GetEntriesFast(), nGoodPV,
 		     njets, weightSave);
 	    outTree->Fill();
@@ -582,8 +606,8 @@ void selectEmuEvents(const TString conf,
 	  
 	    //nsel    += weight;
 	    //nselvar += weight*weight;
-	  }
-        }	 
+	 // }
+       // }	used to be end of muon and electron loops 
       }           
       cout << nsel << " +/- " << sqrt(nselvar) << " events" << endl;
       nSelv[isam]    += nsel;
