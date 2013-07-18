@@ -12,6 +12,8 @@
 #include "TElectron.hh"
 #include "TDielectron.hh"
 
+#define _8TeV_analysis_ // comment this out for 7 TeV analysis
+
 //#define _check_Zpeak
 
 namespace DYTools {
@@ -24,10 +26,15 @@ namespace DYTools {
   //             nMassBins, massBinLimits, nYBins
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
 
-  const int energy8TeV = 1; // Set this to 0 for 7 TeV settings
-  const int study2D=1;
+  const int study2D=0;
   const int extendYRangeFor1D=1; // whether |ymax|=9 for 1D study
   const TString analysisTag_USER=""; //(!study2D && extendYRangeFor1D) ? "ymax9" : "";  // extra name to differentiate the analysis files
+
+#ifdef _8TeV_analysis_
+  const int energy8TeV = 1; // 8 TeV analysis
+#else
+  const int energy8TeV = 0; // 7 TeV analysis
+#endif
 
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
   // ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
