@@ -24,7 +24,8 @@ public:
     Date20120802_default,
     Date20121003FEWZ_default, // FEWZ correction and MC backgroud were considered in derivation
     Date20121025FEWZPU_default, // FEWZ correction and PU reweighting were considered in derivation
-    Date20130529_2012_j22_adhoc,  // a guess to what the calib. should be for Jan22 8 TeV data
+    Date20130612_default, // First calibration for Jan22, 8 TeV from Andrius
+    Date20130529_2012_j22_adhoc,  // a guess to what the calib. should be for Jan22 8 TeV data based on official constants
     CalSet_File_Gauss,
     CalSet_File_BreitWigner,
     CalSet_File_Voigt

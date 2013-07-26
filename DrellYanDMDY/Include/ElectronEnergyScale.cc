@@ -397,6 +397,7 @@ bool ElectronEnergyScale::initializeAllConstants(int debug){
   case Date20120802_default: nEtaBins1=12; break;
   case Date20121003FEWZ_default: nEtaBins1=12; break;
   case Date20121025FEWZPU_default: nEtaBins1=12; break;
+  case Date20130612_default : nEtaBins1=12; break;
   case Date20130529_2012_j22_adhoc: nEtaBins1=8; break;
   case CalSet_File_Gauss: 
   case CalSet_File_Voigt:
@@ -712,6 +713,46 @@ bool ElectronEnergyScale::initializeAllConstants(int debug){
   }
     break;
 
+  case Date20130612_default: {
+    //
+    // Constants from the first pass on energy scale calibrations
+    // done for 8 TeV data on Jan 22 rereco by Andrius.
+    //
+    const int nEtaBins = 12;
+    const double etaBinLimits[nEtaBins+1] = 
+      {-2.50001, -2.0, -1.5, -1.2, -0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.5, 2.0, 2.50001};
+
+    const double corrValues[nEtaBins] = 
+      {1.00796, 1.00372, 1.00588, 1.00251, 1.00138, 1.00109, 
+       1.00109, 1.00138, 1.00251, 1.00588, 1.00372, 1.00796};
+
+    const double corrErrors[nEtaBins] = 
+      {-7.72271e-05, -7.70628e-05, -9.17103e-05, -5.36527e-05, -4.52402e-05, -3.94439e-05,
+       -3.94439e-05, -4.52402e-05, -5.36527e-05, -9.17103e-05, -7.70628e-05, -7.72271e-05};
+
+    const double smearValues[nEtaBins] = 
+      {0.814509, 0.79391, 1.19361, 0.684003, 0.383441, 0.344768,
+       0.344768, 0.383441, 0.684003, 1.19361, 0.79391, 0.814509};
+
+    const double smearErrors[nEtaBins] =
+      {-0.0136683, -0.0134202, -0.00999407, -0.00843935, -0.0106701, -0.0107298,
+       -0.0107298, -0.0106701, -0.00843935, -0.00999407, -0.0134202, -0.0136683};
+    
+    if (nEtaBins1!=nEtaBins) assert(0);
+    assert(_etaBinLimits); 
+    assert(_dataConst); assert(_dataConstErr);
+    assert(_mcConst1); assert(_mcConst1Err);
+    for(int i=0; i<nEtaBins; i++){
+      _etaBinLimits[i] = etaBinLimits[i];
+      _dataConst   [i] = corrValues[i];
+      _dataConstErr[i] = corrErrors[i];
+      _mcConst1    [i] = smearValues[i];
+      _mcConst1Err [i] = smearErrors[i];
+    }
+    _etaBinLimits[nEtaBins] = etaBinLimits[nEtaBins];
+  }
+    break;
+
   case Date20130529_2012_j22_adhoc: {
     //
     // Data of full 2012 and Summer12 MC.
@@ -801,6 +842,7 @@ bool ElectronEnergyScale::initializeExtraSmearingFunction(int normalize){
       case Date20120802_default:
       case Date20121003FEWZ_default:
       case Date20121025FEWZPU_default:
+      case Date20130612_default:
       case CalSet_File_Gauss: {
 	if(_mcConst1 == 0) continue;
 	smearingFunctionGrid[i][j] = new TF1(fname, "gaus(0)", -10, 10);
@@ -1070,6 +1112,7 @@ void ElectronEnergyScale::randomizeSmearingWidth(int seed){
   case Date20120802_default:
   case Date20121003FEWZ_default:
   case Date20121025FEWZPU_default:
+  case Date20130612_default:
   case CalSet_File_Gauss: {
 
     for( int i=0; i<_nEtaBins; i++){
@@ -1451,6 +1494,9 @@ ElectronEnergyScale::CalibrationSet ElectronEnergyScale::DetermineCalibrationSet
   else if ( (pos==0) || escaleTagName.Contains("Date20120101_default") ) {
     calibrationSet = ElectronEnergyScale::Date20120101_default;
   }
+  else if ( (pos==0) || escaleTagName.Contains("Date20130612_default") ) {
+    calibrationSet = ElectronEnergyScale::Date20130612_default;
+  }
   else if ( (pos==0) || escaleTagName.Contains("Date20130529_2012_j22_adhoc") ) {
     calibrationSet = ElectronEnergyScale::Date20130529_2012_j22_adhoc;
   }
@@ -1510,6 +1556,7 @@ TString ElectronEnergyScale::CalibrationSetName(ElectronEnergyScale::Calibration
   case ElectronEnergyScale::Date20120802_default: name="Date20120802_default"; break;
   case ElectronEnergyScale::Date20121003FEWZ_default: name="Date20121003FEWZ_default"; break;
   case ElectronEnergyScale::Date20121025FEWZPU_default: name="Date20121025FEWZPU_default"; break;
+  case ElectronEnergyScale::Date20130612_default: name="Date20130612_default"; break;
   case ElectronEnergyScale::Date20130529_2012_j22_adhoc: name="Date20130529_2012_j22_adhoc"; break;
   case ElectronEnergyScale::CalSet_File_Gauss: 
     name="FileGauss(";
@@ -1544,6 +1591,7 @@ TString ElectronEnergyScale::CalibrationSetFunctionName(ElectronEnergyScale::Cal
   case ElectronEnergyScale::Date20120802_default: break; // Gauss
   case ElectronEnergyScale::Date20121003FEWZ_default: break; // Gauss
   case ElectronEnergyScale::Date20121025FEWZPU_default: break; // Gauss
+  case ElectronEnergyScale::Date20130612_default: break; // Gauss
   case ElectronEnergyScale::Date20130529_2012_j22_adhoc: break; // Gauss
   case ElectronEnergyScale::CalSet_File_Gauss: break; // Gauss
   case ElectronEnergyScale::CalSet_File_Voigt: name="Voigt"; break;
@@ -1566,6 +1614,7 @@ TString ElectronEnergyScale::calibrationSetShortName() const {
   case ElectronEnergyScale::Date20120802_default: name="default20120802"; break;
   case ElectronEnergyScale::Date20121003FEWZ_default: name="default20121003FEWZ"; break;
   case ElectronEnergyScale::Date20121025FEWZPU_default: name="default20121025FEWZPU"; break;
+  case ElectronEnergyScale::Date20130612_default: name="default20130612"; break;
   case ElectronEnergyScale::Date20130529_2012_j22_adhoc: name="adhoc20130529j22"; break;
   case ElectronEnergyScale::CalSet_File_Gauss: name="Gauss"; break;
   case ElectronEnergyScale::CalSet_File_Voigt: name="Voigt"; break;
