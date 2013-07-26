@@ -1,4 +1,8 @@
+#ifndef FITFUNCTIONSCORE_HH
+#define FITFUNCTIONSCORE_HH
+
 #if !defined(__CINT__) || defined(__MAKECINT__)
+
 #include <TROOT.h>                  // access to gROOT, entry point to ROOT system
 #include <TFile.h>                  // file handle class
 #include <TTree.h>                  // class to access ntuples
@@ -35,11 +39,20 @@
 #include "RooSimultaneous.h"
 #include "RooDataSet.h"
 #include "RooFitResult.h"
+#include "RooCMSShape.h"
+#include "RooChebychev.h"
 
 #include "CPlot.hh"          // helper class for plots
 #include "DYTools.hh"
 
 #endif
+
+enum SignalFitPDFType {TEMPLATE_CONV_GAUSS,
+		       TEMPLATE_CONV_CB};
+
+enum BackgroundFitPDFType {EXPONENTIAL,
+			   CMS_SHAPE, 
+			   CHEBYCHEV};
 
 
 void printCorrelations(ostream& os, RooFitResult *res);
@@ -59,3 +72,5 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
 			  TH1F *templatePass, TH1F *templateFail, 
 			  bool isRECO, const char* setBinsType, 
 			  TString dirTag, const TString &picFileExtraTag );
+
+#endif

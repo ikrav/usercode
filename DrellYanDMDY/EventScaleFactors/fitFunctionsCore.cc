@@ -5,11 +5,16 @@
 
 int performWeightedFit=1;
 int debugWeightedFit=0; // extra datasets are created if this is 1
-int bkgPassContainsErrorFunction=0;
-int bkgFailContainsErrorFunction=0;
+// The flags below should be kept zero. If Erf is needed in the background
+// model, RooCMSShape should be used instead. This is coded in as one of the
+// options already (see backgroundPdfType, used in fitMassWithTemplates).
+int bkgPassContainsErrorFunction=0; // This flag is deprecated and should be kept 0
+int bkgFailContainsErrorFunction=0; // This flag is deprecated and should be kept 0
 bool unbinnedFitDefault=false;
 bool unbinnedFit=unbinnedFitDefault;
 
+const int signalPdfType     = TEMPLATE_CONV_GAUSS;
+const int backgroundPdfType = EXPONENTIAL;
 
 // helping variables for fitMassWithTemplates
 const int cLoadVariableLimitsFromFile=0;
@@ -575,7 +580,6 @@ void fitMass(TTree *passTree, TTree *failTree, TString cut, int mode,
   return;
 }
 
-
 void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut, 
 			  int mode, double &efficiency, 
 			  double &efficiencyErrHi, double &efficiencyErrLo,
@@ -586,36 +590,74 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
 			  const TString &picFileExtraTag){
 
     
-  RealLimit lims[12];
+  const int nLims = 34;
+  RealLimit lims[nLims];
   
-  for (int j=0; j<12; j++)
+  for (int j=0; j<nLims; j++)
     {
       lims[j].av=0.0;
       lims[j].lo=0.0;
       lims[j].hi=0.0;
     }
 
-    lims[0].name="mass";
-    lims[1].name="et";
-    lims[2].name="eta";
-    lims[3].name="nsignal";
-    lims[4].name="eff";
-    lims[5].name="lambdaBgPass";
-    lims[6].name="resMeanPass";
-    lims[7].name="resSigma";
-    lims[8].name="nbgPass";
-    lims[9].name="lambdaBgFail";
-    lims[10].name="resMeanFail";
-    lims[11].name="nbgFail";
+  // Data observable parameters
+  lims[0].name="mass";
+  lims[1].name="et";
+  lims[2].name="eta";
+
+  // Parameters shared by pass and fail samples and PDFs
+  lims[3].name="nsignal";
+  lims[4].name="eff";
+
+  // Parameters for pass PDF
+  lims[5].name="lambdaBgPass";     // pass background: exponential
+  lims[6].name="gausMeanPass";     // pass signal: Gauss smearing for template
+  lims[7].name="gausSigma";         // pass signal: Gauss smearing for template
+  lims[8].name="nbgPass";          // pass background: total count
+
+  // Parameters for fail PDF
+  lims[9].name="lambdaBgFail";     // fail background: exponential
+  lims[10].name="gausMeanFailShift";// fail signal: Gauss smearing for template
+  lims[11].name="nbgFail";         // fail background: total count
   
+  // More parameters for pass PDF
+  lims[12].name="cbMeanPass";      // pass signal: CB smearing for template
+  lims[13].name="cbSigmalPass";    // pass signal: CB smearing for template
+  lims[14].name="cbAlphaPass";     // pass signal: CB smearing for template
+  lims[15].name="cbNPass";         // pass signal: CB smearing for template
+
+  // More parameters for fail PDF
+  lims[16].name="cbMeanFailShift"; // fail signal: CB smearing for template
+  lims[17].name="cbSigmalFail";    // fail signal: CB smearing for template
+  lims[18].name="cbAlphaFail";     // fail signal: CB smearing for template
+  lims[19].name="cbNFail";         // fail signal: CB smearing for template
+
+  // More parameters for pass PDF, more backgrounds
+  lims[20].name="chebPar0Pass";      // pass background: Chebyshev polynomial parameter
+  lims[21].name="chebPar1Pass";      // pass background: Chebyshev polynomial parameter
+  lims[22].name="chebPar2Pass";      // pass background: Chebyshev polynomial parameter
+  lims[23].name="cmsAlphaPass";      // pass background: CMS shape parameter
+  lims[24].name="cmsBetaPass";       // pass background: CMS shape parameter
+  lims[25].name="cmsGammaPass";      // pass background: CMS shape parameter
+  lims[26].name="cmsPeakPass";       // pass background: CMS shape parameter
+
+  // More parameters for fail PDF, more backgrounds
+  lims[27].name="chebPar0Fail";      // fail background: Chebyshev polynomial parameter
+  lims[28].name="chebPar1Fail";      // fail background: Chebyshev polynomial parameter
+  lims[29].name="chebPar2Fail";      // fail background: Chebyshev polynomial parameter
+  lims[30].name="cmsAlphaFail";      // fail background: CMS shape parameter
+  lims[31].name="cmsBetaFail";       // fail background: CMS shape parameter
+  lims[32].name="cmsGammaFail";      // fail background: CMS shape parameter
+  lims[33].name="cmsPeakFail";       // fail background: CMS shape parameter
+
   int foundOnFile=0;
   if (cLoadVariableLimitsFromFile) {
-    foundOnFile=loadVariableLimitsFromFile(isRECO,cut,12,lims,1);
+    foundOnFile=loadVariableLimitsFromFile(isRECO,cut,nLims,lims,1);
     std::cout << "loadVariableLimitsFromFile found " << foundOnFile << " records for cut={" << cut << "}\n";
 
     std::cout<<"\nbeg-llllllllllllllllllllllimssssssssssssssssssssssss"<<std::endl;  
     
-    for (int j=0; j<12; j++)
+    for (int j=0; j<nLims; j++)
       {
 	std::cout<<lims[j].name<<": "<<lims[j].av<<", "<<lims[j].lo<<", "<<lims[j].hi<<std::endl;
       }
@@ -625,41 +667,47 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
 
 
   if (!foundOnFile) {
-  if (!isRECO)
-    {
-      lims[0].lo=60;    lims[0].hi=120;
-      lims[1].lo=10.0;  lims[1].hi=1000.0;
-      lims[2].lo=-10;   lims[2].hi=10;
-
-      lims[3].av=1000;  lims[3].lo=0.0;   lims[3].hi=1.0e7;
-      lims[4].av=0.7;   lims[4].lo=0.0;   lims[4].hi=1.0;
-      lims[5].av=-0.1;  lims[5].lo=-0.5;  lims[5].hi=0.5;
-      lims[6].av=0.0;   lims[6].lo=-5.0;  lims[6].hi=5.0;
-      lims[7].av=1.0;   lims[7].lo=0.1;   lims[7].hi=6.0;
-      lims[8].av=1.0;   lims[8].lo=0.0;   lims[8].hi=1.0e5;
-      lims[9].av=-0.1;  lims[9].lo=-0.5;  lims[9].hi=0.5;
-      lims[10].av=0.0;  lims[10].lo=-5.0; lims[10].hi=5.0;
-      lims[11].av=1.0;  lims[11].lo=0.0;  lims[11].hi=1.0e5;
-      
-    }
-  else if (isRECO)
-    {
-      lims[0].lo=60;    lims[0].hi=120;
-      lims[1].lo=10.0;  lims[1].hi=1000.0;
-      lims[2].lo=-10;   lims[2].hi=10;
-
-      lims[3].av=1000;  lims[3].lo=0.0;   lims[3].hi=1.0e7;
-      lims[4].av=0.7;   lims[4].lo=0.0;   lims[4].hi=1.0;
-      lims[5].av=-0.1;  lims[5].lo=-0.5;  lims[5].hi=0.5;
-      lims[6].av=0.0;   lims[6].lo=-5.0;  lims[6].hi=5.0;
-      lims[7].av=1.5;   lims[7].lo=1.0;   lims[7].hi=6.0; // Low limit at 1 GeV to ensure smoothness of binned templates
-      lims[8].av=1.0;   lims[8].lo=0.0;   lims[8].hi=1.0e5;
-      lims[9].av=-0.1;  lims[9].lo=-0.5;  lims[9].hi=0.5;
-      //lims[10].av=0.0;  lims[10].lo=-3.0; lims[10].hi=3.0; 
-      lims[10].av=0.0;  lims[10].lo=-5.0; lims[10].hi=5.0; // 2012.07.10
-      lims[11].av=1.0;  lims[11].lo=0.0;  lims[11].hi=1.0e5;
-      
-    }
+    lims[0].lo=60;    lims[0].hi=120;    // mass
+    lims[1].lo=10.0;  lims[1].hi=1000.0; // et
+    lims[2].lo=-10;   lims[2].hi=10;     // eta
+    
+    lims[3].av=1000;  lims[3].lo=0.0;   lims[3].hi=1.0e7; // nsignal
+    lims[4].av=0.7;   lims[4].lo=0.0;   lims[4].hi=1.0;   // eff
+    lims[5].av=-0.1;  lims[5].lo=-0.5;  lims[5].hi=0.5;   // lambdaBgPass
+    lims[6].av=0.0;   lims[6].lo=-5.0;  lims[6].hi=5.0;   // gausMeanPass
+    double gSigHi = 6.0;
+    // For RECO efficiency, the fit is sometimes wants to make the width
+    // too wide due to high backgrounds and poor peak definition, so limit it more.
+    if( isRECO )
+      gSigHi = 3.0;
+    lims[7].av=0.6;   lims[7].lo=0.5;   lims[7].hi=gSigHi;   // gausSigma : Low limit at 0.5 GeV to ensure smoothness of binned templates
+    lims[8].av=1.0;   lims[8].lo=0.0;   lims[8].hi=1.0e5; // nbgPass
+    lims[9].av=-0.1;  lims[9].lo=-0.5;  lims[9].hi=0.5;   // lambdaBgFail
+    lims[10].av=0.0;  lims[10].lo=-10.0; lims[10].hi=10.0;// gausMeanFailShift : changed 2012.07.10
+    lims[11].av=1.0;  lims[11].lo=0.0;  lims[11].hi=1.0e5;// nbgFail
+    lims[12].av=0.0;  lims[12].lo=-5.0; lims[12].hi=5.0;  // cbMeanPass
+    lims[13].av=0.6;  lims[13].lo=0.5;  lims[13].hi=6.0;  // cbSigmaPass
+    lims[14].av=5.0;  lims[14].lo=0.0;  lims[14].hi=20.0; // cbAlphaPass
+    lims[15].av=1.0;  lims[15].lo=0.0;  lims[15].hi=10.0; // cbNPass
+    lims[16].av=0.0;  lims[16].lo=-10;  lims[16].hi=10;   // cbMeanFailShift
+    lims[17].av=0.6;  lims[17].lo=0.5;  lims[17].hi=6.0;  // cbSigmaFail
+    lims[18].av=5.0;  lims[18].lo=0.0;  lims[18].hi=20.0; // cbAlphaFail
+    lims[19].av=1.0;  lims[19].lo=0.0;  lims[19].hi=10.0; // cbNFail
+    lims[20].av=-1.0; lims[20].lo=-5.0; lims[20].hi=5.0; // chebPar0Pass
+    lims[21].av= 0.1; lims[21].lo=-5.0; lims[21].hi=5.0; // chebPar1Pass
+    lims[22].av=-0.1; lims[22].lo=-5.0; lims[22].hi=5.0; // chebPar2Pass
+    lims[23].av=  50; lims[23].lo=5;    lims[23].hi=200; // cmsAlphaPass
+    lims[24].av=0.01; lims[24].lo= 0;   lims[24].hi=10;  // cmsBetaPass
+    lims[25].av=0.05; lims[25].lo=0.0;  lims[25].hi=1.0; // cmsGammaPass
+    lims[26].av=  90; lims[26].lo=50;   lims[26].hi=150; // cmsPeakPass
+    lims[27].av=-1.0; lims[27].lo=-5.0; lims[27].hi=5.0; // chebPar0Fail
+    lims[28].av= 0.1; lims[28].lo=-5.0; lims[28].hi=5.0; // chebPar1Fail
+    lims[29].av=-0.1; lims[29].lo=-5.0; lims[29].hi=5.0; // chebPar2Fail
+    lims[30].av=  50; lims[30].lo=5;    lims[30].hi=200; // cmsAlphaFail
+    lims[31].av=0.01; lims[31].lo= 0;   lims[31].hi=10;  // cmsBetaFail
+    lims[32].av=0.05; lims[32].lo=0.0;  lims[32].hi=1.0; // cmsGammaFail
+    lims[33].av=  90; lims[33].lo=50;   lims[33].hi=150; // cmsPeakFail
+ 
   }
   
 
@@ -858,23 +906,73 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   //  PDF for the PASS sample
   // 
   // Background
+  //      - background shape option #1: Exponential
   RooRealVar lambdaBgPass("lambdaBgPass","lambdaBgPass",lims[5].av, lims[5].lo, lims[5].hi);
-  RooExponential bgPassPdf("bgPassPdf","bgPassPdf",mass,lambdaBgPass);
+  RooExponential expPassPdf("expPassPdf","expPassPdf",mass,lambdaBgPass);
+  //      - background shape option #2: CMS shape (erf x exp)
+  RooRealVar cmsAlphaPass("cmsAlphaPass","cmsAlphaPass", lims[23].av, lims[23].lo, lims[23].hi);  
+  RooRealVar cmsBetaPass("cmsBetaPass"  ,"cmsBetaPass",  lims[24].av, lims[24].lo, lims[24].hi);  
+  RooRealVar cmsGammaPass("cmsGammaPass","cmsGammaPass", lims[25].av, lims[25].lo, lims[25].hi);  
+  RooRealVar cmsPeakPass("cmsPeakPass"  ,"cmsPeakPass",  lims[26].av, lims[26].lo, lims[26].hi);  
+  cmsPeakPass.setVal(91.1876);  
+  cmsPeakPass.setConstant(kTRUE);  
+  RooCMSShape cmsPassPdf("cmsPassPdf","cmsPassPdf",mass, cmsAlphaPass, cmsBetaPass, cmsGammaPass, cmsPeakPass);
+  //      - background shape option #3: Chebychev polynomial of 2d order
+  RooRealVar chebPar0Pass("chebPar0Pass","chebPar0Pass",  lims[20].av, lims[20].lo, lims[20].hi);  
+  RooRealVar chebPar1Pass("chebPar1Pass","chebPar1Pass",  lims[21].av, lims[21].lo, lims[21].hi);  
+  RooRealVar chebPar2Pass("chebPar2Pass","chebPar2Pass",  lims[22].av, lims[22].lo, lims[22].hi);  
+  RooChebychev chebPassPdf("chebPassPdf","chebPassPdf", mass, RooArgList(chebPar0Pass, chebPar1Pass, chebPar2Pass));  
+  //      - older deprecated background, do not use
   RooRealVar bgPassErfHalfPos("bgPassErfHalfPos","bgPassErfHalfPos",0, lims[0].hi);
   RooFormulaVar bgPassErf("bgPassErf","0.5*(TMath::Erf((@0-@1)/0.5)+1.)",RooArgList(mass,bgPassErfHalfPos));
-  RooEffProd bgPassTotPdf("bgPassTotPdf","pass background model: exp * erf",bgPassPdf,bgPassErf);
+  RooEffProd bgPassExpErfPdf("bgPassExpErfPdf","pass background model: exp * erf",expPassPdf,bgPassErf);
+  //   
+  RooAbsPdf *bgPassPdf = 0;
+  if( backgroundPdfType == EXPONENTIAL ){
+    bgPassPdf = &expPassPdf;
+    printf("INFO: pass PDF background: exponential\n");
+  }else if(backgroundPdfType == CMS_SHAPE ){
+    bgPassPdf = &cmsPassPdf;
+    printf("INFO: pass PDF background: CMS shape (exp x erf)\n");
+  }else if(backgroundPdfType == CHEBYCHEV ){
+    bgPassPdf = &chebPassPdf;
+    printf("INFO: pass PDF background: Chebychev polynomial 2d order\n");
+  }else{
+    printf("Error: invalid background PDF type is requested\n");
+    assert(0);
+  }
+  bgPassPdf->SetName("bgPassPdf");
+  //
   // Signal
-  //     - resolution function
-  RooRealVar resMeanPass("resMeanPass","cbMeanPass"   ,lims[6].av, lims[6].lo, lims[6].hi);
-  RooRealVar resSigma   ("resSigma"   ,"resSigma  "   ,lims[7].av, lims[7].lo, lims[7].hi);
-  RooGaussian resPassPdf("resPassPdf","resPassPdf", mass, resMeanPass, resSigma);
+  //     - resolution function option #1: Gaussian
+  RooRealVar gausMeanPass("gausMeanPass","gausMeanPass"  ,lims[6].av, lims[6].lo, lims[6].hi);
+  RooRealVar gausSigma   ("gausSigma"   ,"gausSigma"     ,lims[7].av, lims[7].lo, lims[7].hi);
+  RooGaussian gausPassPdf("gausPassPdf","gausPassPdf", mass, gausMeanPass, gausSigma);
+  //     - resolution function option #2: Crystal Ball
+  RooRealVar cbMeanPass  ("cbMeanPass" , "cbMeanPass" ,   lims[12].av, lims[12].lo, lims[12].hi);
+  RooRealVar cbSigmaPass ("cbSigmaPass", "cbSigmaPass",   lims[13].av, lims[13].lo, lims[13].hi);
+  RooRealVar cbAlphaPass ("cbAlphaPass", "cbAlphaPass",   lims[14].av, lims[14].lo, lims[14].hi);
+  RooRealVar cbNPass     ("cbNPass"    , "cbNPass",       lims[15].av, lims[15].lo, lims[15].hi);
+  RooCBShape cbPassPdf   ("cbPassPdf","cbPassPdf",mass,cbMeanPass,cbSigmaPass,cbAlphaPass,cbNPass);
+  //      - choice of resolution function
+  RooAbsPdf *resolutionPassPdf = 0;
+  if( signalPdfType == TEMPLATE_CONV_GAUSS ){
+    resolutionPassPdf = &gausPassPdf;
+    printf("INFO: pass PDF signal: template convoluted with Gaussian\n");
+  }else if(signalPdfType == TEMPLATE_CONV_CB ){
+    resolutionPassPdf = &cbPassPdf;
+    printf("INFO: pass PDF signal: template convoluted with Crystal Ball\n");
+  }else{
+    printf("Error: invalid signal PDF type is requested\n");
+    assert(0);
+  }
+  resolutionPassPdf->SetName("resolutionPassPdf");
   //      - mc template
   RooDataHist rooTemplatePass("rooTemplatePass","rooTemplatePass",RooArgList(mass),templatePass);
   RooHistPdf templatePassPdf("templatePassPdf","templatePassPdf",RooArgSet(mass),rooTemplatePass);
-  //     - realistic model
+  //     - realistic model: template convoluted with the chosen resolution function
   mass.setBins(10000,setBinsType);
-//   RooFFTConvPdf signalPassPdf("signalPassPdf","signalPassPdf",mass, templatePassPdf, cbPassPdf);
-  RooFFTConvPdf signalPassPdf("signalPassPdf","signalPassPdf",mass, templatePassPdf, resPassPdf);
+  RooFFTConvPdf signalPassPdf("signalPassPdf","signalPassPdf",mass, templatePassPdf, *resolutionPassPdf);
   // Combine signal and background
   RooFormulaVar nsigPass("nsigPass","nsigPass","@0*@1",RooArgList(nsignal,eff));
   RooRealVar nbgPass ("nbgPass","nbgPass",lims[8].av, lims[8].lo, lims[8].hi);
@@ -889,10 +987,10 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
     if (bkgPassContainsErrorFunction) {
       cout << "pass background model: exponential times error function\n";
       fitLog << "pass background model: exponential times error function\n";
-      passPdf = new RooAddPdf("passPdf","passPdf",RooArgList(signalPassPdf,bgPassTotPdf),RooArgList(nsigPass,nbgPass));
+      passPdf = new RooAddPdf("passPdf","passPdf",RooArgList(signalPassPdf,bgPassExpErfPdf),RooArgList(nsigPass,nbgPass));
     }
     else {
-      passPdf = new RooAddPdf("passPdf","passPdf",RooArgList(signalPassPdf,bgPassPdf), RooArgList(nsigPass,nbgPass));
+      passPdf = new RooAddPdf("passPdf","passPdf",RooArgList(signalPassPdf,*bgPassPdf), RooArgList(nsigPass,nbgPass));
     }
   }else{
     printf("ERROR: inappropriate mode requested\n");
@@ -902,32 +1000,79 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   //  PDF for the FAIL sample
   // 
   // Background
+  //      - background shape option #1: Exponential
   RooRealVar lambdaBgFail("lambdaBgFail","lambdaBgFail",lims[9].av, lims[9].lo, lims[9].hi);
-  RooExponential bgFailPdf("bgFailPdf","bgFailPdf",mass,lambdaBgFail);
+  RooExponential expFailPdf("expFailPdf","expFailPdf",mass,lambdaBgFail);
+  //      - background shape option #2: CMS shape (erf x exp)
+  RooRealVar cmsAlphaFail("cmsAlphaFail","cmsAlphaFail", lims[30].av, lims[30].lo, lims[30].hi);  
+  RooRealVar cmsBetaFail("cmsBetaFail"  ,"cmsBetaFail",  lims[31].av, lims[31].lo, lims[31].hi);  
+  RooRealVar cmsGammaFail("cmsGammaFail","cmsGammaFail", lims[32].av, lims[32].lo, lims[32].hi);  
+  RooRealVar cmsPeakFail("cmsPeakFail"  ,"cmsPeakFail",  lims[33].av, lims[33].lo, lims[33].hi);  
+  cmsPeakFail.setVal(91.1876);  
+  cmsPeakFail.setConstant(kTRUE);  
+  RooCMSShape cmsFailPdf("cmsFailPdf","cmsFailPdf",mass, cmsAlphaFail, cmsBetaFail, cmsGammaFail, cmsPeakFail);
+  //      - background shape option #3: Chebychev polynomial of 2d order
+  RooRealVar chebPar0Fail("chebPar0Fail","chebPar0Fail",  lims[27].av, lims[27].lo, lims[27].hi);  
+  RooRealVar chebPar1Fail("chebPar1Fail","chebPar1Fail",  lims[28].av, lims[28].lo, lims[28].hi);  
+  RooRealVar chebPar2Fail("chebPar2Fail","chebPar2Fail",  lims[29].av, lims[29].lo, lims[29].hi);  
+  RooChebychev chebFailPdf("chebFailPdf","chebFailPdf", mass, RooArgList(chebPar0Fail, chebPar1Fail, chebPar2Fail));  
+  //      - older deprecated background, do not use
   RooRealVar bgFailErfHalfPos("bgFailErfHalfPos","bgFailErfHalfPos",0, lims[0].hi);
   RooFormulaVar bgFailErf("bgFailErf","0.5*(TMath::Erf((@0-@1)/0.5)+1.)",RooArgList(mass,bgFailErfHalfPos));
-  RooEffProd bgFailTotPdf("bgFailTotPdf","fail background model: exp * erf",bgFailPdf,bgFailErf);
+  RooEffProd bgFailExpErfPdf("bgFailExpErfPdf","fail background model: exp * erf",expFailPdf,bgFailErf);
+  //   
+  RooAbsPdf *bgFailPdf = 0;
+  if( backgroundPdfType == EXPONENTIAL ){
+    bgFailPdf = &expFailPdf;
+    printf("INFO: fail PDF background: exponential\n");
+  }else if(backgroundPdfType == CMS_SHAPE ){
+    bgFailPdf = &cmsFailPdf;
+    printf("INFO: fail PDF background: CMS shape (exp x erf)\n");
+  }else if(backgroundPdfType == CHEBYCHEV ){
+    bgFailPdf = &chebFailPdf;
+    printf("INFO: fail PDF background: Chebychev polynomial 2d order\n");
+  }else{
+    printf("Error: invalid background PDF type is requested\n");
+    assert(0);
+  }
+  bgFailPdf->SetName("bgFailPdf");
+  //
   // Signal
-  //     - resolution function
-  // The limits for the "fail" come from stating at the fit results without
-  // splitting into Et bins. In some cases, the peak is not there at all. (for reco)
-
-  // The old resMeanFail is commented out below. The new one
-  // is constructed as resMeanPass+resMeanFailShift so that one can
-  // constrain resMeanFail = resMeanPass by fixing the "shift" to zero.
-  // This is useful when the failing probes distribution is not sensitive to
-  // Gaussian smearing parameters.
-  RooRealVar resMeanFailShift("resMeanFailShift","resMeanFailShift", 0.0, 2*lims[10].lo, 2*lims[10].hi);
-  RooFormulaVar resMeanFail("resMeanFail", "@0+@1", RooArgList(resMeanPass, resMeanFailShift));
-  //   RooRealVar resMeanFail("resMeanFail","cbMeanFail"   ,lims[10].av, lims[10].lo, lims[10].hi);
-
-  RooGaussian resFailPdf("resFailPdf","resFailPdf", mass, resMeanFail, resSigma);
+  //     - resolution function #1: Gaussian
+  //         The mean of the resolution function for the fail sample may be 
+  //         difficult to determine from the fit because sometimes the peak in 
+  //         the fail sample is not visible at all. We construct the mean via
+  //         a formula below. This way, we can always constrain gausMeanFail = gausMeanPass
+  //         by fixing the "shift" to zero.
+  RooRealVar gausMeanFailShift("gausMeanFailShift","gausMeanFailShift", lims[10].av, lims[10].lo, lims[10].hi);
+  RooFormulaVar gausMeanFail("gausMeanFail", "@0+@1", RooArgList(gausMeanPass, gausMeanFailShift));
+  RooGaussian gausFailPdf("gausFailPdf","gausFailPdf", mass, gausMeanFail, gausSigma);
+  //      - resolution function #2: Crystal Ball
+  //         Same comments for the mean parameter/shift as for Gaussian above apply here
+  RooRealVar cbMeanFailShift("cbMeanFailShift" , "cbMeanFailShift" , lims[16].av, lims[16].lo, lims[16].hi);
+  RooFormulaVar cbMeanFail("cbMeanFail", "@0+@1", RooArgList(cbMeanPass, cbMeanFailShift));
+  RooRealVar cbSigmaFail ("cbSigmaFail", "cbSigmaFail",   lims[17].av, lims[17].lo, lims[17].hi);
+  RooRealVar cbAlphaFail ("cbAlphaFail", "cbAlphaFail",   lims[18].av, lims[18].lo, lims[18].hi);
+  RooRealVar cbNFail     ("cbNFail"    , "cbNFail",       lims[19].av, lims[19].lo, lims[19].hi);
+  RooCBShape cbFailPdf   ("cbFailPdf","cbFailPdf",mass,cbMeanFail,cbSigmaFail,cbAlphaFail,cbNFail);
+  //      - choice of resolution function
+  RooAbsPdf *resolutionFailPdf = 0;
+  if( signalPdfType == TEMPLATE_CONV_GAUSS ){
+    resolutionFailPdf = &gausFailPdf;
+    printf("INFO: fail PDF signal: template convoluted with Gaussian\n");
+  }else if(signalPdfType == TEMPLATE_CONV_CB ){
+    resolutionFailPdf = &cbFailPdf;
+    printf("INFO: fail PDF signal: template convoluted with Crystal Ball\n");
+  }else{
+    printf("Error: invalid signal PDF type is requested\n");
+    assert(0);
+  }
+  resolutionFailPdf->SetName("resolutionFailPdf");
   //      - mc template
   RooDataHist rooTemplateFail("rooTemplateFail","rooTemplateFail",RooArgList(mass),templateFail);
   RooHistPdf templateFailPdf("templateFailPdf","templateFailPdf",RooArgSet(mass),rooTemplateFail);
   //     - realistic model
-  //   RooFFTConvPdf signalFailPdf("signalFailPdf","signalFailPdf",mass, templateFailPdf, cbFailPdf);
-  RooFFTConvPdf signalFailPdf("signalFailPdf","signalFailPdf",mass, templateFailPdf, resFailPdf);
+  RooFFTConvPdf signalFailPdf("signalFailPdf","signalFailPdf",mass, templateFailPdf, *resolutionFailPdf);
   // Combine signal and background
   RooFormulaVar nsigFail("nsigFail","nsigFail","@0*(1.0-@1)",RooArgList(nsignal,eff));
   RooRealVar nbgFail ("nbgFail" ,"nbgFail" ,lims[11].av,lims[11].lo,lims[11].hi);
@@ -935,10 +1080,10 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
   if (bkgFailContainsErrorFunction) {
     cout << "fail background model: exponential times error function\n";
     fitLog << "fail background model: exponential times error function\n";
-    failPdf=new RooAddPdf("failPdf","failPdf",RooArgList(signalFailPdf,bgFailTotPdf), RooArgList(nsigFail,nbgFail));
+    failPdf=new RooAddPdf("failPdf","failPdf",RooArgList(signalFailPdf,bgFailExpErfPdf), RooArgList(nsigFail,nbgFail));
   }
   else {
-    failPdf=new RooAddPdf("failPdf","failPdf",RooArgList(signalFailPdf,bgFailPdf), RooArgList(nsigFail,nbgFail));
+    failPdf=new RooAddPdf("failPdf","failPdf",RooArgList(signalFailPdf,*bgFailPdf), RooArgList(nsigFail,nbgFail));
   }
 
   // Is this a low momentum case of the RECO efficiency? 
@@ -966,8 +1111,10 @@ void fitMassWithTemplates(TTree *passTree, TTree *failTree, TString cut,
       // mean for the passing probes.
       printf("\n The mean of the smearing for the failing probes is set equal\n");
       printf(" to the mean of the smearing for the passing probes.\n\n"); 
-      resMeanFailShift.setVal(0.0);
-      resMeanFailShift.setConstant(kTRUE);
+      gausMeanFailShift.setVal(0.0);
+      gausMeanFailShift.setConstant(kTRUE);
+      cbMeanFailShift.setVal(0.0);
+      cbMeanFailShift.setConstant(kTRUE);
     }
   }
   
